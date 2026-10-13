@@ -1,6 +1,6 @@
 function getT(key) {
-    const lang = userState.lang || 'ar';
-    return typeof i18n !== 'undefined' && i18n[lang][key] ? i18n[lang][key] : key;
+    const lang = userState?.lang || 'ar';
+    return (typeof i18n !== 'undefined' && i18n[lang] && i18n[lang][key]) ? i18n[lang][key] : key;
 }
 
 const generateAvatar = (name, photoUrl, size = '50px') => {
@@ -12,29 +12,40 @@ const generateAvatar = (name, photoUrl, size = '50px') => {
 };
 
 window.renderRankingScreen = async function(container) {
-    const isAr = userState.lang === 'ar'; 
-    const currentUserId = userState.userId;
+    const isAr = (userState?.lang === 'ar'); 
+    const currentUserId = userState?.userId;
 
     container.innerHTML = `<div style="text-align:center; padding:50px; color:#aaa;"><div style="font-size: 2rem; margin-bottom: 10px;">⏳</div>${getT('loadingMatches')}</div>`;
 
     try {
-        const { data: rankings } = await supabaseClient
-            .from('weekly_match_rankings')
-            .select('*')
-            .eq('category', 'weekly')
-            .order('points_earned', { ascending: false })
-            .limit(3);
+        let rankings = [];
+        let myRank = null;
+        let predictions = [];
 
-        const { data: myRank } = await supabaseClient.rpc('get_user_rank', {
-            p_telegram_id: currentUserId,
-            p_category: 'weekly'
-        });
+        if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && currentUserId) {
+            const { data: rankData } = await supabaseClient
+                .from('weekly_match_rankings')
+                .select('*')
+                .eq('category', 'weekly')
+                .order('points_earned', { ascending: false })
+                .limit(3);
+            rankings = rankData || [];
 
-        const { data: predictions } = await supabaseClient
-            .from('match_predictions')
-            .select('*')
-            .eq('telegram_id', currentUserId)
-            .order('created_at', { ascending: false });
+            try {
+                const { data: userRank } = await supabaseClient.rpc('get_user_rank', {
+                    p_telegram_id: currentUserId,
+                    p_category: 'weekly'
+                });
+                myRank = userRank;
+            } catch (e) {}
+
+            const { data: predData } = await supabaseClient
+                .from('match_predictions')
+                .select('*')
+                .eq('telegram_id', currentUserId)
+                .order('created_at', { ascending: false });
+            predictions = predData || [];
+        }
 
         let myExactPoints = 0;
         let errorCount = 0;
@@ -50,11 +61,13 @@ window.renderRankingScreen = async function(container) {
             });
 
             const matchIds = predictions.map(p => p.match_id);
-            const { data: matchesData } = await supabaseClient
-                .from('matches')
-                .select('*')
-                .in('id', matchIds);
-            matches = matchesData || [];
+            if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && matchIds.length > 0) {
+                const { data: matchesData } = await supabaseClient
+                    .from('matches')
+                    .select('*')
+                    .in('id', matchIds);
+                matches = matchesData || [];
+            }
         }
 
         const displayRank = myRank ? `#${myRank}` : getT('unranked');
@@ -127,9 +140,9 @@ window.renderRankingScreen = async function(container) {
                 <p style="margin: 0 0 10px 0; font-size: 0.95rem; color: rgba(255,255,255,0.9);">${getT('yourCurrentRank')}</p>
                 <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
                     <div style="font-size: ${rankFontSize}; font-weight: bold; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${displayRank}</div>
-                    ${generateAvatar(userState.username, userState.photoUrl, '60px')}
+                    ${generateAvatar(userState?.username, userState?.photoUrl, '60px')}
                     <div style="text-align: ${isAr ? 'right' : 'left'};">
-                        <div style="font-weight: bold; font-size: 1.2rem;">${userState.username || 'User'}</div>
+                        <div style="font-weight: bold; font-size: 1.2rem;">${userState?.username || 'User'}</div>
                         <div style="color: #fff; font-weight: bold; font-size: 1.1rem; margin-top: 3px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 8px; display: inline-block;">
                             ${myExactPoints} ${getT('pts')}
                         </div>
