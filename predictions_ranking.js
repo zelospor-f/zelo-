@@ -1,6 +1,6 @@
 function getT(key) {
-    const lang = userState.lang || 'ar';
-    return typeof i18n !== 'undefined' && i18n[lang][key] ? i18n[lang][key] : key;
+    const lang = userState?.lang || 'ar';
+    return (typeof i18n !== 'undefined' && i18n[lang] && i18n[lang][key]) ? i18n[lang][key] : key;
 }
 
 let globalMatches = [];
@@ -9,7 +9,7 @@ let globalPredictions = [];
 window.openChallengesScreen = async function() {
     if (document.getElementById('challenges-overlay')) return;
 
-    const isAr = userState.lang === 'ar'; 
+    const isAr = (userState?.lang === 'ar'); 
     const overlay = document.createElement('div');
     overlay.id = 'challenges-overlay';
     
@@ -31,7 +31,7 @@ window.openChallengesScreen = async function() {
 
     if (!userState.predictedMatches) userState.predictedMatches = [];
 
-    if (typeof supabaseClient !== 'undefined' && userState.userId) {
+    if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState?.userId) {
         try {
             const { data: predData } = await supabaseClient
                 .from('match_predictions')
@@ -132,7 +132,7 @@ window.closeChallengesScreen = function() {
 window.showPredictionModal = function(matchId, team1, team2) {
     if (document.getElementById('prediction-modal')) return;
 
-    const isAr = userState.lang === 'ar';
+    const isAr = (userState?.lang === 'ar');
     const modal = document.createElement('div');
     modal.id = 'prediction-modal';
     
@@ -181,7 +181,7 @@ window.submitPrediction = async function(matchId, team1, team2) {
     submitBtn.disabled = true;
     submitBtn.innerText = '⏳...';
 
-    if (typeof supabaseClient !== 'undefined' && userState.userId) {
+    if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState?.userId) {
         try {
             const { data, error } = await supabaseClient
                 .from('match_predictions') 
@@ -202,7 +202,8 @@ window.submitPrediction = async function(matchId, team1, team2) {
     }
 
     alert(getT('predictionSuccess'));
-    document.getElementById('prediction-modal').remove();
+    const modal = document.getElementById('prediction-modal');
+    if (modal) modal.remove();
 
     const btnContainer = document.getElementById(`btn-container-${matchId}`);
     if (btnContainer) {
@@ -211,4 +212,4 @@ window.submitPrediction = async function(matchId, team1, team2) {
 };
 
 window.openPredictionHistoryScreen = function() {};
-    
+        
