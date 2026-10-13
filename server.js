@@ -34,7 +34,7 @@ app.get('/api/user-info', async (req, res) => {
     const { telegramId } = req.query;
 
     if (!telegramId || telegramId === 'guest') {
-        return res.status(400).json({ success: false, error: "Invalid or missing Telegram ID" });
+        return res.status(400).json({ success: false, error: "Invalid or missing User ID" });
     }
     if (!supabase) {
         return res.status(500).json({ success: false, error: "Supabase connection not initialized" });
@@ -43,7 +43,7 @@ app.get('/api/user-info', async (req, res) => {
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('solana_wallet, ton_wallet, points')
+            .select('solana_wallet, points')
             .eq('telegram_id', telegramId)
             .maybeSingle();
 
@@ -52,7 +52,6 @@ app.get('/api/user-info', async (req, res) => {
         return res.json({
             success: true,
             solanaWallet: data?.solana_wallet || '',
-            tonWallet: data?.ton_wallet || '',
             coins: data?.points || 0
         });
     } catch (err) {
@@ -65,23 +64,22 @@ app.post('/api/save-wallet', async (req, res) => {
     const { telegramId, walletType, walletAddress } = req.body;
 
     if (!telegramId || telegramId === 'guest') {
-        return res.status(400).json({ success: false, error: "Invalid or missing Telegram ID" });
+        return res.status(400).json({ success: false, error: "Invalid or missing User ID" });
     }
-    if (!walletAddress || !walletType || !['solana', 'ton'].includes(walletType)) {
+    if (!walletAddress || walletType !== 'solana') {
         return res.status(400).json({ success: false, error: "Invalid wallet type or address" });
     }
     if (!supabase) {
         return res.status(500).json({ success: false, error: "Supabase connection not initialized" });
     }
 
-    const walletColumn = walletType === 'solana' ? 'solana_wallet' : 'ton_wallet';
     const cleanAddress = walletAddress.trim();
 
     try {
         const { data: existingUser, error: checkError } = await supabase
             .from('users')
             .select('telegram_id')
-            .eq(walletColumn, cleanAddress)
+            .eq('solana_wallet', cleanAddress)
             .neq('telegram_id', telegramId)
             .maybeSingle();
 
@@ -90,18 +88,18 @@ app.post('/api/save-wallet', async (req, res) => {
         if (existingUser) {
             return res.status(400).json({
                 success: false,
-                error: "This wallet address is already linked to another account."
+                error: "This Solana wallet address is already linked to another account."
             });
         }
 
         const { error: updateError } = await supabase
             .from('users')
-            .update({ [walletColumn]: cleanAddress })
+            .update({ solana_wallet: cleanAddress })
             .eq('telegram_id', telegramId);
 
         if (updateError) throw updateError;
 
-        return res.json({ success: true, message: "Wallet address saved successfully." });
+        return res.json({ success: true, message: "Solana wallet address saved successfully." });
     } catch (err) {
         console.error("Save Wallet Error:", err);
         return res.status(500).json({ success: false, error: err.message });
@@ -113,7 +111,7 @@ app.post('/api/claim', async (req, res) => {
 
     try {
         if (!telegramId || telegramId === 'guest') {
-            return res.status(400).json({ success: false, error: "Invalid Telegram ID" });
+            return res.status(400).json({ success: false, error: "Invalid User ID" });
         }
         if (!supabase) {
             return res.status(500).json({ success: false, error: "Supabase connection not initialized" });
@@ -180,3 +178,4 @@ app.post('/api/claim', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Zelo FC Backend Server running on port ${PORT}`));
+            
