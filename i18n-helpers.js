@@ -88,10 +88,8 @@ window.i18n = {
         balance: "الرصيد",
         transactions: "المعاملات",
 
-        txtTonWallet: "محفظة TON",
-        txtSolanaWallet: "محفظة Solana (شبكة التطوير)",
+        txtSolanaWallet: "محفظة Solana (شبكة سولانا)",
         txtConnected: "● متصل",
-        txtConnectTon: "ربط محفظة التليجرام 💎",
         txtCopy: "📋 نسخ",
         txtDisconnect: "🔌 قطع الاتصال",
         txtOnChainSol: "رصيد SOL على الشبكة:",
@@ -107,7 +105,7 @@ window.i18n = {
         msgWalletSaveSuccess: "✅ تم حفظ المحفظة بنجاح!",
         msgWalletSaveFail: "فشل حفظ العنوان في السيرفر",
         msgPhantomNotice: "يرجى نسخ عنوان محفظتك من تطبيق Phantom ولصقه في الحقل.",
-        msgInvalidSolanaAddress: "⚠️️ يرجى إدخال عنوان محفظة Solana صحيح.",
+        msgInvalidSolanaAddress: "⚠ يرجى إدخال عنوان محفظة Solana صحيح.",
         msgMinClaimAlert: "⚠️ الحد الأدنى للمطالبة هو {min} نقطة. رصيدك الحالي لا يكفي.",
         msgConnectSolanaFirst: "⚠ يرجى ربط أو حفظ محفظة Solana أولاً!",
         msgClaimConfirm: "هل تؤكد خصم {coins} نقطة للحصول على {tokens} من عملة {tokenName}؟",
@@ -228,13 +226,11 @@ window.i18n = {
         transactions: "Transactions",
 
         // Wallet Advanced & Claiming
-        txtTonWallet: "TON Wallet",
-        txtSolanaWallet: "Solana Wallet (Devnet)",
+        txtSolanaWallet: "Solana Wallet",
         txtConnected: "● Connected",
-        txtConnectTon: "Connect Telegram Wallet 💎",
         txtCopy: "📋 Copy",
         txtDisconnect: "🔌 Disconnect",
-        txtOnChainSol: "On-Chain SOL (Devnet):",
+        txtOnChainSol: "On-Chain SOL:",
         txtChecking: "⏳ Checking...",
         txtAutoConnectPhantom: "Auto Connect Phantom",
         txtPlaceholderSol: "Or paste Solana address...",
@@ -275,7 +271,6 @@ window.i18n = {
 };
 
 function getCurrentLang() {
-    // الأولوية لـ LocalStorage ثم حالة المستخدم ثم كائن تليجرام ثم الافتراضي (ar)
     return localStorage.getItem('app_lang') || 
            (typeof userState !== 'undefined' && userState?.lang) || 
            window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 
@@ -289,14 +284,12 @@ function t(key, params = {}) {
     if (typeof i18n !== 'undefined' && i18n[lang] && i18n[lang][key] !== undefined) {
         text = i18n[lang][key];
     } else {
-        
         const fallbackLang = lang === 'ar' ? 'en' : 'ar';
         if (typeof i18n !== 'undefined' && i18n[fallbackLang] && i18n[fallbackLang][key] !== undefined) {
             text = i18n[fallbackLang][key];
         }
     }
 
-    //     {name}  {count}
     if (typeof params === 'object' && params !== null) {
         Object.keys(params).forEach(paramKey => {
             text = text.replace(new RegExp(`{${paramKey}}`, 'g'), params[paramKey]);
@@ -343,9 +336,9 @@ function switchLanguage(newLang) {
     if (typeof renderCurrentPage === 'function') {
         renderCurrentPage();
     } else {
-        if (typeof renderHome === 'function') renderHome();
-        if (typeof renderTasks === 'function') renderTasks();
-        if (typeof renderWallet === 'function') renderWallet();
+        if (typeof renderHomePage === 'function') renderHomePage();
+        if (typeof renderTasksPage === 'function') renderTasksPage();
+        if (typeof renderWalletPage === 'function') renderWalletPage();
     }
 }
 
@@ -383,3 +376,4 @@ function applyLanguageSettings() {
 document.addEventListener('DOMContentLoaded', () => {
     applyLanguageSettings();
 });
+        
