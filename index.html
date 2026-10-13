@@ -4,19 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121215">
+    <title>ZELO FC Mobile</title>
     
-    <!-- Telegram Web App SDK -->
+    <!-- Telegram Web App SDK (Fallback Included) -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
-    <!-- TON Connect UI -->
-    <script src="https://cdn.jsdelivr.net/npm/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
     
     <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-        
         (function() {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+            }
+
             var savedLang = localStorage.getItem('app_lang') || 
                             localStorage.getItem('lang') || 
                             localStorage.getItem('language') || 
@@ -27,8 +29,14 @@
             document.documentElement.lang = isAr ? 'ar' : 'en';
             document.documentElement.dir = isAr ? 'rtl' : 'ltr';
 
+            var localUserId = localStorage.getItem('zelo_user_id');
+            if (!localUserId) {
+                localUserId = 'usr_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('zelo_user_id', localUserId);
+            }
+
             window.userState = window.userState || {
-                userId: 'guest',
+                userId: window.Telegram?.WebApp?.initDataUnsafe?.user?.id || localUserId,
                 points: 0,
                 lang: savedLang,
                 walletConnected: false,
@@ -224,12 +232,6 @@
             font-size: 0.95rem !important;
         }
 
-        #ton-connect-btn, 
-        #ton-connect-btn *, 
-        div[tc-root] button {
-            background-color: transparent !important;
-        }
-
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -273,6 +275,7 @@
         </div>
     </main>
 
+    <!-- Bottom Navigation (Solana Wallet Included) -->
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
@@ -298,7 +301,7 @@
 
     <script>
         window.addEventListener('error', function(e) {
-            console.error("Global Error Caught v10:", e);
+            console.error("Global Error Caught Mobile:", e);
             const container = document.getElementById('main-content');
             if (container && container.querySelector('#app-loading')) {
                 container.innerHTML = `
@@ -312,7 +315,7 @@
         });
     </script>
 
-    <!-- JS Scripts -->
+    <!-- JS Scripts (Solana retained, TON removed) -->
     <script src="i18n.js?v=10.0"></script>
     <script src="clubsData.js?v=10.0"></script>
     <script src="data.js?v=10.0"></script> 
@@ -326,9 +329,7 @@
     <script src="tasks.js?v=13.0"></script>
     <script src="leaderboard.js?v=10.0"></script>
     <script src="friends.js?v=10.0"></script>
-    <script src="wallet-ton.js?v=11.0"></script>
     <script src="wallet-solana.js?v=12.0"></script>
-    <script src="ton-connect.js?v=10.0"></script>
     <script src="app.js?v=10.0"></script>
 
 </body>
