@@ -1,5 +1,3 @@
-
-
 const COINS_PER_ZELO_TOKEN = 100;
 const MIN_CLAIM_LIMIT = 1000; // 🎯 الحد الأدنى للسحب/المطالبة
 const BACKEND_URL = "https://zelo-fc.onrender.com";
@@ -33,15 +31,13 @@ function getTelegramId() {
         return localId;
     }
 
-    return 'guest';
+    return (typeof userState !== 'undefined' && userState.userId) ? String(userState.userId) : 'guest';
 }
-
 
 function renderWalletPage(container) {
     if (!container) return;
 
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-
 
     const userCoins = (typeof userState !== 'undefined' && userState.points !== undefined)
         ? Number(userState.points)
@@ -50,21 +46,19 @@ function renderWalletPage(container) {
     const canClaim = userCoins >= MIN_CLAIM_LIMIT;
     const neededCoins = MIN_CLAIM_LIMIT - userCoins;
 
-
     const txtTonWallet = isAr ? 'محفظة TON' : 'TON Wallet';
-    const txtSolanaWallet = isAr ? 'محفظة Solana (Devnet)' : 'Solana Wallet (Devnet)';
+    const txtSolanaWallet = isAr ? 'محفظة Solana (شبكة سولانا)' : 'Solana Wallet (Devnet)';
     const txtConnected = isAr ? '● متصل' : '● Connected';
     const txtConnectTon = isAr ? 'ربط محفظة تلغرام 💎' : 'Connect Telegram Wallet 💎';
     const txtCopy = isAr ? '📋 نسخ' : '📋 Copy';
     const txtDisconnect = isAr ? '🔌 فصل' : '🔌 Disconnect';
-    const txtOnChainSol = isAr ? 'رصيد SOL (Devnet):' : 'On-Chain SOL (Devnet):';
+    const txtOnChainSol = isAr ? 'رصيد SOL:' : 'On-Chain SOL:';
     const txtChecking = isAr ? '⏳ جاري الفحص...' : '⏳ Checking...';
     const txtAutoConnectPhantom = isAr ? 'ربط تلقائي لمحفظة Phantom' : 'Auto Connect Phantom';
     const txtPlaceholderSol = isAr ? 'أو ألصق عنوان محفظة Solana...' : 'Or paste Solana address...';
     const txtSaveAddress = isAr ? '💾 حفظ العنوان' : '💾 Save Address';
     const txtBalanceTitle = isAr ? `رصيد ${TOKEN_NAME}` : `${TOKEN_NAME} Balance`;
     const txtTotalEarned = isAr ? 'إجمالي المكتسب:' : 'Total Earned:';
-
     
     let txtClaimBtn = '';
     if (canClaim) {
@@ -84,7 +78,6 @@ function renderWalletPage(container) {
         : (localStorage.getItem('ton_wallet_address') || '');
 
     const isTonConnected = !!(tonWallet || (window.tonConnectUI && window.tonConnectUI.connected));
-
 
     if (typeof userState !== 'undefined') {
         userState.points = userCoins;
@@ -128,34 +121,7 @@ function renderWalletPage(container) {
     container.innerHTML = `
         ${solanaSpecificStyles}
         
-        <!-- 1. TON WALLET CARD -->
-        <div class="wallet-glass-card" style="border-top: 2px solid #0088cc;">
-            <div class="wallet-header-flex">
-                <div class="wallet-logo-title">
-                    <div class="wallet-logo-sm">
-                        <img src="https://cryptologos.cc/logos/toncoin-ton-logo.png" style="width:18px;height:18px;" alt="TON">
-                    </div>
-                    <span style="color:#fff; font-weight:bold; font-size:0.95rem;">${txtTonWallet}</span>
-                </div>
-                ${isTonConnected ? `<span style="color:#0088cc; font-size:0.75rem; font-weight:bold;">${txtConnected}</span>` : ''}
-            </div>
-
-            ${isTonConnected ? `
-                <div class="address-box-sm" style="color:#0088cc;">
-                    ${tonWallet ? tonWallet.slice(0, 8) + '...' + tonWallet.slice(-8) : 'Connected'}
-                </div>
-                <div style="display: flex; gap: 8px; justify-content: center;">
-                    <button class="btn-action-sm" onclick="copyToClipboard('${tonWallet}')">${txtCopy}</button>
-                    <button class="btn-danger-sm" onclick="triggerDisconnect()">${txtDisconnect}</button>
-                </div>
-            ` : `
-                <button class="btn-glass-ton" onclick="triggerConnect()">
-                    <span>💎</span> ${txtConnectTon}
-                </button>
-            `}
-        </div>
-
-        <!-- 2. SOLANA WALLET CARD -->
+        <!-- 1. SOLANA WALLET CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #AB9FF2;">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -194,7 +160,7 @@ function renderWalletPage(container) {
             `}
         </div>
 
-        <!-- 3. TOKEN BALANCE & CLAIM CARD -->
+        <!-- 2. TOKEN BALANCE & CLAIM CARD -->
         <div class="wallet-glass-card" style="border-top: 2px solid #facc15; background: linear-gradient(135deg, rgba(35, 30, 20, 0.85), rgba(18, 18, 22, 0.95));">
             <div class="wallet-header-flex">
                 <div class="wallet-logo-title">
@@ -212,7 +178,6 @@ function renderWalletPage(container) {
                 </span>
             </div>
 
-            <!-- 🎯 تطبيق شرط التفعيل لزر المطالبة -->
             <button class="btn-claim-main" id="btn-claim-action" onclick="claimCoinsToSolanaWallet()" ${!canClaim ? 'disabled' : ''}>
                 ${txtClaimBtn}
             </button>
@@ -228,12 +193,10 @@ function renderWalletPage(container) {
 
 window.renderWalletPage = renderWalletPage;
 
-
 async function fetchRealSolanaBalance(address) {
     const el = document.getElementById('real-solana-balance');
     try {
         if (window.solanaWeb3) {
-            
             const connection = new window.solanaWeb3.Connection('https://api.devnet.solana.com', 'confirmed');
             const pubKey = new window.solanaWeb3.PublicKey(address);
             const balance = await connection.getBalance(pubKey);
@@ -277,11 +240,6 @@ async function saveSolanaAddressToStateAndDB(solAddress, walletType = 'solana') 
                 if (typeof userState !== 'undefined') {
                     userState.solanaWallet = solAddress;
                 }
-            } else {
-                localStorage.setItem('ton_wallet_address', solAddress);
-                if (typeof userState !== 'undefined') {
-                    userState.tonWallet = solAddress;
-                }
             }
 
             if (typeof showPage === 'function') showPage('wallet');
@@ -311,7 +269,6 @@ window.connectPhantomWallet = function() {
     }
 };
 
-// 6. التحقق من صحة عنوان Solana يدوياً
 window.saveSolanaWalletAddress = function() {
     const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
     const input = document.getElementById('solana-address-input');
@@ -432,4 +389,4 @@ window.copyToClipboard = function(text) {
         alert(msg);
     }
 };
-        
+                                                         
