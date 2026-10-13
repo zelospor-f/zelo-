@@ -30,7 +30,7 @@ function t(key, fallback = '', params = {}) {
 
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
         window.Telegram.WebApp.openLink(url);
     } else {
         window.open(url, '_blank');
@@ -145,29 +145,28 @@ window.renderHomePage = function(container) {
         const arrowIcon = isRtl ? '👈' : '👉';
 
         const state = (typeof userState !== 'undefined' && userState) ? userState : { 
-            username: '@Zelo_fc', 
-            userId: '1654537339' 
+            username: 'Android Player', 
+            userId: localStorage.getItem('zelo_user_id') || 'usr_guest' 
         };
 
-        const txtOfficialSite = t('officialSite', 'Official Website');
-        const txtMarketFeed = t('marketFeed', 'Live Market Feed');
-        const txtLiveMarket = t('liveMarket', 'Live Market');
-        const txtLiveSolPrice = t('liveSolPrice', 'Live $SOL Price');
-        const txtBidAskSpread = t('bidAskSpread', 'Bid/Ask Spread');
-        const txtWeeklyChallenges = t('weeklyChallenges', 'Weekly Challenges');
-        const txtCupsSub = t('cupsSub', '🇪🇺 European Cups • 🇪🇸 Spanish Cups');
-        const txtChallengesRanking = t('challengesRanking', 'Challenges Ranking');
-        const txtRankingSub = t('rankingSub', '⭐ Discover top players & your rank');
-        const txtSupportedClubs = t('supportedClubs', 'Supported Clubs');
-        const txtActive = t('activeCount', 'Active 1');
-        const txtFans = t('fansCount', '3 Fans');
-        const txtLoading = t('loading', 'Loading...');
+        const txtOfficialSite = t('officialSite', isRtl ? 'الموقع الرسمي' : 'Official Website');
+        const txtMarketFeed = t('marketFeed', isRtl ? 'تغذية السوق المباشرة' : 'Live Market Feed');
+        const txtLiveMarket = t('liveMarket', isRtl ? 'سوق حي' : 'Live Market');
+        const txtLiveSolPrice = t('liveSolPrice', isRtl ? 'سعر $SOL المباشر' : 'Live $SOL Price');
+        const txtBidAskSpread = t('bidAskSpread', isRtl ? 'الفارق بين العرض والطلب' : 'Bid/Ask Spread');
+        const txtWeeklyChallenges = t('weeklyChallenges', isRtl ? 'تحديات الأسبوع' : 'Weekly Challenges');
+        const txtCupsSub = t('cupsSub', isRtl ? '🇪🇺 كؤوس أوروبا • 🇪🇸 كؤوس إسبانيا' : '🇪🇺 European Cups • 🇪🇸 Spanish Cups');
+        const txtChallengesRanking = t('challengesRanking', isRtl ? 'ترتيب التحديات' : 'Challenges Ranking');
+        const txtRankingSub = t('rankingSub', isRtl ? '⭐ اكتشف أبطال التوقعات وترتيبك' : '⭐ Discover top players & your rank');
+        const txtSupportedClubs = t('supportedClubs', isRtl ? 'الأندية المحددة' : 'Supported Clubs');
+        const txtActive = t('activeCount', isRtl ? 'نشط 1' : 'Active 1');
+        const txtLoading = t('loading', isRtl ? 'جاري التحميل...' : 'Loading...');
         const txtTime1m = '-1m';
         const txtTime30s = '-30s';
         const txtTimeNow = 'Now';
         const txtTimeHigh = 'High';
 
-        const username = state.username || '@Zelo_fc';
+        const username = state.username || 'Android Player';
         const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
         const avatarSrc = state.photoUrl ? state.photoUrl : fallbackAvatar;
 
@@ -395,7 +394,7 @@ window.renderHomePage = function(container) {
 
                 <div id="challenges-card" class="action-banner" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
                     <div class="banner-icon-wrapper">
-                        <span style="font-size:1.2rem;">🇬🇧</span>
+                        <span style="font-size:1.2rem;">⚽</span>
                     </div>
                     <div style="flex-grow: 1; text-align: ${textAlign};">
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtWeeklyChallenges}</h3>
@@ -417,31 +416,4 @@ window.renderHomePage = function(container) {
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
-                                                        <h4 style="color: #fff; margin: 0; font-size: 0.88rem; font-weight: 800;">${txtSupportedClubs}</h4>
-                        </div>
-                        <span style="color: #14F195; font-size: 0.72rem; font-weight: 800;">${txtActive}</span>
-                    </div>
-
-                    <div class="glass-club-card">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="club-logo-wrapper">
-                                <span style="font-size: 1.2rem;">🔴</span>
-                            </div>
-                            <div style="text-align: ${textAlign};">
-                                <div style="color: #fff; font-weight: 800; font-size: 0.9rem;">Liverpool FC</div>
-                                <div style="color: #94a3b8; font-size: 0.72rem;">${txtFans}</div>
-                            </div>
-                        </div>
-                        <div class="club-points-badge">100 ZELOFC</div>
-                    </div>
-                </div>
-            </div>
-        `;
-
-        window.updateHomeSolPrice();
-        window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
-
-    } catch (err) {
-        console.error("Error rendering home page:", err);
-    }
-};
+                            <h4 style="color:
