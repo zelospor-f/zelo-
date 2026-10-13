@@ -25,7 +25,6 @@ let userState = {
     tasks: typeof window.defaultTasksData !== "undefined" ? window.defaultTasksData.map(task => ({...task})) : [] 
 };
 
-let tonConnectUI = null;
 const tg = window.Telegram?.WebApp;
 
 function safeT(key, fallback) {
@@ -40,90 +39,42 @@ function safeT(key, fallback) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    if (typeof window.Telegram !== "undefined" && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+    // دعم بيئة أندرويد المستقلة أو تلجرام
+    const localFallbackId = localStorage.getItem('zelo_user_id') || 'usr_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('zelo_user_id', localFallbackId);
+
+    if (typeof window.Telegram !== "undefined" && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe?.user) {
+        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
         
-        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            const tgUser = tg.initDataUnsafe.user;
-            userState.username = tgUser.username ? `@${tgUser.username}` : `${tgUser.first_name} ${tgUser.last_name || ''}`.trim();
-            userState.userId = String(tgUser.id);
-            userState.userParam = tgUser.username || String(tgUser.id);
-            
-            if (tgUser.photo_url) {
-                userState.photoUrl = tgUser.photo_url;
-            }
-            
-            if (tgUser.language_code && tgUser.language_code.startsWith('en')) {
-                userState.lang = 'en';
-            }
-
-            if (tg.initDataUnsafe.start_param && tg.initDataUnsafe.start_param.startsWith('ref_')) {
-                const referrerId = tg.initDataUnsafe.start_param.replace('ref_', '');
-                if (String(referrerId) !== String(userState.userId)) {
-                    userState.pendingReferrer = referrerId;
-                }
-            }
-
-        } else {
-            userState.username = "Local Tester";
-            userState.userId = "123456789"; 
-            userState.userParam = "123456789";
+        userState.username = tgUser.username ? `@${tgUser.username}` : `${tgUser.first_name} ${tgUser.last_name || ''}`.trim();
+        userState.userId = String(tgUser.id);
+        userState.userParam = tgUser.username || String(tgUser.id);
+        
+        if (tgUser.photo_url) {
+            userState.photoUrl = tgUser.photo_url;
         }
+        
+        if (tgUser.language_code && tgUser.language_code.startsWith('en')) {
+            userState.lang = 'en';
+        }
+
+        if (window.Telegram.WebApp.initDataUnsafe.start_param && window.Telegram.WebApp.initDataUnsafe.start_param.startsWith('ref_')) {
+            const referrerId = window.Telegram.WebApp.initDataUnsafe.start_param.replace('ref_', '');
+            if (String(referrerId) !== String(userState.userId)) {
+                userState.pendingReferrer = referrerId;
+            }
+        }
+    } else {
+        userState.username = "Android Player";
+        userState.userId = localFallbackId; 
+        userState.userParam = localFallbackId;
     }
 
     if(typeof applyLanguageSettings === 'function') applyLanguageSettings();
-    initTonConnect();
     fetchDataAndRoute();
 });
-
-function initTonConnect() {
-    try {
-        if (typeof TON_CONNECT_UI !== 'undefined' && !tonConnectUI) {
-            tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
-                manifestUrl: 'https://zelo-fc.onrender.com/tonconnect-manifest.json',
-                buttonRootId: null
-            });
-
-            tonConnectUI.onStatusChange(async (walletInfo) => {
-                if (walletInfo) {
-                    const rawAddress = walletInfo.account.address;
-                    const userFriendlyAddress = TON_CONNECT_UI.toUserFriendlyAddress ? TON_CONNECT_UI.toUserFriendlyAddress(rawAddress) : rawAddress;
-
-                    userState.walletConnected = true;
-                    userState.walletAddress = userFriendlyAddress;
-                    localStorage.setItem('ton_wallet', userFriendlyAddress);
-                    
-                    if (typeof window.saveWalletAddressToDB === "function") {
-                        await window.saveWalletAddressToDB(userFriendlyAddress);
-                    } else if (supabaseClient && userState.userId) {
-                        await supabaseClient.from('users')
-                            .update({ wallet_address: userFriendlyAddress })
-                            .eq('telegram_id', userState.userId);
-                    }
-                } else {
-                    userState.walletConnected = false;
-                    userState.walletAddress = null;
-                    localStorage.removeItem('ton_wallet');
-
-                    if (typeof window.removeWalletAddressFromDB === "function") {
-                        await window.removeWalletAddressFromDB();
-                    } else if (supabaseClient && userState.userId) {
-                        await supabaseClient.from('users')
-                            .update({ wallet_address: null })
-                            .eq('telegram_id', userState.userId);
-                    }
-                }
-                
-                if (userState.hasLoggedIn && document.querySelector(".nav-item[onclick*='wallet']")?.classList.contains("active")) {
-                    if(typeof renderWalletPage === "function") renderWalletPage(document.getElementById("main-content"));
-                }
-            });
-        }
-    } catch (error) {
-    }
-}
 
 async function fetchDataAndRoute() {
     if (!supabaseClient) {
@@ -309,5 +260,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-        }
-        
+                    }
