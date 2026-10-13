@@ -1,7 +1,7 @@
 window.escapeHTML = str => str ? str.replace(/[&<>'"]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[t] || t)) : '';
 
 window.renderLeaderboardPage = async function(container) {
-    const isAr = userState?.lang === 'ar';
+    const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
     const tFunc = typeof t === 'function' ? t : k => k;
     
     container.innerHTML = `<div style="text-align:center; padding:40px; color:#00FF87; font-weight:800; font-size:1rem; animation: pulse 1.5s infinite;">
@@ -11,7 +11,7 @@ window.renderLeaderboardPage = async function(container) {
     try {
         let clubPointsMap = {}, clubMembersMap = {};
 
-        if (typeof supabaseClient !== 'undefined') {
+        if (typeof supabaseClient !== 'undefined' && supabaseClient !== null) {
             const { data } = await supabaseClient.from('club_fans_rankings').select('club_id, total_fan_points');
             data?.forEach(fan => {
                 clubPointsMap[fan.club_id] = (clubPointsMap[fan.club_id] || 0) + (fan.total_fan_points || 0);
@@ -86,7 +86,7 @@ window.renderLeaderboardPage = async function(container) {
 };
 
 window.openSpecificClubFans = async function(clubId) {
-    const isAr = userState?.lang === 'ar';
+    const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
     const tFunc = typeof t === 'function' ? t : k => k;
     let club = null;
 
@@ -106,7 +106,7 @@ window.openSpecificClubFans = async function(clubId) {
     try {
         let fansTableRows = "";
         
-        if (typeof supabaseClient !== 'undefined') {
+        if (typeof supabaseClient !== 'undefined' && supabaseClient !== null) {
             const { data: fansList } = await supabaseClient
                 .from('club_fans_rankings')
                 .select('telegram_id, total_fan_points, referrals_count, users!inner(username)')
@@ -120,7 +120,7 @@ window.openSpecificClubFans = async function(clubId) {
                 const colors = ['#ffd700', '#c0c0c0', '#cd7f32'];
 
                 fansTableRows = fansList.map((fan, idx) => {
-                    const isMe = fan.telegram_id == currentUserId;
+                    const isMe = String(fan.telegram_id) === String(currentUserId);
                     const safeName = window.escapeHTML(fan.users?.username || tFunc('anonymousFan') || (isAr ? 'مشجع مجهول' : 'Anonymous Fan'));
 
                     return `
@@ -184,3 +184,4 @@ window.openSpecificClubFans = async function(clubId) {
         console.error("Club details error:", error);
     }
 };
+                                
