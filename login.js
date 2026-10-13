@@ -1,5 +1,3 @@
-
-
 window.tempSelectedClubs = window.tempSelectedClubs || [];
 
 function getInjectableStyles() {
@@ -73,11 +71,13 @@ function safeT(key, fallbackText) {
 }
 
 function getDefaultLanguage() {
+    const saved = localStorage.getItem('app_lang');
+    if (saved) return saved;
     return window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code?.startsWith('ar') ? 'ar' : 'en';
 }
 
 function getLanguageSelector() {
-    const isAr = userState.lang === 'ar';
+    const isAr = (userState?.lang === 'ar');
     return `
         <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 12px;">
             <div class="lang-btn ${isAr ? 'lang-btn-active' : ''}" onclick="setLanguage('ar')">🇸🇦 العربية</div>
@@ -87,10 +87,11 @@ function getLanguageSelector() {
 }
 
 window.setLanguage = async function(lang) {
-    userState.lang = lang;
+    if (typeof userState !== 'undefined') userState.lang = lang;
+    localStorage.setItem('app_lang', lang);
     if (typeof applyLanguageSettings === 'function') applyLanguageSettings();
 
-    if (typeof supabaseClient !== 'undefined' && userState.userId) {
+    if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState?.userId) {
         try {
             await supabaseClient.from('users').upsert({ telegram_id: userState.userId, lang }, { onConflict: 'telegram_id' });
         } catch (e) {}
@@ -116,42 +117,46 @@ window.renderLoginScreen = function() {
     if (topBar) topBar.style.display = 'none';
     if (bottomNav) bottomNav.style.display = 'none';
 
-    if (!userState.lang) userState.lang = getDefaultLanguage();
+    if (typeof userState !== 'undefined' && !userState.lang) {
+        userState.lang = getDefaultLanguage();
+    }
 
     const mainContent = document.getElementById("main-content");
-    const isAr = userState.lang === 'ar';
+    const isAr = (userState?.lang === 'ar');
 
     let countriesHtml = "";
 
-    for (const countryKey in allWorldCupCountriesClubs) {
-        const clubsInCountry = allWorldCupCountriesClubs[countryKey];
-        if (!clubsInCountry?.length) continue;
+    if (typeof allWorldCupCountriesClubs !== 'undefined') {
+        for (const countryKey in allWorldCupCountriesClubs) {
+            const clubsInCountry = allWorldCupCountriesClubs[countryKey];
+            if (!clubsInCountry?.length) continue;
 
-        const flag = clubsInCountry[0].countryFlag;
-        let countryName = typeof getCountryName === 'function' ? (getCountryName(flag) || countryKey) : countryKey;
-        countryName = countryName.charAt(0).toUpperCase() + countryName.slice(1);
+            const flag = clubsInCountry[0].countryFlag;
+            let countryName = typeof getCountryName === 'function' ? (getCountryName(flag) || countryKey) : countryKey;
+            countryName = countryName.charAt(0).toUpperCase() + countryName.slice(1);
 
-        const selectedInThisCountry = clubsInCountry.filter(c => window.tempSelectedClubs.includes(String(c.id))).length;
-        const selectionBadge = selectedInThisCountry > 0 
-            ? `<span style="background: rgba(0, 255, 135, 0.2); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; color: #00FF87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: bold;">✓ ${selectedInThisCountry}</span>`
-            : '';
+            const selectedInThisCountry = clubsInCountry.filter(c => window.tempSelectedClubs.includes(String(c.id))).length;
+            const selectionBadge = selectedInThisCountry > 0 
+                ? `<span style="background: rgba(0, 255, 135, 0.2); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; color: #00FF87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: bold;">✓ ${selectedInThisCountry}</span>`
+                : '';
 
-        countriesHtml += `
-            <div class="glass-card-elegant interactive-card" onclick="showClubsForCountry('${countryKey}')" 
-                 style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <span style="font-size: 1.6rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
-                    <h4 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 800;">${countryName}</h4>
-                    ${selectionBadge}
+            countriesHtml += `
+                <div class="glass-card-elegant interactive-card" onclick="showClubsForCountry('${countryKey}')" 
+                     style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 1.6rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
+                        <h4 style="margin: 0; color: #fff; font-size: 0.95rem; font-weight: 800;">${countryName}</h4>
+                        ${selectionBadge}
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; color: #00FF87; border: 1px solid rgba(255,255,255,0.1);">
+                            ${clubsInCountry.length} ⚽
+                        </span>
+                        <span style="color: #666; font-size: 0.9rem;">${isAr ? '👈' : '👉'}</span>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; color: #00FF87; border: 1px solid rgba(255,255,255,0.1);">
-                        ${clubsInCountry.length} ⚽
-                    </span>
-                    <span style="color: #666; font-size: 0.9rem;">${isAr ? '👈' : '👉'}</span>
-                </div>
-            </div>
-        `;
+            `;
+        }
     }
 
     mainContent.innerHTML = `
@@ -190,11 +195,11 @@ window.renderLoginScreen = function() {
 };
 
 window.showClubsForCountry = function(countryKey) {
-    const clubs = allWorldCupCountriesClubs[countryKey];
+    const clubs = allWorldCupCountriesClubs ? allWorldCupCountriesClubs[countryKey] : null;
     if (!clubs) return;
 
     const mainContent = document.getElementById("main-content");
-    const isAr = userState.lang === 'ar';
+    const isAr = (userState?.lang === 'ar');
 
     let clubsHtml = clubs.map(club => {
         const stringClubId = String(club.id);
@@ -271,12 +276,14 @@ window.confirmLogin = async function() {
         return;
     }
 
-    userState.selectedClubs = [...window.tempSelectedClubs];
+    if (typeof userState !== 'undefined') {
+        userState.selectedClubs = [...window.tempSelectedClubs];
+    }
     
     const btn = document.getElementById('confirm-btn');
     if (btn) btn.innerHTML = '⏳...';
 
-    if (typeof supabaseClient !== 'undefined' && userState.userId) {
+    if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState?.userId) {
         try {
             const { error: userErr } = await supabaseClient.from('users').upsert({
                 telegram_id: userState.userId,
@@ -322,7 +329,9 @@ window.confirmLogin = async function() {
         }
     }
 
-    userState.hasLoggedIn = true;
+    if (typeof userState !== 'undefined') {
+        userState.hasLoggedIn = true;
+    }
 
     const topBar = document.getElementById('top-bar');
     const bottomNav = document.getElementById('bottom-nav');
@@ -332,3 +341,4 @@ window.confirmLogin = async function() {
     if (typeof updateTopBar === 'function') updateTopBar();
     if (typeof showPage === 'function') showPage('home');
 };
+    
