@@ -1,5 +1,3 @@
-
-
 (function() {
     // 1. Default tasks list
     window.defaultTasksData = [
@@ -11,7 +9,6 @@
         { id: "tg_group_ar", textAr: "الانضمام للمجموعة العربية", textEn: "Join Arabic Group", points: 300, completed: false, url: "https://t.me/ZeloSport_Arab" },
         { id: "tg_group_en", textAr: "الانضمام للمجموعة الأجنبية", textEn: "Join Global Group", points: 300, completed: false, url: "https://t.me/ZeloSport_Global" }
     ];
-
 
     async function apiVerifyTask(taskId, points) {
         if (!supabaseClient) return { success: false, message: "No database connection" };
@@ -68,6 +65,32 @@
             return { success: false };
         }
     }
+
+    window.claimDaily = async function() {
+        const btnDaily = document.getElementById('btn-daily-claim');
+        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+
+        if (btnDaily) {
+            btnDaily.disabled = true;
+            btnDaily.innerHTML = isAr ? '⏳ جاري الاستلام...' : '⏳ Claiming...';
+        }
+
+        const result = await apiClaimDaily();
+        if (result.success) {
+            userState.dailyCheckInClaimed = true;
+            userState.points = (userState.points || 0) + result.pointsAdded;
+
+            if (typeof updateTopBar === "function") updateTopBar();
+            alert(isAr ? `تم استلام مكافأة الحضور اليومي بنجاح (+${result.pointsAdded} عملة).` : `Daily reward claimed successfully (+${result.pointsAdded} Coins).`);
+            renderTasksPage(document.getElementById("main-content"));
+        } else {
+            alert(isAr ? 'فشل استلام المكافأة اليومية، حاول لاحقاً.' : 'Failed to claim daily reward, try again later.');
+            if (btnDaily) {
+                btnDaily.disabled = false;
+                btnDaily.innerHTML = isAr ? 'استلام ✨' : 'Claim ✨';
+            }
+        }
+    };
 
     async function apiClaimDaily() {
         if (!supabaseClient) return { success: false };
@@ -154,7 +177,6 @@
             console.error("Error syncing task data:", error);
         }
     }
-
 
     window.renderTasksPage = async function(container) {
         if (!userState.tasks || userState.tasks.length === 0) {
@@ -286,7 +308,6 @@
             const btnText = task.completed ? (isAr ? 'مكتمل ✅' : 'Done ✅') : (isAr ? 'انطلق 🚀' : 'Go 🚀');
             const btnState = task.completed ? 'disabled' : '';
 
-            // استخدام الخيار الثاني للمهمة الخاصة بربط X
             let buttonAction = `onclick="executeTask('${task.id}', '${task.url}', ${task.points})"`;
             if (task.id === 'connect_x') {
                 buttonAction = `onclick="startXLogin('${task.id}', ${task.points})"`;
@@ -363,17 +384,15 @@
         if (!task || task.completed || task.isProcessing) return;
 
         task.isProcessing = true;
-
         const xAuthUrl = task.url && task.url !== '#' ? task.url : "https://x.com/Zelo_Sport";
 
         try {
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
                 window.Telegram.WebApp.openLink(xAuthUrl);
             } else {
                 window.open(xAuthUrl, '_blank');
             }
         } catch (e) {
-            console.error("Error opening X link:", e);
             window.open(xAuthUrl, '_blank');
         }
 
@@ -408,7 +427,6 @@
                     }
                 }
             } catch (error) {
-                console.error("Connection error:", error);
                 task.isProcessing = false; 
                 if (btn) {
                     btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
@@ -428,88 +446,8 @@
         task.isProcessing = true; 
 
         try {
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-                if (url.includes("t.me")) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                if (url.includes("t.me") && window.Telegram.WebApp.openTelegramLink) {
                     window.Telegram.WebApp.openTelegramLink(url);
-                } else {
-                    window.Telegram.WebApp.openLink(url);
-                }
-            } else {
-                window.open(url, '_blank');
-            }
-        } catch (e) {
-            console.error("Error opening link:", e);
-            window.open(url, '_blank');
-        }
-
-        const btn = document.getElementById(`btn-task-${taskId}`);
-        if (btn) {
-            btn.innerHTML = isAr ? "⏳ تحقق..." : 
-                                btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
-                btn.className = "btn-task-done"; 
-                btn.disabled = true;
-            }
-
-            setTimeout(async () => {
-                try {
-                    const response = await apiVerifyTask(taskId, points);
-                    task.isProcessing = false; 
-
-                    if (response.success) {
-                        task.completed = true;
-                        
-                        if (!response.alreadyDone) {
-                            userState.points = (userState.points || 0) + points; 
-                            alert(`🎉 ${isAr ? 'تم إضافة النقاط بنجاح:' : 'Points added successfully:'} +${points} ZELO.`);
-                        }
-
-                        if (typeof updateTopBar === "function") updateTopBar();
-                        renderTasksPage(document.getElementById("main-content")); 
-                    } else {
-                                            alert(isAr ? "حدث خطأ أثناء حفظ المهمة، يرجى المحاولة لاحقاً." : "An error occurred, please try again.");
-                    if (btn) {
-                        btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
-                        btn.className = "btn-task-go";
-                        btn.disabled = false;
-                    }
-                }
-            } catch (error) {
-                console.error("Connection error:", error);
-                task.isProcessing = false; 
-                if (btn) {
-                    btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
-                    btn.className = "btn-task-go";
-                    btn.disabled = false;
-                }
-            }
-        }, 4000); 
-    };
-
-    window.claimDaily = async function() {
-        if (userState.dailyCheckInClaimed) return;
-        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-
-        const btn = document.getElementById('btn-daily-claim');
-        if (btn) {
-            btn.innerHTML = "⏳ ...";
-            btn.disabled = true;
-        }
-
-        const res = await apiClaimDaily();
-        if (res.success) {
-            userState.dailyCheckInClaimed = true;
-            userState.points = (userState.points || 0) + res.pointsAdded;
-            
-            alert(`🎁 ${isAr ? 'تم استلام المكافأة اليومية:' : 'Daily reward claimed:'} +${res.pointsAdded} ZELO!`);
-            
-            if (typeof updateTopBar === "function") updateTopBar();
-            renderTasksPage(document.getElementById("main-content"));
-        } else {
-            alert(isAr ? "فشل استلام المكافأة اليومية. حاول لاحقاً." : "Failed to claim daily reward.");
-            if (btn) {
-                btn.innerHTML = isAr ? 'استلام ✨' : 'Claim ✨';
-                btn.disabled = false;
-            }
-        }
-    };
-})();
+                } else if (window.Telegram.WebApp.openLink) {
+                    window
