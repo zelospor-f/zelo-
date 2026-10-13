@@ -10,7 +10,7 @@ window.openLegendaryRankingScreen = function() {
     const existingScreen = document.getElementById('ranking-full-screen');
     if (existingScreen) existingScreen.remove();
 
-    const isAr = userState.lang === 'ar';
+    const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
     const title = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
 
     const screen = document.createElement('div');
@@ -56,40 +56,52 @@ window.renderHomeRankingWidget = async function(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const currentUserId = userState.userId || userState.telegram_id;
-    const isAr = userState.lang === 'ar'; 
+    const currentUserId = (typeof userState !== 'undefined') ? (userState.userId || userState.telegram_id || localStorage.getItem('telegram_id')) : 'guest';
+    const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar'); 
 
     try {
-        const { data: rankings, error: topError } = await supabaseClient
-            .from('weekly_match_rankings')
-            .select('*')
-            .eq('is_eliminated', false)
-            .eq('category', 'weekly') 
-            .order('points_earned', { ascending: false })
-            .limit(50);
+        let rankings = [];
+        let myRank = null;
+        let myData = null;
+        let predictions = [];
 
-        if (topError) throw topError;
+        if (typeof supabaseClient !== 'undefined' && supabaseClient !== null) {
+            const { data: topData, error: topError } = await supabaseClient
+                .from('weekly_match_rankings')
+                .select('*')
+                .eq('is_eliminated', false)
+                .eq('category', 'weekly') 
+                .order('points_earned', { ascending: false })
+                .limit(50);
 
-        const { data: myRank } = await supabaseClient.rpc('get_user_rank', {
-            p_telegram_id: currentUserId,
-            p_category: 'weekly'
-        });
+            if (!topError) rankings = topData || [];
 
-        const { data: myData } = await supabaseClient
-            .from('weekly_match_rankings')
-            .select('points_earned')
-            .eq('telegram_id', currentUserId)
-            .eq('category', 'weekly')
-            .maybeSingle();
+            try {
+                const { data: rankRes } = await supabaseClient.rpc('get_user_rank', {
+                    p_telegram_id: currentUserId,
+                    p_category: 'weekly'
+                });
+                myRank = rankRes;
+            } catch (e) {}
 
-        const { data: predictions } = await supabaseClient
-            .from('match_predictions')
-            .select('*')
-            .eq('telegram_id', currentUserId)
-            .order('created_at', { ascending: false });
+            const { data: mineRes } = await supabaseClient
+                .from('weekly_match_rankings')
+                .select('points_earned')
+                .eq('telegram_id', currentUserId)
+                .eq('category', 'weekly')
+                .maybeSingle();
+            myData = mineRes;
+
+            const { data: predData } = await supabaseClient
+                .from('match_predictions')
+                .select('*')
+                .eq('telegram_id', currentUserId)
+                .order('created_at', { ascending: false });
+            predictions = predData || [];
+        }
 
         let matches = [];
-        if (predictions?.length > 0) {
+        if (predictions?.length > 0 && typeof supabaseClient !== 'undefined' && supabaseClient !== null) {
             const matchIds = predictions.map(p => p.match_id);
             const { data: matchesData } = await supabaseClient
                 .from('matches')
@@ -286,17 +298,19 @@ window.renderHomeRankingWidget = async function(containerId) {
 
         const displayRank = myRank || '-';
         const badgeClass = (myRank && myRank <= 3) ? 'badge-top' : 'badge-normal';
+        const userName = (typeof userState !== 'undefined' && userState.username) ? userState.username : 'User';
+        const userPhoto = (typeof userState !== 'undefined' && userState.photoUrl) ? userState.photoUrl : null;
 
         topHtml += `
             <div class="legendary-card" style="margin-top: -10px; padding-top: 12px;">
                 <div class="legendary-rank-badge ${badgeClass}">#${displayRank}</div>
                 
                 <div style="display: flex; justify-content: center; margin-bottom: 6px;">
-                    ${generateLegendaryAvatar(userState.username || 'User', userState.photoUrl, '50px')}
+                    ${generateLegendaryAvatar(userName, userPhoto, '50px')}
                 </div>
                 
                 <div class="legendary-info-row" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
-                    <div class="legendary-name" style="font-size: 1rem; margin: 0;">${userState.username || 'User'}</div>
+                    <div class="legendary-name" style="font-size: 1rem; margin: 0;">${userName}</div>
                     <div class="legendary-points" style="padding: 3px 8px; margin: 0;">
                         <span style="font-size: 0.85rem;">🏆</span>
                         <span style="color: var(--accent-gold, #fcb045); font-weight: 900; font-size: 0.95rem;">${myData ? myData.points_earned : 0}</span>
