@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr" id="app-html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#121215">
+    
+    <!-- Telegram Web App SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- TON Connect UI -->
+    <script src="https://cdn.jsdelivr.net/npm/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    
+    <!-- Supabase JS Client v2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        
+        (function() {
+            var savedLang = localStorage.getItem('app_lang') || 
+                            localStorage.getItem('lang') || 
+                            localStorage.getItem('language') || 
+                            window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 
+                            'en';
+            
+            var isAr = savedLang.startsWith('ar');
+            document.documentElement.lang = isAr ? 'ar' : 'en';
+            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+
+            window.userState = window.userState || {
+                userId: 'guest',
+                points: 0,
+                lang: savedLang,
+                walletConnected: false,
+                walletAddress: ''
+            };
+        })();
+    </script>
+
+    <style>
+        :root {
+            --bg-dark: #121215;        
+            --bg-card: rgba(28, 28, 34, 0.6); 
+            --text-main: #f8fafc;      
+            --text-muted: #888899;     
+            --accent-purple: #833ab4;
+            --accent-red: #fd1d1d;
+            --accent-gold: #fcb045;
+            --glass-border: rgba(255, 255, 255, 0.05);
+        }
+
+        button, 
+        input[type="button"], 
+        input[type="submit"] {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            background-color: transparent;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            user-select: none; 
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent; 
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { display: none; }
+
+        .container {
+            margin-top: 85px; 
+            margin-bottom: 100px;
+            padding: 15px;
+            min-height: calc(100vh - 185px);
+            animation: fadeUp 0.6s ease-out forwards; 
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 10px;
+            left: 15px;
+            right: 15px;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(18, 18, 22, 0.8);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 0 20px;
+            border-radius: 16px;
+            border: 1px solid rgba(252, 176, 69, 0.2); 
+            box-shadow: 0 5px 25px rgba(253, 29, 29, 0.15);
+            z-index: 1000;
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 4%;
+            right: 4%;
+            width: 92%;
+            height: 70px;
+            background: rgba(18, 18, 22, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), 0 0 15px rgba(131, 58, 180, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            background: none;
+            border: none;
+            outline: none;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 20px;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .icon-wrapper {
+            font-size: 1.5rem;
+            margin-bottom: 3px;
+            transition: all 0.3s ease;
+            filter: grayscale(100%) opacity(0.6); 
+        }
+
+        .nav-text {
+            font-size: 0.7rem;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(131, 58, 180, 0.15), rgba(253, 29, 29, 0.15));
+            border: 1px solid rgba(253, 29, 29, 0.3);
+            box-shadow: inset 0 0 10px rgba(252, 176, 69, 0.2);
+        }
+
+        .nav-item.active .icon-wrapper {
+            filter: grayscale(0%) opacity(1);
+            animation: floatIcon 2.5s ease-in-out infinite, pulseGlowIcon 2s infinite alternate;
+        }
+
+        .nav-item.active .nav-text {
+            color: var(--accent-gold);
+            text-shadow: 0 0 5px var(--accent-red);
+        }
+
+        .btn-action {
+            position: relative;
+            width: 100%;
+            background: linear-gradient(270deg, var(--accent-purple), var(--accent-red), var(--accent-gold), var(--accent-red), var(--accent-purple));
+            background-size: 400% 400%;
+            animation: gradientMove 3s ease infinite, pulseShadow 2s infinite alternate;
+            color: #fff;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 900; 
+            font-size: 1.1rem;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: transform 0.2s;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .btn-wallet-action {
+            background: rgba(255, 255, 255, 0.08) !important;
+            color: var(--text-main) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            padding: 8px 18px !important;
+            border-radius: 10px !important;
+            font-size: 0.85rem !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .btn-wallet-action:active {
+            transform: scale(0.95);
+            border-color: var(--accent-gold) !important;
+            background: rgba(252, 176, 69, 0.15) !important;
+        }
+
+        .wallet-card-row {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            margin: 10px 0 !important;
+        }
+
+        .wallet-value {
+            font-family: monospace !important;
+            font-weight: bold !important;
+            font-size: 0.95rem !important;
+        }
+
+        #ton-connect-btn, 
+        #ton-connect-btn *, 
+        div[tc-root] button {
+            background-color: transparent !important;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes pulseShadow {
+            0% { box-shadow: 0 0 10px rgba(253, 29, 29, 0.4), 0 5px 15px rgba(131, 58, 180, 0.2); }
+            100% { box-shadow: 0 0 25px rgba(252, 176, 69, 0.6), 0 5px 25px rgba(253, 29, 29, 0.4); }
+        }
+
+        @keyframes floatIcon {
+            0% { transform: translateY(0px) scale(1.1); }
+            50% { transform: translateY(-5px) scale(1.15); } 
+            100% { transform: translateY(0px) scale(1.1); }
+        }
+
+        @keyframes pulseGlowIcon {
+            0% { filter: drop-shadow(0 0 5px var(--accent-purple)); }
+            50% { filter: drop-shadow(0 0 15px var(--accent-red)); }
+            100% { filter: drop-shadow(0 0 8px var(--accent-gold)); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="top-bar" id="top-bar" style="display: none;">
+        <div id="club" style="font-size: 0.9rem; color: #e0e0e0; font-weight: bold;"></div>
+        <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); box-shadow: 0 0 10px rgba(252, 176, 69, 0.2);"></div>
+    </header>
+
+    <main class="container" id="main-content">
+        <div id="app-loading" style="text-align: center; padding-top: 50px;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">⚽</div>
+            <div style="color: var(--accent-gold); font-weight: bold;">Loading ZELO FC...</div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav" id="bottom-nav" style="display: none;">
+        <button class="nav-item active" onclick="showPage('home')">
+            <span class="icon icon-wrapper">🏠</span>
+            <span class="nav-text" data-i18n="navHome">Home</span>
+        </button>
+        <button class="nav-item" onclick="showPage('tasks')">
+            <span class="icon icon-wrapper">🛠</span>
+            <span class="nav-text" data-i18n="navTasks">Tasks</span>
+        </button>
+        <button class="nav-item" onclick="showPage('friends')">
+            <span class="icon icon-wrapper">👥</span>
+            <span class="nav-text" data-i18n="navFriends">Friends</span>
+        </button>
+        <button class="nav-item" onclick="showPage('leaderboard')">
+            <span class="icon icon-wrapper">🏆</span>
+            <span class="nav-text" data-i18n="navLeaderboard">Leaderboard</span>
+        </button>
+        <button class="nav-item" onclick="showPage('wallet')">
+            <span class="icon icon-wrapper">👛</span>
+            <span class="nav-text" data-i18n="navWallet">Wallet</span>
+        </button>
+    </nav>
+
+    <script>
+        window.addEventListener('error', function(e) {
+            console.error("Global Error Caught v10:", e);
+            const container = document.getElementById('main-content');
+            if (container && container.querySelector('#app-loading')) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 30px; color: #ff4d4d;">
+                        <h3>⚠️ An error occurred while loading ZELO FC</h3>
+                        <p style="font-size: 0.85rem; color: #aaa;">${e.message || 'Unknown error'}</p>
+                        <button onclick="location.reload(true)" class="btn-action" style="margin-top:15px; width: auto; padding: 10px 20px;">Reload</button>
+                    </div>
+                `;
+            }
+        });
+    </script>
+
+    <!-- JS Scripts -->
+    <script src="i18n.js?v=10.0"></script>
+    <script src="clubsData.js?v=10.0"></script>
+    <script src="data.js?v=10.0"></script> 
+    <script src="countries.js?v=10.0"></script>
+    <script src="i18n-helpers.js?v=10.0"></script>
+    <script src="ranking.js?v=10.0"></script>
+    <script src="login.js?v=10.0"></script>
+    <script src="weekly_match_rankings.js?v=10.0"></script>
+    <script src="predictions_ranking.js?v=10.0"></script> 
+    <script src="home.js?v=15.0"></script>
+    <script src="tasks.js?v=13.0"></script>
+    <script src="leaderboard.js?v=10.0"></script>
+    <script src="friends.js?v=10.0"></script>
+    <script src="wallet-ton.js?v=11.0"></script>
+    <script src="wallet-solana.js?v=12.0"></script>
+    <script src="ton-connect.js?v=10.0"></script>
+    <script src="app.js?v=10.0"></script>
+
+</body>
+</html>
