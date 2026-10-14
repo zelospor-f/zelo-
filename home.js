@@ -38,7 +38,7 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
     }
 };
 
-// دوال الاستدعاء المعزولة للبروفايل والسوق (سيتم كتابة كودهما في ملفات معزولة profile.js و nft-market.js)
+// دوال الاستدعاء المعزولة للبروفايل والسوق
 window.openProfileScreen = window.openProfileScreen || function() {
     if (typeof window.renderProfilePage === 'function') {
         window.renderProfilePage();
@@ -161,11 +161,6 @@ window.renderHomePage = function(container) {
         const textAlign = isRtl ? 'right' : 'left';
         const arrowIcon = isRtl ? '👈' : '👉';
 
-        const state = (typeof userState !== 'undefined' && userState) ? userState : { 
-            username: 'Android Player', 
-            userId: localStorage.getItem('zelo_user_id') || 'usr_guest' 
-        };
-
         const txtOfficialSite = t('officialSite', isRtl ? 'الموقع الرسمي' : 'Official Site');
         const txtMarketFeed = t('marketFeed', isRtl ? 'تغذية السوق المباشرة' : 'Live Market Feed');
         const txtLiveMarket = t('liveMarket', isRtl ? 'سوق حي' : 'Live Market');
@@ -185,10 +180,6 @@ window.renderHomePage = function(container) {
         const txtTimeNow = 'Now';
         const txtTimeHigh = 'High';
 
-        const username = state.username || 'Android Player';
-        const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=1c1c22&color=14F195&size=128&bold=true`;
-        const avatarSrc = state.photoUrl ? state.photoUrl : fallbackAvatar;
-
         target.innerHTML = `
             <style>
                 .home-scroll-wrapper {
@@ -206,51 +197,29 @@ window.renderHomePage = function(container) {
                 }
                 .home-scroll-wrapper::-webkit-scrollbar { display: none; }
 
-                /* الشريط العلوي الهيدر */
+                /* الشريط العلوي الهيدر المحدث مع وضع زر الموقع الرسمي في المنتصف */
                 .top-header-bar {
                     display: flex;
                     align-items: center;
                     justify-content: space-between;
                     margin-bottom: 14px;
                     padding: 8px 12px;
-                    background: rgba(18, 18, 24, 0.7);
+                    background: rgba(18, 18, 24, 0.75);
                     border: 1px solid rgba(255, 255, 255, 0.08);
                     border-radius: 18px;
                     backdrop-filter: blur(14px);
                 }
 
-                .profile-btn-link {
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    background: rgba(255, 255, 255, 0.04);
-                    padding: 4px 12px 4px 4px;
-                    border-radius: 25px;
-                    border: 1px solid rgba(20, 241, 149, 0.35);
-                    cursor: pointer;
-                    transition: transform 0.2s ease, border-color 0.2s;
-                }
-                .profile-btn-link:active { transform: scale(0.95); }
-
-                .avatar-glow-ring {
-                    width: 34px; height: 34px;
-                    border-radius: 50%; padding: 2px;
-                    background: linear-gradient(135deg, #9945FF, #14F195);
-                }
-                .avatar-glow-ring img {
-                    width: 100%; height: 100%;
-                    border-radius: 50%; object-fit: cover;
-                    border: 1px solid #08090C;
-                }
-
-                .gold-official-btn-sm {
+                .gold-official-btn-center {
                     background: linear-gradient(180deg, #FFE082 0%, #E6A100 100%);
                     color: #000; font-weight: 800; border: none;
-                    padding: 6px 14px; border-radius: 10px; font-size: 0.75rem;
+                    padding: 6px 16px; border-radius: 10px; font-size: 0.75rem;
                     cursor: pointer; box-shadow: 0 3px 10px rgba(230, 161, 0, 0.22);
+                    transition: transform 0.2s;
                 }
+                .gold-official-btn-center:active { transform: scale(0.95); }
 
-                /* بانر التحرير والتحديث السريع */
+                /* زر التحديث السريع */
                 .refresh-bar-area {
                     display: flex; align-items: center; justify-content: space-between;
                     margin-bottom: 12px; padding: 0 4px;
@@ -263,14 +232,17 @@ window.renderHomePage = function(container) {
                 }
                 .refresh-icon-btn:active { transform: rotate(180deg); }
 
-                /* بطاقات الوصول السريع لـ NFTs والمحتوى الرياضي */
+                /* بطاقة وصول سريعة لسوق الـ NFTs التفاعلية */
                 .quick-access-banner {
-                    background: linear-gradient(135deg, rgba(153,69,255,0.2) 0%, rgba(20,241,149,0.15) 100%);
-                    border: 1px solid rgba(153,69,255,0.3);
-                    border-radius: 16px; padding: 12px 14px; margin-bottom: 12px;
+                    background: linear-gradient(135deg, rgba(153,69,255,0.25) 0%, rgba(20,241,149,0.18) 100%);
+                    border: 1px solid rgba(153,69,255,0.4);
+                    border-radius: 18px; padding: 14px 16px; margin-bottom: 12px;
                     display: flex; align-items: center; justify-content: space-between;
-                    cursor: pointer; backdrop-filter: blur(10px);
+                    cursor: pointer; backdrop-filter: blur(12px);
+                    box-shadow: 0 4px 15px rgba(153, 69, 255, 0.15);
+                    transition: transform 0.2s, border-color 0.2s;
                 }
+                .quick-access-banner:active { transform: scale(0.97); border-color: #14F195; }
 
                 /* بطاقة سولانا */
                 .solana-chronicle-card {
@@ -288,14 +260,15 @@ window.renderHomePage = function(container) {
                 .sol-grid-item span:first-child { display: block; font-size: 0.68rem; color: #9ca3af; font-weight: 600; margin-bottom: 2px; }
                 .sol-grid-item span:last-child { font-size: 0.82rem; font-weight: 800; color: #fff; font-family: monospace; }
 
-                /* البانرات التفاعلية للتحديات */
-                .action-banner {
+                /* البانرات التفاعلية الرياضية المحدثة */
+                .action-banner-sports {
                     position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 10px;
                     display: flex; align-items: center; gap: 12px; cursor: pointer; backdrop-filter: blur(15px);
-                    background: rgba(18, 18, 24, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.2s;
+                    background: linear-gradient(135deg, rgba(28, 28, 38, 0.85) 0%, rgba(18, 18, 24, 0.75) 100%);
+                    border: 1px solid rgba(255, 255, 255, 0.1); transition: transform 0.2s, border-color 0.2s;
                 }
-                .action-banner:active { background: rgba(30, 30, 40, 0.85); border-color: rgba(255, 255, 255, 0.15); }
-                .banner-icon-wrapper { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); }
+                .action-banner-sports:active { transform: scale(0.97); background: rgba(35, 35, 48, 0.9); border-color: rgba(20, 241, 149, 0.4); }
+                .banner-icon-wrapper-sports { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); }
 
                 /* بطاقات الأندية */
                 .glass-club-card {
@@ -307,32 +280,37 @@ window.renderHomePage = function(container) {
             </style>
 
             <div class="home-scroll-wrapper">
-                <!-- 1. الهيدر العلوي مع زر البروفايل المعزول -->
+                <!-- 1. الهيدر العلوي المحدث (أنديتك | زر الموقع في الوسط | ZELOFC) -->
                 <div class="top-header-bar">
-                    <div class="profile-btn-link" onclick="window.openProfileScreen()">
-                        <div class="avatar-glow-ring">
-                            <img src="${avatarSrc}" alt="Avatar">
-                        </div>
-                        <span style="font-size: 0.82rem; font-weight: 800; color: #fff;">${username}</span>
+                    <div style="display:flex; align-items:center; gap:6px;">
+                        <span style="font-size: 1.1rem;">⚽</span>
+                        <span style="font-size: 0.85rem; font-weight: 800; color: #fff;">${t('yourClubs', isRtl ? 'أنديتك:' : 'Clubs:')}</span>
                     </div>
-                    <button class="gold-official-btn-sm" onclick="window.openOfficialWebsite()">${txtOfficialSite}</button>
+
+                    <!-- زر الموقع الرسمي المتموقع بالمنتصف تماماً -->
+                    <button class="gold-official-btn-center" onclick="window.openOfficialWebsite()">${txtOfficialSite}</button>
+
+                    <div style="background: rgba(255, 215, 0, 0.1); padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.25); display: flex; align-items: center; gap: 4px;">
+                        <span style="font-size: 0.8rem; font-weight: 900; color: #FFD700;">ZELOFC</span>
+                        <span style="font-size: 0.8rem;">🪙</span>
+                    </div>
                 </div>
 
-                <!-- 2. زر التحديث والسوق السريع -->
+                <!-- 2. زر التحديث الحي والمنظومة -->
                 <div class="refresh-bar-area">
-                    <span style="font-size:0.78rem; font-weight:800; color:#94a3b8;">ZELO SPORT ECOSYSTEM</span>
+                    <span style="font-size:0.75rem; font-weight:800; color:#94a3b8;">ZELO SPORT ECOSYSTEM</span>
                     <button class="refresh-icon-btn" onclick="window.updateHomeSolPrice();">
                         🔄 ${t('refresh', isRtl ? 'تحديث حي' : 'Refresh')}
                     </button>
                 </div>
 
-                <!-- 3. بانر سريعة للوصول إلى سوق الـ NFTs المعزول -->
+                <!-- 3. بانر فتح سوق الـ NFTs المعزول والمفعل بالنقر -->
                 <div class="quick-access-banner" onclick="window.openNftMarketScreen()">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <span style="font-size:1.5rem;">👑</span>
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span style="font-size:1.6rem;">👑</span>
                         <div style="text-align: ${textAlign};">
-                            <div style="color:#fff; font-weight:900; font-size:0.88rem;">${txtNftMarket}</div>
-                            <div style="color:#14F195; font-size:0.7rem; font-weight:700;">${isRtl ? 'بطاقات اللاعبين الأسطورية والأرباح' : 'Legendary Cards & Yield'}</div>
+                            <div style="color:#fff; font-weight:900; font-size:0.92rem;">${txtNftMarket}</div>
+                            <div style="color:#14F195; font-size:0.72rem; font-weight:700;">${isRtl ? 'بطاقات اللاعبين الأسطورية والأرباح' : 'Legendary Player Cards & Yield'}</div>
                         </div>
                     </div>
                     <div style="color:#14F195; font-size:1.1rem; font-weight:bold;">${arrowIcon}</div>
@@ -379,7 +357,20 @@ window.renderHomePage = function(container) {
                         </div>
                     </div>
 
-                                        <div class="sol-bottom-grid">
+                    <div class="sol-bottom-grid">
+                        <div class="sol-grid-item">
+                            <span>${txtLiveSolPrice}</span>
+                            <span id="home-sol-live-price">--.--</span>
+                        </div>
+                        <div class="sol-grid-item">
+                            <span>${txtBidAskSpread}</span>
+                            <span id="home-sol-pyth-conf">0.0000</span>
+                        </div>
+                        <div class="sol-grid-item">
+                            <span>${txtMarketFeed}</span>
+                            <span id="home-sol-oracle-val">--.--</span>
+                        </div>
+                               <div class="sol-bottom-grid">
                         <div class="sol-grid-item">
                             <span>${txtLiveSolPrice}</span>
                             <span id="home-sol-live-price">--.--</span>
@@ -395,10 +386,10 @@ window.renderHomePage = function(container) {
                     </div>
                 </div>
 
-                <!-- 5. بانر تحديات الأسبوع -->
-                <div id="challenges-card" class="action-banner" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
-                    <div class="banner-icon-wrapper">
-                        <span style="font-size:1.2rem;">⚽</span>
+                <!-- 5. بطاقة تحديات الأسبوع المحدثة -->
+                <div id="challenges-card" class="action-banner-sports" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
+                    <div class="banner-icon-wrapper-sports">
+                        <span style="font-size:1.3rem;">⚽</span>
                     </div>
                     <div style="flex-grow: 1; text-align: ${textAlign};">
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtWeeklyChallenges}</h3>
@@ -407,9 +398,9 @@ window.renderHomePage = function(container) {
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
-                <!-- 6. بانر ترتيب الأبطال والفائزين -->
-                <div id="ranking-card" class="action-banner" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
-                    <div class="banner-icon-wrapper">🏆</div>
+                <!-- 6. بطاقة ترتيب الأبطال والتوقعات المحدثة -->
+                <div id="ranking-card" class="action-banner-sports" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
+                    <div class="banner-icon-wrapper-sports">🏆</div>
                     <div style="flex-grow: 1; text-align: ${textAlign};">
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtDailyWinners}</h3>
                         <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtRankingSub}</p>
