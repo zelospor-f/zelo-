@@ -34,6 +34,7 @@ jobs:
       - name: Add and Sync Android Platform
         run: |
           if [ ! -d android ]; then npx cap add android; fi
+          mkdir -p android/app/src/main/assets
           npx cap sync android
 
       - name: Build Android APK
