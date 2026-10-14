@@ -4,24 +4,26 @@ function getInjectableStyles() {
     return `
         <style>
             .login-screen-wrapper {
-                height: 100vh; max-height: 100vh; width: 100%; max-width: 500px;
-                margin: 0 auto; display: flex; flex-direction: column; justify-content: space-between;
-                overflow: hidden; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-                box-sizing: border-box; padding: 15px 12px 20px 12px; background: #08090C; z-index: 999;
+                position: relative;
+                width: 100%; max-width: 500px;
+                min-height: 100vh;
+                margin: 0 auto;
+                display: flex; flex-direction: column;
+                box-sizing: border-box;
+                padding: 15px 12px 20px 12px;
+                background: #08090C;
             }
             .animate-screen { animation: slideUpFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
             @keyframes slideUpFade {
                 0% { opacity: 0; transform: translateY(15px); }
                 100% { opacity: 1; transform: translateY(0); }
             }
-            .inner-scroll-area { 
-                flex: 1; 
-                overflow-y: auto; 
+            .inner-scroll-area {
+                overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
-                scroll-behavior: smooth; 
-                padding-right: 4px; 
-                margin: 10px 0 15px 0; 
-                max-height: calc(100vh - 240px);
+                padding-right: 4px;
+                margin: 10px 0 15px 0;
+                max-height: 55vh;
             }
             .inner-scroll-area::-webkit-scrollbar { width: 4px; }
             .inner-scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
@@ -112,7 +114,8 @@ window.setLanguage = async function(lang) {
 function getFloatingButton() {
     if (!window.tempSelectedClubs.length) return '';
     return `
-        <div style="padding-top: 10px; width: 100%;">
+        <div style="position: sticky; bottom: 0; z-index: 5; padding: 14px 0 20px 0;
+                    background: linear-gradient(to top, #08090C 70%, rgba(8,9,12,0)); width: 100%;">
             <div id="confirm-btn" class="btn-pulse" onclick="confirmLogin()">
                 ✅ ${safeT('confirmAndContinue', 'Confirm & Continue')} (${window.tempSelectedClubs.length}/2)
             </div>
@@ -145,12 +148,12 @@ window.renderLoginScreen = function() {
             countryName = countryName.charAt(0).toUpperCase() + countryName.slice(1);
 
             const selectedInThisCountry = clubsInCountry.filter(c => window.tempSelectedClubs.includes(String(c.id))).length;
-            const selectionBadge = selectedInThisCountry > 0 
+            const selectionBadge = selectedInThisCountry > 0
                 ? `<span style="background: rgba(0, 255, 135, 0.2); padding: 3px 8px; border-radius: 10px; font-size: 0.75rem; color: #00FF87; border: 1px solid rgba(0, 255, 135, 0.4); font-weight: bold;">✓ ${selectedInThisCountry}</span>`
                 : '';
 
             countriesHtml += `
-                <div class="glass-card-elegant interactive-card" onclick="showClubsForCountry('${countryKey}')" 
+                <div class="glass-card-elegant interactive-card" onclick="showClubsForCountry('${countryKey}')"
                      style="padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin-bottom: 8px;">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <span style="font-size: 1.6rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
@@ -216,7 +219,7 @@ window.showClubsForCountry = function(countryKey) {
         const clubName = typeof getClubName === 'function' ? getClubName(club) : club.name;
 
         return `
-            <div class="glass-card-elegant interactive-card ${isSelected ? 'club-selected' : ''}" onclick="toggleClubSelection('${stringClubId}', '${countryKey}')" 
+            <div class="glass-card-elegant interactive-card ${isSelected ? 'club-selected' : ''}" onclick="toggleClubSelection('${stringClubId}', '${countryKey}')"
                  style="padding: 10px 14px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <div style="background: rgba(0,0,0,0.3); padding: 5px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
@@ -244,7 +247,7 @@ window.showClubsForCountry = function(countryKey) {
                         <span>🔙</span> <span>${safeT('btnBack', 'Back to countries')}</span>
                     </div>
                 </div>
-                
+
                 <div style="text-align: center; margin-bottom: 10px; background: rgba(20, 20, 28, 0.65); padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);">
                     <span style="font-size: 2.2rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));">${flag}</span>
                     <h3 style="color: #fff; margin: 4px 0 0 0; font-weight: 900; font-size: 1.1rem;">${countryName}</h3>
@@ -264,7 +267,7 @@ window.showClubsForCountry = function(countryKey) {
 window.toggleClubSelection = function(clubId, countryKey) {
     const stringClubId = String(clubId);
     const index = window.tempSelectedClubs.findIndex(id => String(id) === stringClubId);
-    
+
     if (index > -1) {
         window.tempSelectedClubs.splice(index, 1);
     } else {
@@ -272,10 +275,10 @@ window.toggleClubSelection = function(clubId, countryKey) {
             window.tempSelectedClubs.push(stringClubId);
         } else {
             alert(safeT('maxClubsAlert', 'You can select a maximum of 2 clubs (Local & Global) ⚠️'));
-            return; 
+            return;
         }
     }
-    
+
     showClubsForCountry(countryKey);
 };
 
@@ -288,7 +291,7 @@ window.confirmLogin = async function() {
     if (typeof userState !== 'undefined') {
         userState.selectedClubs = [...window.tempSelectedClubs];
     }
-    
+
     const btn = document.getElementById('confirm-btn');
     if (btn) btn.innerHTML = '⏳...';
 
@@ -303,13 +306,13 @@ window.confirmLogin = async function() {
 
             if (userErr) throw userErr;
 
-            let startingPoints = 0; 
+            let startingPoints = 0;
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('points')
                 .eq('user_id', userState.userId)
                 .maybeSingle();
-            
+
             if (userData?.points) startingPoints = userData.points;
 
             const rankingsData = userState.selectedClubs.map(clubId => ({
@@ -323,19 +326,19 @@ window.confirmLogin = async function() {
             const { error: rankErr } = await supabaseClient
                 .from('club_fans_rankings')
                 .upsert(rankingsData, { onConflict: 'user_id,club_id' });
-            
+
             if (rankErr) throw rankErr;
 
             if (userState.pendingReferrer && typeof window.apiProcessReferral === "function") {
                 window.apiProcessReferral(userState.pendingReferrer, userState.userId);
-                userState.pendingReferrer = null; 
+                userState.pendingReferrer = null;
             }
 
         } catch (error) {
             console.error("Login process error:", error);
             alert("DB Error: " + (error.message || JSON.stringify(error)));
             if (btn) btn.innerHTML = safeT('retry', 'Retry 🔄');
-            return; 
+            return;
         }
     }
 
@@ -351,4 +354,3 @@ window.confirmLogin = async function() {
     if (typeof updateTopBar === 'function') updateTopBar();
     if (typeof showPage === 'function') showPage('home');
 };
-        
