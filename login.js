@@ -6,14 +6,23 @@ function getInjectableStyles() {
             .login-screen-wrapper {
                 height: 100vh; max-height: 100vh; width: 100%; max-width: 500px;
                 margin: 0 auto; display: flex; flex-direction: column; justify-content: space-between;
-                overflow: hidden; position: relative; box-sizing: border-box; padding: 15px 12px 20px 12px;
+                overflow: hidden; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                box-sizing: border-box; padding: 15px 12px 20px 12px; background: #08090C; z-index: 999;
             }
             .animate-screen { animation: slideUpFade 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
             @keyframes slideUpFade {
                 0% { opacity: 0; transform: translateY(15px); }
                 100% { opacity: 1; transform: translateY(0); }
             }
-            .inner-scroll-area { flex: 1; overflow-y: auto; scroll-behavior: smooth; padding-right: 4px; margin: 10px 0 15px 0; }
+            .inner-scroll-area { 
+                flex: 1; 
+                overflow-y: auto; 
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth; 
+                padding-right: 4px; 
+                margin: 10px 0 15px 0; 
+                max-height: calc(100vh - 240px);
+            }
             .inner-scroll-area::-webkit-scrollbar { width: 4px; }
             .inner-scroll-area::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 10px; }
             .glass-card-elegant {
@@ -342,4 +351,4 @@ window.confirmLogin = async function() {
     if (typeof updateTopBar === 'function') updateTopBar();
     if (typeof showPage === 'function') showPage('home');
 };
-            
+        
