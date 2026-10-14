@@ -6,23 +6,14 @@
     <meta name="theme-color" content="#121215">
     <title>ZELO FC Mobile</title>
     
-    <!-- Telegram Web App SDK (Fallback Included) -->
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
         (function() {
-            if (window.Telegram && window.Telegram.WebApp) {
-                window.Telegram.WebApp.ready();
-                window.Telegram.WebApp.expand();
-            }
-
             var savedLang = localStorage.getItem('app_lang') || 
                             localStorage.getItem('lang') || 
                             localStorage.getItem('language') || 
-                            window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code || 
                             'en';
             
             var isAr = savedLang.startsWith('ar');
@@ -31,12 +22,13 @@
 
             var localUserId = localStorage.getItem('zelo_user_id');
             if (!localUserId) {
-                localUserId = 'usr_' + Math.random().toString(36).substr(2, 9);
+                // توليد معرّف رقمي فريد متوافق مع نوع BIGINT
+                localUserId = Math.floor(100000000 + Math.random() * 900000000).toString();
                 localStorage.setItem('zelo_user_id', localUserId);
             }
 
             window.userState = window.userState || {
-                userId: window.Telegram?.WebApp?.initDataUnsafe?.user?.id || localUserId,
+                userId: localUserId,
                 points: 0,
                 lang: savedLang,
                 walletConnected: false,
@@ -275,7 +267,7 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation (Solana Wallet Included) -->
+    <!-- Bottom Navigation -->
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
