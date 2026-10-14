@@ -416,4 +416,30 @@ window.renderHomePage = function(container) {
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
-                            <h4 style="color:
+                            #fff; margin: 0; font-size: 0.95rem; font-weight: 800;">${txtSupportedClubs}</h4>
+                        </div>
+                        <span style="color: #14F195; font-size: 0.75rem; font-weight: bold; background: rgba(20,241,149,0.1); padding: 3px 8px; border-radius: 8px;">${txtActive}</span>
+                    </div>
+                    <div class="glass-club-card">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <div class="club-logo-wrapper">⚽</div>
+                            <div style="text-align: ${textAlign};">
+                                <div style="color: #fff; font-weight: 800; font-size: 0.88rem;">ZELO FC</div>
+                                <div style="color: #94a3b8; font-size: 0.68rem; font-weight: 600;">Global Fan Base</div>
+                            </div>
+                        </div>
+                        <div class="club-points-badge">100%</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (typeof window.updateHomeSolPrice === 'function') {
+            window.updateHomeSolPrice();
+            window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
+        }
+    } catch (err) {
+        console.error("Error rendering home page:", err);
+        target.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444; font-weight:bold;">⚠️ Error loading Home page</div>`;
+    }
+};
