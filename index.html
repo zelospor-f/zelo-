@@ -1,12 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr" id="app-html">
+<html lang="ar" dir="rtl" id="app-html">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121215">
+    
+    <!-- وسوم إجبار متصفح الـ APK على عدم تخزين أي نسخة قديمة -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <title>ZELO FC Mobile</title>
     
-    <!-- أداة فحص الأخطاء للموبايل (vConsole) لمعرفة الأخطاء مباشرة من الشاشة -->
+    <!-- أداة فحص الأخطاء للموبايل (vConsole) -->
     <script src="https://cdn.jsdelivr.net/npm/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
         var vConsole = new VConsole();
@@ -20,7 +26,7 @@
             var savedLang = localStorage.getItem('app_lang') || 
                             localStorage.getItem('lang') || 
                             localStorage.getItem('language') || 
-                            'en';
+                            'ar';
             
             var isAr = savedLang.startsWith('ar');
             document.documentElement.lang = isAr ? 'ar' : 'en';
@@ -28,7 +34,6 @@
 
             var localUserId = localStorage.getItem('zelo_user_id');
             if (!localUserId) {
-                // توليد معرّف رقمي فريد متوافق مع نوع BIGINT
                 localUserId = Math.floor(100000000 + Math.random() * 900000000).toString();
                 localStorage.setItem('zelo_user_id', localUserId);
             }
@@ -130,39 +135,20 @@
         }
 
         .nav-item {
-            background: none;
-            border: none;
-            outline: none;
-            padding: 0;
-            cursor: pointer;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 60px;
-            height: 60px;
-            border-radius: 20px;
-            color: var(--text-muted);
-            transition: all 0.3s ease;
+            background: none; border: none; outline: none; padding: 0; cursor: pointer;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            width: 60px; height: 60px; border-radius: 20px; color: var(--text-muted); transition: all 0.3s ease;
         }
 
         .icon-wrapper {
-            font-size: 1.5rem;
-            margin-bottom: 3px;
-            transition: all 0.3s ease;
-            filter: grayscale(100%) opacity(0.6); 
+            font-size: 1.5rem; margin-bottom: 3px; transition: all 0.3s ease; filter: grayscale(100%) opacity(0.6); 
         }
 
-        .nav-text {
-            font-size: 0.7rem;
-            font-weight: bold;
-            transition: color 0.3s ease;
-        }
+        .nav-text { font-size: 0.7rem; font-weight: bold; transition: color 0.3s ease; }
 
         .nav-item.active {
             background: linear-gradient(135deg, rgba(131, 58, 180, 0.15), rgba(253, 29, 29, 0.15));
-            border: 1px solid rgba(253, 29, 29, 0.3);
-            box-shadow: inset 0 0 10px rgba(252, 176, 69, 0.2);
+            border: 1px solid rgba(253, 29, 29, 0.3); box-shadow: inset 0 0 10px rgba(252, 176, 69, 0.2);
         }
 
         .nav-item.active .icon-wrapper {
@@ -170,93 +156,22 @@
             animation: floatIcon 2.5s ease-in-out infinite, pulseGlowIcon 2s infinite alternate;
         }
 
-        .nav-item.active .nav-text {
-            color: var(--accent-gold);
-            text-shadow: 0 0 5px var(--accent-red);
-        }
+        .nav-item.active .nav-text { color: var(--accent-gold); text-shadow: 0 0 5px var(--accent-red); }
 
         .btn-action {
-            position: relative;
-            width: 100%;
+            position: relative; width: 100%;
             background: linear-gradient(270deg, var(--accent-purple), var(--accent-red), var(--accent-gold), var(--accent-red), var(--accent-purple));
-            background-size: 400% 400%;
-            animation: gradientMove 3s ease infinite, pulseShadow 2s infinite alternate;
-            color: #fff;
-            border: none;
-            padding: 16px;
-            border-radius: 14px;
-            font-weight: 900; 
-            font-size: 1.1rem;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: transform 0.2s;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            overflow: hidden;
-            z-index: 1;
+            background-size: 400% 400%; animation: gradientMove 3s ease infinite, pulseShadow 2s infinite alternate;
+            color: #fff; border: none; padding: 16px; border-radius: 14px; font-weight: 900; font-size: 1.1rem;
+            cursor: pointer; margin-top: 10px; transition: transform 0.2s; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            overflow: hidden; z-index: 1;
         }
 
-        .btn-wallet-action {
-            background: rgba(255, 255, 255, 0.08) !important;
-            color: var(--text-main) !important;
-            border: 1px solid rgba(255, 255, 255, 0.15) !important;
-            padding: 8px 18px !important;
-            border-radius: 10px !important;
-            font-size: 0.85rem !important;
-            font-weight: bold !important;
-            cursor: pointer !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            gap: 6px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-        }
-
-        .btn-wallet-action:active {
-            transform: scale(0.95);
-            border-color: var(--accent-gold) !important;
-            background: rgba(252, 176, 69, 0.15) !important;
-        }
-
-        .wallet-card-row {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: space-between !important;
-            margin: 10px 0 !important;
-        }
-
-        .wallet-value {
-            font-family: monospace !important;
-            font-weight: bold !important;
-            font-size: 0.95rem !important;
-        }
-
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        @keyframes pulseShadow {
-            0% { box-shadow: 0 0 10px rgba(253, 29, 29, 0.4), 0 5px 15px rgba(131, 58, 180, 0.2); }
-            100% { box-shadow: 0 0 25px rgba(252, 176, 69, 0.6), 0 5px 25px rgba(253, 29, 29, 0.4); }
-        }
-
-        @keyframes floatIcon {
-            0% { transform: translateY(0px) scale(1.1); }
-            50% { transform: translateY(-5px) scale(1.15); } 
-            100% { transform: translateY(0px) scale(1.1); }
-        }
-
-        @keyframes pulseGlowIcon {
-            0% { filter: drop-shadow(0 0 5px var(--accent-purple)); }
-            50% { filter: drop-shadow(0 0 15px var(--accent-red)); }
-            100% { filter: drop-shadow(0 0 8px var(--accent-gold)); }
-        }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes pulseShadow { 0% { box-shadow: 0 0 10px rgba(253, 29, 29, 0.4); } 100% { box-shadow: 0 0 25px rgba(252, 176, 69, 0.6); } }
+        @keyframes floatIcon { 0% { transform: translateY(0px) scale(1.1); } 50% { transform: translateY(-5px) scale(1.15); } 100% { transform: translateY(0px) scale(1.1); } }
+        @keyframes pulseGlowIcon { 0% { filter: drop-shadow(0 0 5px var(--accent-purple)); } 50% { filter: drop-shadow(0 0 15px var(--accent-red)); } 100% { filter: drop-shadow(0 0 8px var(--accent-gold)); } }
     </style>
 </head>
 <body>
@@ -269,7 +184,7 @@
     <main class="container" id="main-content">
         <div id="app-loading" style="text-align: center; padding-top: 50px;">
             <div style="font-size: 2rem; margin-bottom: 10px;">⚽</div>
-            <div style="color: var(--accent-gold); font-weight: bold;">Loading ZELO FC...</div>
+            <div style="color: var(--accent-gold); font-weight: bold;">جاري تحميل ZELO FC...</div>
         </div>
     </main>
 
@@ -277,23 +192,23 @@
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
-            <span class="nav-text" data-i18n="navHome">Home</span>
+            <span class="nav-text" data-i18n="navHome">الرئيسية</span>
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
             <span class="icon icon-wrapper">🛠</span>
-            <span class="nav-text" data-i18n="navTasks">Tasks</span>
+            <span class="nav-text" data-i18n="navTasks">المهام</span>
         </button>
         <button class="nav-item" onclick="showPage('friends')">
             <span class="icon icon-wrapper">👥</span>
-            <span class="nav-text" data-i18n="navFriends">Friends</span>
+            <span class="nav-text" data-i18n="navFriends">الأصدقاء</span>
         </button>
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
-            <span class="nav-text" data-i18n="navLeaderboard">Leaderboard</span>
+            <span class="nav-text" data-i18n="navLeaderboard">الترتيب</span>
         </button>
         <button class="nav-item" onclick="showPage('wallet')">
             <span class="icon icon-wrapper">👛</span>
-            <span class="nav-text" data-i18n="navWallet">Wallet</span>
+            <span class="nav-text" data-i18n="navWallet">المحفظة</span>
         </button>
     </nav>
 
@@ -304,36 +219,48 @@
             if (container && container.querySelector('#app-loading')) {
                 container.innerHTML = `
                     <div style="text-align:center; padding: 30px; color: #ff4d4d;">
-                        <h3>⚠️ An error occurred while loading ZELO FC</h3>
-                        <p style="font-size: 0.85rem; color: #aaa;">${e.message || 'Unknown error'}</p>
-                        <button onclick="location.reload(true)" class="btn-action" style="margin-top:15px; width: auto; padding: 10px 20px;">Reload</button>
+                        <h3>⚠️ حدث خطأ أثناء تحميل التطبيق</h3>
+                        <p style="font-size: 0.85rem; color: #aaa;">${e.message || 'خطأ غير معروف'}</p>
+                        <button onclick="location.reload(true)" class="btn-action" style="margin-top:15px; width: auto; padding: 10px 20px;">إعادة التحميل</button>
                     </div>
                 `;
             }
         });
     </script>
 
-    <!-- JS Scripts -->
-    <script src="env.js"></script>
-    <script src="i18n.js?v=10.0"></script>
-    <script src="clubsData.js?v=10.0"></script>
-    <script src="data.js?v=10.0"></script> 
-    <script src="countries.js?v=10.0"></script>
-    <script src="i18n-helpers.js?v=10.0"></script>
-    <script src="ranking.js?v=10.0"></script>
-    <script src="login.js?v=10.0"></script>
-    <script src="weekly_match_rankings.js?v=10.0"></script>
-    <script src="predictions_ranking.js?v=10.0"></script> 
-    <script src="home.js?v=15.0"></script>
-    <!-- استدعاء ملف البروفايل وملف سوق الـ NFTs المعزولين -->
-    <script src="profile.js?v=10.0"></script>
-    <script src="nft-market.js?v=10.0"></script>
-    <script src="tasks.js?v=13.0"></script>
-    <script src="leaderboard.js?v=10.0"></script>
-    <script src="friends.js?v=10.0"></script>
-    <script src="wallet-solana.js?v=12.0"></script>
-    <script src="app.js?v=10.0"></script>
+    <!-- تحميل جميع الملفات ديناميكياً برقم وقت فريد يمنع الـ APK من حفظ القديم -->
+    <script>
+        (function() {
+            var timeStamp = '?v=' + new Date().getTime();
+            var scriptFiles = [
+                'env.js',
+                'i18n.js',
+                'clubsData.js',
+                'data.js',
+                'countries.js',
+                'i18n-helpers.js',
+                'ranking.js',
+                'login.js',
+                'weekly_match_rankings.js',
+                'predictions_ranking.js',
+                'home.js',
+                'profile.js',
+                'nft-market.js',
+                'tasks.js',
+                'leaderboard.js',
+                'friends.js',
+                'wallet-solana.js',
+                'app.js'
+            ];
+
+            scriptFiles.forEach(function(file) {
+                var scriptElement = document.createElement('script');
+                scriptElement.src = file + timeStamp;
+                scriptElement.async = false; // يضمن تنفيذ السكربتات بنفس الترتيب الصحيح
+                document.body.appendChild(scriptElement);
+            });
+        })();
+    </script>
 
 </body>
-    </html>
-    
+</html>
