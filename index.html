@@ -105,14 +105,30 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: rgba(18, 18, 22, 0.8);
+            background: rgba(18, 18, 22, 0.85);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            padding: 0 20px;
+            padding: 0 16px;
             border-radius: 16px;
-            border: 1px solid rgba(252, 176, 69, 0.2); 
+            border: 1px solid rgba(252, 176, 69, 0.25); 
             box-shadow: 0 5px 25px rgba(253, 29, 29, 0.15);
             z-index: 1000;
+        }
+
+        .gold-official-btn-header {
+            background: linear-gradient(180deg, #FFE082 0%, #E6A100 100%);
+            color: #000;
+            font-weight: 900;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 10px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(230, 161, 0, 0.3);
+            transition: transform 0.2s;
+        }
+        .gold-official-btn-header:active {
+            transform: scale(0.95);
         }
 
         .bottom-nav {
@@ -176,9 +192,16 @@
 </head>
 <body>
 
+    <!-- الهيدر العلوي الموحد بدون تكرار -->
     <header class="top-bar" id="top-bar" style="display: none;">
-        <div id="club" style="font-size: 0.9rem; color: #e0e0e0; font-weight: bold;"></div>
-        <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 6px 12px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); box-shadow: 0 0 10px rgba(252, 176, 69, 0.2);"></div>
+        <div id="club" style="font-size: 0.85rem; color: #e0e0e0; font-weight: bold; display: flex; align-items: center; gap: 4px;"></div>
+        
+        <!-- زر الموقع الرسمي المتموقع في المنتصف تماماً -->
+        <button class="gold-official-btn-header" onclick="if(typeof window.openOfficialWebsite === 'function') window.openOfficialWebsite();">
+            الموقع الرسمي
+        </button>
+        
+        <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); font-size: 0.85rem;"></div>
     </header>
 
     <main class="container" id="main-content">
@@ -256,7 +279,7 @@
             scriptFiles.forEach(function(file) {
                 var scriptElement = document.createElement('script');
                 scriptElement.src = file + timeStamp;
-                scriptElement.async = false; // يضمن تنفيذ السكربتات بنفس الترتيب الصحيح
+                scriptElement.async = false;
                 document.body.appendChild(scriptElement);
             });
         })();
