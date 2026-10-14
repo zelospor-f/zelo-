@@ -37,7 +37,6 @@ function safeT(key, fallback) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // توليد معرّف رقمي فريد ومحلي لتطبيق الأندرويد
     const numericFallbackId = Math.floor(100000000 + Math.random() * 900000000).toString();
     const localFallbackId = localStorage.getItem('zelo_user_id') || numericFallbackId;
     localStorage.setItem('zelo_user_id', localFallbackId);
@@ -218,6 +217,55 @@ function showPage(pageId) {
     }
 }
 
+// دالة فتح شاشة الملف الشخصي (Profile)
+window.renderProfilePage = window.openProfileScreen = function(container) {
+    const target = container || document.getElementById("main-content");
+    if (!target) return;
+    
+    if (typeof window.renderProfileScreen === 'function') {
+        window.renderProfileScreen(target);
+        return;
+    }
+
+    const isAr = (userState.lang === 'ar');
+    target.innerHTML = `
+        <div style="padding: 20px; color: white; text-align: center; direction: ${isAr ? 'rtl' : 'ltr'};">
+            <h2 style="color: #fcb045; margin-bottom: 10px;">👤 ${isAr ? 'الملف الشخصي' : 'Profile'}</h2>
+            <p style="color: #aaa; font-size: 0.9rem;">${isAr ? 'معلومات المستخدم والإعدادات' : 'User Information & Settings'}</p>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 14px; margin-top: 20px; text-align: ${isAr ? 'right' : 'left'};">
+                <div style="margin-bottom: 8px;"><strong>ID:</strong> ${userState.userId}</div>
+                <div style="margin-bottom: 8px;"><strong>${isAr ? 'الرصيد' : 'Balance'}:</strong> ${userState.points} ZELOFC</div>
+            </div>
+            <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
+                ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
+            </button>
+        </div>
+    `;
+};
+
+// دالة فتح سوق الـ NFTs المعزول
+window.renderNftMarketPage = function(container) {
+    const target = container || document.getElementById("main-content");
+    if (!target) return;
+
+    if (typeof window.renderNftMarketScreen === 'function') {
+        window.renderNftMarketScreen(target);
+        return;
+    }
+
+    const isAr = (userState.lang === 'ar');
+    target.innerHTML = `
+        <div style="padding: 20px; color: white; text-align: center; direction: ${isAr ? 'rtl' : 'ltr'};">
+            <h2 style="color: #14F195; margin-bottom: 10px;">👑 ${isAr ? 'سوق بطاقات NFTs' : 'NFT Market'}</h2>
+            <p style="color: #aaa; font-size: 0.9rem;">${isAr ? 'بطاقات اللاعبين الأسطورية والأرباح' : 'Legendary Player Cards & Yield'}</p>
+            <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
+                ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
+            </button>
+        </div>
+    `;
+};
+
+// دالة فتح شاشة التحديات
 if (typeof window.openChallengesScreen !== 'function') {
     window.openChallengesScreen = function() {
         const contentDiv = document.getElementById("main-content");
@@ -237,4 +285,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-}
+                                                                       }
