@@ -43,10 +43,18 @@ jobs:
             --exclude 'server.js'
           sed -i 's/"webDir": *"\."/"webDir": "www"/' capacitor.config.json
 
-      - name: Add and Sync Android Platform
+      - name: Add Android Platform
         run: |
           if [ ! -d android ]; then npx cap add android; fi
-          npx cap sync android
+
+      - name: Generate App Icon
+        run: |
+          mkdir -p assets
+          convert king-logo.jpg -resize 1024x1024 -background white -gravity center -extent 1024x1024 assets/icon.png
+          npx -y @capacitor/assets generate --android --iconBackgroundColor '#ffffff'
+
+      - name: Sync Android Platform
+        run: npx cap sync android
 
       - name: Build Android APK
         run: |
