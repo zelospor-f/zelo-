@@ -222,6 +222,17 @@ function showPage(pageId) {
                 }, 200);
             }
             break;
+        case 'news':
+        case 'community':
+            if (typeof renderCommunityPage === "function") {
+                renderCommunityPage(contentDiv);
+            } else if (typeof renderNewsPage === "function") {
+                renderNewsPage(contentDiv);
+            }
+            break;
+        case 'profile':
+            if (typeof renderProfilePage === "function") renderProfilePage(contentDiv);
+            break;
     }
 }
 
@@ -244,4 +255,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                }
+}
+    
