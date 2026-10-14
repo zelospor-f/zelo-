@@ -1,4 +1,3 @@
-
 const supabaseUrl = window.env?.SUPABASE_URL; 
 const supabaseKey = window.env?.SUPABASE_ANON_KEY; 
 
@@ -7,7 +6,7 @@ const supabaseClient = window.supabase && supabaseUrl && supabaseKey ? window.su
 }) : null;
 
 let userState = {
-    username: "Player", 
+    username: "Android Player", 
     userParam: "", 
     userId: "",
     photoUrl: null,
@@ -26,8 +25,6 @@ let userState = {
     tasks: typeof window.defaultTasksData !== "undefined" ? window.defaultTasksData.map(task => ({...task})) : [] 
 };
 
-const tg = window.Telegram?.WebApp;
-
 function safeT(key, fallback) {
     try {
         if (typeof window.t === 'function') {
@@ -40,39 +37,17 @@ function safeT(key, fallback) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // توليد معرّف رقمي متوافق تماماً مع نوع BIGINT في جدول users بقاعدة البيانات
+    // توليد معرّف رقمي فريد ومحلي لتطبيق الأندرويد
     const numericFallbackId = Math.floor(100000000 + Math.random() * 900000000).toString();
     const localFallbackId = localStorage.getItem('zelo_user_id') || numericFallbackId;
     localStorage.setItem('zelo_user_id', localFallbackId);
 
-    if (typeof window.Telegram !== "undefined" && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe?.user) {
-        const tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-        window.Telegram.WebApp.ready();
-        window.Telegram.WebApp.expand();
-        
-        userState.username = tgUser.username ? `@${tgUser.username}` : `${tgUser.first_name} ${tgUser.last_name || ''}`.trim();
-        userState.userId = String(tgUser.id);
-        userState.userParam = tgUser.username || String(tgUser.id);
-        
-        if (tgUser.photo_url) {
-            userState.photoUrl = tgUser.photo_url;
-        }
-        
-        if (tgUser.language_code && tgUser.language_code.startsWith('en')) {
-            userState.lang = 'en';
-        }
+    userState.username = "Android Player";
+    userState.userId = localFallbackId; 
+    userState.userParam = localFallbackId;
 
-        if (window.Telegram.WebApp.initDataUnsafe.start_param && window.Telegram.WebApp.initDataUnsafe.start_param.startsWith('ref_')) {
-            const referrerId = window.Telegram.WebApp.initDataUnsafe.start_param.replace('ref_', '');
-            if (String(referrerId) !== String(userState.userId)) {
-                userState.pendingReferrer = referrerId;
-            }
-        }
-    } else {
-        userState.username = "Android Player";
-        userState.userId = localFallbackId; 
-        userState.userParam = localFallbackId;
-    }
+    var savedLang = localStorage.getItem('app_lang') || localStorage.getItem('lang') || 'ar';
+    userState.lang = savedLang.startsWith('ar') ? 'ar' : 'en';
 
     if(typeof applyLanguageSettings === 'function') applyLanguageSettings();
     fetchDataAndRoute();
@@ -88,7 +63,7 @@ async function fetchDataAndRoute() {
         const { data, error } = await supabaseClient
             .from('users')
             .select('*')
-            .eq('telegram_id', userState.userId)
+            .eq('user_id', userState.userId)
             .maybeSingle();
 
         if (error) {
@@ -164,7 +139,7 @@ async function updateTopBar() {
             const { data } = await supabaseClient
                 .from('club_fans_rankings')
                 .select('total_fan_points')
-                .eq('telegram_id', userState.userId)
+                .eq('user_id', userState.userId)
                 .maybeSingle();
                 
             if (data && data.total_fan_points !== undefined && data.total_fan_points !== null) {
@@ -263,4 +238,3 @@ if (typeof window.openChallengesScreen !== 'function') {
         }
     };
 }
-    
