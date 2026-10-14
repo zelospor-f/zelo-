@@ -36,7 +36,12 @@ function safeT(key, fallback) {
     return fallback;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
+function onReady(fn) {
+    if (document.readyState !== 'loading') fn();
+    else document.addEventListener('DOMContentLoaded', fn);
+}
+
+onReady(() => {
     // توليد معرّف رقمي فريد ومحلي لتطبيق الأندرويد
     const numericFallbackId = Math.floor(100000000 + Math.random() * 900000000).toString();
     const localFallbackId = localStorage.getItem('zelo_user_id') || numericFallbackId;
@@ -54,6 +59,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function fetchDataAndRoute() {
+    console.log("fetchDataAndRoute started");
+
     if (!supabaseClient) {
         triggerLoginScreen();
         return;
@@ -237,4 +244,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-}
+                }
