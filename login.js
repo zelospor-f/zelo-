@@ -73,7 +73,7 @@ function safeT(key, fallbackText) {
 function getDefaultLanguage() {
     const saved = localStorage.getItem('app_lang');
     if (saved) return saved;
-    return window.Telegram?.WebApp?.initDataUnsafe?.user?.language_code?.startsWith('ar') ? 'ar' : 'en';
+    return 'en';
 }
 
 function getLanguageSelector() {
@@ -93,7 +93,7 @@ window.setLanguage = async function(lang) {
 
     if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState?.userId) {
         try {
-            await supabaseClient.from('users').upsert({ telegram_id: userState.userId, lang }, { onConflict: 'telegram_id' });
+            await supabaseClient.from('users').upsert({ user_id: userState.userId, lang }, { onConflict: 'user_id' });
         } catch (e) {}
     }
 
@@ -286,11 +286,11 @@ window.confirmLogin = async function() {
     if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState?.userId) {
         try {
             const { error: userErr } = await supabaseClient.from('users').upsert({
-                telegram_id: userState.userId,
+                user_id: userState.userId,
                 username: userState.username,
                 selected_clubs: userState.selectedClubs,
                 lang: userState.lang
-            }, { onConflict: 'telegram_id' });
+            }, { onConflict: 'user_id' });
 
             if (userErr) throw userErr;
 
@@ -298,13 +298,13 @@ window.confirmLogin = async function() {
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', userState.userId)
+                .eq('user_id', userState.userId)
                 .maybeSingle();
             
             if (userData?.points) startingPoints = userData.points;
 
             const rankingsData = userState.selectedClubs.map(clubId => ({
-                telegram_id: userState.userId,
+                user_id: userState.userId,
                 club_id: String(clubId),
                 total_fan_points: startingPoints,
                 points_activity: 0,
@@ -313,7 +313,7 @@ window.confirmLogin = async function() {
 
             const { error: rankErr } = await supabaseClient
                 .from('club_fans_rankings')
-                .upsert(rankingsData, { onConflict: 'telegram_id,club_id' });
+                .upsert(rankingsData, { onConflict: 'user_id,club_id' });
             
             if (rankErr) throw rankErr;
 
@@ -324,6 +324,7 @@ window.confirmLogin = async function() {
 
         } catch (error) {
             console.error("Login process error:", error);
+            alert("DB Error: " + (error.message || JSON.stringify(error)));
             if (btn) btn.innerHTML = safeT('retry', 'Retry 🔄');
             return; 
         }
@@ -341,4 +342,4 @@ window.confirmLogin = async function() {
     if (typeof updateTopBar === 'function') updateTopBar();
     if (typeof showPage === 'function') showPage('home');
 };
-    
+            
