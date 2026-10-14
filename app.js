@@ -1,7 +1,8 @@
-const supabaseUrl = 'https://ttyfcwtlasvphkariqhw.supabase.co'; 
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR0eWZjd3RsYXN2cGhrYXJpcWh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMxODk1MjYsImV4cCI6MjA5ODc2NTUyNn0.m3wFMEASM3K63nm3bsIlrEOXhRvMQhUZqvpXyFq7NEg'; 
 
-const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey, {
+const supabaseUrl = window.env?.SUPABASE_URL; 
+const supabaseKey = window.env?.SUPABASE_ANON_KEY; 
+
+const supabaseClient = window.supabase && supabaseUrl && supabaseKey ? window.supabase.createClient(supabaseUrl, supabaseKey, {
     db: { schema: 'public' }
 }) : null;
 
@@ -39,8 +40,9 @@ function safeT(key, fallback) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // دعم بيئة أندرويد المستقلة أو تلجرام
-    const localFallbackId = localStorage.getItem('zelo_user_id') || 'usr_' + Math.random().toString(36).substr(2, 9);
+    // توليد معرّف رقمي متوافق تماماً مع نوع BIGINT في جدول users بقاعدة البيانات
+    const numericFallbackId = Math.floor(100000000 + Math.random() * 900000000).toString();
+    const localFallbackId = localStorage.getItem('zelo_user_id') || numericFallbackId;
     localStorage.setItem('zelo_user_id', localFallbackId);
 
     if (typeof window.Telegram !== "undefined" && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe?.user) {
@@ -260,4 +262,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                    }
+}
+    
