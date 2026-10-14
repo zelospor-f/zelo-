@@ -28,12 +28,30 @@ function t(key, fallback = '', params = {}) {
     return text;
 }
 
+// دالة فتح الموقع الرسمي
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
         window.Telegram.WebApp.openLink(url);
     } else {
         window.open(url, '_blank');
+    }
+};
+
+// دوال الاستدعاء المعزولة للبروفايل والسوق (سيتم كتابة كودهما في ملفات معزولة profile.js و nft-market.js)
+window.openProfileScreen = window.openProfileScreen || function() {
+    if (typeof window.renderProfilePage === 'function') {
+        window.renderProfilePage();
+    } else {
+        console.log("الانتقال إلى شاشة الملف الشخصي...");
+    }
+};
+
+window.openNftMarketScreen = window.openNftMarketScreen || function() {
+    if (typeof window.renderNftMarketPage === 'function') {
+        window.renderNftMarketPage();
+    } else {
+        console.log("الانتقال إلى سوق الـ NFTs المعزول...");
     }
 };
 
@@ -62,7 +80,7 @@ window.updateHomeSolPrice = async function() {
             }
         }
     } catch (err) {
-        console.warn("Binance API fetch warning, trying backup...", err);
+        console.warn("جاري محاولة المزود البديل لسعر سولانا...", err);
     }
 
     if (!realPrice || isNaN(realPrice) || realPrice <= 0) {
@@ -76,7 +94,7 @@ window.updateHomeSolPrice = async function() {
                 }
             }
         } catch (backupErr) {
-            console.warn("Backup API fetch warning...", backupErr);
+            console.warn("المزود البديل غير متوفر حالياً...", backupErr);
         }
     }
 
@@ -103,10 +121,9 @@ window.updateHomeSolPrice = async function() {
     const history = window.solPriceHistory;
     const maxP = Math.max(...history);
     const minP = Math.min(...history);
-    const midP = (maxP + minP) / 2;
 
     if (elMaxPrice) elMaxPrice.innerText = `$${maxP.toFixed(2)}`;
-    if (elMidPrice) elMidPrice.innerText = `$${midP.toFixed(2)}`;
+    if (elMidPrice) elMidPrice.innerText = `$${((maxP + minP) / 2).toFixed(2)}`;
     if (elMinPrice) elMinPrice.innerText = `$${minP.toFixed(2)}`;
 
     if (svgPath && history.length > 1) {
@@ -149,7 +166,7 @@ window.renderHomePage = function(container) {
             userId: localStorage.getItem('zelo_user_id') || 'usr_guest' 
         };
 
-        const txtOfficialSite = t('officialSite', isRtl ? 'الموقع الرسمي' : 'Official Website');
+        const txtOfficialSite = t('officialSite', isRtl ? 'الموقع الرسمي' : 'Official Site');
         const txtMarketFeed = t('marketFeed', isRtl ? 'تغذية السوق المباشرة' : 'Live Market Feed');
         const txtLiveMarket = t('liveMarket', isRtl ? 'سوق حي' : 'Live Market');
         const txtLiveSolPrice = t('liveSolPrice', isRtl ? 'سعر $SOL المباشر' : 'Live $SOL Price');
@@ -161,6 +178,8 @@ window.renderHomePage = function(container) {
         const txtSupportedClubs = t('supportedClubs', isRtl ? 'الأندية المحددة' : 'Supported Clubs');
         const txtActive = t('activeCount', isRtl ? 'نشط 1' : 'Active 1');
         const txtLoading = t('loading', isRtl ? 'جاري التحميل...' : 'Loading...');
+        const txtNftMarket = t('nftMarket', isRtl ? 'سوق بطاقات NFTs' : 'NFT Player Market');
+        const txtDailyWinners = t('dailyWinners', isRtl ? 'أبطال اليوم واقتناص التوقعات' : 'Today\'s Winners');
         const txtTime1m = '-1m';
         const txtTime30s = '-30s';
         const txtTimeNow = 'Now';
@@ -174,9 +193,9 @@ window.renderHomePage = function(container) {
             <style>
                 .home-scroll-wrapper {
                     width: 100%;
-                    max-height: calc(100vh - 130px);
+                    max-height: calc(100vh - 80px);
                     overflow-y: auto;
-                    padding: 10px 16px 90px 16px;
+                    padding: 12px 16px 90px 16px;
                     box-sizing: border-box;
                     background: radial-gradient(circle at 10% 8%, rgba(153, 69, 255, 0.15) 0%, transparent 35%),
                                 radial-gradient(circle at 90% 12%, rgba(20, 241, 149, 0.15) 0%, transparent 35%),
@@ -187,155 +206,139 @@ window.renderHomePage = function(container) {
                 }
                 .home-scroll-wrapper::-webkit-scrollbar { display: none; }
 
-                .royal-profile-card {
-                    position: relative;
-                    background: rgba(18, 18, 24, 0.75);
-                    border-radius: 20px;
-                    padding: 35px 15px 18px 15px;
-                    margin-top: 25px;
-                    margin-bottom: 12px;
+                /* الشريط العلوي الهيدر */
+                .top-header-bar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    margin-bottom: 14px;
+                    padding: 8px 12px;
+                    background: rgba(18, 18, 24, 0.7);
                     border: 1px solid rgba(255, 255, 255, 0.08);
-                    text-align: center;
-                    backdrop-filter: blur(15px);
+                    border-radius: 18px;
+                    backdrop-filter: blur(14px);
                 }
 
-                .royal-avatar-wrapper {
-                    position: absolute; top: -35px; left: 50%;
-                    transform: translateX(-50%); width: 68px; height: 68px;
-                    border-radius: 50%;
-                    background: linear-gradient(135deg, #9945FF, #14F195);
-                    padding: 3px; z-index: 2;
-                }
-
-                .royal-avatar-inner {
-                    width: 100%; height: 100%; border-radius: 50%; overflow: hidden;
-                    border: 2px solid #121215; background: #111;
-                }
-                .royal-avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
-
-                .gold-official-btn {
-                    background: linear-gradient(180deg, #FFE082 0%, #E6A100 100%);
-                    color: #000;
-                    font-weight: 800;
-                    border: none;
-                    padding: 7px 24px;
-                    border-radius: 12px;
-                    font-size: 0.82rem;
-                    margin-top: 10px;
+                .profile-btn-link {
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    background: rgba(255, 255, 255, 0.04);
+                    padding: 4px 12px 4px 4px;
+                    border-radius: 25px;
+                    border: 1px solid rgba(20, 241, 149, 0.35);
                     cursor: pointer;
-                    box-shadow: 0 4px 12px rgba(230, 161, 0, 0.25);
-                    transition: transform 0.2s;
+                    transition: transform 0.2s ease, border-color 0.2s;
                 }
-                .gold-official-btn:active { transform: scale(0.96); }
+                .profile-btn-link:active { transform: scale(0.95); }
 
+                .avatar-glow-ring {
+                    width: 34px; height: 34px;
+                    border-radius: 50%; padding: 2px;
+                    background: linear-gradient(135deg, #9945FF, #14F195);
+                }
+                .avatar-glow-ring img {
+                    width: 100%; height: 100%;
+                    border-radius: 50%; object-fit: cover;
+                    border: 1px solid #08090C;
+                }
+
+                .gold-official-btn-sm {
+                    background: linear-gradient(180deg, #FFE082 0%, #E6A100 100%);
+                    color: #000; font-weight: 800; border: none;
+                    padding: 6px 14px; border-radius: 10px; font-size: 0.75rem;
+                    cursor: pointer; box-shadow: 0 3px 10px rgba(230, 161, 0, 0.22);
+                }
+
+                /* بانر التحرير والتحديث السريع */
+                .refresh-bar-area {
+                    display: flex; align-items: center; justify-content: space-between;
+                    margin-bottom: 12px; padding: 0 4px;
+                }
+
+                .refresh-icon-btn {
+                    background: rgba(20, 241, 149, 0.1); border: 1px solid rgba(20, 241, 149, 0.3);
+                    color: #14F195; border-radius: 10px; padding: 4px 10px; font-size: 0.72rem;
+                    font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;
+                }
+                .refresh-icon-btn:active { transform: rotate(180deg); }
+
+                /* بطاقات الوصول السريع لـ NFTs والمحتوى الرياضي */
+                .quick-access-banner {
+                    background: linear-gradient(135deg, rgba(153,69,255,0.2) 0%, rgba(20,241,149,0.15) 100%);
+                    border: 1px solid rgba(153,69,255,0.3);
+                    border-radius: 16px; padding: 12px 14px; margin-bottom: 12px;
+                    display: flex; align-items: center; justify-content: space-between;
+                    cursor: pointer; backdrop-filter: blur(10px);
+                }
+
+                /* بطاقة سولانا */
                 .solana-chronicle-card {
                     background: rgba(18, 18, 24, 0.75);
                     border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 18px;
-                    padding: 14px 16px;
-                    margin-bottom: 12px;
+                    border-radius: 18px; padding: 14px 16px; margin-bottom: 12px;
                     backdrop-filter: blur(15px);
                 }
+                .sol-card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+                .sol-oracle-badge { font-size: 0.65rem; font-weight: 800; color: #14F195; display: flex; align-items: center; gap: 4px; }
+                .sol-sparkline-svg { width: 72%; height: 40px; stroke: #14F195; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+                .sol-price-axis { font-family: monospace; font-size: 0.68rem; color: #14F195; opacity: 0.85; text-align: ${isRtl ? 'left' : 'right'}; display: flex; flex-direction: column; gap: 2px; }
+                .sol-time-axis { display: flex; justify-content: space-between; width: 72%; font-size: 0.65rem; color: #6b7280; font-weight: 600; margin-top: 2px; }
+                .sol-bottom-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06); text-align: center; }
+                .sol-grid-item span:first-child { display: block; font-size: 0.68rem; color: #9ca3af; font-weight: 600; margin-bottom: 2px; }
+                .sol-grid-item span:last-child { font-size: 0.82rem; font-weight: 800; color: #fff; font-family: monospace; }
 
-                .sol-card-header {
-                    display: flex; align-items: center; justify-content: space-between;
-                    margin-bottom: 8px;
-                }
-
-                .sol-oracle-badge {
-                    font-size: 0.65rem; font-weight: 800; color: #14F195;
-                    display: flex; align-items: center; gap: 4px; text-transform: uppercase;
-                }
-
-                .sol-chart-area {
-                    margin: 8px 0;
-                    position: relative;
-                }
-
-                .sol-sparkline-svg {
-                    width: 72%; height: 40px; stroke: #14F195; fill: none; stroke-width: 2.5; stroke-linecap: round;
-                }
-
-                .sol-price-axis {
-                    font-family: monospace; font-size: 0.68rem; color: #14F195; opacity: 0.85;
-                    text-align: ${isRtl ? 'left' : 'right'}; display: flex; flex-direction: column; gap: 2px;
-                }
-
-                .sol-time-axis {
-                    display: flex; justify-content: space-between; width: 72%;
-                    font-size: 0.65rem; color: #6b7280; font-weight: 600; margin-top: 2px;
-                }
-
-                .sol-bottom-grid {
-                    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;
-                    margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06);
-                    text-align: center;
-                }
-
-                .sol-grid-item span:first-child {
-                    display: block; font-size: 0.68rem; color: #9ca3af; font-weight: 600; margin-bottom: 2px;
-                }
-                .sol-grid-item span:last-child {
-                    font-size: 0.82rem; font-weight: 800; color: #fff; font-family: monospace;
-                }
-
+                /* البانرات التفاعلية للتحديات */
                 .action-banner {
-                    position: relative; 
-                    border-radius: 18px; 
-                    padding: 12px 15px; 
-                    margin-bottom: 10px;
-                    display: flex; 
-                    align-items: center; 
-                    gap: 12px; 
-                    cursor: pointer; 
-                    backdrop-filter: blur(15px);
-                    background: rgba(18, 18, 24, 0.75); 
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    transition: background 0.2s, border-color 0.2s;
+                    position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 10px;
+                    display: flex; align-items: center; gap: 12px; cursor: pointer; backdrop-filter: blur(15px);
+                    background: rgba(18, 18, 24, 0.75); border: 1px solid rgba(255, 255, 255, 0.08); transition: all 0.2s;
                 }
+                .action-banner:active { background: rgba(30, 30, 40, 0.85); border-color: rgba(255, 255, 255, 0.15); }
+                .banner-icon-wrapper { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08); }
 
-                .action-banner:active {
-                    background: rgba(30, 30, 40, 0.85);
-                    border-color: rgba(255, 255, 255, 0.15);
-                }
-
-                .banner-icon-wrapper {
-                    width: 42px; height: 42px; border-radius: 12px; display: flex;
-                    align-items: center; justify-content: center; font-size: 1.3rem;
-                    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.08);
-                }
-
+                /* بطاقات الأندية */
                 .glass-club-card {
-                    background: rgba(18, 18, 24, 0.75);
-                    backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); 
-                    border-radius: 16px; padding: 10px 14px; display: flex; align-items: center;
-                    justify-content: space-between; margin-bottom: 8px;
+                    background: rgba(18, 18, 24, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); 
+                    border-radius: 16px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
                 }
-
-                .club-logo-wrapper {
-                    width: 38px; height: 38px; background: rgba(0,0,0,0.4);
-                    border-radius: 12px; display: flex; align-items: center; justify-content: center;
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                }
-
-                .club-points-badge {
-                    background: rgba(255, 215, 0, 0.1);
-                    color: #FFD700; padding: 5px 12px; border-radius: 10px; font-weight: 900; font-size: 0.85rem;
-                    border: 1px solid rgba(255, 215, 0, 0.25);
-                }
+                .club-logo-wrapper { width: 38px; height: 38px; background: rgba(0,0,0,0.4); border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255, 255, 255, 0.08); }
+                .club-points-badge { background: rgba(255, 215, 0, 0.1); color: #FFD700; padding: 5px 12px; border-radius: 10px; font-weight: 900; font-size: 0.85rem; border: 1px solid rgba(255, 215, 0, 0.25); }
             </style>
 
             <div class="home-scroll-wrapper">
-                <div class="royal-profile-card">
-                    <div class="royal-avatar-wrapper">
-                        <div class="royal-avatar-inner">
+                <!-- 1. الهيدر العلوي مع زر البروفايل المعزول -->
+                <div class="top-header-bar">
+                    <div class="profile-btn-link" onclick="window.openProfileScreen()">
+                        <div class="avatar-glow-ring">
                             <img src="${avatarSrc}" alt="Avatar">
                         </div>
+                        <span style="font-size: 0.82rem; font-weight: 800; color: #fff;">${username}</span>
                     </div>
-                    <h2 style="margin: 15px 0 2px 0; color: #fff; font-size: 1.15rem; font-weight: 900;">${username}</h2>
-                    <button class="gold-official-btn" onclick="window.openOfficialWebsite()">${txtOfficialSite}</button>
+                    <button class="gold-official-btn-sm" onclick="window.openOfficialWebsite()">${txtOfficialSite}</button>
                 </div>
 
+                <!-- 2. زر التحديث والسوق السريع -->
+                <div class="refresh-bar-area">
+                    <span style="font-size:0.78rem; font-weight:800; color:#94a3b8;">ZELO SPORT ECOSYSTEM</span>
+                    <button class="refresh-icon-btn" onclick="window.updateHomeSolPrice();">
+                        🔄 ${t('refresh', isRtl ? 'تحديث حي' : 'Refresh')}
+                    </button>
+                </div>
+
+                <!-- 3. بانر سريعة للوصول إلى سوق الـ NFTs المعزول -->
+                <div class="quick-access-banner" onclick="window.openNftMarketScreen()">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:1.5rem;">👑</span>
+                        <div style="text-align: ${textAlign};">
+                            <div style="color:#fff; font-weight:900; font-size:0.88rem;">${txtNftMarket}</div>
+                            <div style="color:#14F195; font-size:0.7rem; font-weight:700;">${isRtl ? 'بطاقات اللاعبين الأسطورية والأرباح' : 'Legendary Cards & Yield'}</div>
+                        </div>
+                    </div>
+                    <div style="color:#14F195; font-size:1.1rem; font-weight:bold;">${arrowIcon}</div>
+                </div>
+
+                <!-- 4. بطاقة سعر سولانا المباشرة -->
                 <div class="solana-chronicle-card">
                     <div class="sol-card-header">
                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -376,7 +379,7 @@ window.renderHomePage = function(container) {
                         </div>
                     </div>
 
-                    <div class="sol-bottom-grid">
+                                        <div class="sol-bottom-grid">
                         <div class="sol-grid-item">
                             <span>${txtLiveSolPrice}</span>
                             <span id="home-sol-live-price">--.--</span>
@@ -392,6 +395,7 @@ window.renderHomePage = function(container) {
                     </div>
                 </div>
 
+                <!-- 5. بانر تحديات الأسبوع -->
                 <div id="challenges-card" class="action-banner" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
                     <div class="banner-icon-wrapper">
                         <span style="font-size:1.2rem;">⚽</span>
@@ -403,29 +407,34 @@ window.renderHomePage = function(container) {
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
+                <!-- 6. بانر ترتيب الأبطال والفائزين -->
                 <div id="ranking-card" class="action-banner" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
-                    <div class="banner-icon-wrapper">🔥</div>
+                    <div class="banner-icon-wrapper">🏆</div>
                     <div style="flex-grow: 1; text-align: ${textAlign};">
-                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtChallengesRanking}</h3>
+                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtDailyWinners}</h3>
                         <p style="color: #fca5a5; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtRankingSub}</p>
                     </div>
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
+                <!-- 7. قسم الأندية المحددة -->
                 <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
-                            #fff; margin: 0; font-size: 0.95rem; font-weight: 800;">${txtSupportedClubs}</h4>
+                            <h3 style="color: #fff; margin: 0; font-size: 0.85rem; font-weight: 800;">${txtSupportedClubs}</h3>
                         </div>
-                        <span style="color: #14F195; font-size: 0.75rem; font-weight: bold; background: rgba(20,241,149,0.1); padding: 3px 8px; border-radius: 8px;">${txtActive}</span>
+                        <span style="font-size: 0.68rem; color: #14F195; font-weight: 700; background: rgba(20,241,149,0.1); padding: 2px 8px; border-radius: 8px;">${txtActive}</span>
                     </div>
+
                     <div class="glass-club-card">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <div class="club-logo-wrapper">⚽</div>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="club-logo-wrapper">
+                                <span style="font-size: 1.1rem;">⚽</span>
+                            </div>
                             <div style="text-align: ${textAlign};">
-                                <div style="color: #fff; font-weight: 800; font-size: 0.88rem;">ZELO FC</div>
-                                <div style="color: #94a3b8; font-size: 0.68rem; font-weight: 600;">Global Fan Base</div>
+                                <div style="color:#fff; font-weight:800; font-size:0.85rem;">ZELO FC</div>
+                                <div style="color:#94a3b8; font-size:0.68rem;">Global Fan Base</div>
                             </div>
                         </div>
                         <div class="club-points-badge">100%</div>
@@ -434,12 +443,11 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        if (typeof window.updateHomeSolPrice === 'function') {
-            window.updateHomeSolPrice();
-            window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
-        }
-    } catch (err) {
-        console.error("Error rendering home page:", err);
-        target.innerHTML = `<div style="text-align:center; padding:40px; color:#ef4444; font-weight:bold;">⚠️ Error loading Home page</div>`;
+        // تشغيل مؤشر السعر الحي
+        window.updateHomeSolPrice();
+        window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
+
+    } catch (e) {
+        console.error("خطأ أثناء عرض الصفحة الرئيسية:", e);
     }
 };
