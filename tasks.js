@@ -1,5 +1,5 @@
 (function() {
-    // 1. Default tasks list
+    // 1. قائمة المهام الافتراضية
     window.defaultTasksData = [
         { id: "connect_x", textAr: "ربط حسابك في منصة X (مهمة خاصة)", textEn: "Connect X Account (VIP)", points: 1000, completed: false, url: "https://x.com/Zelo_Sport" },
         { id: "pump_fun", textAr: "دعم وشراء عملة ZELO FC على Pump.fun", textEn: "Support & Buy ZELO FC on Pump.fun", points: 1500, completed: false, url: "https://pump.fun/coin/BBQmpKimKwAHBoJN2TyRG2CSEYRZhkxfksu1D1q9pump" },
@@ -11,12 +11,13 @@
     ];
 
     async function apiVerifyTask(taskId, points) {
-        if (!supabaseClient) return { success: false, message: "No database connection" };
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) return { success: false, message: "No database connection" };
         
         try {
+            const currentUserId = userState.userId;
             const { error: taskError } = await supabaseClient
                 .from('user_tasks')
-                .insert([{ telegram_id: userState.userId, task_id: taskId, reward_points: points }]);
+                .insert([{ user_id: currentUserId, task_id: taskId, reward_points: points }]);
 
             if (taskError) {
                 if (taskError.code === '23505') return { success: true, alreadyDone: true }; 
@@ -27,7 +28,7 @@
             const { data: userData, error: fetchError } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', userState.userId);
+                .eq('user_id', currentUserId);
 
             if (!fetchError && userData && userData.length > 0) {
                 currentPoints = parseInt(userData[0].points) || 0;
@@ -39,8 +40,8 @@
             const { error: userUpsertError } = await supabaseClient
                 .from('users')
                 .upsert(
-                    { telegram_id: userState.userId, points: newPoints },
-                    { onConflict: 'telegram_id' }
+                    { user_id: currentUserId, points: newPoints },
+                    { onConflict: 'user_id' }
                 );
 
             if (userUpsertError) throw userUpsertError;
@@ -48,13 +49,13 @@
             const { data: clubData, error: clubFetchError } = await supabaseClient
                 .from('club_fans_rankings')
                 .select('total_fan_points')
-                .eq('telegram_id', userState.userId);
+                .eq('user_id', currentUserId);
 
             if (!clubFetchError && clubData && clubData.length > 0) {
                 const { error: clubUpdateError } = await supabaseClient
                     .from('club_fans_rankings')
                     .update({ total_fan_points: newPoints })
-                    .eq('telegram_id', userState.userId);
+                    .eq('user_id', currentUserId);
 
                 if (clubUpdateError) console.error("Error updating club points:", clubUpdateError);
             }
@@ -93,15 +94,16 @@
     };
 
     async function apiClaimDaily() {
-        if (!supabaseClient) return { success: false };
+        if (typeof supabaseClient === 'undefined' || !supabaseClient) return { success: false };
         const dailyPoints = 200; 
 
         try {
+            const currentUserId = userState.userId;
             let currentPoints = 0;
             const { data: userData, error: fetchError } = await supabaseClient
                 .from('users')
                 .select('points')
-                .eq('telegram_id', userState.userId);
+                .eq('user_id', currentUserId);
 
             if (!fetchError && userData && userData.length > 0) {
                 currentPoints = parseInt(userData[0].points) || 0;
@@ -115,20 +117,20 @@
                     points: newPoints,
                     last_daily_claim: new Date().toISOString() 
                 })
-                .eq('telegram_id', userState.userId);
+                .eq('user_id', currentUserId);
 
             if (updateError) throw updateError;
 
             const { data: clubData, error: clubFetchError } = await supabaseClient
                 .from('club_fans_rankings')
                 .select('total_fan_points')
-                .eq('telegram_id', userState.userId);
+                .eq('user_id', currentUserId);
 
             if (!clubFetchError && clubData && clubData.length > 0) {
                 await supabaseClient
                     .from('club_fans_rankings')
                     .update({ total_fan_points: newPoints })
-                    .eq('telegram_id', userState.userId);
+                    .eq('user_id', currentUserId);
             }
 
             return { success: true, pointsAdded: dailyPoints };
@@ -139,17 +141,18 @@
     }
 
     async function syncTasksFromDB() {
-        if (!supabaseClient || !userState.userId) return;
+        if (typeof supabaseClient === 'undefined' || !supabaseClient || !userState.userId) return;
 
         if (!userState.tasks || userState.tasks.length === 0) {
             userState.tasks = window.defaultTasksData.map(t => ({...t}));
         }
 
         try {
+            const currentUserId = userState.userId;
             const { data: tasksData } = await supabaseClient
                 .from('user_tasks')
                 .select('task_id')
-                .eq('telegram_id', userState.userId);
+                .eq('user_id', currentUserId);
 
             if (tasksData) {
                 const completedIds = tasksData.map(t => t.task_id);
@@ -161,7 +164,7 @@
             const { data: userData } = await supabaseClient
                 .from('users')
                 .select('last_daily_claim')
-                .eq('telegram_id', userState.userId)
+                .eq('user_id', currentUserId)
                 .single();
 
             if (userData && userData.last_daily_claim) {
@@ -344,7 +347,6 @@
                 </p>
             </div>
 
-            <!-- Compact Daily Check-in Card -->
             <div class="zelo-daily-compact">
                 <div style="text-align: ${isAr ? 'right' : 'left'}; display: flex; align-items: center; gap: 10px;">
                     <span style="font-size: 1.4rem;">🎁</span>
@@ -438,68 +440,54 @@
     };
 
     window.executeTask = async function(taskId, url, points) {
-    const task = userState.tasks.find(t => t.id === taskId);
-    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    
-    if (!task || task.completed || task.isProcessing) return;
+        const task = userState.tasks.find(t => t.id === taskId);
+        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+        
+        if (!task || task.completed || task.isProcessing) return;
 
-    task.isProcessing = true; 
+        task.isProcessing = true; 
 
-    try {
-        if (window.Telegram && window.Telegram.WebApp) {
-            if (url.includes("t.me") && window.Telegram.WebApp.openTelegramLink) {
-                window.Telegram.WebApp.openTelegramLink(url);
-            } else if (window.Telegram.WebApp.openLink) {
-                window.Telegram.WebApp.openLink(url);
-            } else {
-                window.open(url, '_blank');
-            }
-        } else {
-            window.open(url, '_blank');
-        }
-    } catch (e) {
-        window.open(url, '_blank');
-    }
-
-    const btn = document.getElementById(`btn-task-${taskId}`);
-    if (btn) {
-        btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
-        btn.className = "btn-task-done"; 
-        btn.disabled = true;
-    }
-
-    setTimeout(async () => {
         try {
-            const response = await apiVerifyTask(taskId, points);
-            task.isProcessing = false; 
+            if (window.Telegram && window.Telegram.WebApp) {
+                if (url.includes("t.me") && window.Telegram.WebApp.openTelegramLink) {
+                            const btn = document.getElementById(`btn-task-${taskId}`);
+        if (btn) {
+            btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
+            btn.className = "btn-task-done";
+            btn.disabled = true;
+        }
 
-            if (response.success) {
-                task.completed = true;
-                
-                if (!response.alreadyDone) {
-                    userState.points = (userState.points || 0) + points;
-                    alert(`🎉 ${isAr ? 'تم إنجاز المهمة وإضافة النقاط بنجاح:' : 'Task completed successfully:'} +${points} ZELO.`);
+        setTimeout(async () => {
+            try {
+                const response = await apiVerifyTask(taskId, points);
+                task.isProcessing = false;
+
+                if (response.success) {
+                    task.completed = true;
+                    
+                    if (!response.alreadyDone) {
+                        userState.points = (userState.points || 0) + points;
+                        alert(`🎉 ${isAr ? 'تم إكمال المهمة وإضافة النقاط:' : 'Task completed successfully:'} +${points} ZELO.`);
+                    }
+
+                    if (typeof updateTopBar === "function") updateTopBar();
+                    renderTasksPage(document.getElementById("main-content"));
+                } else {
+                    alert(isAr ? "حدث خطأ أثناء التحقق من المهمة." : "Verification failed.");
+                    if (btn) {
+                        btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
+                        btn.className = "btn-task-go";
+                        btn.disabled = false;
+                    }
                 }
-
-                if (typeof updateTopBar === "function") updateTopBar();
-                renderTasksPage(document.getElementById("main-content")); 
-            } else {
-                alert(isAr ? "فشل التحقق من المهمة، حاول مجدداً." : "Task verification failed, try again.");
+            } catch (error) {
+                task.isProcessing = false;
                 if (btn) {
                     btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
                     btn.className = "btn-task-go";
                     btn.disabled = false;
                 }
             }
-        } catch (error) {
-            task.isProcessing = false; 
-            if (btn) {
-                btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
-                btn.className = "btn-task-go";
-                btn.disabled = false;
-            }
-        }
-    }, 4000);
-};
-    
-
+        }, 4000);
+    };
+})();
