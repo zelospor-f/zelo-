@@ -28,13 +28,24 @@ jobs:
           npm install
           npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Build Web Assets
-        run: npm run build --if-present
+      - name: Prepare Web Folder
+        run: |
+          mkdir -p www
+          rsync -a ./ www/ \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude 'android' \
+            --exclude 'www' \
+            --exclude 'package.json' \
+            --exclude 'package-lock.json' \
+            --exclude 'capacitor.config.json' \
+            --exclude 'server.js'
+          sed -i 's/"webDir": *"\."/"webDir": "www"/' capacitor.config.json
 
       - name: Add and Sync Android Platform
         run: |
           if [ ! -d android ]; then npx cap add android; fi
-          mkdir -p android/app/src/main/assets
           npx cap sync android
 
       - name: Build Android APK
