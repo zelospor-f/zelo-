@@ -1,5 +1,9 @@
 {
   "appId": "com.zelosport.app",
   "appName": "Zelo Sport",
-  "webDir": "."
+  "webDir": ".",
+  "server": {
+    "url": "https://zelospor-f.github.io/zelo-/",
+    "cleartext": true
+  }
 }
