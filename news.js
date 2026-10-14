@@ -1,15 +1,46 @@
 (function() {
     const US = () => (typeof userState !== 'undefined' && userState) ? userState : {};
     const isAr = () => US().lang === 'ar';
-    const me = () => ({
-        id: String(US().userId || ''),
-        name: US().nickname || US().username || (isAr() ? 'لاعب' : 'Player'),
-        avatar: US().photoUrl || ''
-    });
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const myName = () => {
+        const fallback = isAr() ? 'لاعب' : 'Player';
+        return isAr()
+            ? (US().nickname_ar || US().nickname_en || fallback)
+            : (US().nickname_en || US().nickname_ar || fallback);
+    };
+    const me = () => ({ id: String(US().userId || ''), name: myName(), avatar: US().photoUrl || '' });
     const avatarUrl = (name, url) => url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'P')}&background=0c0e20&color=00FF87&size=96&bold=true`;
+
     const postCache = {};
+    const editState = {};
+    let pendingImage = '';
+
+    // تحويل الصورة المختارة من الهاتف إلى صورة مضغوطة
+    function readImage(file, maxSize = 900, quality = 0.75) {
+        return new Promise((resolve, reject) => {
+            if (!file) return resolve('');
+            if (!file.type.startsWith('image/')) return reject(new Error(isAr() ? 'الملف ليس صورة' : 'Not an image'));
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error('read failed'));
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+                    const w = Math.round(img.width * scale);
+                    const h = Math.round(img.height * scale);
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => reject(new Error('bad image'));
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    }
 
     const STYLES = `
         .news-head { text-align: center; margin-bottom: 16px; }
@@ -38,11 +69,21 @@
             border: 1px solid rgba(90,110,255,0.3); border-radius: 10px;
             padding: 8px 10px; color: #fff; font-size: 0.8rem; outline: none;
         }
-        .composer-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
+        .tool-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; }
+        .tool-btn {
+            border: 1px solid rgba(0,255,135,0.3); cursor: pointer; padding: 8px 12px; border-radius: 12px;
+            background: rgba(0,255,135,0.1); color: #7CF7C4; font-weight: 800; font-size: 0.8rem;
+        }
         .publish-btn {
             border: none; cursor: pointer; padding: 9px 20px; border-radius: 12px;
             background: linear-gradient(135deg, #2AABEE, #8B5CF6); color: #fff;
             font-weight: 900; font-size: 0.85rem; box-shadow: 0 4px 14px rgba(42,171,238,0.35);
+        }
+        .img-preview { position: relative; margin-top: 8px; }
+        .img-preview img { width: 100%; max-height: 260px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(90,110,255,0.25); }
+        .img-remove {
+            position: absolute; top: 6px; left: 6px; border: none; cursor: pointer;
+            background: rgba(0,0,0,0.7); color: #fff; width: 28px; height: 28px; border-radius: 50%; font-weight: 900;
         }
 
         .post-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -77,9 +118,7 @@
         .act-btn:active { transform: scale(0.96); }
         .act-btn.liked { color: #f472b6; border-color: rgba(244,114,182,0.4); background: rgba(244,114,182,0.1); }
 
-        .comments-box {
-            margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;
-        }
+        .comments-box { margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; }
         .cm-form { display: flex; gap: 6px; margin-bottom: 10px; }
         .cm-send {
             border: none; cursor: pointer; padding: 0 14px; border-radius: 10px;
@@ -95,11 +134,8 @@
         .cm-time { color: #7a7f9a; font-weight: 700; font-size: 0.62rem; margin-inline-start: 4px; }
         .cm-text { color: #cbd5e1; font-size: 0.8rem; margin-top: 3px; word-break: break-word; }
         .cm-actions { display: flex; gap: 10px; margin-top: 4px; }
-        .cm-actions button {
-            background: none; border: none; color: #2AABEE; font-size: 0.7rem; font-weight: 800; cursor: pointer; padding: 0;
-        }
+        .cm-actions button { background: none; border: none; color: #2AABEE; font-size: 0.7rem; font-weight: 800; cursor: pointer; padding: 0; }
         .cm-empty { text-align: center; color: #7a7f9a; font-size: 0.75rem; padding: 6px; }
-        .edit-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
         .save-mini {
             border: none; cursor: pointer; padding: 7px 16px; border-radius: 10px;
             background: linear-gradient(135deg, #00FF87, #14B8A6); color: #04110B; font-weight: 900; font-size: 0.78rem;
@@ -126,7 +162,7 @@
     function postBodyHtml(p) {
         return `
             <div class="post-text">${esc(p.content).replace(/\n/g, '<br>')}</div>
-            ${p.image_url ? `<img class="post-img" src="${esc(p.image_url)}" onerror="this.style.display='none'">` : ''}
+            ${p.image_url ? `<img class="post-img" src="${p.image_url}" onerror="this.style.display='none'">` : ''}
         `;
     }
 
@@ -143,8 +179,8 @@
                     </div>
                     ${mine ? `
                         <div class="owner-actions">
-                            <button onclick="window.startEditPost(${p.id})" title="${isAr() ? 'تعديل' : 'Edit'}">✏️</button>
-                            <button onclick="window.deletePost(${p.id})" title="${isAr() ? 'حذف' : 'Delete'}">🗑️</button>
+                            <button onclick="window.startEditPost(${p.id})">✏️</button>
+                            <button onclick="window.deletePost(${p.id})">🗑️</button>
                         </div>` : ''}
                 </div>
                 <div id="post-body-${p.id}">${postBodyHtml(p)}</div>
@@ -210,18 +246,35 @@
         list.innerHTML = posts.map(p => postHtml(postCache[p.id])).join('');
     }
 
+    // اختيار صورة من الهاتف للمنشور الجديد
+    window.pickPostImage = async function(input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        try {
+            pendingImage = await readImage(file);
+            document.getElementById('composer-preview').innerHTML = `
+                <div class="img-preview">
+                    <img src="${pendingImage}">
+                    <button class="img-remove" onclick="window.clearPostImage()">✕</button>
+                </div>`;
+        } catch (e) {
+            alert(e.message);
+        }
+        input.value = '';
+    };
+
+    window.clearPostImage = function() {
+        pendingImage = '';
+        const pv = document.getElementById('composer-preview');
+        if (pv) pv.innerHTML = '';
+    };
+
     window.createPost = async function() {
         const textEl = document.getElementById('new-post-text');
-        const imgEl = document.getElementById('new-post-img');
         const content = (textEl?.value || '').trim();
-        const image = (imgEl?.value || '').trim();
 
-        if (!content && !image) {
+        if (!content && !pendingImage) {
             alert(isAr() ? 'اكتب نصاً أو أضف صورة أولاً.' : 'Write something or add an image first.');
-            return;
-        }
-        if (image && !/^https?:\/\//i.test(image)) {
-            alert(isAr() ? 'رابط الصورة يجب أن يبدأ بـ http أو https' : 'Image URL must start with http or https');
             return;
         }
 
@@ -232,12 +285,12 @@
             author_name: u.name,
             author_avatar: u.avatar,
             content: content,
-            image_url: image || null
+            image_url: pendingImage || null
         }]);
         if (error) { alert((isAr() ? 'فشل النشر: ' : 'Post failed: ') + error.message); return; }
 
         textEl.value = '';
-        imgEl.value = '';
+        window.clearPostImage();
         await loadFeed();
     };
 
@@ -261,43 +314,86 @@
         updatePostUI(id);
     };
 
+    // تعديل المنشور مع إمكانية تغيير الصورة أو حذفها
     window.startEditPost = function(id) {
+        const p = postCache[id];
+        if (!p) return;
+        editState[id] = { newImage: null, removed: false };
+        renderEdit(id, p.content);
+    };
+
+    function renderEdit(id, content) {
         const p = postCache[id];
         const body = document.getElementById(`post-body-${id}`);
         if (!p || !body) return;
+        const st = editState[id];
+        const shownImage = st.removed ? '' : (st.newImage || p.image_url || '');
+
         body.innerHTML = `
-            <textarea id="edit-text-${id}" class="edit-area" style="width:100%;">${esc(p.content)}</textarea>
-            <input id="edit-img-${id}" class="cm-input" style="margin-top:8px;" value="${esc(p.image_url || '')}"
-                   placeholder="${isAr() ? 'رابط الصورة (اختياري)' : 'Image URL (optional)'}">
-            <div class="edit-actions">
-                <button class="act-btn" style="padding:7px 14px;" onclick="window.cancelEditPost(${id})">${isAr() ? 'إلغاء' : 'Cancel'}</button>
-                <button class="save-mini" onclick="window.saveEditPost(${id})">${isAr() ? 'حفظ' : 'Save'}</button>
+            <textarea id="edit-text-${id}" class="edit-area" style="width:100%;">${esc(content)}</textarea>
+            ${shownImage ? `
+                <div class="img-preview">
+                    <img src="${shownImage}">
+                    <button class="img-remove" onclick="window.removeEditImage(${id})">✕</button>
+                </div>` : ''}
+            <div class="tool-row">
+                <label class="tool-btn" style="margin:0;">
+                    📷 ${isAr() ? 'تغيير الصورة' : 'Change image'}
+                    <input type="file" accept="image/*" style="display:none;" onchange="window.pickEditImage(${id}, this)">
+                </label>
+                <div style="display:flex; gap:8px;">
+                    <button class="act-btn" style="padding:7px 14px;" onclick="window.cancelEditPost(${id})">${isAr() ? 'إلغاء' : 'Cancel'}</button>
+                    <button class="save-mini" onclick="window.saveEditPost(${id})">${isAr() ? 'حفظ' : 'Save'}</button>
+                </div>
             </div>`;
+    }
+
+    window.pickEditImage = async function(id, input) {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        try {
+            editState[id].newImage = await readImage(file);
+            editState[id].removed = false;
+            const txt = document.getElementById(`edit-text-${id}`)?.value ?? postCache[id].content;
+            renderEdit(id, txt);
+        } catch (e) { alert(e.message); }
     };
 
-    window.cancelEditPost = function(id) { renderPostBody(id); };
+    window.removeEditImage = function(id) {
+        editState[id].removed = true;
+        editState[id].newImage = null;
+        const txt = document.getElementById(`edit-text-${id}`)?.value ?? postCache[id].content;
+        renderEdit(id, txt);
+    };
+
+    window.cancelEditPost = function(id) {
+        delete editState[id];
+        renderPostBody(id);
+    };
 
     window.saveEditPost = async function(id) {
         const content = document.getElementById(`edit-text-${id}`).value.trim();
-        const image = document.getElementById(`edit-img-${id}`).value.trim();
+        const st = editState[id] || {};
+        const p = postCache[id];
+
+        let image = p.image_url || null;
+        if (st.removed) image = null;
+        if (st.newImage) image = st.newImage;
 
         if (!content && !image) {
             alert(isAr() ? 'لا يمكن ترك المنشور فارغاً.' : 'Post cannot be empty.');
             return;
         }
-        if (image && !/^https?:\/\//i.test(image)) {
-            alert(isAr() ? 'رابط الصورة يجب أن يبدأ بـ http أو https' : 'Image URL must start with http or https');
-            return;
-        }
 
         const now = new Date().toISOString();
         const { error } = await db().from('posts')
-            .update({ content: content, image_url: image || null, updated_at: now })
+            .update({ content: content, image_url: image, updated_at: now })
             .eq('id', id)
             .eq('user_id', me().id);
         if (error) { alert(error.message); return; }
 
-        Object.assign(postCache[id], { content: content, image_url: image || null, updated_at: now });
+        Object.assign(p, { content: content, image_url: image, updated_at: now });
+        delete editState[id];
         renderPostBody(id);
     };
 
@@ -312,146 +408,23 @@
     };
 
     window.sharePost = async function(id) {
-        const p = postCache[id];
-        if (!p) return;
-        const link = `https://t.me/Zelo_Sport_bot/app?startapp=post_${id}`;
-        const text = `${p.author_name}: ${p.content || ''}`.slice(0, 200);
+    const p = postCache[id];
+    if (!p) return;
+    const link = `https://t.me/Zelo_Sport_bot/app?startapp=post_${id}`;
+    const text = `${p.author_name}: ${p.content || ''}`.slice(0, 200);
 
-        if (navigator.share) {
-            navigator.share({ title: 'ZELO FC', text: text, url: link }).catch(() => {});
-            return;
-        }
-        try {
-            await navigator.clipboard.writeText(link);
-            alert(isAr() ? 'تم نسخ رابط المنشور 🔗' : 'Post link copied 🔗');
-        } catch (e) {}
-    };
-
-    window.toggleComments = async function(postId) {
-        const box = document.getElementById(`comments-${postId}`);
-        if (!box) return;
-        if (box.style.display === 'none') {
-            box.style.display = 'block';
-            await loadComments(postId);
-        } else {
-            box.style.display = 'none';
-        }
-    };
-
-    async function loadComments(postId) {
-        const box = document.getElementById(`comments-${postId}`);
-        const c = db();
-        if (!box || !c) return;
-
-        const { data } = await c.from('post_comments').select('*')
-            .eq('post_id', postId)
-            .order('created_at', { ascending: true });
-        const list = data || [];
-        const kids = pid => list.filter(x => String(x.parent_id) === String(pid));
-
-        const renderC = (cm, depth) => {
-            const ind = Math.min(depth, 3) * 16;
-            const side = isAr() ? 'margin-right' : 'margin-left';
-            const mine = String(cm.user_id) === me().id;
-            return `
-                <div class="cm" style="${side}: ${ind}px;">
-                    <img class="cm-avatar" src="${esc(avatarUrl(cm.author_name, cm.author_avatar))}" onerror="this.style.display='none'">
-                    <div class="cm-body">
-                        <div class="cm-name">${esc(cm.author_name)} <span class="cm-time">${timeAgo(cm.created_at)}</span></div>
-                        <div class="cm-text">${esc(cm.content)}</div>
-                        <div class="cm-actions">
-                            <button onclick="window.showReplyBox(${postId}, ${cm.id})">↩️ ${isAr() ? 'رد' : 'Reply'}</button>
-                            ${mine ? `<button onclick="window.deleteComment(${postId}, ${cm.id})">🗑️ ${isAr() ? 'حذف' : 'Delete'}</button>` : ''}
-                        </div>
-                        <div id="reply-box-${cm.id}"></div>
-                    </div>
-                </div>
-                ${kids(cm.id).map(k => renderC(k, depth + 1)).join('')}`;
-        };
-
-        const tree = list.filter(x => !x.parent_id).map(r => renderC(r, 0)).join('');
-
-        box.innerHTML = `
-            <div class="cm-form">
-                <input id="cm-input-${postId}" class="cm-input" placeholder="${isAr() ? 'اكتب تعليقاً...' : 'Write a comment...'}">
-                <button class="cm-send" onclick="window.addComment(${postId}, null)">➤</button>
-            </div>
-            ${tree || `<div class="cm-empty">${isAr() ? 'لا توجد تعليقات بعد' : 'No comments yet'}</div>`}
-        `;
+    if (navigator.share) {
+        navigator.share({ title: 'ZELO FC', text: text, url: link }).catch(() => {});
+        return;
     }
+    try {
+        await navigator.clipboard.writeText(link);
+        alert(isAr() ? 'تم نسخ رابط المنشور بنجاح! 🔗' : 'Post link copied successfully! 🔗');
+    } catch (e) {
+        alert(link);
+    }
+};
 
-    window.showReplyBox = function(postId, cmId) {
-        const box = document.getElementById(`reply-box-${cmId}`);
-        if (!box) return;
-        if (box.innerHTML) { box.innerHTML = ''; return; }
-        box.innerHTML = `
-            <div class="cm-form" style="margin-top:8px; margin-bottom:0;">
-                <input id="reply-input-${cmId}" class="cm-input" placeholder="${isAr() ? 'اكتب رداً...' : 'Write a reply...'}">
-                <button class="cm-send" onclick="window.addComment(${postId}, ${cmId})">➤</button>
-            </div>`;
-    };
-
-    window.addComment = async function(postId, parentId) {
-        const input = document.getElementById(parentId ? `reply-input-${parentId}` : `cm-input-${postId}`);
-        const text = (input?.value || '').trim();
-        if (!text) return;
-
-        const c = db();
-        const u = me();
-        const { error } = await c.from('post_comments').insert([{
-            post_id: postId,
-            parent_id: parentId || null,
-            user_id: u.id,
-            author_name: u.name,
-            author_avatar: u.avatar,
-            content: text
-        }]);
-        if (error) { alert(error.message); return; }
-
-        postCache[postId].comments++;
-        updatePostUI(postId);
-            };
-
-    window.deleteComment = async function(postId, cmId) {
-        if (!confirm(isAr() ? 'حذف هذا التعليق؟' : 'Delete this comment?')) return;
-        const c = db();
-        const { error } = await c.from('post_comments').delete().eq('id', cmId).eq('user_id', me().id);
-        if (error) { alert(error.message); return; }
-
-        const { data } = await c.from('post_comments').select('id').eq('post_id', postId);
-        postCache[postId].comments = data ? data.length : 0;
-        updatePostUI(postId);
-        await loadComments(postId);
-    };
-
-    window.renderFriendsPage = async function(container) {
-        const u = me();
-        container.innerHTML = `
-            <style>${STYLES}</style>
-
-            <div class="news-head">
-                <h2 class="news-title">📰 ${isAr() ? 'الأخبار' : 'News Feed'}</h2>
-                <p class="news-sub">${isAr() ? 'شارك صورك وأفكارك مع مجتمع Zelo' : 'Share your moments with the Zelo community'}</p>
-            </div>
-
-            <div class="composer">
-                <div class="composer-top">
-                    <img class="post-avatar" src="${esc(avatarUrl(u.name, u.avatar))}" onerror="this.style.display='none'">
-                    <textarea id="new-post-text" class="composer-text"
-                        placeholder="${isAr() ? 'ماذا يحدث في عالم الرياضة؟' : 'What is happening?'}"></textarea>
-                </div>
-                <input id="new-post-img" class="cm-input"
-                    placeholder="${isAr() ? 'رابط صورة (اختياري)' : 'Image URL (optional)'}">
-                <div class="composer-actions">
-                    <button class="publish-btn" onclick="window.createPost()">🚀 ${isAr() ? 'نشر' : 'Post'}</button>
-                </div>
-            </div>
-
-            <div id="feed-list"><div class="loading-box">⏳ ${isAr() ? 'جاري تحميل الأخبار...' : 'Loading feed...'}</div></div>
-            <div style="height: 20px;"></div>
-        `;
-        await loadFeed();
-    };
-
-    window.renderNewsPage = window.renderFriendsPage;
+pendingImage = '';
+loadFeed();
 })();
