@@ -1,187 +1,187 @@
-Window.generateReferralLink = function() {
-    Let cleanUserId = "";
-    If (typeof userState !== 'undefined' && userState.userId) {
-        CleanUserId = String(userState.userId).replace(/[^\w\d]/g, '');
+window.generateReferralLink = function() {
+    let cleanUserId = "";
+    if (typeof userState !== 'undefined' && userState.userId) {
+        cleanUserId = String(userState.userId).replace(/[^\w\d]/g, '');
     }
-    If (!cleanUserId) cleanUserId = "user";
-    Return `https://t.me/Zelo_Sport_bot/app?startapp=ref_${cleanUserId}`;
+    if (!cleanUserId) cleanUserId = "user";
+    return `https://t.me/Zelo_Sport_bot/app?startapp=ref_${cleanUserId}`;
 };
 
-Window.fetchFriendsFromDB = async function(userId) {
-    If (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        Return [];
+window.fetchFriendsFromDB = async function(userId) {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        return [];
     }
 
-    Try {
-        Const searchUserId = String(userId).trim();
-        If (!searchUserId) return [];
+    try {
+        const searchUserId = String(userId).trim();
+        if (!searchUserId) return [];
 
-        Const { data: referrals, error: refError } = await supabaseClient
+        const { data: referrals, error: refError } = await supabaseClient
             .from('referrals')
             .select('referred_id, reward_points') 
             .eq('referrer_id', searchUserId);
 
-        If (refError || !referrals || referrals.length === 0) return [];
+        if (refError || !referrals || referrals.length === 0) return [];
 
-        Const friendIds = referrals.map(r => String(r.referred_id));
+        const friendIds = referrals.map(r => String(r.referred_id));
 
-        Const { data: users, error: usersError } = await supabaseClient
+        const { data: users, error: usersError } = await supabaseClient
             .from('users')
-            .select('telegram_id, username, first_name')
-            .in('telegram_id', friendIds);
+            .select('user_id, username, first_name')
+            .in('user_id', friendIds);
 
-        If (usersError) return [];
+        if (usersError) return [];
 
-        Const { data: subReferrals, error: subRefError } = await supabaseClient
+        const { data: subReferrals, error: subRefError } = await supabaseClient
             .from('referrals')
             .select('referrer_id')
             .in('referrer_id', friendIds);
 
-        Const inviteCounts = {};
-        If (!subRefError && subReferrals) {
-            SubReferrals.forEach(r => {
-                Const refIdStr = String(r.referrer_id);
-                InviteCounts[refIdStr] = (inviteCounts[refIdStr] || 0) + 1;
+        const inviteCounts = {};
+        if (!subRefError && subReferrals) {
+            subReferrals.forEach(r => {
+                const refIdStr = String(r.referrer_id);
+                inviteCounts[refIdStr] = (inviteCounts[refIdStr] || 0) + 1;
             });
         }
 
-        Return referrals.map(ref => {
-            Const friendInfo = users ? Users.find(u => String(u.telegram_id) === String(ref.referred_id)) : null;
-            Let fallbackName = (typeof t === 'function' && t('newFriend') !== 'newFriend') ? T('newFriend') : "New Friend";
-            Let name = fallbackName;
+        return referrals.map(ref => {
+            const friendInfo = users ? users.find(u => String(u.user_id) === String(ref.referred_id)) : null;
+            let fallbackName = (typeof t === 'function' && t('newFriend') !== 'newFriend') ? t('newFriend') : "New Friend";
+            let name = fallbackName;
             
-            If (friendInfo) {
-                Name = friendInfo.first_name || friendInfo.username || fallbackName;
+            if (friendInfo) {
+                name = friendInfo.first_name || friendInfo.username || fallbackName;
             }
-            Return {
-                Name: name,
-                RewardPoints: ref.reward_points || 0, 
-                ReferralsCount: inviteCounts[String(ref.referred_id)] || 0 
+            return {
+                name: name,
+                rewardPoints: ref.reward_points || 0, 
+                referralsCount: inviteCounts[String(ref.referred_id)] || 0 
             };
         });
 
     } catch (error) {
-        Return [];
+        return [];
     }
 };
 
-Window.renderFriendsPage = async function(container) {
-    If (window.initReferralCheck) {
-        Await window.initReferralCheck();
+window.renderFriendsPage = async function(container) {
+    if (window.initReferralCheck) {
+        await window.initReferralCheck();
     }
 
-    Const referralLink = window.generateReferralLink();
-    Const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+    const referralLink = window.generateReferralLink();
+    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
 
-    Const getTranslation = (key, defaultText) => {
-        If (typeof t === 'function') {
-            Const val = t(key);
-            If (val && val !== key) return val;
+    const getTranslation = (key, defaultText) => {
+        if (typeof t === 'function') {
+            const val = t(key);
+            if (val && val !== key) return val;
         }
-        Return defaultText;
+        return defaultText;
     };
 
-    Const commissionTitle = getTranslation('commissionTitle', isAr ? '🎁 نظام الأرباح والعمولة المستمرة (10%)' : '🎁 10% Continuous Commission');
-    Const commissionDesc = getTranslation('commissionDesc', isAr 
+    const commissionTitle = getTranslation('commissionTitle', isAr ? '🎁 نظام الأرباح والعمولة المستمرة (10%)' : '🎁 10% Continuous Commission');
+    const commissionDesc = getTranslation('commissionDesc', isAr 
         ? 'شارك رابط الإحالة الخاص بك، وستحصل تلقائياً وبشكل مستمر على عمولة بنسبة <b style="color:#00FF87;">10%</b> من رصيد النقاط التي يجمعونها أثناء لعبهم!' 
         : 'Share your link and earn a lifetime <b style="color:#00FF87;">10%</b> commission from all points collected by your invited friends!');
 
-    Const borderSide = isAr ? 'border-right' : 'border-left';
+    const borderSide = isAr ? 'border-right' : 'border-left';
 
-    Container.innerHTML = `
+    container.innerHTML = `
         <style>
             .zelo-info-card {
-                Background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(16, 185, 129, 0.08));
-                Backdrop-filter: blur(16px);
+                background: linear-gradient(135deg, rgba(139, 92, 246, 0.12), rgba(16, 185, 129, 0.08));
+                backdrop-filter: blur(16px);
                 -webkit-backdrop-filter: blur(16px);
-                Border: 1px solid rgba(0, 255, 135, 0.25);
-                Border-radius: 16px;
-                Padding: 16px;
-                Margin-bottom: 20px;
-                Box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+                border: 1px solid rgba(0, 255, 135, 0.25);
+                border-radius: 16px;
+                padding: 16px;
+                margin-bottom: 20px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.5);
                 ${borderSide}: 4px solid #00FF87;
             }
 
             .zelo-link-card {
-                Background: rgba(20, 20, 28, 0.75);
-                Backdrop-filter: blur(16px);
-                Border: 1px solid rgba(255, 255, 255, 0.08);
-                Border-radius: 16px;
-                Padding: 18px 16px;
-                Margin-bottom: 25px;
-                Box-shadow: 0 8px 25px rgba(0,0,0,0.6);
-                Text-align: center;
+                background: rgba(20, 20, 28, 0.75);
+                backdrop-filter: blur(16px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                border-radius: 16px;
+                padding: 18px 16px;
+                margin-bottom: 25px;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+                text-align: center;
             }
 
             .link-text-box {
-                Background: rgba(10, 10, 15, 0.8);
-                Color: #00FF87;
-                Font-size: 0.85rem;
-                Font-weight: bold;
-                Padding: 12px 14px;
-                Border-radius: 12px;
-                Border: 1px solid rgba(0, 255, 135, 0.2);
-                Margin-bottom: 16px;
-                Box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
-                Display: flex;
-                Align-items: center;
-                Justify-content: center;
-                Gap: 8px;
+                background: rgba(10, 10, 15, 0.8);
+                color: #00FF87;
+                font-size: 0.85rem;
+                font-weight: bold;
+                padding: 12px 14px;
+                border-radius: 12px;
+                border: 1px solid rgba(0, 255, 135, 0.2);
+                margin-bottom: 16px;
+                box-shadow: inset 0 2px 8px rgba(0,0,0,0.8);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
             }
 
             .action-buttons-wrapper {
-                Display: flex; 
-                Gap: 10px; 
-                Justify-content: center;
+                display: flex; 
+                gap: 10px; 
+                justify-content: center;
             }
 
             .btn-sleek {
-                Padding: 12px 16px;
-                Border-radius: 12px;
-                Font-weight: bold;
-                Font-size: 0.88rem;
-                Cursor: pointer;
-                Flex: 1;
-                Display: flex;
-                Align-items: center;
-                Justify-content: center;
-                Gap: 6px;
-                Border: none;
-                Transition: all 0.2s ease;
+                padding: 12px 16px;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 0.88rem;
+                cursor: pointer;
+                flex: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                border: none;
+                transition: all 0.2s ease;
             }
 
             .btn-copy-sleek {
-                Background: rgba(255, 255, 255, 0.08);
-                Color: #fff;
-                Border: 1px solid rgba(255, 255, 255, 0.2);
-                Backdrop-filter: blur(10px);
+                background: rgba(255, 255, 255, 0.08);
+                color: #fff;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                backdrop-filter: blur(10px);
             }
             .btn-copy-sleek:hover { background: rgba(255, 255, 255, 0.15); }
             .btn-copy-sleek:active { transform: scale(0.95); }
 
             .btn-share-vibrant {
-                Background: linear-gradient(135deg, #2AABEE, #8B5CF6);
-                Color: #fff;
-                Box-shadow: 0 4px 15px rgba(42, 171, 238, 0.35);
+                background: linear-gradient(135deg, #2AABEE, #8B5CF6);
+                color: #fff;
+                box-shadow: 0 4px 15px rgba(42, 171, 238, 0.35);
             }
             .btn-share-vibrant:hover {
-                Box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
-                Transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+                transform: translateY(-2px);
             }
             .btn-share-vibrant:active { transform: scale(0.95); }
 
             .zelo-friend-row {
-                Display: flex; justify-content: space-between; align-items: center;
-                Background: rgba(25, 25, 35, 0.6);
-                Backdrop-filter: blur(12px);
-                Padding: 12px 16px; margin-bottom: 10px;
-                Border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);
+                display: flex; justify-content: space-between; align-items: center;
+                background: rgba(25, 25, 35, 0.6);
+                backdrop-filter: blur(12px);
+                padding: 12px 16px; margin-bottom: 10px;
+                border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);
             }
 
             .empty-state-glass {
-                Text-align: center; padding: 30px 15px;
-                Background: rgba(255,255,255,0.02);
-                Border-radius: 16px; border: 1px dashed rgba(255,255,255,0.15);
+                text-align: center; padding: 30px 15px;
+                background: rgba(255,255,255,0.02);
+                border-radius: 16px; border: 1px dashed rgba(255,255,255,0.15);
             }
         </style>
 
@@ -227,19 +227,19 @@ Window.renderFriendsPage = async function(container) {
         </div>
     `;
 
-    Const friendsListContainer = document.getElementById('friends-list-container');
-    Const friendsCountTitle = document.getElementById('friends-count-title');
+    const friendsListContainer = document.getElementById('friends-list-container');
+    const friendsCountTitle = document.getElementById('friends-count-title');
 
-    Try {
-        Const currentId = (typeof userState !== 'undefined' && userState.userId) ? UserState.userId : null;
-        Const realFriends = currentId ? Await window.fetchFriendsFromDB(currentId) : [];
+    try {
+        const currentId = (typeof userState !== 'undefined' && userState.userId) ? userState.userId : null;
+        const realFriends = currentId ? await window.fetchFriendsFromDB(currentId) : [];
         
-        FriendsCountTitle.innerText = `${getTranslation('friendsList', isAr ? 'قائمة الأصدقاء' : 'Joined Friends')} (${realFriends.length})`;
+        friendsCountTitle.innerText = `${getTranslation('friendsList', isAr ? 'قائمة الأصدقاء' : 'Joined Friends')} (${realFriends.length})`;
 
-        If (realFriends.length > 0) {
-            FriendsListContainer.style.textAlign = isAr ? 'right' : 'left';
+        if (realFriends.length > 0) {
+            friendsListContainer.style.textAlign = isAr ? 'right' : 'left';
             
-            FriendsListContainer.innerHTML = realFriends.map(friend => `
+            friendsListContainer.innerHTML = realFriends.map(friend => `
                 <div class="zelo-friend-row">
                     <div style="display: flex; align-items: center; gap: 12px;">
                         <div style="background: linear-gradient(135deg, rgba(42, 171, 238, 0.2), rgba(139, 92, 246, 0.2)); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; border: 1px solid rgba(0, 255, 135, 0.2);">
@@ -263,7 +263,7 @@ Window.renderFriendsPage = async function(container) {
                 </div>
             `).join('');
         } else {
-            FriendsListContainer.innerHTML = `
+            friendsListContainer.innerHTML = `
                 <div class="empty-state-glass">
                     <span style="font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.7;">🤝</span>
                     <p style="color: #aaa; margin: 0; font-size: 0.85rem; line-height: 1.5; font-weight: bold;">
@@ -273,141 +273,141 @@ Window.renderFriendsPage = async function(container) {
             `;
         }
     } catch (error) {
-        FriendsCountTitle.innerText = `${getTranslation('friendsList', isAr ? 'قائمة الأصدقاء المنضمين' : 'Joined Friends List')} (0)`;
-        FriendsListContainer.innerHTML = `<div class="empty-state-glass"><span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">${getTranslation('dbConnectionError', isAr ? '❌ فشل الاتصال. يرجى المحاولة لاحقاً.' : "❌ Connection failed. Please try again.")}</span></div>`;
+        friendsCountTitle.innerText = `${getTranslation('friendsList', isAr ? 'قائمة الأصدقاء المنضمين' : 'Joined Friends List')} (0)`;
+        friendsListContainer.innerHTML = `<div class="empty-state-glass"><span style="color: #ef4444; font-size: 0.85rem; font-weight: bold;">${getTranslation('dbConnectionError', isAr ? '❌ فشل الاتصال. يرجى المحاولة لاحقاً.' : "❌ Connection failed. Please try again.")}</span></div>`;
     }
 };
 
-Window.copyToClipboard = function(text) {
-    Navigator.clipboard.writeText(text).then(() => {
-        Let isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-        Let alertMsg = (typeof t === 'function' && t('alertCopied') !== 'alertCopied') ? T('alertCopied') : (isAr ? 'تم نسخ الرابط بنجاح! 🔗' : 'Link copied successfully! 🔗');
+window.copyToClipboard = function(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        let isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+        let alertMsg = (typeof t === 'function' && t('alertCopied') !== 'alertCopied') ? t('alertCopied') : (isAr ? 'تم نسخ الرابط بنجاح! 🔗' : 'Link copied successfully! 🔗');
         
-        Const linkBox = document.getElementById('ref-link-box');
-        If(linkBox) {
-            LinkBox.style.background = 'rgba(0, 255, 135, 0.2)';
-            SetTimeout(() => { linkBox.style.background = 'rgba(10, 10, 15, 0.8)'; }, 300);
+        const linkBox = document.getElementById('ref-link-box');
+        if(linkBox) {
+            linkBox.style.background = 'rgba(0, 255, 135, 0.2)';
+            setTimeout(() => { linkBox.style.background = 'rgba(10, 10, 15, 0.8)'; }, 300);
         }
         
-        Alert(alertMsg);
+        alert(alertMsg);
     });
 };
 
-Window.shareOnTelegram = function(link) {
-    Let isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-    Const defaultShareText = isAr 
+window.shareOnTelegram = function(link) {
+    let isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+    const defaultShareText = isAr 
         ? 'توقع نتائج أهم المباريات واجمع المكافآت والعملات الرقمية معي مجاناً في Zelo Sport! 🏆' 
         : 'Predict match results and earn crypto rewards with me on Zelo Sport! 🏆';
     
-    Const text = encodeURIComponent(((typeof t === 'function' && t('shareText') !== 'shareText') ? T('shareText') : defaultShareText));
+    const text = encodeURIComponent(((typeof t === 'function' && t('shareText') !== 'shareText') ? t('shareText') : defaultShareText));
     
-    If (navigator.share) {
-        Navigator.share({
-            Title: 'ZELO FC',
-            Text: decodeURIComponent(text),
-            Url: link
+    if (navigator.share) {
+        navigator.share({
+            title: 'ZELO FC',
+            text: decodeURIComponent(text),
+            url: link
         }).catch(() => {});
     } else {
-        Const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`;
-        If (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
-            Window.Telegram.WebApp.openTelegramLink(shareUrl); 
+        const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${text}`;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openTelegramLink) {
+            window.Telegram.WebApp.openTelegramLink(shareUrl); 
         } else {
-            Window.open(shareUrl, '_blank');
+            window.open(shareUrl, '_blank');
         }
     }
 };
 
-Window.apiProcessReferral = async function(referrerId, newUserId) {
-    If (typeof supabaseClient === 'undefined' || !supabaseClient) {
-        Return { success: false, message: "No database connection" };
+window.apiProcessReferral = async function(referrerId, newUserId) {
+    if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+        return { success: false, message: "No database connection" };
     }
 
-    Const cleanReferrer = String(referrerId).trim();
-    Const cleanNewUser = String(newUserId).trim();
+    const cleanReferrer = String(referrerId).trim();
+    const cleanNewUser = String(newUserId).trim();
 
-    If (!cleanReferrer || !cleanNewUser) {
-        Return { success: false, message: "Invalid ID format" };
+    if (!cleanReferrer || !cleanNewUser) {
+        return { success: false, message: "Invalid ID format" };
     }
 
-    If (cleanReferrer === cleanNewUser) {
-        Return { success: false, message: "Self referral not allowed" };
+    if (cleanReferrer === cleanNewUser) {
+        return { success: false, message: "Self referral not allowed" };
     }
 
-    Try {
-        Const { data, error: refError } = await supabaseClient
+    try {
+        const { data, error: refError } = await supabaseClient
             .from('referrals')
             .insert([{ 
-                Referrer_id: cleanReferrer, 
-                Referred_id: cleanNewUser, 
-                Reward_points: 0,
-                Total_commission: 0
+                referrer_id: cleanReferrer, 
+                referred_id: cleanNewUser, 
+                reward_points: 0,
+                total_commission: 0
             }]);
 
-        If (refError) {
-            If (refError.code === '23505') {
-                LocalStorage.removeItem('pending_referrer_id');
-                Return { success: true, alreadyProcessed: true };
+        if (refError) {
+            if (refError.code === '23505') {
+                localStorage.removeItem('pending_referrer_id');
+                return { success: true, alreadyProcessed: true };
             } 
-            Return { success: false, error: refError };
+            return { success: false, error: refError };
         }
 
-        LocalStorage.removeItem('pending_referrer_id');
-        Return { success: true, message: "Referral recorded successfully" };
+        localStorage.removeItem('pending_referrer_id');
+        return { success: true, message: "Referral recorded successfully" };
 
     } catch (error) {
-        Return { success: false };
+        return { success: false };
     }
 };
 
-Window.initReferralCheck = async function() {
-    Try {
-        Let referrerId = null;
-        Let currentUserId = null;
+window.initReferralCheck = async function() {
+    try {
+        let referrerId = null;
+        let currentUserId = null;
 
-        If (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-            Const initDataUnsafe = window.Telegram.WebApp.initDataUnsafe;
-            If (initDataUnsafe.start_param) {
-                ReferrerId = initDataUnsafe.start_param;
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
+            const initDataUnsafe = window.Telegram.WebApp.initDataUnsafe;
+            if (initDataUnsafe.start_param) {
+                referrerId = initDataUnsafe.start_param;
             }
-            If (initDataUnsafe.user && initDataUnsafe.user.id) {
-                CurrentUserId = initDataUnsafe.user.id;
+            if (initDataUnsafe.user && initDataUnsafe.user.id) {
+                currentUserId = initDataUnsafe.user.id;
             }
         }
 
-        If (!referrerId) {
-            Const urlParams = new URLSearchParams(window.location.search);
-            ReferrerId = urlParams.get('tgWebAppStartParam') || urlParams.get('startapp') || urlParams.get('ref');
+        if (!referrerId) {
+            const urlParams = new URLSearchParams(window.location.search);
+            referrerId = urlParams.get('tgWebAppStartParam') || urlParams.get('startapp') || urlParams.get('ref');
         }
 
-        If (referrerId && typeof referrerId === 'string') {
-            ReferrerId = referrerId.replace(/^(rref_|ref_)/, '').trim();
-            If (referrerId) {
-                LocalStorage.setItem('pending_referrer_id', referrerId);
+        if (referrerId && typeof referrerId === 'string') {
+            referrerId = referrerId.replace(/^(rref_|ref_)/, '').trim();
+            if (referrerId) {
+                localStorage.setItem('pending_referrer_id', referrerId);
             }
         } else {
-            ReferrerId = localStorage.getItem('pending_referrer_id');
+            referrerId = localStorage.getItem('pending_referrer_id');
         }
 
-        If (!currentUserId && typeof userState !== 'undefined' && userState.userId) {
-            CurrentUserId = userState.userId;
+        if (!currentUserId && typeof userState !== 'undefined' && userState.userId) {
+            currentUserId = userState.userId;
         }
 
-        If (!currentUserId) {
-            SetTimeout(window.initReferralCheck, 600);
-            Return;
+        if (!currentUserId) {
+            setTimeout(window.initReferralCheck, 600);
+            return;
         }
 
-        If (referrerId && String(referrerId) !== String(currentUserId)) {
-            Await window.apiProcessReferral(referrerId, currentUserId);
+        if (referrerId && String(referrerId) !== String(currentUserId)) {
+            await window.apiProcessReferral(referrerId, currentUserId);
         }
     } catch (err) {}
 };
 
 (function() {
-    If (document.readyState === 'complete' || document.readyState === 'interactive') {
-        Window.initReferralCheck();
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        window.initReferralCheck();
     } else {
-        Document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
+        document.addEventListener('DOMContentLoaded', () => window.initReferralCheck());
     }
 })();
-    
+                
