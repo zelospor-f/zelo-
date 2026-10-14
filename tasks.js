@@ -438,69 +438,68 @@
     };
 
     window.executeTask = async function(taskId, url, points) {
-        const task = userState.tasks.find(t => t.id === taskId);
-        const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-        
-        if (!task || task.completed || task.isProcessing) return;
+    const task = userState.tasks.find(t => t.id === taskId);
+    const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
+    
+    if (!task || task.completed || task.isProcessing) return;
 
-        task.isProcessing = true; 
+    task.isProcessing = true; 
 
-        try {
-            if (window.Telegram && window.Telegram.WebApp) {
-                if (url.includes("t.me") && window.Telegram.WebApp.openTelegramLink) {
-                    window.Telegram.WebApp.openTelegramLink(url);
-                } else if (window.Telegram.WebApp.openLink) {
-                                    } else if (window.Telegram.WebApp.openLink) {
-                    window.Telegram.WebApp.openLink(url);
-                } else {
-                    window.open(url, '_blank');
-                }
+    try {
+        if (window.Telegram && window.Telegram.WebApp) {
+            if (url.includes("t.me") && window.Telegram.WebApp.openTelegramLink) {
+                window.Telegram.WebApp.openTelegramLink(url);
+            } else if (window.Telegram.WebApp.openLink) {
+                window.Telegram.WebApp.openLink(url);
             } else {
                 window.open(url, '_blank');
             }
-        } catch (e) {
+        } else {
             window.open(url, '_blank');
         }
+    } catch (e) {
+        window.open(url, '_blank');
+    }
 
-        const btn = document.getElementById(`btn-task-${taskId}`);
-        if (btn) {
-            btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
-            btn.className = "btn-task-done"; 
-            btn.disabled = true;
-        }
+    const btn = document.getElementById(`btn-task-${taskId}`);
+    if (btn) {
+        btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
+        btn.className = "btn-task-done"; 
+        btn.disabled = true;
+    }
 
-        setTimeout(async () => {
-            try {
-                const response = await apiVerifyTask(taskId, points);
-                task.isProcessing = false; 
+    setTimeout(async () => {
+        try {
+            const response = await apiVerifyTask(taskId, points);
+            task.isProcessing = false; 
 
-                if (response.success) {
-                    task.completed = true;
-                    
-                    if (!response.alreadyDone) {
-                        userState.points = (userState.points || 0) + points;
-                        alert(`🎉 ${isAr ? 'تم إنجاز المهمة وإضافة النقاط بنجاح:' : 'Task completed successfully:'} +${points} ZELO.`);
-                    }
-
-                    if (typeof updateTopBar === "function") updateTopBar();
-                    renderTasksPage(document.getElementById("main-content")); 
-                } else {
-                    alert(isAr ? "فشل التحقق من المهمة، حاول مجدداً." : "Task verification failed, try again.");
-                    if (btn) {
-                        btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
-                        btn.className = "btn-task-go";
-                        btn.disabled = false;
-                    }
+            if (response.success) {
+                task.completed = true;
+                
+                if (!response.alreadyDone) {
+                    userState.points = (userState.points || 0) + points;
+                    alert(`🎉 ${isAr ? 'تم إنجاز المهمة وإضافة النقاط بنجاح:' : 'Task completed successfully:'} +${points} ZELO.`);
                 }
-            } catch (error) {
-                task.isProcessing = false; 
+
+                if (typeof updateTopBar === "function") updateTopBar();
+                renderTasksPage(document.getElementById("main-content")); 
+            } else {
+                alert(isAr ? "فشل التحقق من المهمة، حاول مجدداً." : "Task verification failed, try again.");
                 if (btn) {
                     btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
                     btn.className = "btn-task-go";
                     btn.disabled = false;
                 }
             }
-        }, 4000);
-    };
-})();
+        } catch (error) {
+            task.isProcessing = false; 
+            if (btn) {
+                btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
+                btn.className = "btn-task-go";
+                btn.disabled = false;
+            }
+        }
+    }, 4000);
+};
+    
 
