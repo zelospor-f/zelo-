@@ -1,4 +1,4 @@
-name: Build Android APK
+Name: Build Android APK
 
 on:
   push:
@@ -28,6 +28,13 @@ jobs:
         run: |
           npm install
           npm install @capacitor/core @capacitor/cli @capacitor/android
+
+      - name: Inject Supabase Secrets to Env
+        run: |
+          echo "window.env = {" > env.js
+          echo "  SUPABASE_URL: '${{ secrets.SUPABASE_URL }}'," >> env.js
+          echo "  SUPABASE_ANON_KEY: '${{ secrets.SUPABASE_ANON_KEY }}'" >> env.js
+          echo "};" >> env.js
 
       - name: Prepare Web Folder
         run: |
@@ -79,3 +86,4 @@ jobs:
         with:
           name: ZeloSport-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          
