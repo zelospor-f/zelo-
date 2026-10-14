@@ -28,7 +28,6 @@ function t(key, fallback = '', params = {}) {
     return text;
 }
 
-// دالة فتح الموقع الرسمي
 window.openOfficialWebsite = window.openOfficialWebsite || function() {
     const url = "https://zelo-sport-fc.github.io/zelo-fc-site/";
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
@@ -38,7 +37,6 @@ window.openOfficialWebsite = window.openOfficialWebsite || function() {
     }
 };
 
-// دوال الاستدعاء المعزولة للبروفايل والسوق
 window.openProfileScreen = window.openProfileScreen || function() {
     if (typeof window.renderProfilePage === 'function') {
         window.renderProfilePage();
@@ -171,7 +169,7 @@ window.renderHomePage = function(container) {
         const txtChallengesRanking = t('challengesRanking', isRtl ? 'ترتيب التحديات' : 'Challenges Ranking');
         const txtRankingSub = t('rankingSub', isRtl ? '⭐ اكتشف أبطال التوقعات وترتيبك' : '⭐ Discover top players & your rank');
         const txtSupportedClubs = t('supportedClubs', isRtl ? 'الأندية المحددة' : 'Supported Clubs');
-        const txtActive = t('activeCount', isRtl ? 'نشط 1' : 'Active 1');
+        const txtActive = t('activeCount', isRtl ? 'نشط' : 'Active');
         const txtLoading = t('loading', isRtl ? 'جاري التحميل...' : 'Loading...');
         const txtNftMarket = t('nftMarket', isRtl ? 'سوق بطاقات NFTs' : 'NFT Player Market');
         const txtDailyWinners = t('dailyWinners', isRtl ? 'أبطال اليوم واقتناص التوقعات' : 'Today\'s Winners');
@@ -197,7 +195,6 @@ window.renderHomePage = function(container) {
                 }
                 .home-scroll-wrapper::-webkit-scrollbar { display: none; }
 
-                /* الشريط العلوي الهيدر المحدث مع وضع زر الموقع الرسمي في المنتصف */
                 .top-header-bar {
                     display: flex;
                     align-items: center;
@@ -219,7 +216,6 @@ window.renderHomePage = function(container) {
                 }
                 .gold-official-btn-center:active { transform: scale(0.95); }
 
-                /* زر التحديث السريع */
                 .refresh-bar-area {
                     display: flex; align-items: center; justify-content: space-between;
                     margin-bottom: 12px; padding: 0 4px;
@@ -232,7 +228,6 @@ window.renderHomePage = function(container) {
                 }
                 .refresh-icon-btn:active { transform: rotate(180deg); }
 
-                /* بطاقة وصول سريعة لسوق الـ NFTs التفاعلية */
                 .quick-access-banner {
                     background: linear-gradient(135deg, rgba(153,69,255,0.25) 0%, rgba(20,241,149,0.18) 100%);
                     border: 1px solid rgba(153,69,255,0.4);
@@ -244,7 +239,6 @@ window.renderHomePage = function(container) {
                 }
                 .quick-access-banner:active { transform: scale(0.97); border-color: #14F195; }
 
-                /* بطاقة سولانا */
                 .solana-chronicle-card {
                     background: rgba(18, 18, 24, 0.75);
                     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -260,7 +254,6 @@ window.renderHomePage = function(container) {
                 .sol-grid-item span:first-child { display: block; font-size: 0.68rem; color: #9ca3af; font-weight: 600; margin-bottom: 2px; }
                 .sol-grid-item span:last-child { font-size: 0.82rem; font-weight: 800; color: #fff; font-family: monospace; }
 
-                /* البانرات التفاعلية الرياضية المحدثة */
                 .action-banner-sports {
                     position: relative; border-radius: 18px; padding: 12px 15px; margin-bottom: 10px;
                     display: flex; align-items: center; gap: 12px; cursor: pointer; backdrop-filter: blur(15px);
@@ -270,7 +263,6 @@ window.renderHomePage = function(container) {
                 .action-banner-sports:active { transform: scale(0.97); background: rgba(35, 35, 48, 0.9); border-color: rgba(20, 241, 149, 0.4); }
                 .banner-icon-wrapper-sports { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.08); }
 
-                /* بطاقات الأندية */
                 .glass-club-card {
                     background: rgba(18, 18, 24, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); 
                     border-radius: 16px; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
@@ -280,14 +272,12 @@ window.renderHomePage = function(container) {
             </style>
 
             <div class="home-scroll-wrapper">
-                <!-- 1. الهيدر العلوي المحدث (أنديتك | زر الموقع في الوسط | ZELOFC) -->
                 <div class="top-header-bar">
                     <div style="display:flex; align-items:center; gap:6px;">
                         <span style="font-size: 1.1rem;">⚽</span>
-                        <span style="font-size: 0.85rem; font-weight: 800; color: #fff;">${t('yourClubs', isRtl ? 'أنديتك:' : 'Clubs:')}</span>
+                        <span style="font-size: 0.85rem; font-weight: 800; color: #fff;">${isRtl ? 'أنديتك:' : 'Clubs:'}</span>
                     </div>
 
-                    <!-- زر الموقع الرسمي المتموقع بالمنتصف تماماً -->
                     <button class="gold-official-btn-center" onclick="window.openOfficialWebsite()">${txtOfficialSite}</button>
 
                     <div style="background: rgba(255, 215, 0, 0.1); padding: 4px 10px; border-radius: 12px; border: 1px solid rgba(255, 215, 0, 0.25); display: flex; align-items: center; gap: 4px;">
@@ -296,7 +286,6 @@ window.renderHomePage = function(container) {
                     </div>
                 </div>
 
-                <!-- 2. زر التحديث الحي والمنظومة -->
                 <div class="refresh-bar-area">
                     <span style="font-size:0.75rem; font-weight:800; color:#94a3b8;">ZELO SPORT ECOSYSTEM</span>
                     <button class="refresh-icon-btn" onclick="window.updateHomeSolPrice();">
@@ -304,7 +293,6 @@ window.renderHomePage = function(container) {
                     </button>
                 </div>
 
-                <!-- 3. بانر فتح سوق الـ NFTs المعزول والمفعل بالنقر -->
                 <div class="quick-access-banner" onclick="window.openNftMarketScreen()">
                     <div style="display:flex; align-items:center; gap:12px;">
                         <span style="font-size:1.6rem;">👑</span>
@@ -316,7 +304,6 @@ window.renderHomePage = function(container) {
                     <div style="color:#14F195; font-size:1.1rem; font-weight:bold;">${arrowIcon}</div>
                 </div>
 
-                <!-- 4. بطاقة سعر سولانا المباشرة -->
                 <div class="solana-chronicle-card">
                     <div class="sol-card-header">
                         <div style="display: flex; align-items: center; gap: 10px;">
@@ -370,23 +357,9 @@ window.renderHomePage = function(container) {
                             <span>${txtMarketFeed}</span>
                             <span id="home-sol-oracle-val">--.--</span>
                         </div>
-                               <div class="sol-bottom-grid">
-                        <div class="sol-grid-item">
-                            <span>${txtLiveSolPrice}</span>
-                            <span id="home-sol-live-price">--.--</span>
-                        </div>
-                        <div class="sol-grid-item">
-                            <span>${txtBidAskSpread}</span>
-                            <span id="home-sol-pyth-conf">0.0000</span>
-                        </div>
-                        <div class="sol-grid-item">
-                            <span>${txtMarketFeed}</span>
-                            <span id="home-sol-oracle-val">--.--</span>
-                        </div>
                     </div>
                 </div>
 
-                <!-- 5. بطاقة تحديات الأسبوع المحدثة -->
                 <div id="challenges-card" class="action-banner-sports" onclick="if(typeof window.openChallengesScreen === 'function') window.openChallengesScreen();">
                     <div class="banner-icon-wrapper-sports">
                         <span style="font-size:1.3rem;">⚽</span>
@@ -395,10 +368,12 @@ window.renderHomePage = function(container) {
                         <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtWeeklyChallenges}</h3>
                         <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtCupsSub}</p>
                     </div>
+                                        <h3 style="color: #fff; margin: 0 0 2px 0; font-size: 0.95rem; font-weight: 900;">${txtWeeklyChallenges}</h3>
+                        <p style="color: #93c5fd; font-size: 0.72rem; margin: 0; font-weight: 600;">${txtCupsSub}</p>
+                    </div>
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
-                <!-- 6. بطاقة ترتيب الأبطال والتوقعات المحدثة -->
                 <div id="ranking-card" class="action-banner-sports" onclick="if(typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();">
                     <div class="banner-icon-wrapper-sports">🏆</div>
                     <div style="flex-grow: 1; text-align: ${textAlign};">
@@ -408,14 +383,13 @@ window.renderHomePage = function(container) {
                     <div style="color: #eab308; font-size: 1.1rem; font-weight: bold;">${arrowIcon}</div>
                 </div>
 
-                <!-- 7. قسم الأندية المحددة -->
                 <div class="clubs-section" style="margin-top: 12px;">
                     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; padding: 0 4px;">
                         <div style="display:flex; align-items:center; gap:6px;">
                             <span style="font-size: 0.9rem;">🛡️</span>
                             <h3 style="color: #fff; margin: 0; font-size: 0.85rem; font-weight: 800;">${txtSupportedClubs}</h3>
                         </div>
-                        <span style="font-size: 0.68rem; color: #14F195; font-weight: 700; background: rgba(20,241,149,0.1); padding: 2px 8px; border-radius: 8px;">${txtActive}</span>
+                        <span style="font-size: 0.68rem; color: #14F195; font-weight: 700; background: rgba(20,241,149,0.1); padding: 2px 8px; border-radius: 8px;">${txtActive} 1</span>
                     </div>
 
                     <div class="glass-club-card">
@@ -434,7 +408,6 @@ window.renderHomePage = function(container) {
             </div>
         `;
 
-        // تشغيل مؤشر السعر الحي
         window.updateHomeSolPrice();
         window.solPriceInterval = setInterval(window.updateHomeSolPrice, 5000);
 
