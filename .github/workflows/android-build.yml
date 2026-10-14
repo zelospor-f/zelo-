@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -47,10 +48,21 @@ jobs:
         run: |
           if [ ! -d android ]; then npx cap add android; fi
 
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
       - name: Generate App Icon
         run: |
           mkdir -p assets
-          convert king-logo.jpg -resize 1024x1024 -background white -gravity center -extent 1024x1024 assets/icon.png
+          test -f king-logo.jpg
+          convert king-logo.jpg \
+            -resize 1024x1024 \
+            -background white \
+            -gravity center \
+            -extent 1024x1024 \
+            assets/icon.png
           npx -y @capacitor/assets generate --android --iconBackgroundColor '#ffffff'
 
       - name: Sync Android Platform
