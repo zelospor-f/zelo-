@@ -4,30 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#121215">
-    
+
     <!-- وسوم إجبار متصفح الـ APK على عدم تخزين أي نسخة قديمة -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    
+
     <title>ZELO FC Mobile</title>
-    
+
     <!-- أداة فحص الأخطاء للموبايل (vConsole) -->
     <script src="https://cdn.jsdelivr.net/npm/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
         var vConsole = new VConsole();
     </script>
-    
+
     <!-- Supabase JS Client v2 -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
         (function() {
-            var savedLang = localStorage.getItem('app_lang') || 
-                            localStorage.getItem('lang') || 
-                            localStorage.getItem('language') || 
+            var savedLang = localStorage.getItem('app_lang') ||
+                            localStorage.getItem('lang') ||
+                            localStorage.getItem('language') ||
                             'ar';
-            
+
             var isAr = savedLang.startsWith('ar');
             document.documentElement.lang = isAr ? 'ar' : 'en';
             document.documentElement.dir = isAr ? 'rtl' : 'ltr';
@@ -50,18 +50,18 @@
 
     <style>
         :root {
-            --bg-dark: #121215;        
-            --bg-card: rgba(28, 28, 34, 0.6); 
-            --text-main: #f8fafc;      
-            --text-muted: #888899;     
+            --bg-dark: #121215;
+            --bg-card: rgba(28, 28, 34, 0.6);
+            --text-main: #f8fafc;
+            --text-muted: #888899;
             --accent-purple: #833ab4;
             --accent-red: #fd1d1d;
             --accent-gold: #fcb045;
             --glass-border: rgba(255, 255, 255, 0.05);
         }
 
-        button, 
-        input[type="button"], 
+        button,
+        input[type="button"],
         input[type="submit"] {
             -webkit-appearance: none !important;
             -moz-appearance: none !important;
@@ -80,20 +80,20 @@
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
-            user-select: none; 
+            user-select: none;
             -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent; 
+            -webkit-tap-highlight-color: transparent;
             overflow-x: hidden;
         }
 
         ::-webkit-scrollbar { display: none; }
 
         .container {
-            margin-top: 85px; 
+            margin-top: 85px;
             margin-bottom: 100px;
             padding: 15px;
             min-height: calc(100vh - 185px);
-            animation: fadeUp 0.6s ease-out forwards; 
+            animation: fadeUp 0.6s ease-out forwards;
         }
 
         .top-bar {
@@ -110,9 +110,32 @@
             -webkit-backdrop-filter: blur(15px);
             padding: 0 16px;
             border-radius: 16px;
-            border: 1px solid rgba(252, 176, 69, 0.25); 
+            border: 1px solid rgba(252, 176, 69, 0.25);
             box-shadow: 0 5px 25px rgba(253, 29, 29, 0.15);
             z-index: 1000;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .profile-header-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9945FF, #14F195);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(153, 69, 255, 0.35);
+            transition: transform 0.2s;
+        }
+        .profile-header-btn:active {
+            transform: scale(0.92);
         }
 
         .gold-official-btn-header {
@@ -157,7 +180,7 @@
         }
 
         .icon-wrapper {
-            font-size: 1.5rem; margin-bottom: 3px; transition: all 0.3s ease; filter: grayscale(100%) opacity(0.6); 
+            font-size: 1.5rem; margin-bottom: 3px; transition: all 0.3s ease; filter: grayscale(100%) opacity(0.6);
         }
 
         .nav-text { font-size: 0.7rem; font-weight: bold; transition: color 0.3s ease; }
@@ -192,16 +215,18 @@
 </head>
 <body>
 
-    <!-- الهيدر العلوي الموحد بدون تكرار -->
+    <!-- الهيدر العلوي: الأندية | الموقع الرسمي | الملف الشخصي + العملة -->
     <header class="top-bar" id="top-bar" style="display: none;">
         <div id="club" style="font-size: 0.85rem; color: #e0e0e0; font-weight: bold; display: flex; align-items: center; gap: 4px;"></div>
-        
-        <!-- زر الموقع الرسمي المتموقع في المنتصف تماماً -->
+
         <button class="gold-official-btn-header" onclick="if(typeof window.openOfficialWebsite === 'function') window.openOfficialWebsite();">
             الموقع الرسمي
         </button>
-        
-        <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); font-size: 0.85rem;"></div>
+
+        <div class="header-right">
+            <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); font-size: 0.85rem;"></div>
+            <div class="profile-header-btn" onclick="showPage('profile')" title="الملف الشخصي">👤</div>
+        </div>
     </header>
 
     <main class="container" id="main-content">
@@ -221,9 +246,9 @@
             <span class="icon icon-wrapper">🛠</span>
             <span class="nav-text" data-i18n="navTasks">المهام</span>
         </button>
-        <button class="nav-item" onclick="showPage('friends')">
-            <span class="icon icon-wrapper">👥</span>
-            <span class="nav-text" data-i18n="navFriends">الأصدقاء</span>
+        <button class="nav-item" onclick="showPage('news')">
+            <span class="icon icon-wrapper">📰</span>
+            <span class="nav-text" data-i18n="navNews">الأخبار</span>
         </button>
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
@@ -270,7 +295,7 @@
                 'nft-market.js',
                 'tasks.js',
                 'leaderboard.js',
-                'friends.js',
+                'news.js',
                 'wallet-solana.js',
                 'app.js'
             ];
@@ -285,4 +310,4 @@
     </script>
 
 </body>
-</html>
+            </html>
