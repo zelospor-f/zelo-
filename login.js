@@ -7,6 +7,7 @@ function getInjectableStyles() {
                 position: relative;
                 width: 100%; max-width: 500px;
                 min-height: 100vh;
+                min-height: 100dvh;
                 margin: 0 auto;
                 display: flex; flex-direction: column;
                 box-sizing: border-box;
