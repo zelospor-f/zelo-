@@ -439,18 +439,28 @@
         }, 4000);
     };
 
-    window.executeTask = async function(taskId, url, points) {
+        window.executeTask = async function(taskId, url, points) {
         const task = userState.tasks.find(t => t.id === taskId);
         const isAr = (typeof userState !== 'undefined' && userState.lang === 'ar');
-        
+
         if (!task || task.completed || task.isProcessing) return;
 
-        task.isProcessing = true; 
+        task.isProcessing = true;
 
         try {
-            if (window.Telegram && window.Telegram.WebApp) {
-                if (url.includes("t.me") && window.Telegram.WebApp.openTelegramLink) {
-                            const btn = document.getElementById(`btn-task-${taskId}`);
+            const tg = window.Telegram && window.Telegram.WebApp;
+            if (tg && url.includes("t.me") && tg.openTelegramLink) {
+                tg.openTelegramLink(url);
+            } else if (tg && tg.openLink) {
+                tg.openLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
+        } catch (e) {
+            window.open(url, '_blank');
+        }
+
+        const btn = document.getElementById(`btn-task-${taskId}`);
         if (btn) {
             btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
             btn.className = "btn-task-done";
@@ -464,16 +474,16 @@
 
                 if (response.success) {
                     task.completed = true;
-                    
+
                     if (!response.alreadyDone) {
                         userState.points = (userState.points || 0) + points;
-                        alert(`🎉 ${isAr ? 'تم إكمال المهمة وإضافة النقاط:' : 'Task completed successfully:'} +${points} ZELO.`);
+                        alert(`🎉 ${isAr ? 'تم إكمال المهمة وإضافة النقاط:' : 'Task completed:'} +${points} ZELO.`);
                     }
 
                     if (typeof updateTopBar === "function") updateTopBar();
                     renderTasksPage(document.getElementById("main-content"));
                 } else {
-                    alert(isAr ? "حدث خطأ أثناء التحقق من المهمة." : "Verification failed.");
+                    alert(isAr ? "حدث خطأ أثناء التحقق من المهمة." : "An error occurred verifying the task.");
                     if (btn) {
                         btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
                         btn.className = "btn-task-go";
