@@ -17,12 +17,12 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install Dependencies
+      - name: Install Dependencies & Capacitor
         run: |
           npm install
-          npm install @capacitor/android @capacitor/core @capacitor/cli
+          npm install @capacitor/core @capacitor/cli @capacitor/android
 
-      - name: Add Android Platform
+      - name: Add and Sync Android Platform
         run: |
           npx cap add android || true
           npx cap sync android
