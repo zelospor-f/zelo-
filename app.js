@@ -1,28 +1,28 @@
-const supabaseUrl = window.env?.SUPABASE_URL; 
-const supabaseKey = window.env?.SUPABASE_ANON_KEY; 
+const supabaseUrl = window.env?.SUPABASE_URL;
+const supabaseKey = window.env?.SUPABASE_ANON_KEY;
 
 const supabaseClient = window.supabase && supabaseUrl && supabaseKey ? window.supabase.createClient(supabaseUrl, supabaseKey, {
     db: { schema: 'public' }
 }) : null;
 
 let userState = {
-    username: "Android Player", 
-    userParam: "", 
+    username: "Android Player",
+    userParam: "",
     userId: "",
     photoUrl: null,
-    points: 0, 
+    points: 0,
     coins: 0,
-    selectedClubs: [], 
+    selectedClubs: [],
     walletConnected: false,
     walletAddress: null,
     solanaWallet: "",
     walletBalance: "0.00",
     hasLoggedIn: false,
     lang: "ar",
-    referrals: [], 
+    referrals: [],
     dailyCheckInClaimed: false,
-    pendingReferrer: null, 
-    tasks: typeof window.defaultTasksData !== "undefined" ? window.defaultTasksData.map(task => ({...task})) : [] 
+    pendingReferrer: null,
+    tasks: typeof window.defaultTasksData !== "undefined" ? window.defaultTasksData.map(task => ({...task})) : []
 };
 
 function safeT(key, fallback) {
@@ -37,18 +37,19 @@ function safeT(key, fallback) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
+    // توليد معرّف رقمي فريد ومحلي لتطبيق الأندرويد
     const numericFallbackId = Math.floor(100000000 + Math.random() * 900000000).toString();
     const localFallbackId = localStorage.getItem('zelo_user_id') || numericFallbackId;
     localStorage.setItem('zelo_user_id', localFallbackId);
 
     userState.username = "Android Player";
-    userState.userId = localFallbackId; 
+    userState.userId = localFallbackId;
     userState.userParam = localFallbackId;
 
     var savedLang = localStorage.getItem('app_lang') || localStorage.getItem('lang') || 'ar';
     userState.lang = savedLang.startsWith('ar') ? 'ar' : 'en';
 
-    if(typeof applyLanguageSettings === 'function') applyLanguageSettings();
+    if (typeof applyLanguageSettings === 'function') applyLanguageSettings();
     fetchDataAndRoute();
 });
 
@@ -73,12 +74,12 @@ async function fetchDataAndRoute() {
             userState.points = data.points || 0;
             userState.coins = data.points || 0;
             userState.selectedClubs = data.selected_clubs || [];
-            
+
             userState.lang = data.lang || userState.lang;
-            if(typeof applyLanguageSettings === 'function') applyLanguageSettings();
+            if (typeof applyLanguageSettings === 'function') applyLanguageSettings();
 
             userState.hasLoggedIn = true;
-            
+
             if (data.wallet_address) {
                 userState.walletAddress = data.wallet_address;
                 userState.walletConnected = true;
@@ -86,14 +87,14 @@ async function fetchDataAndRoute() {
 
             if (userState.pendingReferrer && typeof window.apiProcessReferral === "function") {
                 window.apiProcessReferral(userState.pendingReferrer, userState.userId);
-                userState.pendingReferrer = null; 
+                userState.pendingReferrer = null;
             }
 
         } else {
             userState.hasLoggedIn = false;
         }
     } catch (error) {
-        userState.hasLoggedIn = false; 
+        userState.hasLoggedIn = false;
     }
 
     if (!userState.hasLoggedIn || !userState.selectedClubs || userState.selectedClubs.length === 0) {
@@ -101,15 +102,15 @@ async function fetchDataAndRoute() {
     } else {
         userState.hasLoggedIn = true;
         await updateTopBar();
-        showPage('home'); 
+        showPage('home');
     }
 }
 
 function triggerLoginScreen() {
     const topBar = document.getElementById('top-bar');
     const bottomNav = document.getElementById('bottom-nav');
-    if(topBar) topBar.style.display = 'none';
-    if(bottomNav) bottomNav.style.display = 'none';
+    if (topBar) topBar.style.display = 'none';
+    if (bottomNav) bottomNav.style.display = 'none';
 
     if (typeof renderLoginScreen === 'function') {
         renderLoginScreen();
@@ -132,7 +133,7 @@ async function updateTopBar() {
 
     const pointsEl = document.getElementById("points");
     const clubEl = document.getElementById("club");
-    
+
     if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState.userId) {
         try {
             const { data } = await supabaseClient
@@ -140,23 +141,23 @@ async function updateTopBar() {
                 .select('total_fan_points')
                 .eq('user_id', userState.userId)
                 .maybeSingle();
-                
+
             if (data && data.total_fan_points !== undefined && data.total_fan_points !== null) {
                 if (!userState.points) {
                     userState.points = data.total_fan_points;
                     userState.coins = data.total_fan_points;
                 }
             }
-        } catch(error) {
+        } catch (error) {
         }
     }
-    
+
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
         const localeLang = (userState.lang === 'ar') ? 'ar-EG' : 'en-US';
         pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ZELOFC`;
     }
-    
+
     if (clubEl && userState.selectedClubs && userState.selectedClubs.length > 0) {
         let logos = userState.selectedClubs.map(id => {
             let foundClub = null;
@@ -171,36 +172,36 @@ async function updateTopBar() {
             }
             return foundClub ? `<img src="${foundClub.logo}" style="height: 20px; vertical-align: middle; margin: 0 4px; object-fit: contain;">` : '';
         }).join('');
-        
+
         const labelText = (userState.lang === 'ar') ? 'أنديتك:' : 'Clubs:';
         clubEl.innerHTML = `<span style="color:#aaa;">${labelText}</span> ${logos}`;
     }
 }
 
 function showPage(pageId) {
-    if(!userState.hasLoggedIn) return; 
+    if (!userState.hasLoggedIn) return;
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
     const activeNav = Array.from(document.querySelectorAll(".nav-item")).find(el => el.getAttribute("onclick")?.includes(pageId));
     if (activeNav) activeNav.classList.add("active");
 
     const contentDiv = document.getElementById("main-content");
     if (!contentDiv) return;
-    contentDiv.innerHTML = ""; 
+    contentDiv.innerHTML = "";
 
-    switch(pageId) {
-        case 'home': 
-            if(typeof renderHomePage === "function") renderHomePage(contentDiv); 
+    switch (pageId) {
+        case 'home':
+            if (typeof renderHomePage === "function") renderHomePage(contentDiv);
             break;
-        case 'tasks': 
-            if(typeof renderTasksPage === "function") renderTasksPage(contentDiv); 
+        case 'tasks':
+            if (typeof renderTasksPage === "function") renderTasksPage(contentDiv);
             break;
         case 'friends':
-            if(typeof renderFriendsPage === "function") renderFriendsPage(contentDiv);
+            if (typeof renderFriendsPage === "function") renderFriendsPage(contentDiv);
             break;
-        case 'leaderboard': 
-            if(typeof renderLeaderboardPage === "function") renderLeaderboardPage(contentDiv); 
+        case 'leaderboard':
+            if (typeof renderLeaderboardPage === "function") renderLeaderboardPage(contentDiv);
             break;
-        case 'wallet': 
+        case 'wallet':
             if (typeof renderWalletPage === "function") {
                 renderWalletPage(contentDiv);
             } else {
@@ -217,55 +218,6 @@ function showPage(pageId) {
     }
 }
 
-// دالة فتح شاشة الملف الشخصي (Profile)
-window.renderProfilePage = window.openProfileScreen = function(container) {
-    const target = container || document.getElementById("main-content");
-    if (!target) return;
-    
-    if (typeof window.renderProfileScreen === 'function') {
-        window.renderProfileScreen(target);
-        return;
-    }
-
-    const isAr = (userState.lang === 'ar');
-    target.innerHTML = `
-        <div style="padding: 20px; color: white; text-align: center; direction: ${isAr ? 'rtl' : 'ltr'};">
-            <h2 style="color: #fcb045; margin-bottom: 10px;">👤 ${isAr ? 'الملف الشخصي' : 'Profile'}</h2>
-            <p style="color: #aaa; font-size: 0.9rem;">${isAr ? 'معلومات المستخدم والإعدادات' : 'User Information & Settings'}</p>
-            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 14px; margin-top: 20px; text-align: ${isAr ? 'right' : 'left'};">
-                <div style="margin-bottom: 8px;"><strong>ID:</strong> ${userState.userId}</div>
-                <div style="margin-bottom: 8px;"><strong>${isAr ? 'الرصيد' : 'Balance'}:</strong> ${userState.points} ZELOFC</div>
-            </div>
-            <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
-                ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
-            </button>
-        </div>
-    `;
-};
-
-// دالة فتح سوق الـ NFTs المعزول
-window.renderNftMarketPage = function(container) {
-    const target = container || document.getElementById("main-content");
-    if (!target) return;
-
-    if (typeof window.renderNftMarketScreen === 'function') {
-        window.renderNftMarketScreen(target);
-        return;
-    }
-
-    const isAr = (userState.lang === 'ar');
-    target.innerHTML = `
-        <div style="padding: 20px; color: white; text-align: center; direction: ${isAr ? 'rtl' : 'ltr'};">
-            <h2 style="color: #14F195; margin-bottom: 10px;">👑 ${isAr ? 'سوق بطاقات NFTs' : 'NFT Market'}</h2>
-            <p style="color: #aaa; font-size: 0.9rem;">${isAr ? 'بطاقات اللاعبين الأسطورية والأرباح' : 'Legendary Player Cards & Yield'}</p>
-            <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
-                ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
-            </button>
-        </div>
-    `;
-};
-
-// دالة فتح شاشة التحديات
 if (typeof window.openChallengesScreen !== 'function') {
     window.openChallengesScreen = function() {
         const contentDiv = document.getElementById("main-content");
@@ -285,4 +237,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             }
         }
     };
-                                                                       }
+}
