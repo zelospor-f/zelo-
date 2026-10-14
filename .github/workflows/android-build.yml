@@ -17,12 +17,9 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install Dependencies
+      - name: Install Dependencies & Sync Capacitor
         run: |
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init "Zelo Sport" "com.zelosport.app" --web-dir .
-          npx cap add android
+          npm install
           npx cap sync android
 
       - name: Setup Java JDK
