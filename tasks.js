@@ -450,4 +450,57 @@
                 if (url.includes("t.me") && window.Telegram.WebApp.openTelegramLink) {
                     window.Telegram.WebApp.openTelegramLink(url);
                 } else if (window.Telegram.WebApp.openLink) {
-                    window
+                                    } else if (window.Telegram.WebApp.openLink) {
+                    window.Telegram.WebApp.openLink(url);
+                } else {
+                    window.open(url, '_blank');
+                }
+            } else {
+                window.open(url, '_blank');
+            }
+        } catch (e) {
+            window.open(url, '_blank');
+        }
+
+        const btn = document.getElementById(`btn-task-${taskId}`);
+        if (btn) {
+            btn.innerHTML = isAr ? "⏳ تحقق..." : "⏳ Verifying...";
+            btn.className = "btn-task-done"; 
+            btn.disabled = true;
+        }
+
+        setTimeout(async () => {
+            try {
+                const response = await apiVerifyTask(taskId, points);
+                task.isProcessing = false; 
+
+                if (response.success) {
+                    task.completed = true;
+                    
+                    if (!response.alreadyDone) {
+                        userState.points = (userState.points || 0) + points;
+                        alert(`🎉 ${isAr ? 'تم إنجاز المهمة وإضافة النقاط بنجاح:' : 'Task completed successfully:'} +${points} ZELO.`);
+                    }
+
+                    if (typeof updateTopBar === "function") updateTopBar();
+                    renderTasksPage(document.getElementById("main-content")); 
+                } else {
+                    alert(isAr ? "فشل التحقق من المهمة، حاول مجدداً." : "Task verification failed, try again.");
+                    if (btn) {
+                        btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
+                        btn.className = "btn-task-go";
+                        btn.disabled = false;
+                    }
+                }
+            } catch (error) {
+                task.isProcessing = false; 
+                if (btn) {
+                    btn.innerHTML = isAr ? 'انطلق 🚀' : 'Go 🚀';
+                    btn.className = "btn-task-go";
+                    btn.disabled = false;
+                }
+            }
+        }, 4000);
+    };
+})();
+
