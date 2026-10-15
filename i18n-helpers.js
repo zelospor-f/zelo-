@@ -1,9 +1,12 @@
 window.i18n = {
     ar: {
+        // الشريط السفلي
         navHome: "الرئيسية",
+        navMatches: "المباريات",
         navTasks: "المهام",
-        navFriends: "الأصدقاء",
         navLeaderboard: "الترتيب",
+        navMessages: "الرسائل",
+        navFriends: "الأصدقاء",
         navWallet: "المحفظة",
 
         officialSite: "الموقع الرسمي",
@@ -132,9 +135,11 @@ window.i18n = {
     en: {
         // Navigation
         navHome: "Home",
+        navMatches: "Matches",
         navTasks: "Tasks",
-        navFriends: "Friends",
         navLeaderboard: "Rankings",
+        navMessages: "Messages",
+        navFriends: "Friends",
         navWallet: "Wallet",
 
         // Home Screen
@@ -346,15 +351,9 @@ function applyLanguageSettings() {
     const lang = getCurrentLang();
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
     document.documentElement.lang = lang;
-    
-    const navKeys = ['navHome', 'navTasks', 'navFriends', 'navLeaderboard', 'navWallet'];
-    const navItems = document.querySelectorAll('.nav-item span:not(.icon)');
-    
-    navItems.forEach((item, index) => {
-        if (navKeys[index]) {
-            item.innerText = t(navKeys[index]);
-        }
-    });
+
+    // ملاحظة: أسماء الشريط السفلي تُترجم الآن عبر data-i18n على كل زر
+    // (بدل الاعتماد على ترتيب الأزرار الذي كان يسبب انزياح الأسماء)
 
     const translatableElements = document.querySelectorAll('[data-i18n]');
     translatableElements.forEach(el => {
@@ -376,4 +375,4 @@ function applyLanguageSettings() {
 document.addEventListener('DOMContentLoaded', () => {
     applyLanguageSettings();
 });
-        
+    
