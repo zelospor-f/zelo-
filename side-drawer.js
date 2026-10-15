@@ -45,7 +45,7 @@
             background: linear-gradient(135deg, #833ab4, #fd1d1d, #fcb045);
             display: flex; align-items: center; justify-content: center;
             font-size: 1.6rem; font-weight: 900; color: #fff;
-            margin-bottom: 12px;
+            margin-bottom: 12px; overflow: hidden;
         }
         .zdrawer-name { font-size: 1.1rem; font-weight: 900; margin-bottom: 4px; }
         .zdrawer-handle { font-size: 0.85rem; color: #888899; direction: ltr; text-align: start; }
@@ -150,6 +150,14 @@
             </button>`;
     }
 
+    function avatarHtml(name) {
+        const photo = window.userState?.photoUrl;
+        if (photo) {
+            return `<img src="${esc(photo)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+        }
+        return esc(name.charAt(0).toUpperCase());
+    }
+
     function render() {
         const drawer = document.getElementById('zdrawer');
         if (!drawer) return;
@@ -160,7 +168,7 @@
 
         drawer.innerHTML = `
             <div class="zdrawer-header">
-                <div class="zdrawer-avatar">${esc(name.charAt(0).toUpperCase())}</div>
+                <div class="zdrawer-avatar">${avatarHtml(name)}</div>
                 <div class="zdrawer-name">${esc(name)}</div>
                 <div class="zdrawer-handle">@${esc(userId)}</div>
             </div>
@@ -175,6 +183,17 @@
                 ${items.footer.map(renderItem).join('')}
             </div>
         `;
+    }
+
+    // عرض صورة المستخدم في زر الهيدر (أو الرمز الافتراضي إن لم تتوفر صورة)
+    function updateHeaderAvatar() {
+        const btn = document.getElementById('profile-header-btn');
+        if (!btn) return;
+
+        const photo = window.userState?.photoUrl;
+        btn.innerHTML = photo
+            ? `<img src="${esc(photo)}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`
+            : '👤';
     }
 
     // تحديد جهة الفتح حسب اللغة: عربي = يمين، غير ذلك = يسار
@@ -211,10 +230,12 @@
         });
 
         document.body.append(overlay, drawer);
+        updateHeaderAvatar();
     }
 
     function openSideDrawer() {
         build();
+        updateHeaderAvatar();
         applySide();
         render();
         document.getElementById('zdrawer-overlay').classList.add('open');
