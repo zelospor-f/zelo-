@@ -12,7 +12,7 @@
 
     <title>ZELO FC Mobile</title>
 
-    <!-- أداة فحص الأخطاء للموبايل (vConsole) -->
+    <!-- أداة فحص الأخطاء للموبايل (vConsole) - احذفها قبل النشر النهائي -->
     <script src="https://cdn.jsdelivr.net/npm/vconsole@latest/dist/vconsole.min.js"></script>
     <script>
         var vConsole = new VConsole();
@@ -89,10 +89,10 @@
         ::-webkit-scrollbar { display: none; }
 
         .container {
-            margin-top: 85px;
+            margin-top: 95px;
             margin-bottom: 100px;
             padding: 15px;
-            min-height: calc(100vh - 185px);
+            min-height: calc(100vh - 195px);
             animation: fadeUp 0.6s ease-out forwards;
         }
 
@@ -101,7 +101,7 @@
             top: 10px;
             left: 15px;
             right: 15px;
-            height: 60px;
+            height: 68px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -120,7 +120,7 @@
         .sol-card {
             flex: 1;
             min-width: 0;
-            height: 44px;
+            height: 54px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -141,9 +141,15 @@
         .sol-logo-bars i:nth-child(1) { transform: skewX(-20deg); }
         .sol-logo-bars i:nth-child(2) { transform: skewX(20deg); }
         .sol-logo-bars i:nth-child(3) { transform: skewX(-20deg); }
-        .sol-info { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+        .sol-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
         .sol-name { font-size: 0.95rem; font-weight: 900; color: #fff; }
         .sol-sub { font-size: 0.7rem; color: var(--text-muted); }
+        .sol-points {
+            font-size: 0.72rem; font-weight: 900; color: #ffd700;
+            direction: ltr; text-align: start;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
         .sol-price {
             margin-inline-start: auto;
             font-size: 1.25rem; font-weight: 900;
@@ -234,7 +240,7 @@
 </head>
 <body>
 
-    <!-- الهيدر العلوي: بطاقة سعر سولانا + زر القائمة الجانبية -->
+    <!-- الهيدر العلوي: بطاقة سعر سولانا + نقاط اللاعب + زر القائمة الجانبية -->
     <header class="top-bar" id="top-bar" style="display: none;">
         <div class="sol-card" id="top-sol-card">
             <div class="sol-logo">
@@ -243,6 +249,7 @@
             <div class="sol-info">
                 <div class="sol-name">Solana</div>
                 <div class="sol-sub">SOL / USD</div>
+                <div class="sol-points">🪙 <span id="top-points">0</span> ZELO</div>
             </div>
             <div class="sol-price" id="top-sol-price">$--.--</div>
         </div>
@@ -325,6 +332,21 @@
 
             fetchPrice();
             setInterval(fetchPrice, 5000);
+        })();
+    </script>
+
+    <!-- نقاط اللاعب في الشريط العلوي (تتحدث تلقائيًا من userState.points) -->
+    <script>
+        (function() {
+            function updateTopPoints() {
+                var el = document.getElementById('top-points');
+                if (!el) return;
+                var pts = (window.userState && Number(window.userState.points)) || 0;
+                el.textContent = pts.toLocaleString('en-US');
+            }
+            window.updateTopPoints = updateTopPoints;
+            updateTopPoints();
+            setInterval(updateTopPoints, 1000);
         })();
     </script>
 
