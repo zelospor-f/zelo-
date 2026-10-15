@@ -250,8 +250,17 @@ function showPage(pageId) {
         case 'leaderboard': run('renderLeaderboardPage'); break;
         case 'wallet':      run('renderWalletPage'); break;
         case 'messages':
+            if (typeof window.renderMessagesPage === 'function') {
+                run('renderMessagesPage');
+            } else {
+                contentDiv.innerHTML = `<div style="text-align:center; padding:60px 20px; color:#94a3b8; font-weight:700;">
+                    <div style="font-size:2.5rem; margin-bottom:10px;">💬</div>
+                    ${userState.lang === 'ar' ? 'الرسائل — قريباً' : 'Messages — coming soon'}
+                </div>`;
+            }
+            break;
         case 'news':
-        case 'community':   run('renderMessagesPage', 'renderCommunityPage', 'renderNewsPage'); break;
+        case 'community':   run('renderCommunityPage', 'renderNewsPage'); break;
         case 'profile':     run('renderProfilePage'); break;
     }
 }
@@ -278,5 +287,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             </div>
         `;
     };
-                                              }
-        
+                }
+            
