@@ -122,10 +122,10 @@
     const ACTIONS = {
         profile:     () => showPage('profile'),
         community:   () => showPage('community'),
-        tasks:       () => showPage('tasks'),
-        leaderboard: () => showPage('leaderboard'),
         wallet:      () => showPage('wallet'),
-        challenges:  () => window.openChallengesScreen && window.openChallengesScreen(),
+        website:     () => window.openOfficialWebsite && window.openOfficialWebsite(),
+        // غيّر هذا السطر إلى الدالة التي تفتحها بطاقة "أبطال اليوم" في home.js
+        champions:   () => (window.openTodayChampions || window.openChampionsScreen || (() => showPage('champions')))(),
         help:        () => toast(L('مركز المساعدة قريباً', 'Help center coming soon')),
         lang: () => {
             const next = isAr() ? 'en' : 'ar';
@@ -138,15 +138,14 @@
     function getItems() {
         return {
             main: [
-                { key: 'profile',     icon: '👤', ar: 'الملف الشخصي',   en: 'Profile' },
-                { key: 'community',   icon: '👥', ar: 'المجتمعات',      en: 'Community' },
-                { key: 'wallet',      icon: '🔖', ar: 'المحفظة',        en: 'Wallet' },
-                { key: 'tasks',       icon: '⚡', ar: 'المهام',         en: 'Tasks' },
-                { key: 'leaderboard', icon: '🏆', ar: 'الترتيب',        en: 'Leaderboard' },
-                { key: 'challenges',  icon: '⚽', ar: 'تحديات الأسبوع', en: 'Weekly Challenges', highlight: true }
+                { key: 'profile',   icon: '👤', ar: 'الملف الشخصي',  en: 'Profile' },
+                { key: 'wallet',    icon: '🔖', ar: 'المحفظة',       en: 'Wallet' },
+                { key: 'champions', icon: '🏆', ar: 'أبطال اليوم',   en: "Today's Champions", highlight: true },
+                { key: 'website',   icon: '🌐', ar: 'الموقع الرسمي', en: 'Official Website' },
+                { key: 'community', icon: '👥', ar: 'المجتمعات',     en: 'Community' }
             ],
             footer: [
-                { key: 'lang', icon: '🌐', ar: 'تغيير اللغة',   en: 'Change language' },
+                { key: 'lang', icon: '🈯', ar: 'تغيير اللغة',   en: 'Change language' },
                 { key: 'help', icon: '❓', ar: 'مركز المساعدة', en: 'Help center', muted: true }
             ]
         };
@@ -270,4 +269,3 @@
     if (document.readyState !== 'loading') build();
     else document.addEventListener('DOMContentLoaded', build);
 })();
-        
