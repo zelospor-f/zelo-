@@ -29,6 +29,9 @@ let userState = {
     tasks: []
 };
 
+// نجعل userState متاحة عبر window ليستخدمها side-drawer.js وباقي الملفات
+window.userState = userState;
+
 // دالة مساعدة للحصول على قيمة الترجمة مع قيمة احتياطية
 function safeT(key, fallback) {
     try {
@@ -93,6 +96,11 @@ async function fetchDataAndRoute() {
             userState.points = Number(data.points) || 0;
             userState.selectedClubs = Array.isArray(data.selected_clubs) ? data.selected_clubs : [];
             userState.lang = data.lang || userState.lang;
+
+            // جلب صورة المستخدم إن وُجدت في الجدول
+            if (data.photo_url) {
+                userState.photoUrl = data.photo_url;
+            }
 
             if (typeof applyLanguageSettings === 'function') applyLanguageSettings();
 
@@ -197,6 +205,9 @@ async function updateTopBar() {
         const labelText = userState.lang === 'ar' ? 'أنديتك:' : 'Clubs:';
         clubEl.innerHTML = `<span style="color:#aaa;">${labelText}</span> ${logos}`;
     }
+
+    // تحديث صورة الهيدر بعد جلب بيانات المستخدم
+    if (typeof window.updateHeaderAvatar === 'function') window.updateHeaderAvatar();
 }
 
 function showPage(pageId) {
@@ -271,4 +282,4 @@ if (typeof window.openChallengesScreen !== 'function') {
             </div>
         `;
     };
-            }
+                    }
