@@ -133,6 +133,7 @@
             cursor: pointer;
             box-shadow: 0 3px 10px rgba(153, 69, 255, 0.35);
             transition: transform 0.2s;
+            overflow: hidden;
         }
         .profile-header-btn:active {
             transform: scale(0.92);
@@ -225,7 +226,7 @@
 
         <div class="header-right">
             <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); font-size: 0.85rem;"></div>
-            <div class="profile-header-btn" onclick="window.openSideDrawer && window.openSideDrawer()" title="القائمة">👤</div>
+            <div class="profile-header-btn" id="profile-header-btn" onclick="window.openSideDrawer && window.openSideDrawer()" title="القائمة">👤</div>
         </div>
     </header>
 
@@ -236,11 +237,11 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation: 5 أيقونات -->
+    <!-- Bottom Navigation: 5 أيقونات من اليمين إلى اليسار -->
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
-            <span class="nav-text" data-i18n="navHome">الرئيسية</span>
+            <span class="nav-text">الرئيسية</span>
         </button>
         <button class="nav-item" onclick="showPage('matches')">
             <span class="icon icon-wrapper">⚽</span>
@@ -248,11 +249,11 @@
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
             <span class="icon icon-wrapper">⚡</span>
-            <span class="nav-text" data-i18n="navTasks">المهام</span>
+            <span class="nav-text">المهام</span>
         </button>
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
-            <span class="nav-text" data-i18n="navLeaderboard">الترتيب</span>
+            <span class="nav-text">الترتيب</span>
         </button>
         <button class="nav-item" onclick="showPage('messages')">
             <span class="icon icon-wrapper">💬</span>
@@ -297,6 +298,7 @@
                 'leaderboard.js',
                 'news.js',
                 'wallet-solana.js',
+                'side-drawer.js',
                 'app.js'
             ];
 
