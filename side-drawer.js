@@ -6,20 +6,32 @@
             position: fixed; inset: 0;
             background: rgba(0, 0, 0, 0.6);
             opacity: 0; pointer-events: none;
-            transition: opacity 0.25s ease;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0s linear 0.25s;
             z-index: 2000;
         }
-        .zdrawer-overlay.open { opacity: 1; pointer-events: auto; }
+        .zdrawer-overlay.open {
+            opacity: 1; pointer-events: auto;
+            visibility: visible;
+            transition: opacity 0.25s ease, visibility 0s;
+        }
 
         .zdrawer {
             position: fixed; top: 0; bottom: 0;
             width: min(82%, 320px);
             background: #121215;
             color: #f8fafc;
-            transition: transform 0.3s ease;
             z-index: 2001;
             display: flex; flex-direction: column;
             overflow-y: auto;
+            visibility: hidden;
+            pointer-events: none;
+            transition: transform 0.3s ease, visibility 0s linear 0.3s;
+        }
+        .zdrawer.open {
+            visibility: visible;
+            pointer-events: auto;
+            transition: transform 0.3s ease, visibility 0s;
         }
         .zdrawer.from-right {
             right: 0;
@@ -230,6 +242,9 @@
         });
 
         document.body.append(overlay, drawer);
+
+        // ضبط الجهة فوراً حتى تبدأ القائمة مخفية خارج الشاشة
+        applySide();
         updateHeaderAvatar();
     }
 
@@ -238,6 +253,8 @@
         updateHeaderAvatar();
         applySide();
         render();
+        // إجبار المتصفح على احتساب الحالة المغلقة قبل بدء حركة الفتح
+        void document.getElementById('zdrawer').offsetWidth;
         document.getElementById('zdrawer-overlay').classList.add('open');
         document.getElementById('zdrawer').classList.add('open');
     }
@@ -253,3 +270,4 @@
     if (document.readyState !== 'loading') build();
     else document.addEventListener('DOMContentLoaded', build);
 })();
+        
