@@ -1,9 +1,13 @@
 const supabaseUrl = window.env?.SUPABASE_URL;
 const supabaseKey = window.env?.SUPABASE_ANON_KEY;
 
-const supabaseClient = window.supabase && supabaseUrl && supabaseKey ? window.supabase.createClient(supabaseUrl, supabaseKey, {
-    db: { schema: 'public' }
-}) : null;
+const supabaseClient = window.supabase && supabaseUrl && supabaseKey
+    ? window.supabase.createClient(supabaseUrl, supabaseKey, { db: { schema: 'public' } })
+    : null;
+
+if (!supabaseClient) {
+    console.warn("[ZELO] Supabase غير مُهيّأ: تحقق من env.js وتحميل مكتبة Supabase.");
+}
 
 let userState = {
     username: "Android Player",
@@ -11,7 +15,6 @@ let userState = {
     userId: "",
     photoUrl: null,
     points: 0,
-    coins: 0,
     selectedClubs: [],
     walletConnected: false,
     walletAddress: null,
@@ -22,9 +25,11 @@ let userState = {
     referrals: [],
     dailyCheckInClaimed: false,
     pendingReferrer: null,
-    tasks: typeof window.defaultTasksData !== "undefined" ? window.defaultTasksData.map(task => ({...task})) : []
+    // تُهيّأ لاحقاً داخل onReady بعد التأكد من تحميل data.js
+    tasks: []
 };
 
+// دالة مساعدة للحصول على قيمة الترجمة مع قيمة احتياطية
 function safeT(key, fallback) {
     try {
         if (typeof window.t === 'function') {
@@ -32,6 +37,7 @@ function safeT(key, fallback) {
             if (res && res !== key) return res;
         }
     } catch (e) {
+        console.warn(`[ZELO] فشل تنفيذ الترجمة للمفتاح "${key}":`, e);
     }
     return fallback;
 }
@@ -42,7 +48,12 @@ function onReady(fn) {
 }
 
 onReady(() => {
-    // توليد معرّف رقمي فريد ومحلي لتطبيق الأندرويد
+    // تهيئة المهام بعد التأكد من أن data.js قد حُمّل
+    if (typeof window.defaultTasksData !== "undefined" && Array.isArray(window.defaultTasksData)) {
+        userState.tasks = window.defaultTasksData.map(task => ({ ...task }));
+    }
+
+    // توليد معرّف رقمي محلي وحفظه
     const numericFallbackId = Math.floor(100000000 + Math.random() * 900000000).toString();
     const localFallbackId = localStorage.getItem('zelo_user_id') || numericFallbackId;
     localStorage.setItem('zelo_user_id', localFallbackId);
@@ -51,16 +62,19 @@ onReady(() => {
     userState.userId = localFallbackId;
     userState.userParam = localFallbackId;
 
-    var savedLang = localStorage.getItem('app_lang') || localStorage.getItem('lang') || 'ar';
+    const savedLang = localStorage.getItem('app_lang') || localStorage.getItem('lang') || 'ar';
     userState.lang = savedLang.startsWith('ar') ? 'ar' : 'en';
 
     if (typeof applyLanguageSettings === 'function') applyLanguageSettings();
-    fetchDataAndRoute();
+
+    // استدعاء غير متزامن مع معالجة الأخطاء غير المتوقعة
+    fetchDataAndRoute().catch(err => {
+        console.error("[ZELO] خطأ غير متوقع أثناء التوجيه:", err);
+        triggerLoginScreen();
+    });
 });
 
 async function fetchDataAndRoute() {
-    console.log("fetchDataAndRoute started");
-
     if (!supabaseClient) {
         triggerLoginScreen();
         return;
@@ -73,16 +87,13 @@ async function fetchDataAndRoute() {
             .eq('user_id', userState.userId)
             .maybeSingle();
 
-        if (error) {
-            throw error;
-        }
+        if (error) throw error;
 
         if (data) {
-            userState.points = data.points || 0;
-            userState.coins = data.points || 0;
-            userState.selectedClubs = data.selected_clubs || [];
-
+            userState.points = Number(data.points) || 0;
+            userState.selectedClubs = Array.isArray(data.selected_clubs) ? data.selected_clubs : [];
             userState.lang = data.lang || userState.lang;
+
             if (typeof applyLanguageSettings === 'function') applyLanguageSettings();
 
             userState.hasLoggedIn = true;
@@ -96,18 +107,17 @@ async function fetchDataAndRoute() {
                 window.apiProcessReferral(userState.pendingReferrer, userState.userId);
                 userState.pendingReferrer = null;
             }
-
         } else {
             userState.hasLoggedIn = false;
         }
     } catch (error) {
+        console.error("[ZELO] فشل جلب بيانات المستخدم:", error);
         userState.hasLoggedIn = false;
     }
 
-    if (!userState.hasLoggedIn || !userState.selectedClubs || userState.selectedClubs.length === 0) {
+    if (!userState.hasLoggedIn || userState.selectedClubs.length === 0) {
         triggerLoginScreen();
     } else {
-        userState.hasLoggedIn = true;
         await updateTopBar();
         showPage('home');
     }
@@ -124,10 +134,11 @@ function triggerLoginScreen() {
     } else {
         const contentDiv = document.getElementById("main-content");
         if (contentDiv) {
-            contentDiv.innerHTML = `<div style="padding: 20px; text-align: center; color: red;">
-                <h3>System Error</h3>
-                <p>Login screen is missing. Please check login.js</p>
-            </div>`;
+            contentDiv.innerHTML = `
+                <div style="padding: 20px; text-align: center; color: red;">
+                    <h3>System Error</h3>
+                    <p>Login screen is missing. Please check login.js</p>
+                </div>`;
         }
     }
 }
@@ -141,32 +152,33 @@ async function updateTopBar() {
     const pointsEl = document.getElementById("points");
     const clubEl = document.getElementById("club");
 
-    if (typeof supabaseClient !== 'undefined' && supabaseClient !== null && userState.userId) {
+    // جلب النقاط من جدول الترتيب دائماً لضمان القيمة الأحدث
+    if (supabaseClient && userState.userId) {
         try {
-            const { data } = await supabaseClient
+            const { data, error } = await supabaseClient
                 .from('club_fans_rankings')
                 .select('total_fan_points')
                 .eq('user_id', userState.userId)
                 .maybeSingle();
 
-            if (data && data.total_fan_points !== undefined && data.total_fan_points !== null) {
-                if (!userState.points) {
-                    userState.points = data.total_fan_points;
-                    userState.coins = data.total_fan_points;
-                }
+            if (error) throw error;
+
+            if (data && data.total_fan_points != null) {
+                userState.points = Number(data.total_fan_points) || 0;
             }
         } catch (error) {
+            console.error("[ZELO] فشل جلب نقاط الترتيب:", error);
         }
     }
 
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
-        const localeLang = (userState.lang === 'ar') ? 'ar-EG' : 'en-US';
+        const localeLang = userState.lang === 'ar' ? 'ar-EG' : 'en-US';
         pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ZELOFC`;
     }
 
-    if (clubEl && userState.selectedClubs && userState.selectedClubs.length > 0) {
-        let logos = userState.selectedClubs.map(id => {
+    if (clubEl && userState.selectedClubs.length > 0) {
+        const logos = userState.selectedClubs.map(id => {
             let foundClub = null;
             if (typeof allWorldCupCountriesClubs !== 'undefined') {
                 for (const country in allWorldCupCountriesClubs) {
@@ -177,18 +189,22 @@ async function updateTopBar() {
                     }
                 }
             }
-            return foundClub ? `<img src="${foundClub.logo}" style="height: 20px; vertical-align: middle; margin: 0 4px; object-fit: contain;">` : '';
+            return foundClub
+                ? `<img src="${foundClub.logo}" alt="" style="height: 20px; vertical-align: middle; margin: 0 4px; object-fit: contain;">`
+                : '';
         }).join('');
 
-        const labelText = (userState.lang === 'ar') ? 'أنديتك:' : 'Clubs:';
+        const labelText = userState.lang === 'ar' ? 'أنديتك:' : 'Clubs:';
         clubEl.innerHTML = `<span style="color:#aaa;">${labelText}</span> ${logos}`;
     }
 }
 
 function showPage(pageId) {
     if (!userState.hasLoggedIn) return;
+
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
-    const activeNav = Array.from(document.querySelectorAll(".nav-item")).find(el => el.getAttribute("onclick")?.includes(pageId));
+    const activeNav = Array.from(document.querySelectorAll(".nav-item"))
+        .find(el => el.getAttribute("onclick")?.includes(pageId));
     if (activeNav) activeNav.classList.add("active");
 
     const contentDiv = document.getElementById("main-content");
@@ -224,11 +240,8 @@ function showPage(pageId) {
             break;
         case 'news':
         case 'community':
-            if (typeof renderCommunityPage === "function") {
-                renderCommunityPage(contentDiv);
-            } else if (typeof renderNewsPage === "function") {
-                renderNewsPage(contentDiv);
-            }
+            if (typeof renderCommunityPage === "function") renderCommunityPage(contentDiv);
+            else if (typeof renderNewsPage === "function") renderNewsPage(contentDiv);
             break;
         case 'profile':
             if (typeof renderProfilePage === "function") renderProfilePage(contentDiv);
@@ -236,24 +249,26 @@ function showPage(pageId) {
     }
 }
 
+// تعريف شاشة التحديات مرة واحدة فقط إذا لم تكن معرّفة في ملف آخر
 if (typeof window.openChallengesScreen !== 'function') {
-    window.openChallengesScreen = function() {
+    window.openChallengesScreen = function () {
         const contentDiv = document.getElementById("main-content");
-        if (contentDiv) {
-            if (typeof renderChallengesScreen === "function") {
-                renderChallengesScreen(contentDiv);
-            } else {
-                contentDiv.innerHTML = `
-                    <div style="padding: 30px 20px; text-align: center; color: white;">
-                        <h2 style="font-size: 2rem; margin-bottom: 15px;">⚽ ${userState.lang === 'ar' ? 'تحديات الأسبوع' : 'Weekly Challenges'}</h2>
-                        <p style="color: #ccc; margin-bottom: 25px;">${userState.lang === 'ar' ? 'قريباً سيتم عرض التحديات هنا...' : 'Challenges coming soon...'}</p>
-                        <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
-                            ${userState.lang === 'ar' ? 'العودة للرئيسية' : 'Back to Home'}
-                        </button>
-                    </div>
-                `;
-            }
+        if (!contentDiv) return;
+
+        if (typeof renderChallengesScreen === "function") {
+            renderChallengesScreen(contentDiv);
+            return;
         }
+
+        const isAr = userState.lang === 'ar';
+        contentDiv.innerHTML = `
+            <div style="padding: 30px 20px; text-align: center; color: white;">
+                <h2 style="font-size: 2rem; margin-bottom: 15px;">⚽ ${isAr ? 'تحديات الأسبوع' : 'Weekly Challenges'}</h2>
+                <p style="color: #ccc; margin-bottom: 25px;">${isAr ? 'قريباً سيتم عرض التحديات هنا...' : 'Challenges coming soon...'}</p>
+                <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
+                    ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
+                </button>
+            </div>
+        `;
     };
-}
-    
+            }
