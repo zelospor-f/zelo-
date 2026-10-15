@@ -220,7 +220,11 @@
         if (!c) { list.innerHTML = emptyBox(isAr() ? 'لا يوجد اتصال بقاعدة البيانات' : 'No database connection'); return; }
 
         const { data: posts, error } = await c.from('posts').select('*').order('created_at', { ascending: false }).limit(50);
-        if (error) { list.innerHTML = emptyBox(isAr() ? '❌ تعذر تحميل المنشورات' : '❌ Failed to load posts'); return; }
+        if (error) {
+            console.error('[ZELO] loadFeed error:', error);
+            list.innerHTML = emptyBox((isAr() ? '❌ تعذر تحميل المنشورات: ' : '❌ Failed to load posts: ') + esc(error.message));
+            return;
+        }
         if (!posts || !posts.length) {
             list.innerHTML = emptyBox(isAr() ? 'لا توجد منشورات بعد. كن أول من ينشر! 🚀' : 'No posts yet. Be the first! 🚀');
             return;
@@ -279,6 +283,7 @@
         }
 
         const c = db();
+        if (!c) { alert(isAr() ? 'لا يوجد اتصال بقاعدة البيانات' : 'No database connection'); return; }
         const u = me();
         const { error } = await c.from('posts').insert([{
             user_id: u.id,
@@ -408,23 +413,167 @@
     };
 
     window.sharePost = async function(id) {
-    const p = postCache[id];
-    if (!p) return;
-    const link = `https://t.me/Zelo_Sport_bot/app?startapp=post_${id}`;
-    const text = `${p.author_name}: ${p.content || ''}`.slice(0, 200);
+        const p = postCache[id];
+        if (!p) return;
+        const link = `https://t.me/Zelo_Sport_bot/app?startapp=post_${id}`;
+        const text = `${p.author_name}: ${p.content || ''}`.slice(0, 200);
 
-    if (navigator.share) {
-        navigator.share({ title: 'ZELO FC', text: text, url: link }).catch(() => {});
-        return;
-    }
-    try {
-        await navigator.clipboard.writeText(link);
-        alert(isAr() ? 'تم نسخ رابط المنشور بنجاح! 🔗' : 'Post link copied successfully! 🔗');
-    } catch (e) {
-        alert(link);
-    }
-};
+        if (navigator.share) {
+               navigator.share({ title: 'ZELO FC', text: text, url: link }).catch(() => {});
+            return;
+        }
+        try {
+            await navigator.clipboard.writeText(link);
+            alert(isAr() ? 'تم نسخ رابط المنشور بنجاح! 🔗' : 'Post link copied successfully! 🔗');
+        } catch (e) {
+            prompt(isAr() ? 'انسخ الرابط:' : 'Copy link:', link);
+        }
+    };
 
-pendingImage = '';
-loadFeed();
+    // ===================== التعليقات =====================
+    function commentHtml(postId, cm) {
+        const mine = String(cm.user_id) === me().id;
+        return `
+            <div class="cm" id="cm-${cm.id}">
+                <img class="cm-avatar" src="${esc(avatarUrl(cm.author_name, cm.author_avatar))}" onerror="this.style.display='none'">
+                <div class="cm-body">
+                    <div>
+                        <span class="cm-name">${esc(cm.author_name)}</span>
+                        <span class="cm-time">${timeAgo(cm.created_at)}</span>
+                    </div>
+                    <div class="cm-text">${esc(cm.content).replace(/\n/g, '<br>')}</div>
+                    ${mine ? `
+                        <div class="cm-actions">
+                            <button onclick="window.deleteComment(${postId}, ${cm.id})">${isAr() ? 'حذف' : 'Delete'}</button>
+                        </div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    async function loadComments(id) {
+        const list = document.getElementById(`cm-list-${id}`);
+        if (!list) return;
+        const c = db();
+        if (!c) { list.innerHTML = `<div class="cm-empty">${isAr() ? 'لا يوجد اتصال' : 'No connection'}</div>`; return; }
+
+        const { data, error } = await c.from('post_comments')
+            .select('*')
+            .eq('post_id', id)
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            console.error('[ZELO] loadComments error:', error);
+            list.innerHTML = `<div class="cm-empty">${isAr() ? '❌ تعذر تحميل التعليقات' : '❌ Failed to load comments'}</div>`;
+            return;
+        }
+        if (!data || !data.length) {
+            list.innerHTML = `<div class="cm-empty">${isAr() ? 'لا توجد تعليقات بعد' : 'No comments yet'}</div>`;
+            return;
+        }
+        list.innerHTML = data.map(cm => commentHtml(id, cm)).join('');
+    }
+
+    window.toggleComments = async function(id) {
+        const box = document.getElementById(`comments-${id}`);
+        if (!box) return;
+
+        if (box.style.display !== 'none') {
+            box.style.display = 'none';
+            return;
+        }
+
+        box.style.display = 'block';
+        box.innerHTML = `
+            <div class="cm-form">
+                <input type="text" id="cm-input-${id}" class="cm-input" maxlength="500"
+                       placeholder="${isAr() ? 'اكتب تعليقاً...' : 'Write a comment...'}"
+                       onkeydown="if(event.key==='Enter'){window.addComment(${id});}">
+                <button class="cm-send" onclick="window.addComment(${id})">${isAr() ? 'إرسال' : 'Send'}</button>
+            </div>
+            <div id="cm-list-${id}"><div class="cm-empty">...</div></div>
+        `;
+        await loadComments(id);
+    };
+
+    window.addComment = async function(id) {
+        const input = document.getElementById(`cm-input-${id}`);
+        const content = (input?.value || '').trim();
+        if (!content) return;
+
+        const c = db();
+        if (!c) { alert(isAr() ? 'لا يوجد اتصال بقاعدة البيانات' : 'No database connection'); return; }
+        const u = me();
+
+        const { error } = await c.from('post_comments').insert([{
+            post_id: id,
+            user_id: u.id,
+            author_name: u.name,
+            author_avatar: u.avatar,
+            content: content
+        }]);
+        if (error) { alert((isAr() ? 'فشل إرسال التعليق: ' : 'Comment failed: ') + error.message); return; }
+
+        input.value = '';
+        if (postCache[id]) { postCache[id].comments++; updatePostUI(id); }
+        await loadComments(id);
+    };
+
+    window.deleteComment = async function(postId, commentId) {
+        if (!confirm(isAr() ? 'هل تريد حذف هذا التعليق؟' : 'Delete this comment?')) return;
+        const { error } = await db().from('post_comments').delete().eq('id', commentId).eq('user_id', me().id);
+        if (error) { alert(error.message); return; }
+
+        if (postCache[postId]) { postCache[postId].comments = Math.max(0, postCache[postId].comments - 1); updatePostUI(postId); }
+        await loadComments(postId);
+    };
+
+    // ===================== رسم الصفحة =====================
+    window.renderCommunityPage = function(container) {
+        if (!container) return;
+
+        if (!document.getElementById('news-styles')) {
+            const st = document.createElement('style');
+            st.id = 'news-styles';
+            st.textContent = STYLES;
+            document.head.appendChild(st);
+        }
+
+        pendingImage = '';
+        const u = me();
+
+        container.innerHTML = `
+            <div class="news-head">
+                <h2 class="news-title">${isAr() ? '💬 مجتمع ZELO' : '💬 ZELO Community'}</h2>
+                <p class="news-sub">${isAr() ? 'شارك أفكارك وصورك مع المشجعين' : 'Share your thoughts and photos with fans'}</p>
+            </div>
+
+            <div class="composer">
+                <div class="composer-top">
+                    <img class="post-avatar" src="${esc(avatarUrl(u.name, u.avatar))}" onerror="this.style.display='none'">
+                    <textarea id="new-post-text" class="composer-text" maxlength="1000"
+                              placeholder="${isAr() ? 'بماذا تفكر؟' : "What's on your mind?"}"></textarea>
+                </div>
+                <div id="composer-preview"></div>
+                <div class="tool-row">
+                    <label class="tool-btn" style="margin:0;">
+                        📷 ${isAr() ? 'إضافة صورة' : 'Add image'}
+                        <input type="file" accept="image/*" style="display:none;" onchange="window.pickPostImage(this)">
+                    </label>
+                    <button class="publish-btn" onclick="window.createPost()">${isAr() ? 'نشر' : 'Post'}</button>
+                </div>
+            </div>
+
+            <div id="feed-list">
+                <div class="loading-box">${isAr() ? 'جاري تحميل المنشورات...' : 'Loading posts...'}</div>
+            </div>
+        `;
+
+        loadFeed();
+    };
+
+    // أسماء بديلة يبحث عنها showPage في app.js
+    window.renderNewsPage = window.renderCommunityPage;
+    window.renderMessagesPage = window.renderCommunityPage;
 })();
+                  
