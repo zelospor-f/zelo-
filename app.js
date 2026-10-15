@@ -208,6 +208,9 @@ async function updateTopBar() {
 
     // تحديث صورة الهيدر بعد جلب بيانات المستخدم
     if (typeof window.updateHeaderAvatar === 'function') window.updateHeaderAvatar();
+
+    // تحديث رقم ZELO في الشريط العلوي فوراً
+    if (typeof window.updateTopPoints === 'function') window.updateTopPoints();
 }
 
 function showPage(pageId) {
@@ -215,48 +218,41 @@ function showPage(pageId) {
 
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
     const activeNav = Array.from(document.querySelectorAll(".nav-item"))
-        .find(el => el.getAttribute("onclick")?.includes(pageId));
+        .find(el => el.getAttribute("onclick")?.includes(`'${pageId}'`));
     if (activeNav) activeNav.classList.add("active");
 
     const contentDiv = document.getElementById("main-content");
     if (!contentDiv) return;
     contentDiv.innerHTML = "";
 
-    switch (pageId) {
-        case 'home':
-            if (typeof renderHomePage === "function") renderHomePage(contentDiv);
-            break;
-        case 'tasks':
-            if (typeof renderTasksPage === "function") renderTasksPage(contentDiv);
-            break;
-        case 'friends':
-            if (typeof renderFriendsPage === "function") renderFriendsPage(contentDiv);
-            break;
-        case 'leaderboard':
-            if (typeof renderLeaderboardPage === "function") renderLeaderboardPage(contentDiv);
-            break;
-        case 'wallet':
-            if (typeof renderWalletPage === "function") {
-                renderWalletPage(contentDiv);
-            } else {
-                contentDiv.innerHTML = `<div style="color:white; text-align:center; padding:30px;">Loading Wallet...</div>`;
-                setTimeout(() => {
-                    if (typeof renderWalletPage === "function") {
-                        renderWalletPage(contentDiv);
-                    } else {
-                        contentDiv.innerHTML = `<div style="color:#ff4d4d; text-align:center; padding:30px;">Error: Wallet module failed to load. Please refresh.</div>`;
-                    }
-                }, 200);
+    // يستدعي أول دالة موجودة من القائمة، وإلا يعرض رسالة خطأ بدل صفحة فارغة
+    const run = (...names) => {
+        for (const name of names) {
+            if (typeof window[name] === "function") {
+                try {
+                    window[name](contentDiv);
+                } catch (e) {
+                    console.error(`[ZELO] خطأ داخل ${name}:`, e);
+                    contentDiv.innerHTML = `<div style="color:#ff4d4d; text-align:center; padding:30px;">Error in ${name}: ${e.message}</div>`;
+                }
+                return;
             }
-            break;
+        }
+        console.error(`[ZELO] لا توجد دالة عرض للصفحة "${pageId}" (جُرّب: ${names.join(', ')})`);
+        contentDiv.innerHTML = `<div style="color:#ff4d4d; text-align:center; padding:30px;">Page "${pageId}" failed to load.</div>`;
+    };
+
+    switch (pageId) {
+        case 'home':        run('renderHomePage'); break;
+        case 'matches':     run('renderMatchesPage', 'renderMatches', 'renderMatchPage'); break;
+        case 'tasks':       run('renderTasksPage'); break;
+        case 'friends':     run('renderFriendsPage'); break;
+        case 'leaderboard': run('renderLeaderboardPage'); break;
+        case 'wallet':      run('renderWalletPage'); break;
+        case 'messages':
         case 'news':
-        case 'community':
-            if (typeof renderCommunityPage === "function") renderCommunityPage(contentDiv);
-            else if (typeof renderNewsPage === "function") renderNewsPage(contentDiv);
-            break;
-        case 'profile':
-            if (typeof renderProfilePage === "function") renderProfilePage(contentDiv);
-            break;
+        case 'community':   run('renderMessagesPage', 'renderCommunityPage', 'renderNewsPage'); break;
+        case 'profile':     run('renderProfilePage'); break;
     }
 }
 
@@ -282,4 +278,5 @@ if (typeof window.openChallengesScreen !== 'function') {
             </div>
         `;
     };
-                    }
+                                              }
+        
