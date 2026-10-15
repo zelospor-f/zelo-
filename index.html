@@ -105,54 +105,72 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 10px;
             background: rgba(18, 18, 22, 0.85);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
-            padding: 0 16px;
+            padding: 0 12px;
             border-radius: 16px;
             border: 1px solid rgba(252, 176, 69, 0.25);
             box-shadow: 0 5px 25px rgba(253, 29, 29, 0.15);
             z-index: 1000;
         }
 
-        .header-right {
+        /* بطاقة سعر سولانا داخل الشريط العلوي */
+        .sol-card {
+            flex: 1;
+            min-width: 0;
+            height: 44px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
         }
+        .sol-logo {
+            width: 38px; height: 38px; border-radius: 12px;
+            background: rgba(153, 69, 255, 0.18);
+            border: 1px solid rgba(153, 69, 255, 0.45);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .sol-logo i {
+            display: block; width: 18px; height: 4px; border-radius: 2px;
+            background: linear-gradient(90deg, #9945FF, #14F195);
+            margin: 2px 0;
+        }
+        .sol-logo-bars { display: flex; flex-direction: column; align-items: center; }
+        .sol-logo-bars i:nth-child(1) { transform: skewX(-20deg); }
+        .sol-logo-bars i:nth-child(2) { transform: skewX(20deg); }
+        .sol-logo-bars i:nth-child(3) { transform: skewX(-20deg); }
+        .sol-info { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
+        .sol-name { font-size: 0.95rem; font-weight: 900; color: #fff; }
+        .sol-sub { font-size: 0.7rem; color: var(--text-muted); }
+        .sol-price {
+            margin-inline-start: auto;
+            font-size: 1.25rem; font-weight: 900;
+            color: #14F195;
+            direction: ltr;
+            font-variant-numeric: tabular-nums;
+            transition: color 0.3s;
+        }
+        .sol-price.down { color: #ff4d4d; }
 
         .profile-header-btn {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, #9945FF, #14F195);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
+            font-size: 1.1rem;
             cursor: pointer;
             box-shadow: 0 3px 10px rgba(153, 69, 255, 0.35);
             transition: transform 0.2s;
             overflow: hidden;
+            flex-shrink: 0;
         }
         .profile-header-btn:active {
             transform: scale(0.92);
-        }
-
-        .gold-official-btn-header {
-            background: linear-gradient(180deg, #FFE082 0%, #E6A100 100%);
-            color: #000;
-            font-weight: 900;
-            border: none;
-            padding: 6px 14px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            box-shadow: 0 3px 10px rgba(230, 161, 0, 0.3);
-            transition: transform 0.2s;
-        }
-        .gold-official-btn-header:active {
-            transform: scale(0.95);
         }
 
         .bottom-nav {
@@ -177,7 +195,7 @@
         .nav-item {
             background: none; border: none; outline: none; padding: 0; cursor: pointer;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            width: 60px; height: 60px; border-radius: 20px; color: var(--text-muted); transition: all 0.3s ease;
+            width: 72px; height: 60px; border-radius: 20px; color: var(--text-muted); transition: all 0.3s ease;
         }
 
         .icon-wrapper {
@@ -216,18 +234,24 @@
 </head>
 <body>
 
-    <!-- الهيدر العلوي: الأندية | الموقع الرسمي | الملف الشخصي + العملة -->
+    <!-- الهيدر العلوي: بطاقة سعر سولانا + زر القائمة الجانبية -->
     <header class="top-bar" id="top-bar" style="display: none;">
-        <div id="club" style="font-size: 0.85rem; color: #e0e0e0; font-weight: bold; display: flex; align-items: center; gap: 4px;"></div>
-
-        <button class="gold-official-btn-header" onclick="if(typeof window.openOfficialWebsite === 'function') window.openOfficialWebsite();">
-            الموقع الرسمي
-        </button>
-
-        <div class="header-right">
-            <div id="points" style="font-weight: bold; color: var(--accent-gold); background: rgba(252, 176, 69, 0.15); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(252, 176, 69, 0.3); font-size: 0.85rem;"></div>
-            <div class="profile-header-btn" id="profile-header-btn" onclick="window.openSideDrawer && window.openSideDrawer()" title="القائمة">👤</div>
+        <div class="sol-card" id="top-sol-card">
+            <div class="sol-logo">
+                <div class="sol-logo-bars"><i></i><i></i><i></i></div>
+            </div>
+            <div class="sol-info">
+                <div class="sol-name">Solana</div>
+                <div class="sol-sub">SOL / USD</div>
+            </div>
+            <div class="sol-price" id="top-sol-price">$--.--</div>
         </div>
+
+        <div class="profile-header-btn" id="profile-header-btn" onclick="window.openSideDrawer && window.openSideDrawer()" title="القائمة">👤</div>
+
+        <!-- عناصر مخفية يستخدمها باقي الكود (حتى لا تحدث أخطاء) -->
+        <div id="club" style="display:none;"></div>
+        <div id="points" style="display:none;"></div>
     </header>
 
     <main class="container" id="main-content">
@@ -237,15 +261,15 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation: 5 أيقونات من اليمين إلى اليسار -->
+    <!-- Bottom Navigation: الرئيسية | تحديات الأسبوع | المهام | الترتيب -->
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
             <span class="nav-text">الرئيسية</span>
         </button>
-        <button class="nav-item" onclick="showPage('matches')">
+        <button class="nav-item" onclick="window.openChallengesScreen && window.openChallengesScreen()">
             <span class="icon icon-wrapper">⚽</span>
-            <span class="nav-text">المباريات</span>
+            <span class="nav-text">التحديات</span>
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
             <span class="icon icon-wrapper">⚡</span>
@@ -254,10 +278,6 @@
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
             <span class="nav-text">الترتيب</span>
-        </button>
-        <button class="nav-item" onclick="showPage('messages')">
-            <span class="icon icon-wrapper">💬</span>
-            <span class="nav-text">المراسلة</span>
         </button>
     </nav>
 
@@ -275,6 +295,33 @@
                 `;
             }
         });
+    </script>
+
+    <!-- سعر سولانا في الشريط العلوي -->
+    <script>
+        (function() {
+            var lastPrice = null;
+
+            // يمكن لأي ملف آخر (مثل home.js) استدعاء هذه الدالة لتحديث السعر
+            window.updateTopSolPrice = function(price) {
+                var el = document.getElementById('top-sol-price');
+                var p = Number(price);
+                if (!el || !isFinite(p)) return;
+                el.textContent = '$' + p.toFixed(2);
+                el.classList.toggle('down', lastPrice !== null && p < lastPrice);
+                lastPrice = p;
+            };
+
+            function fetchPrice() {
+                fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT')
+                    .then(function(r) { return r.json(); })
+                    .then(function(j) { if (j && j.price) window.updateTopSolPrice(j.price); })
+                    .catch(function() {});
+            }
+
+            fetchPrice();
+            setInterval(fetchPrice, 5000);
+        })();
     </script>
 
     <!-- تحميل جميع الملفات ديناميكياً برقم وقت فريد يمنع الـ APK من حفظ القديم -->
@@ -312,4 +359,5 @@
     </script>
 
 </body>
-</html>
+    </html>
+    
