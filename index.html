@@ -261,27 +261,27 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation: الرئيسية | المباريات | التحديات | المهام | الترتيب -->
+    <!-- Bottom Navigation: الرئيسية | المباريات | المهام | الترتيب | الرسائل -->
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
-            <span class="nav-text">الرئيسية</span>
+            <span class="nav-text" data-i18n="navHome">الرئيسية</span>
         </button>
         <button class="nav-item" onclick="showPage('matches')">
             <span class="icon icon-wrapper">⚽</span>
-            <span class="nav-text">المباريات</span>
-        </button>
-        <button class="nav-item" onclick="window.openChallengesScreen && window.openChallengesScreen()">
-            <span class="icon icon-wrapper">🎯</span>
-            <span class="nav-text">التحديات</span>
+            <span class="nav-text" data-i18n="navMatches">المباريات</span>
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
             <span class="icon icon-wrapper">⚡</span>
-            <span class="nav-text">المهام</span>
+            <span class="nav-text" data-i18n="navTasks">المهام</span>
         </button>
         <button class="nav-item" onclick="showPage('leaderboard')">
             <span class="icon icon-wrapper">🏆</span>
-            <span class="nav-text">الترتيب</span>
+            <span class="nav-text" data-i18n="navLeaderboard">الترتيب</span>
+        </button>
+        <button class="nav-item" onclick="showPage('messages')">
+            <span class="icon icon-wrapper">💬</span>
+            <span class="nav-text" data-i18n="navMessages">الرسائل</span>
         </button>
     </nav>
 
@@ -363,5 +363,4 @@
     </script>
 
 </body>
-                </html>
-                
+</html>
