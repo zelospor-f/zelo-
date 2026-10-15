@@ -124,8 +124,8 @@
         community:   () => showPage('community'),
         wallet:      () => showPage('wallet'),
         website:     () => window.openOfficialWebsite && window.openOfficialWebsite(),
-        // غيّر هذا السطر إلى الدالة التي تفتحها بطاقة "أبطال اليوم" في home.js
-        champions:   () => (window.openTodayChampions || window.openChampionsScreen || (() => showPage('champions')))(),
+        // شاشة "أبطال اليوم" (الترتيب) المعرّفة في ملف الترتيب
+        champions:   () => window.openLegendaryRankingScreen && window.openLegendaryRankingScreen(),
         help:        () => toast(L('مركز المساعدة قريباً', 'Help center coming soon')),
         lang: () => {
             const next = isAr() ? 'en' : 'ar';
@@ -269,3 +269,4 @@
     if (document.readyState !== 'loading') build();
     else document.addEventListener('DOMContentLoaded', build);
 })();
+                                              
