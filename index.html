@@ -106,6 +106,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 10px;
+            direction: ltr; /* ثبات الترتيب: بطاقة سولانا يسار، الأيقونة الشخصية يمين */
             background: rgba(18, 18, 22, 0.85);
             backdrop-filter: blur(15px);
             -webkit-backdrop-filter: blur(15px);
@@ -124,6 +125,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            direction: ltr; /* شعار + (الاسم والسعر) يسار، ZELO يمين */
         }
         .sol-logo {
             width: 38px; height: 38px; border-radius: 12px;
@@ -141,24 +143,31 @@
         .sol-logo-bars i:nth-child(1) { transform: skewX(-20deg); }
         .sol-logo-bars i:nth-child(2) { transform: skewX(20deg); }
         .sol-logo-bars i:nth-child(3) { transform: skewX(-20deg); }
-        .sol-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+        .sol-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; text-align: left; }
         .sol-name { font-size: 0.95rem; font-weight: 900; color: #fff; }
         .sol-sub { font-size: 0.7rem; color: var(--text-muted); }
-        .sol-points {
-            font-size: 0.72rem; font-weight: 900; color: #ffd700;
-            direction: ltr; text-align: start;
+
+        /* السعر صار تحت SOL / USD (مكان ZELO القديم) */
+        .sol-price {
+            font-size: 0.78rem; font-weight: 900;
+            color: #14F195;
+            direction: ltr; text-align: left;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
-        }
-        .sol-price {
-            margin-inline-start: auto;
-            font-size: 1.25rem; font-weight: 900;
-            color: #14F195;
-            direction: ltr;
-            font-variant-numeric: tabular-nums;
             transition: color 0.3s;
         }
         .sol-price.down { color: #ff4d4d; }
+
+        /* ZELO صار في الطرف الأيمن بالحجم الكبير (مكان السعر القديم) */
+        .sol-points {
+            margin-left: auto;
+            display: flex; align-items: center; gap: 5px;
+            font-size: 1.15rem; font-weight: 900; color: #ffd700;
+            direction: ltr;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .sol-points small { font-size: 0.72rem; font-weight: 900; }
 
         .profile-header-btn {
             width: 40px;
@@ -249,9 +258,13 @@
             <div class="sol-info">
                 <div class="sol-name">Solana</div>
                 <div class="sol-sub">SOL / USD</div>
-                <div class="sol-points">🪙 <span id="top-points">0</span> ZELO</div>
+                <div class="sol-price" id="top-sol-price">$--.--</div>
             </div>
-            <div class="sol-price" id="top-sol-price">$--.--</div>
+            <div class="sol-points">
+                <span>🪙</span>
+                <span id="top-points">0</span>
+                <small>ZELO</small>
+            </div>
         </div>
 
         <div class="profile-header-btn" id="profile-header-btn" onclick="window.openSideDrawer && window.openSideDrawer()" title="القائمة">👤</div>
