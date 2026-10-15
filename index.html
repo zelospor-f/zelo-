@@ -195,7 +195,7 @@
         .nav-item {
             background: none; border: none; outline: none; padding: 0; cursor: pointer;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            width: 72px; height: 60px; border-radius: 20px; color: var(--text-muted); transition: all 0.3s ease;
+            width: 60px; height: 60px; border-radius: 20px; color: var(--text-muted); transition: all 0.3s ease;
         }
 
         .icon-wrapper {
@@ -261,14 +261,18 @@
         </div>
     </main>
 
-    <!-- Bottom Navigation: الرئيسية | تحديات الأسبوع | المهام | الترتيب -->
+    <!-- Bottom Navigation: الرئيسية | المباريات | التحديات | المهام | الترتيب -->
     <nav class="bottom-nav" id="bottom-nav" style="display: none;">
         <button class="nav-item active" onclick="showPage('home')">
             <span class="icon icon-wrapper">🏠</span>
             <span class="nav-text">الرئيسية</span>
         </button>
-        <button class="nav-item" onclick="window.openChallengesScreen && window.openChallengesScreen()">
+        <button class="nav-item" onclick="showPage('matches')">
             <span class="icon icon-wrapper">⚽</span>
+            <span class="nav-text">المباريات</span>
+        </button>
+        <button class="nav-item" onclick="window.openChallengesScreen && window.openChallengesScreen()">
+            <span class="icon icon-wrapper">🎯</span>
             <span class="nav-text">التحديات</span>
         </button>
         <button class="nav-item" onclick="showPage('tasks')">
@@ -359,5 +363,5 @@
     </script>
 
 </body>
-    </html>
-    
+                </html>
+                
