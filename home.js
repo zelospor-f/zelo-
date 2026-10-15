@@ -145,6 +145,41 @@
             background: rgba(20,22,48,0.8); border: 1px dashed rgba(90,110,255,0.4); border-radius: 16px;
         }
         .loading-box { color: #00FF87; }
+
+        /* زر النشر العائم (مثل X) */
+        .fab-compose {
+            position: fixed; bottom: 105px; inset-inline-end: 20px;
+            width: 58px; height: 58px; border-radius: 50%; border: none; cursor: pointer;
+            background: #1d9bf0; color: #fff; font-size: 2.1rem; line-height: 1; font-weight: 300;
+            display: flex; align-items: center; justify-content: center; padding: 0 0 4px 0;
+            box-shadow: 0 6px 20px rgba(29,155,240,0.5); z-index: 1500; transition: transform 0.15s;
+        }
+        .fab-compose:active { transform: scale(0.92); }
+
+        /* شاشة كتابة المنشور */
+        .compose-overlay {
+            position: fixed; inset: 0; z-index: 3000; background: #121215;
+            display: flex; flex-direction: column; animation: fadeUp 0.25s ease-out;
+        }
+        .compose-top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .compose-close { background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer; padding: 4px 8px; }
+        .compose-post-btn {
+            border: none; cursor: pointer; padding: 8px 24px; border-radius: 999px;
+            background: #1d9bf0; color: #fff; font-weight: 900; font-size: 0.9rem;
+        }
+        .compose-body { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; gap: 12px; align-items: flex-start; }
+        .compose-body textarea {
+            width: 100%; min-height: 140px; background: transparent; border: none; outline: none;
+            resize: none; color: #fff; font-size: 1.05rem; font-family: inherit; box-sizing: border-box;
+        }
+        .compose-tools {
+            display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
     `;
 
     const emptyBox = msg => `<div class="empty-box">${msg}</div>`;
@@ -296,6 +331,7 @@
 
         textEl.value = '';
         window.clearPostImage();
+        window.closeCompose();
         await loadFeed();
     };
 
@@ -364,7 +400,7 @@
         } catch (e) { alert(e.message); }
     };
 
-    window.removeEditImage = function(id) {
+        window.removeEditImage = function(id) {
         editState[id].removed = true;
         editState[id].newImage = null;
         const txt = document.getElementById(`edit-text-${id}`)?.value ?? postCache[id].content;
@@ -419,7 +455,7 @@
         const text = `${p.author_name}: ${p.content || ''}`.slice(0, 200);
 
         if (navigator.share) {
-               navigator.share({ title: 'ZELO FC', text: text, url: link }).catch(() => {});
+            navigator.share({ title: 'ZELO FC', text: text, url: link }).catch(() => {});
             return;
         }
         try {
@@ -452,8 +488,9 @@
     }
 
     async function loadComments(id) {
+        const box = document.getElementById(`comments-${id}`);
         const list = document.getElementById(`cm-list-${id}`);
-        if (!list) return;
+        if (!box || !list) return;
         const c = db();
         if (!c) { list.innerHTML = `<div class="cm-empty">${isAr() ? 'لا يوجد اتصال' : 'No connection'}</div>`; return; }
 
@@ -528,6 +565,70 @@
         await loadComments(postId);
     };
 
+    // ===================== زر النشر العائم (مثل X) =====================
+    let fabObserver = null;
+
+    function removeFab() {
+        document.getElementById('fab-compose')?.remove();
+        document.getElementById('compose-overlay')?.remove();
+        if (fabObserver) { fabObserver.disconnect(); fabObserver = null; }
+    }
+
+    function setupFab() {
+        removeFab();
+        const fab = document.createElement('button');
+        fab.id = 'fab-compose';
+        fab.className = 'fab-compose';
+        fab.textContent = '+';
+        fab.onclick = () => window.openCompose();
+        document.body.appendChild(fab);
+
+        // يختفي الزر تلقائياً عند مغادرة الصفحة
+        const main = document.getElementById('main-content');
+        if (main) {
+            fabObserver = new MutationObserver(() => {
+                if (!document.getElementById('feed-list')) removeFab();
+            });
+            fabObserver.observe(main, { childList: true });
+        }
+    }
+
+    window.openCompose = function() {
+        if (document.getElementById('compose-overlay')) return;
+        pendingImage = '';
+        const u = me();
+        const ov = document.createElement('div');
+        ov.id = 'compose-overlay';
+        ov.className = 'compose-overlay';
+        ov.innerHTML = `
+            <div class="compose-top">
+                <button class="compose-close" onclick="window.closeCompose()">✕</button>
+                <button class="compose-post-btn" onclick="window.createPost()">${isAr() ? 'نشر' : 'Post'}</button>
+            </div>
+            <div class="compose-body">
+                <img class="post-avatar" src="${esc(avatarUrl(u.name, u.avatar))}" onerror="this.style.display='none'">
+                <div style="flex:1; min-width:0;">
+                    <textarea id="new-post-text" maxlength="1000"
+                              placeholder="${isAr() ? 'ماذا يحدث؟' : "What's happening?"}"></textarea>
+                    <div id="composer-preview"></div>
+                </div>
+            </div>
+            <div class="compose-tools">
+                <label class="tool-btn" style="margin:0;">
+                    📷 ${isAr() ? 'إضافة صورة' : 'Add image'}
+                    <input type="file" accept="image/*" style="display:none;" onchange="window.pickPostImage(this)">
+                </label>
+            </div>
+        `;
+        document.body.appendChild(ov);
+        setTimeout(() => document.getElementById('new-post-text')?.focus(), 150);
+    };
+
+    window.closeCompose = function() {
+        document.getElementById('compose-overlay')?.remove();
+        pendingImage = '';
+    };
+
     // ===================== رسم الصفحة =====================
     window.renderCommunityPage = function(container) {
         if (!container) return;
@@ -548,32 +649,17 @@
                 <p class="news-sub">${isAr() ? 'شارك أفكارك وصورك مع المشجعين' : 'Share your thoughts and photos with fans'}</p>
             </div>
 
-            <div class="composer">
-                <div class="composer-top">
-                    <img class="post-avatar" src="${esc(avatarUrl(u.name, u.avatar))}" onerror="this.style.display='none'">
-                    <textarea id="new-post-text" class="composer-text" maxlength="1000"
-                              placeholder="${isAr() ? 'بماذا تفكر؟' : "What's on your mind?"}"></textarea>
-                </div>
-                <div id="composer-preview"></div>
-                <div class="tool-row">
-                    <label class="tool-btn" style="margin:0;">
-                        📷 ${isAr() ? 'إضافة صورة' : 'Add image'}
-                        <input type="file" accept="image/*" style="display:none;" onchange="window.pickPostImage(this)">
-                    </label>
-                    <button class="publish-btn" onclick="window.createPost()">${isAr() ? 'نشر' : 'Post'}</button>
-                </div>
-            </div>
-
             <div id="feed-list">
                 <div class="loading-box">${isAr() ? 'جاري تحميل المنشورات...' : 'Loading posts...'}</div>
             </div>
         `;
 
         loadFeed();
+        setupFab();
     };
 
     // أسماء بديلة يبحث عنها showPage في app.js
     window.renderNewsPage = window.renderCommunityPage;
     window.renderMessagesPage = window.renderCommunityPage;
 })();
-                  
+        
