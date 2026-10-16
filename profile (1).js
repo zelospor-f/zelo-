@@ -1,0 +1,904 @@
+(function() {
+    const US = () => (typeof userState !== 'undefined' && userState) ? userState : {};
+    const LS = {
+        get(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } },
+        set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    };
+    const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const isAr = () => String(US().lang || LS.get('app_lang') || 'ar').startsWith('ar');
+    const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
+
+    let draft = null;
+    let currentTarget = null;
+    let mode = 'view'; // 'view' | 'edit'
+
+    function loadProfile() {
+        const u = US();
+        const rawUser = u.username || LS.get('zelo_username') || '';
+        return {
+            nickname: u.nickname_ar || u.nickname_en || LS.get('zelo_nickname_ar') || LS.get('zelo_nickname_en') || String(u.email || LS.get('zelo_email') || '').split('@')[0],
+            username: rawUser === 'Android Player' ? (LS.get('zelo_username') || '') : rawUser,
+            dob: u.dob || LS.get('zelo_dob') || '',
+            bio: u.bio || LS.get('zelo_bio') || '',
+            photoUrl: u.photoUrl || LS.get('zelo_photo_url') || '',
+            selectedClubs: (u.selectedClubs || []).map(String),
+            points: Number(u.points || 0),
+            invited: Number(u.referrals_count ?? u.invited_count ?? 0) || 0,
+            followers: Number(u.followers_count ?? u.followers ?? 0) || 0,
+            following: Number(u.following_count ?? u.following ?? 0) || 0,
+            email: u.email || LS.get('zelo_email') || '',
+            badgeClub: String(u.badgeClub || u.badge_club || LS.get('zelo_badge_club') || '')
+        };
+    }
+
+    function readInputsIntoDraft() {
+        if (!draft) return;
+        const g = id => document.getElementById(id);
+        if (g('input-nick')) draft.nickname = g('input-nick').value.trim();
+        if (g('input-dob')) draft.dob = g('input-dob').value;
+        if (g('input-bio')) draft.bio = g('input-bio').value;
+        if (g('input-email')) draft.emailInput = g('input-email').value.trim();
+    }
+
+    function getMatchedClubs(d) {
+        const matched = [];
+        if (d.selectedClubs.length && typeof allWorldCupCountriesClubs !== 'undefined') {
+            const all = [];
+            for (const key in allWorldCupCountriesClubs) (allWorldCupCountriesClubs[key] || []).forEach(c => all.push(c));
+            d.selectedClubs.forEach(id => {
+                const club = all.find(c => String(c.id) === String(id));
+                if (club) matched.push(club);
+            });
+        }
+        return matched;
+    }
+
+    const clubLabel = c => typeof getClubName === 'function' ? getClubName(c) : c.name;
+
+    // شارة التوثيق = شعار النادي الذي اختاره المستخدم (badge_club)
+    // window.zeloVerifiedBadge(user.badge_club, 16) -> HTML أو '' إن لم يختر شارة
+    window.zeloVerifiedBadge = function(badgeClubId, size) {
+        if (!badgeClubId || typeof allWorldCupCountriesClubs === 'undefined') return '';
+        let club = null;
+        for (const key in allWorldCupCountriesClubs) {
+            club = (allWorldCupCountriesClubs[key] || []).find(c => String(c.id) === String(badgeClubId));
+            if (club) break;
+        }
+        if (!club || !club.logo) return '';
+        const px = size || 16;
+        return `<img src="${esc(club.logo)}" onerror="this.style.display='none'" alt="" style="width:${px}px;height:${px}px;object-fit:contain;vertical-align:middle;margin:0 4px;">`;
+    };
+
+    // رابط الدعوة/الملف: عرّف window.getReferralLink() لديك إن كانت الصيغة مختلفة
+    function inviteLink() {
+        try { if (typeof window.getReferralLink === 'function') { const l = window.getReferralLink(); if (l) return l; } } catch (e) {}
+        return 'https://t.me/Zelo_Sport_bot?start=' + encodeURIComponent(String(US().userId || ''));
+    }
+
+    function displayNameOf(d, ar) {
+        return d.nickname || d.username || (ar ? 'لاعب جديد' : 'New Player');
+    }
+    function avatarOf(d, name) {
+        return d.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=0c0e20&color=00FF87&size=128&bold=true`;
+    }
+
+    // حائط الملف (مثل X): شعار نادٍ في الوسط، أو ناديان يمين ويسار
+    function wallHtml(matched) {
+        const src = c => c.banner || c.flag || c.logo || '';
+        const bg = (c, side) => `<div class="wall-bg wall-${side}" style="background-image:url('${esc(src(c))}')"></div>`;
+        const mark = (c, side) => `<img class="wall-mark wall-mark-${side}" src="${esc(src(c))}" onerror="this.style.display='none'" alt="">`;
+        if (matched.length === 1) return bg(matched[0], 'full') + mark(matched[0], 'center');
+        if (matched.length >= 2) return bg(matched[0], 'left') + bg(matched[1], 'right') + mark(matched[0], 'left') + mark(matched[1], 'right');
+        return '<div class="wall-bg wall-full wall-empty"></div>';
+    }
+
+    function styles(ar) {
+        const dir = ar ? 'rtl' : 'ltr';
+        const align = ar ? 'right' : 'left';
+        return `
+        <style>
+            .profile-wrap { width: 100%; box-sizing: border-box; padding: 4px 0 20px 0; direction: ${dir}; color: #fff; text-align: ${align}; }
+            .profile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+            .back-btn { background: rgba(255,255,255,0.08); color: #00FF87; border: 1px solid rgba(0,255,135,0.25); padding: 8px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
+            .page-title { margin: 0; font-size: 1.05rem; font-weight: 900; background: linear-gradient(135deg, #2AABEE, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+            .card { background: linear-gradient(135deg, rgba(20,22,48,0.95), rgba(12,14,32,0.95)); border: 1px solid rgba(90,110,255,0.35); border-radius: 16px; padding: 14px; margin-bottom: 14px; box-shadow: 0 0 12px rgba(80,100,255,0.12); }
+            .card-title { color: #fff; font-size: 0.9rem; font-weight: 900; margin: 0 0 12px 0; }
+            .hero { padding: 0; overflow: hidden; }
+            .wall { position: relative; height: 120px; overflow: hidden; background: #0c0e20; }
+            .wall-bg { position: absolute; top: 0; bottom: 0; background-size: cover; background-position: center; filter: blur(14px) saturate(1.3) brightness(0.8); transform: scale(1.3); }
+            .wall-full { left: 0; right: 0; }
+            .wall-left { left: 0; width: 50%; }
+            .wall-right { right: 0; width: 50%; }
+            .wall-empty { background: linear-gradient(135deg, #1b2a6b, #0c0e20 60%, #0b3d2e); filter: none; transform: none; }
+            .wall-mark { position: absolute; top: 12px; height: 76px; width: 76px; object-fit: contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.55)); z-index: 1; }
+            .wall-mark-center { left: 50%; margin-left: -38px; height: 90px; width: 90px; top: 6px; }
+            .wall-mark-left { left: 16%; }
+            .wall-mark-right { right: 16%; }
+            .hero-body { padding: 0 14px 14px 14px; }
+            .avatar-stage { position: relative; z-index: 3; margin-top: -44px; margin-bottom: 8px; display: flex; justify-content: flex-start; }
+            .avatar-box { position: relative; width: 88px; height: 88px; }
+            .avatar-ring { width: 100%; height: 100%; border-radius: 50%; padding: 3px; box-sizing: border-box; background: linear-gradient(135deg, #2AABEE, #8B5CF6, #00FF87); box-shadow: 0 0 18px rgba(42,171,238,0.4); }
+            .avatar-inner { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #0c0e20; border: 2px solid #0c0e20; }
+            .avatar-inner img { width: 100%; height: 100%; object-fit: cover; }
+            .avatar-cam { position: absolute; inset: 3px; border-radius: 50%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; cursor: pointer; border: none; color: #fff; }
+            .hero-name { font-size: 1.1rem; font-weight: 900; margin: 0; }
+            .hero-user { font-size: 0.78rem; color: #7CF7C4; font-weight: 700; margin-top: 3px; direction: ltr; text-align: ${align}; }
+            .hero-bio { font-size: 0.84rem; color: #e2e8f0; line-height: 1.6; margin-top: 10px; word-break: break-word; }
+            .hero-meta { font-size: 0.72rem; color: #7a7f9a; font-weight: 700; margin-top: 8px; }
+            .stats { display: flex; gap: 22px; margin-top: 12px; }
+            .stat-num { font-size: 0.98rem; font-weight: 900; color: #fff; display: inline; }
+            .stat-lbl { font-size: 0.74rem; font-weight: 700; color: #7a7f9a; display: inline; margin: 0 4px; }
+            .hero-balance { display: inline-block; margin-top: 12px; font-size: 0.8rem; font-weight: 900; background: linear-gradient(90deg, #2AABEE, #8B5CF6, #00FF87); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+            .x-btns { display: flex; gap: 10px; margin-top: 14px; }
+            .x-btn { flex: 1; cursor: pointer; background: transparent; color: #fff; font-weight: 900; font-size: 0.86rem; padding: 10px; border-radius: 22px; border: 1px solid rgba(255,255,255,0.3); }
+            .x-btn:active { background: rgba(255,255,255,0.08); }
+            .verify-btn { margin-top: 10px; cursor: pointer; border: 1px solid rgba(0,255,135,0.45); background: rgba(0,255,135,0.1); color: #00FF87; font-weight: 900; font-size: 0.76rem; padding: 7px 14px; border-radius: 20px; }
+            .small-btn { margin-top: 8px; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; background: rgba(255,255,255,0.06); color: #cbd5e1; font-size: 0.72rem; font-weight: 800; padding: 5px 12px; border-radius: 10px; }
+            .club-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; background: rgba(0,0,0,0.35); border: 1px solid rgba(90,110,255,0.25); border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; }
+            .club-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+            .club-logo-box { width: 40px; height: 40px; min-width: 40px; border-radius: 10px; background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; }
+            .club-name { color: #fff; font-weight: 800; font-size: 0.84rem; }
+            .club-sub { color: #7a7f9a; font-size: 0.66rem; font-weight: 700; margin-top: 2px; }
+            .chip { font-size: 0.66rem; font-weight: 900; color: #04110B; background: linear-gradient(135deg, #00FF87, #14B8A6); padding: 5px 9px; border-radius: 8px; white-space: nowrap; }
+            .empty-box { text-align: center; padding: 14px; color: #94a3b8; font-size: 0.8rem; font-weight: 700; border: 1px dashed rgba(90,110,255,0.4); border-radius: 12px; }
+            .input { width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.45); border: 1px solid rgba(90,110,255,0.3); border-radius: 12px; padding: 10px 12px; color: #fff; font-size: 0.86rem; font-weight: 700; outline: none; }
+            .acc-row { display: flex; gap: 8px; align-items: center; }
+            .acc-btn { border: none; cursor: pointer; white-space: nowrap; font-weight: 900; font-size: 0.78rem; padding: 11px 14px; border-radius: 12px; color: #04110B; background: linear-gradient(135deg, #2AABEE, #00FF87); }
+            .acc-note { font-size: 0.68rem; font-weight: 700; margin-top: 6px; color: #7a7f9a; }
+            .linked-ok { color: #00FF87; }
+            .label { display: block; font-size: 0.7rem; font-weight: 800; color: #7a7f9a; margin-bottom: 6px; }
+            .group { margin-bottom: 12px; }
+            .logout-btn { width: 100%; margin-top: 4px; cursor: pointer; font-weight: 900; font-size: 0.88rem; padding: 12px; border-radius: 14px; color: #ff6b6b; background: rgba(255,80,80,0.08); border: 1px solid rgba(255,80,80,0.35); }
+            /* صفحة التعديل (مثل X) */
+            .edit-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+            .edit-title { font-size: 1rem; font-weight: 900; }
+            .edit-save { border: none; cursor: pointer; background: #fff; color: #000; font-weight: 900; font-size: 0.82rem; padding: 8px 18px; border-radius: 20px; }
+            .x-field { border-bottom: 1px solid rgba(255,255,255,0.14); padding: 12px 2px; }
+            .x-field label { display: block; font-size: 0.72rem; font-weight: 800; color: #7a7f9a; margin-bottom: 4px; }
+            .x-field input, .x-field textarea { width: 100%; box-sizing: border-box; background: transparent; border: none; outline: none; color: #fff; font-size: 0.96rem; font-weight: 600; padding: 4px 0; font-family: inherit; }
+            .x-field textarea { resize: none; height: 78px; }
+            .x-field:focus-within { border-bottom-color: #00FF87; }
+            .x-row { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+            .x-row .val { color: #fff; font-size: 0.92rem; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+            .x-row .arrow { color: #7a7f9a; }
+            /* تبويبات المنشورات (مثل X) */
+            .feed-tabs { display: flex; border-bottom: 1px solid rgba(255,255,255,0.12); margin-bottom: 4px; }
+            .feed-tab { flex: 1; text-align: center; padding: 12px 4px; font-size: 0.84rem; font-weight: 800; color: #7a7f9a; cursor: pointer; position: relative; background: none; border: none; }
+            .feed-tab.active { color: #fff; }
+            .feed-tab.active::after { content: ''; position: absolute; bottom: -1px; left: 25%; right: 25%; height: 4px; border-radius: 2px; background: #2AABEE; }
+            .feed-item { display: flex; gap: 10px; padding: 12px 2px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+            .feed-av { width: 40px; height: 40px; min-width: 40px; border-radius: 50%; object-fit: cover; background: #0c0e20; }
+            .feed-main { flex: 1; min-width: 0; }
+            .feed-ctx { font-size: 0.7rem; font-weight: 800; color: #7a7f9a; margin-bottom: 4px; }
+            .feed-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.84rem; }
+            .feed-head b { font-weight: 900; color: #fff; }
+            .feed-head span { color: #7a7f9a; font-size: 0.74rem; font-weight: 600; direction: ltr; }
+            .feed-text { font-size: 0.88rem; line-height: 1.6; color: #e2e8f0; margin-top: 4px; word-break: break-word; white-space: pre-wrap; }
+            .feed-img { width: 100%; max-height: 260px; object-fit: cover; border-radius: 14px; margin-top: 8px; border: 1px solid rgba(255,255,255,0.1); }
+            .feed-quote { margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; font-size: 0.78rem; color: #cbd5e1; }
+            .feed-stats { display: flex; gap: 22px; margin-top: 8px; font-size: 0.74rem; font-weight: 700; color: #7a7f9a; }
+            .feed-empty { text-align: center; padding: 36px 12px; color: #7a7f9a; font-weight: 700; font-size: 0.86rem; }
+            .feed-stats { justify-content: space-between; gap: 6px; }
+            .feed-stats .act { cursor: pointer; }
+            .feed-head .feed-more { margin-inline-start: auto; cursor: pointer; padding: 0 8px; font-size: 1.3rem; color: #7a7f9a; font-weight: 900; line-height: 1; direction: ltr; }
+        </style>`;
+    }
+
+    // ===== المنشورات / الردود / إعادة النشر (مثل X) =====
+    // أسماء الجداول الافتراضية — غيّرها عبر window.ZELO_FEED_TABLES إن اختلفت لديك
+    const FT = () => Object.assign({ posts: 'posts', comments: 'post_comments', reposts: 'post_reposts' }, window.ZELO_FEED_TABLES || {});
+    let feedTab = 'posts';
+    const feedCache = {};
+
+    function timeAgo(iso, ar) {
+        const t = new Date(iso).getTime();
+        if (!t) return '';
+        const s = Math.max(1, Math.floor((Date.now() - t) / 1000));
+        const m = Math.floor(s / 60), h = Math.floor(m / 60), dd = Math.floor(h / 24);
+        if (s < 60) return ar ? 'الآن' : 'now';
+        if (m < 60) return ar ? m + ' د' : m + 'm';
+        if (h < 24) return ar ? h + ' س' : h + 'h';
+        if (dd < 7) return ar ? dd + ' ي' : dd + 'd';
+        return new Date(t).toLocaleDateString(ar ? 'ar' : 'en', { day: 'numeric', month: 'short' });
+    }
+
+    // يجلب العناصر ثم يضيف العدّادات (إعجابات/ردود/إعادة نشر) وسياق الرد
+    async function fetchFeed(tab) {
+        const rows = await fetchFeedRaw(tab);
+        const c = db();
+        if (!c || !rows.length) return rows;
+        const T = FT();
+        const pid = e => String(e.kind === 'reply' ? e.item.post_id : e.item.id);
+        const ids = [...new Set(rows.map(pid))].map(x => isNaN(x) ? x : Number(x));
+        const count = async (table) => {
+            const m = {};
+            try {
+                const r = await c.from(table).select('post_id').in('post_id', ids);
+                (r.data || []).forEach(x => { const k = String(x.post_id); m[k] = (m[k] || 0) + 1; });
+            } catch (e) {}
+            return m;
+        };
+        const [likes, comments, reposts, views] = await Promise.all([count('post_likes'), count(T.comments), count(T.reposts), count('post_views')]);
+        const marks = {};
+        try {
+            const br = await c.from('post_bookmarks').select('post_id').eq('user_id', String(US().userId)).in('post_id', ids);
+            (br.data || []).forEach(x => marks[String(x.post_id)] = 1);
+        } catch (e) {}
+        let parents = {};
+        if (tab === 'replies') {
+            try {
+                const pr = await c.from(T.posts).select('id,content,author_name').in('id', ids);
+                (pr.data || []).forEach(p => parents[String(p.id)] = p);
+            } catch (e) {}
+        }
+        rows.forEach(e => {
+            const k = pid(e);
+            e.counts = { likes: likes[k] || 0, replies: comments[k] || 0, reposts: reposts[k] || 0, views: views[k] || 0 };
+            e.saved = !!marks[k];
+            if (e.kind === 'reply') e.parent = parents[k] || null;
+        });
+        // المنشور المثبّت أولاً (الترتيب الباقي يبقى كما هو)
+        if (tab === 'posts') rows.sort((a, b) => (b.item.pinned_at ? 1 : 0) - (a.item.pinned_at ? 1 : 0));
+        return rows;
+    }
+
+    async function fetchFeedRaw(tab) {
+        const c = db(), uid = US().userId;
+        if (!c || !uid) return [];
+        const T = FT();
+        const own = { user_id: String(uid) };
+        if (tab === 'posts') {
+            const r = await c.from(T.posts).select('*').eq('user_id', own.user_id).order('created_at', { ascending: false }).limit(40);
+            if (r.error) throw r.error;
+            return (r.data || []).map(p => ({ kind: 'post', item: p, author: null }));
+        }
+        if (tab === 'replies') {
+            const r = await c.from(T.comments).select('*').eq('user_id', own.user_id).order('created_at', { ascending: false }).limit(40);
+            if (r.error) throw r.error;
+            return (r.data || []).map(p => ({ kind: 'reply', item: p, author: null }));
+        }
+        // reposts
+        const r = await c.from(T.reposts).select('*').eq('user_id', own.user_id).order('created_at', { ascending: false }).limit(40);
+        if (r.error) throw r.error;
+        const rows = r.data || [];
+        const ids = [...new Set(rows.map(x => x.post_id).filter(Boolean))];
+        let posts = {}, authors = {};
+        if (ids.length) {
+            const pr = await c.from(T.posts).select('*').in('id', ids);
+            (pr.data || []).forEach(p => posts[String(p.id)] = p);
+            const uids = [...new Set(Object.values(posts).map(p => p.user_id).filter(Boolean).map(String))];
+            if (uids.length) {
+                const ur = await c.from('users').select('user_id,nickname_ar,nickname_en,username,photo_url,badge_club').in('user_id', uids);
+                (ur.data || []).forEach(u => authors[String(u.user_id)] = u);
+            }
+        }
+        return rows.map(x => {
+            const p = posts[String(x.post_id)];
+            return p ? { kind: 'repost', item: p, repostAt: x.created_at, author: authors[String(p.user_id)] || null } : null;
+        }).filter(Boolean);
+    }
+
+    function feedItemHtml(e, d, ar) {
+        const p = e.item;
+        const a = e.author;
+        const isRepost = e.kind === 'repost';
+        const name = isRepost
+            ? ((a && (a.nickname_ar || a.nickname_en || a.username)) || p.author_name || '')
+            : displayNameOf(d, ar);
+        const user = isRepost ? (a ? a.username : '') : d.username;
+        const photo = isRepost
+            ? ((a && a.photo_url) || p.author_avatar || avatarOf({ photoUrl: '' }, name || '?'))
+            : avatarOf(d, displayNameOf(d, ar));
+        const badge = window.zeloVerifiedBadge(a ? a.badge_club : d.badgeClub, 14);
+        const text = p.content ?? p.text ?? p.body ?? '';
+        const img = p.image_url || p.media_url || p.image || '';
+        const when = timeAgo(e.repostAt || p.created_at, ar);
+        const ctx = e.kind === 'repost' ? `<div class="feed-ctx">🔁 ${ar ? 'أعدتَ النشر' : 'You reposted'}</div>`
+            : e.kind === 'reply' ? `<div class="feed-ctx">💬 ${ar ? 'رددتَ على' : 'Replying to'} ${esc((e.parent && e.parent.author_name) || (ar ? 'منشور' : 'a post'))}</div>` : '';
+        const quote = (e.kind === 'reply' && e.parent && e.parent.content)
+            ? `<div class="feed-quote">${esc(String(e.parent.content).slice(0, 140))}</div>` : '';
+        const cn = e.counts || {};
+        const sid = esc(String(e.kind === 'reply' ? p.post_id : p.id));
+        const pinnedHtml = (e.kind === 'post' && p.pinned_at) ? `<div class="feed-ctx">📌 ${ar ? 'مثبّت' : 'Pinned'}</div>` : '';
+        const menuBtn = e.kind === 'post' ? `<span class="feed-more" onclick="window.pfOpenPostMenu('${sid}')">⋯</span>` : '';
+        const n = v => Number(v || 0).toLocaleString('en-US');
+        return `
+            <div class="feed-item">
+                <img class="feed-av" src="${esc(photo)}" onerror="this.style.visibility='hidden'" alt="">
+                <div class="feed-main">
+                    ${pinnedHtml}${ctx}
+                    <div class="feed-head"><b>${esc(name)}</b>${badge}${user ? `<span>@${esc(user)}</span>` : ''}<span>· ${esc(when)}</span>${menuBtn}</div>
+                    ${text ? `<div class="feed-text">${esc(text)}</div>` : ''}
+                    ${img ? `<img class="feed-img" src="${esc(img)}" onerror="this.style.display='none'" alt="">` : ''}
+                    ${quote}
+                    <div class="feed-stats">
+                        <span>💬 ${n(cn.replies)}</span>
+                        <span>🔁 ${n(cn.reposts)}</span>
+                        <span>❤️ ${n(cn.likes)}</span>
+                        <span>📊 ${n(cn.views)}</span>
+                        <span class="act" data-on="${e.saved ? 1 : 0}" style="opacity:${e.saved ? 1 : 0.45}" onclick="window.pfToggleBookmark('${sid}', this)">🔖</span>
+                        <span class="act" onclick="window.pfSharePost('${sid}')">📤</span>
+                    </div>
+                </div>
+            </div>`;
+    }
+
+    async function loadFeed(force) {
+        const box = document.getElementById('feed-box');
+        if (!box) return;
+        const ar = isAr();
+        const tab = feedTab;
+        if (!force && feedCache[tab]) { renderFeed(feedCache[tab], box, ar); return; }
+        box.innerHTML = `<div class="feed-empty">${ar ? 'جارٍ التحميل…' : 'Loading…'}</div>`;
+        try {
+            const rows = await fetchFeed(tab);
+            feedCache[tab] = rows;
+            if (tab === feedTab) renderFeed(rows, document.getElementById('feed-box'), ar);
+        } catch (err) {
+            console.error('feed error', err);
+            const b = document.getElementById('feed-box');
+            if (b) b.innerHTML = `<div class="feed-empty">${ar ? 'تعذّر تحميل المحتوى' : 'Could not load content'}<br><small style="direction:ltr;display:block;margin-top:6px;">${esc(err.message || '')}</small></div>`;
+        }
+    }
+
+    function renderFeed(rows, box, ar) {
+        if (!box) return;
+        if (!rows.length) {
+            const msg = { posts: ['لا توجد منشورات بعد', 'No posts yet'], replies: ['لا توجد ردود بعد', 'No replies yet'], reposts: ['لا توجد إعادة نشر بعد', 'No reposts yet'] }[feedTab];
+            box.innerHTML = `<div class="feed-empty">${ar ? msg[0] : msg[1]}</div>`;
+            return;
+        }
+        box.innerHTML = rows.map(e => feedItemHtml(e, draft, ar)).join('');
+    }
+
+    // ===== نوافذ سفلية + إجراءات المنشور =====
+    function openSheet(html) {
+        document.getElementById('post-sheet')?.remove();
+        const ar = isAr();
+        const ov = document.createElement('div');
+        ov.id = 'post-sheet';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.65);display:flex;align-items:flex-end;justify-content:center;';
+        ov.onclick = e => { if (e.target === ov) ov.remove(); };
+        ov.innerHTML = `<div style="width:100%;max-width:500px;max-height:80vh;overflow-y:auto;box-sizing:border-box;direction:${ar ? 'rtl' : 'ltr'};background:#0f1126;border:1px solid rgba(90,110,255,0.35);border-radius:22px 22px 0 0;padding:10px 0 22px 0;color:#fff;"><div style="width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,0.25);margin:0 auto 10px auto;"></div>${html}</div>`;
+        document.body.appendChild(ov);
+    }
+    const closeSheet = () => document.getElementById('post-sheet')?.remove();
+    const sheetRow = (icon, label, fn, danger) => `<div onclick="${fn}" style="display:flex;align-items:center;gap:14px;padding:15px 20px;cursor:pointer;font-weight:800;font-size:0.92rem;color:${danger ? '#ff6b6b' : '#fff'};"><span style="font-size:1.2rem;width:26px;text-align:center;">${icon}</span>${label}</div>`;
+    const sheetNote = t => `<div style="padding:22px 20px;text-align:center;color:#94a3b8;font-weight:700;font-size:0.85rem;line-height:1.7;">${t}</div>`;
+    const findPost = id => { const r = (feedCache.posts || []).find(e => String(e.item.id) === String(id)); return r ? r.item : null; };
+    const anyPost = id => findPost(id) || (() => { for (const k in feedCache) { const r = (feedCache[k] || []).find(e => e.kind !== 'reply' && String(e.item.id) === String(id)); if (r) return r.item; } return null; })();
+
+    async function profilesFor(uids) {
+        const c = db(), map = {};
+        if (!c || !uids.length) return map;
+        const fill = rows => (rows || []).forEach(u => { map[String(u.user_id)] = u.nickname_ar || u.nickname_en || u.username || u.display_name || u.author_name || ''; });
+        try { const r = await c.from('public_profiles').select('*').in('user_id', uids); if (!r.error && r.data && r.data.length) { fill(r.data); return map; } } catch (e) {}
+        try { const r = await c.from('users').select('user_id,nickname_ar,nickname_en,username').in('user_id', uids); if (!r.error) fill(r.data); } catch (e) {}
+        return map;
+    }
+
+    window.pfOpenPostMenu = function(id) {
+        const ar = isAr();
+        const p = findPost(id);
+        if (!p) return;
+        const sid = esc(String(id));
+        openSheet(
+            (p.pinned_at
+                ? sheetRow('📍', ar ? 'إلغاء التثبيت من الملف الشخصي' : 'Unpin from profile', `window.pfPinPost('${sid}',false)`)
+                : sheetRow('📌', ar ? 'تثبيت المنشور في الملف الشخصي' : 'Pin to your profile', `window.pfPinPost('${sid}',true)`)) +
+            sheetRow('🗑️', ar ? 'حذف المنشور' : 'Delete post', `window.pfDeletePost('${sid}')`, true) +
+            '<div style="height:1px;background:rgba(255,255,255,0.1);margin:4px 16px;"></div>' +
+            sheetRow('📊', ar ? 'عرض التفاعلات مع المنشور' : 'View post interactions', `window.pfShowInteractions('${sid}')`) +
+            sheetRow('🙈', ar ? 'عرض الردود المخفية' : 'View hidden replies', `window.pfShowHiddenReplies('${sid}')`)
+        );
+    };
+
+    window.pfPinPost = async function(id, pin) {
+        const ar = isAr(), c = db(), uid = US().userId, T = FT();
+        closeSheet();
+        if (!c || !uid) return;
+        if (pin) await c.from(T.posts).update({ pinned_at: null }).eq('user_id', String(uid)).not('pinned_at', 'is', null);
+        const { error } = await c.from(T.posts).update({ pinned_at: pin ? new Date().toISOString() : null }).eq('id', id).eq('user_id', String(uid));
+        if (error) { alert((ar ? 'تعذّر التنفيذ: ' : 'Failed: ') + error.message + (/pinned_at/.test(error.message) ? (ar ? '\nشغّل ملف SQL الإضافي أولاً.' : '\nRun the extra SQL first.') : '')); return; }
+        delete feedCache.posts;
+        loadFeed(true);
+    };
+
+    window.pfDeletePost = async function(id) {
+        const ar = isAr(), c = db(), uid = US().userId, T = FT();
+        closeSheet();
+        if (!confirm(ar ? 'حذف هذا المنشور نهائياً؟' : 'Delete this post permanently?')) return;
+        if (!c || !uid) return;
+        const { error } = await c.from(T.posts).delete().eq('id', id).eq('user_id', String(uid));
+        if (error) { alert((ar ? 'تعذّر الحذف: ' : 'Delete failed: ') + error.message); return; }
+        Object.keys(feedCache).forEach(k => delete feedCache[k]);
+        loadFeed(true);
+    };
+
+    window.pfShowInteractions = async function(id) {
+        const ar = isAr(), c = db(), T = FT();
+        openSheet(sheetNote(ar ? 'جارٍ التحميل…' : 'Loading…'));
+        try {
+            const [lk, rp, cm, vw] = await Promise.all([
+                c.from('post_likes').select('user_id').eq('post_id', id),
+                c.from(T.reposts).select('user_id').eq('post_id', id),
+                c.from(T.comments).select('user_id,author_name').eq('post_id', id),
+                c.from('post_views').select('post_id', { count: 'exact', head: true }).eq('post_id', id)
+            ]);
+            const likeIds = (lk.data || []).map(x => String(x.user_id));
+            const repIds = (rp.data || []).map(x => String(x.user_id));
+            const names = await profilesFor([...new Set([...likeIds, ...repIds])]);
+            const list = (ids, fallback) => ids.length
+                ? ids.slice(0, 40).map(u => `<div style="padding:6px 0;font-size:0.84rem;font-weight:700;color:#e2e8f0;">${esc(names[u] || fallback)}</div>`).join('')
+                : `<div style="font-size:0.8rem;color:#7a7f9a;font-weight:700;">${ar ? 'لا أحد بعد' : 'Nobody yet'}</div>`;
+            const sec = (icon, title, count, body) => `<div style="padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.08);"><div style="font-weight:900;font-size:0.9rem;margin-bottom:6px;">${icon} ${title} <span style="color:#7a7f9a;">(${count})</span></div>${body}</div>`;
+            const cmNames = [...new Set((cm.data || []).map(x => x.author_name || names[String(x.user_id)] || '').filter(Boolean))];
+            openSheet(
+                `<div style="padding:4px 20px 10px;font-weight:900;font-size:1rem;">📊 ${ar ? 'التفاعلات مع المنشور' : 'Post interactions'}</div>` +
+                sec('👁', ar ? 'المشاهدات' : 'Views', (vw.count || 0).toLocaleString('en-US'), '') +
+                sec('❤️', ar ? 'الإعجابات' : 'Likes', likeIds.length, list(likeIds, ar ? 'مستخدم' : 'User')) +
+                sec('🔁', ar ? 'إعادة النشر' : 'Reposts', repIds.length, list(repIds, ar ? 'مستخدم' : 'User')) +
+                sec('💬', ar ? 'الردود' : 'Replies', (cm.data || []).length, cmNames.length ? cmNames.slice(0, 40).map(n => `<div style="padding:6px 0;font-size:0.84rem;font-weight:700;color:#e2e8f0;">${esc(n)}</div>`).join('') : `<div style="font-size:0.8rem;color:#7a7f9a;font-weight:700;">${ar ? 'لا أحد بعد' : 'Nobody yet'}</div>`)
+            );
+        } catch (err) {
+            openSheet(sheetNote((ar ? 'تعذّر التحميل: ' : 'Failed: ') + esc(err.message || '')));
+        }
+    };
+
+    window.pfShowHiddenReplies = async function(id) {
+        const ar = isAr(), c = db(), T = FT();
+        openSheet(sheetNote(ar ? 'جارٍ التحميل…' : 'Loading…'));
+        const r = await c.from(T.comments).select('id,content,author_name,created_at').eq('post_id', id).eq('hidden', true).order('created_at', { ascending: false });
+        if (r.error) { openSheet(sheetNote((ar ? 'تعذّر التحميل. شغّل ملف SQL الإضافي أولاً.<br>' : 'Failed. Run the extra SQL first.<br>') + esc(r.error.message))); return; }
+        const rows = r.data || [];
+        const title = `<div style="padding:4px 20px 10px;font-weight:900;font-size:1rem;">🙈 ${ar ? 'الردود المخفية' : 'Hidden replies'}</div>`;
+        if (!rows.length) { openSheet(title + sheetNote(ar ? 'لا توجد ردود مخفية' : 'No hidden replies')); return; }
+        openSheet(title + rows.map(x => `
+            <div style="padding:12px 20px;border-bottom:1px solid rgba(255,255,255,0.08);">
+                <div style="font-weight:900;font-size:0.84rem;">${esc(x.author_name || (ar ? 'مستخدم' : 'User'))} <span style="color:#7a7f9a;font-weight:600;">· ${esc(timeAgo(x.created_at, ar))}</span></div>
+                <div style="font-size:0.86rem;color:#e2e8f0;margin:4px 0 8px;white-space:pre-wrap;word-break:break-word;">${esc(x.content || '')}</div>
+                <button class="small-btn" onclick="window.pfUnhideReply('${esc(String(x.id))}','${esc(String(id))}')">${ar ? 'إظهار الرد' : 'Unhide'}</button>
+            </div>`).join(''));
+    };
+
+    window.pfUnhideReply = async function(cid, pid) {
+        const c = db();
+        const { error } = await c.rpc('set_comment_hidden', { p_comment_id: Number(cid), p_hidden: false });
+        if (error) { alert(error.message); return; }
+        window.pfShowHiddenReplies(pid);
+    };
+
+    window.pfToggleBookmark = async function(id, el) {
+        const ar = isAr(), c = db(), uid = US().userId;
+        if (!c || !uid) return;
+        const was = el.dataset.on === '1';
+        el.dataset.on = was ? '0' : '1';
+        el.style.opacity = was ? 0.45 : 1;
+        const q = was
+            ? c.from('post_bookmarks').delete().eq('post_id', id).eq('user_id', String(uid))
+            : c.from('post_bookmarks').insert({ post_id: id, user_id: String(uid) });
+        const { error } = await q;
+        if (error) {
+            el.dataset.on = was ? '1' : '0';
+            el.style.opacity = was ? 1 : 0.45;
+            alert((ar ? 'تعذّر الحفظ: ' : 'Failed: ') + error.message);
+            return;
+        }
+        for (const k in feedCache) (feedCache[k] || []).forEach(e => { if (String(e.kind === 'reply' ? e.item.post_id : e.item.id) === String(id)) e.saved = !was; });
+    };
+
+    function postLink(id) { return 'https://t.me/Zelo_Sport_bot?start=post_' + encodeURIComponent(String(id)); }
+    window.pfSharePost = function(id) {
+        const ar = isAr(), sid = esc(String(id));
+        openSheet(
+            `<div style="padding:4px 20px 10px;font-weight:900;font-size:1rem;">📤 ${ar ? 'مشاركة المنشور' : 'Share post'}</div>` +
+            sheetRow('✈️', 'Telegram', `window.pfSharePostVia('telegram','${sid}')`) +
+            sheetRow('💬', ar ? 'واتساب' : 'WhatsApp', `window.pfSharePostVia('whatsapp','${sid}')`) +
+            sheetRow('𝕏', 'X', `window.pfSharePostVia('x','${sid}')`) +
+            sheetRow('🔗', ar ? 'نسخ الرابط' : 'Copy link', `window.pfSharePostVia('copy','${sid}')`) +
+            sheetRow('⋯', ar ? 'مشاركة عبر…' : 'Share via…', `window.pfSharePostVia('more','${sid}')`)
+        );
+    };
+    window.pfSharePostVia = async function(kind, id) {
+        const ar = isAr();
+        const link = postLink(id);
+        const p = anyPost(id);
+        const snippet = p && (p.content || p.text) ? String(p.content || p.text).slice(0, 100) : 'Zelo Sport ⚽';
+        const u = encodeURIComponent(link), t = encodeURIComponent(snippet);
+        closeSheet();
+        if (kind === 'telegram') openExternal(`https://t.me/share/url?url=${u}&text=${t}`);
+        else if (kind === 'whatsapp') openExternal(`https://wa.me/?text=${t}%20${u}`);
+        else if (kind === 'x') openExternal(`https://twitter.com/intent/tweet?text=${t}&url=${u}`);
+        else if (kind === 'more' && navigator.share) navigator.share({ text: snippet, url: link }).catch(() => {});
+        else {
+            try { await navigator.clipboard.writeText(link); }
+            catch (e) { const ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); } catch (e2) {} ta.remove(); }
+            alert(ar ? 'تم نسخ الرابط ✅' : 'Link copied ✅');
+        }
+    };
+
+    // استدعِها من صفحة المنشورات الرئيسية عند ظهور منشور لمستخدم آخر لتسجيل مشاهدة (مرة لكل مستخدم)
+    window.zeloRecordView = async function(postId) {
+        const c = db(), uid = US().userId;
+        if (!c || !uid || !postId) return;
+        try { await c.from('post_views').upsert({ post_id: postId, user_id: String(uid) }, { onConflict: 'post_id,user_id', ignoreDuplicates: true }); } catch (e) {}
+    };
+
+    window.switchProfileTab = function(tab) {
+        feedTab = tab;
+        document.querySelectorAll('.feed-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+        loadFeed(false);
+    };
+
+    function feedSectionHtml(ar) {
+        const tabs = [['posts', ar ? 'المنشورات' : 'Posts'], ['replies', ar ? 'الردود' : 'Replies'], ['reposts', ar ? 'إعادة النشر' : 'Reposts']];
+        return `
+            <div class="feed-tabs">
+                ${tabs.map(t => `<button class="feed-tab ${t[0] === feedTab ? 'active' : ''}" data-tab="${t[0]}" onclick="window.switchProfileTab('${t[0]}')">${t[1]}</button>`).join('')}
+            </div>
+            <div id="feed-box"></div>`;
+    }
+
+    // غلاف: يرسم الملف ثم يضيف التبويبات أسفله
+    function drawProfile(target) {
+        drawProfileBase(target);
+        if (mode !== 'view') return;
+        const wrap = target.querySelector('.profile-wrap');
+        if (wrap) wrap.insertAdjacentHTML('beforeend', feedSectionHtml(isAr()));
+        loadFeed(false);
+    }
+
+    function drawProfileBase(target) {
+        if (mode === 'edit') return drawEdit(target);
+        const ar = isAr();
+        const d = draft;
+        const matched = getMatchedClubs(d);
+        const displayName = displayNameOf(d, ar);
+        const avatarSrc = avatarOf(d, displayName);
+
+        const clubsHtml = matched.length
+            ? matched.map(club => `
+                <div class="club-row">
+                    <div class="club-main">
+                        <div class="club-logo-box"><img src="${esc(club.logo)}" onerror="this.style.display='none'" style="width:28px;height:28px;object-fit:contain;"></div>
+                        <div style="min-width:0;">
+                            <div class="club-name">${esc(clubLabel(club))}</div>
+                            <div class="club-sub">${esc(club.countryFlag || '')} ${ar ? 'قاعدة مشجعين' : 'Fan Base'}</div>
+                        </div>
+                    </div>
+                    <span class="chip">${ar ? 'مدعوم' : 'Supported'}</span>
+                </div>`).join('')
+            : `<div class="empty-box">${ar ? 'لم يتم تحديد أندية بعد' : 'No clubs selected yet'}</div>`;
+
+        const emailLinked = !!d.email;
+
+        target.innerHTML = styles(ar) + `
+            <div class="profile-wrap">
+                <div class="profile-top">
+                    <button class="back-btn" onclick="if(typeof window.showPage === 'function') window.showPage('home');">${ar ? '➔ الرئيسية' : '➔ Home'}</button>
+                    <h3 class="page-title">${ar ? 'الملف الشخصي' : 'Profile'}</h3>
+                    <div style="width:64px;"></div>
+                </div>
+
+                <div class="card hero">
+                    <div class="wall">${wallHtml(matched)}</div>
+                    <div class="hero-body">
+                        <div class="avatar-stage">
+                            <div class="avatar-box"><div class="avatar-ring"><div class="avatar-inner"><img src="${esc(avatarSrc)}" alt=""></div></div></div>
+                        </div>
+                        <h4 class="hero-name">${esc(displayName)}${window.zeloVerifiedBadge(d.badgeClub, 20)}</h4>
+                        <div class="hero-user">${d.username && d.nickname ? '@' + esc(d.username) : ''}</div>
+                        ${d.bio ? `<div class="hero-bio">${esc(d.bio).replace(/\n/g, '<br>')}</div>` : ''}
+                        ${d.dob ? `<div class="hero-meta">🎂 ${esc(d.dob)}</div>` : ''}
+
+                        <div class="stats">
+                            <div><span class="stat-num" id="stat-invited">${d.invited.toLocaleString('en-US')}</span><span class="stat-lbl">${ar ? 'مدعوون' : 'Invited'}</span></div>
+                            <div><span class="stat-num">${d.followers.toLocaleString('en-US')}</span><span class="stat-lbl">${ar ? 'متابِعون' : 'Followers'}</span></div>
+                            <div><span class="stat-num">${d.following.toLocaleString('en-US')}</span><span class="stat-lbl">${ar ? 'يتابِع' : 'Following'}</span></div>
+                        </div>
+
+                        <div class="hero-balance">${d.points.toLocaleString('en-US')} 🏆 ZELOFC</div>
+
+                        <div class="x-btns">
+                            <button class="x-btn" onclick="window.openEditProfile()">${ar ? 'تعديل الملف الشخصي' : 'Edit profile'}</button>
+                            <button class="x-btn" onclick="window.openShareSheet()">${ar ? 'مشاركة' : 'Share'}</button>
+                        </div>
+                        <button class="verify-btn" onclick="window.openBadgePicker()">
+                            ${d.badgeClub ? '🔄 ' + (ar ? 'تغيير شارة التوثيق' : 'Change verified badge') : '✔️ ' + (ar ? 'وثّق حسابك بشارة ناديك' : 'Verify your account with your club badge')}
+                        </button>
+                    </div>
+                </div>
+
+            </div>`;
+    }
+
+    // ===== صفحة تعديل الملف الشخصي (مثل X) =====
+    function drawEdit(target) {
+        const ar = isAr();
+        const d = draft;
+        const matched = getMatchedClubs(d);
+        const displayName = displayNameOf(d, ar);
+        const avatarSrc = avatarOf(d, displayName);
+        const badgeClub = matched.find(c => String(c.id) === d.badgeClub);
+
+        target.innerHTML = styles(ar) + `
+            <div class="profile-wrap">
+                <div class="edit-top">
+                    <button class="back-btn" onclick="window.closeEditProfile()">${ar ? '➔' : '←'}</button>
+                    <div class="edit-title">${ar ? 'تعديل الملف الشخصي' : 'Edit profile'}</div>
+                    <button class="edit-save" onclick="window.saveProfileData()">${ar ? 'حفظ' : 'Save'}</button>
+                </div>
+
+                <div class="card hero">
+                    <div class="wall">${wallHtml(matched)}</div>
+                    <div class="hero-body">
+                        <div class="avatar-stage">
+                            <div class="avatar-box">
+                                <div class="avatar-ring"><div class="avatar-inner"><img src="${esc(avatarSrc)}" alt=""></div></div>
+                                <button class="avatar-cam" onclick="window.openNftStore()" title="${ar ? 'تحميل صورة' : 'Upload photo'}">📷</button>
+                            </div>
+                        </div>
+                        ${d.photoUrl ? `<button class="small-btn" onclick="window.resetAvatar()">${ar ? 'إزالة الصورة' : 'Remove photo'}</button>` : ''}
+                        <div class="acc-note">${ar ? 'الحائط يتغير تلقائياً حسب ناديك. للصورة: اضغط 📷 لشراء بطاقة NFT.' : 'The wall follows your club. Tap 📷 to buy an NFT card as your photo.'}</div>
+                    </div>
+                </div>
+
+                <div class="x-field">
+                    <label>${ar ? 'الاسم المستعار' : 'Nickname'}</label>
+                    <input id="input-nick" maxlength="30" value="${esc(d.nickname)}" placeholder="${ar ? 'اسمك الذي يظهر للآخرين' : 'Your display name'}">
+                </div>
+                <div class="x-field">
+                    <label>${ar ? 'النبذة التعريفية' : 'Bio'}</label>
+                    <textarea id="input-bio" placeholder="${ar ? 'اكتب نبذة قصيرة عنك...' : 'Write something about yourself...'}">${esc(d.bio)}</textarea>
+                </div>
+                <div class="x-field">
+                    <label>${ar ? 'تاريخ الميلاد' : 'Date of Birth'}</label>
+                    <input id="input-dob" type="date" value="${esc(d.dob)}">
+                </div>
+                <div class="x-field x-row" onclick="window.openBadgePicker()">
+                    <div>
+                        <label>${ar ? 'شارة التوثيق' : 'Verified badge'}</label>
+                        <div class="val">${badgeClub ? `<img src="${esc(badgeClub.logo)}" style="width:22px;height:22px;object-fit:contain;"> ${esc(clubLabel(badgeClub))}` : (ar ? 'بدون شارة' : 'No badge')}</div>
+                    </div>
+                    <span class="arrow">${ar ? '‹' : '›'}</span>
+                </div>
+                <div style="height:30px;"></div>
+            </div>`;
+    }
+
+    function redraw() { if (currentTarget && draft) drawProfile(currentTarget); }
+
+    window.renderProfilePage = function(container) {
+        currentTarget = container || document.getElementById('main-content') || document.body;
+        Object.keys(feedCache).forEach(k => delete feedCache[k]); // تحديث المحتوى عند كل فتح للملف
+        if (!currentTarget) return;
+        mode = 'view';
+        draft = loadProfile();
+        drawProfile(currentTarget);
+        loadCounts();
+
+        const c = db();
+        if (c && c.auth && typeof c.auth.getUser === 'function' && !draft.email) {
+            c.auth.getUser().then(res => {
+                const em = res && res.data && res.data.user && res.data.user.email;
+                if (em && draft && mode === 'view') {
+                    draft.email = em;
+                    LS.set('zelo_email', em);
+                    drawProfile(currentTarget);
+                }
+            }).catch(() => {});
+        }
+    };
+
+    async function loadCounts() {
+        const c = db();
+        const uid = US().userId;
+        if (!c || !uid || !draft) return;
+        try {
+            const rr = await c.from('club_fans_rankings').select('referrals_count').eq('user_id', String(uid));
+            if (!rr.error && rr.data) {
+                const total = rr.data.reduce((a, r) => Math.max(a, Number(r.referrals_count) || 0), 0);
+                draft.invited = total;
+                const el = document.getElementById('stat-invited'); if (el) el.textContent = total.toLocaleString('en-US');
+            }
+        } catch (e) {}
+    }
+
+    // ===== التنقل بين العرض والتعديل =====
+    window.openEditProfile = function() { mode = 'edit'; redraw(); window.scrollTo && window.scrollTo(0, 0); };
+    window.closeEditProfile = function() {
+        const inv = draft ? draft.invited : 0;
+        draft = loadProfile();
+        draft.invited = inv;
+        mode = 'view';
+        redraw();
+    };
+
+    window.openNftStore = function() {
+        readInputsIntoDraft();
+        if (typeof window.renderNftMarketPage === 'function') window.renderNftMarketPage(currentTarget);
+        else alert(isAr() ? 'صفحة NFT غير محمّلة' : 'NFT page is not loaded');
+    };
+
+    window.resetAvatar = function() {
+        readInputsIntoDraft();
+        draft.photoUrl = '';
+        redraw();
+    };
+
+    // ===== نافذة المشاركة (مثل X) =====
+    function openExternal(url) {
+        try {
+            const tg = window.Telegram && Telegram.WebApp;
+            if (tg && /^https:\/\/t\.me\//.test(url) && tg.openTelegramLink) return tg.openTelegramLink(url);
+            if (tg && tg.openLink && /^https?:/.test(url)) return tg.openLink(url);
+        } catch (e) {}
+        window.open(url, '_blank');
+    }
+    window.shareVia = function(kind) {
+        const ar = isAr();
+        const link = inviteLink();
+        const name = displayNameOf(draft || loadProfile(), ar);
+        const text = ar ? `${name} على Zelo Sport ⚽ انضم واربح مكافآت $ZELOFC` : `${name} on Zelo Sport ⚽ Join and earn $ZELOFC rewards`;
+        const u = encodeURIComponent(link), t = encodeURIComponent(text);
+        document.getElementById('share-overlay')?.remove();
+        if (kind === 'telegram') openExternal(`https://t.me/share/url?url=${u}&text=${t}`);
+        else if (kind === 'whatsapp') openExternal(`https://wa.me/?text=${t}%20${u}`);
+        else if (kind === 'x') openExternal(`https://twitter.com/intent/tweet?text=${t}&url=${u}`);
+        else if (kind === 'messenger') openExternal(`fb-messenger://share?link=${u}`);
+        else if (kind === 'copy') window.copyInvite();
+        else if (navigator.share) navigator.share({ text, url: link }).catch(() => {});
+        else window.copyInvite();
+    };
+    window.copyInvite = async function() {
+        const l = inviteLink();
+        try { await navigator.clipboard.writeText(l); }
+        catch (e) { const t = document.createElement('textarea'); t.value = l; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); } catch (e2) {} t.remove(); }
+        alert(isAr() ? 'تم نسخ الرابط ✅' : 'Link copied ✅');
+    };
+    window.openShareSheet = function() {
+        const ar = isAr();
+        const d = draft || loadProfile();
+        const name = displayNameOf(d, ar);
+        document.getElementById('share-overlay')?.remove();
+        const ov = document.createElement('div');
+        ov.id = 'share-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.65);display:flex;align-items:flex-end;justify-content:center;';
+        ov.onclick = e => { if (e.target === ov) ov.remove(); };
+        const ic = (kind, bg, glyph, label) => `
+            <div onclick="window.shareVia('${kind}')" style="flex:0 0 auto;width:76px;text-align:center;cursor:pointer;">
+                <div style="width:56px;height:56px;border-radius:50%;margin:0 auto 6px auto;background:${bg};display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#fff;font-weight:900;">${glyph}</div>
+                <div style="font-size:0.68rem;font-weight:700;color:#cbd5e1;">${label}</div>
+            </div>`;
+        ov.innerHTML = `
+            <div style="width:100%;max-width:500px;box-sizing:border-box;direction:${ar ? 'rtl' : 'ltr'};background:#0f1126;border:1px solid rgba(90,110,255,0.35);border-radius:22px 22px 0 0;padding:10px 0 22px 0;color:#fff;">
+                <div style="width:44px;height:5px;border-radius:3px;background:rgba(255,255,255,0.25);margin:0 auto 14px auto;"></div>
+                <div style="display:flex;align-items:center;gap:12px;padding:0 16px 14px 16px;border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <img src="${esc(avatarOf(d, name))}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;">
+                    <div style="min-width:0;">
+                        <div style="font-weight:900;font-size:0.95rem;">${esc(name)}${window.zeloVerifiedBadge(d.badgeClub, 16)}</div>
+                        <div style="font-size:0.74rem;color:#7CF7C4;font-weight:700;direction:ltr;text-align:${ar ? 'right' : 'left'};">${d.username ? '@' + esc(d.username) : ''}</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:6px;overflow-x:auto;padding:16px 12px 4px 12px;">
+                    ${ic('telegram', '#2AABEE', '✈️', 'Telegram')}
+                    ${ic('whatsapp', '#25D366', '💬', ar ? 'واتساب' : 'WhatsApp')}
+                    ${ic('x', '#000', '𝕏', 'X')}
+                    ${ic('messenger', '#0084ff', '🗨️', ar ? 'الدردشات' : 'Messenger')}
+                    ${ic('copy', '#1f2937', '🔗', ar ? 'نسخ الرابط' : 'Copy link')}
+                    ${ic('more', '#111827', '⋯', ar ? 'مشاركة عبر…' : 'Share via…')}
+                </div>
+            </div>`;
+        document.body.appendChild(ov);
+    };
+
+    // ===== شارة التوثيق =====
+    window.openBadgePicker = function() {
+        readInputsIntoDraft();
+        const ar = isAr();
+        const matched = getMatchedClubs(draft);
+        if (!matched.length) {
+            alert(ar ? 'اختر نادياً أولاً من شاشة اختيار الأندية' : 'Select a club first');
+            return;
+        }
+        document.getElementById('badge-overlay')?.remove();
+        const ov = document.createElement('div');
+        ov.id = 'badge-overlay';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.7);display:flex;align-items:flex-end;justify-content:center;';
+        ov.onclick = e => { if (e.target === ov) ov.remove(); };
+        const opts = matched.map(c => `
+            <div onclick="window.applyBadge('${esc(String(c.id))}')" style="display:flex;align-items:center;gap:12px;padding:12px;margin-bottom:8px;border-radius:14px;cursor:pointer;background:rgba(0,0,0,0.4);border:1px solid ${String(c.id) === draft.badgeClub ? '#00FF87' : 'rgba(90,110,255,0.3)'};">
+                <img src="${esc(c.logo)}" style="width:38px;height:38px;object-fit:contain;" onerror="this.style.display='none'">
+                <span style="font-weight:800;font-size:0.9rem;color:#fff;">${esc(clubLabel(c))}</span>
+            </div>`).join('');
+        ov.innerHTML = `
+            <div style="width:100%;max-width:500px;box-sizing:border-box;direction:${ar ? 'rtl' : 'ltr'};background:#0f1126;border:1px solid rgba(90,110,255,0.35);border-radius:20px 20px 0 0;padding:18px 16px 24px 16px;color:#fff;">
+                <div style="font-weight:900;font-size:1rem;margin-bottom:4px;">✔️ ${ar ? 'وثّق حسابك بشارة ناديك' : 'Verify with your club badge'}</div>
+                <div style="color:#7a7f9a;font-size:0.72rem;font-weight:700;margin-bottom:14px;">${ar ? 'اختر الشارة التي تظهر بجانب اسمك في المنشورات' : 'Choose the badge shown next to your name on posts'}</div>
+                ${opts}
+                <div onclick="window.applyBadge('')" style="text-align:center;padding:10px;color:#94a3b8;font-weight:800;font-size:0.8rem;cursor:pointer;">🚫 ${ar ? 'بدون شارة' : 'No badge'}</div>
+            </div>`;
+        document.body.appendChild(ov);
+    };
+
+    window.applyBadge = async function(id) {
+        document.getElementById('badge-overlay')?.remove();
+        readInputsIntoDraft();
+        draft.badgeClub = String(id || '');
+        LS.set('zelo_badge_club', draft.badgeClub);
+        if (typeof userState !== 'undefined') userState.badgeClub = draft.badgeClub;
+        const c = db();
+        if (c && US().userId) {
+            try {
+                const { error } = await c.from('users').upsert(
+                    { user_id: String(US().userId), badge_club: draft.badgeClub || null },
+                    { onConflict: 'user_id' });
+                if (error) alert((isAr() ? 'تم الحفظ محلياً، لكن القاعدة رفضت: ' : 'Saved locally, database rejected: ') + error.message);
+            } catch (e) { console.error(e); }
+        }
+        redraw();
+    };
+
+    // ===== الحساب =====
+    window.logoutUser = async function() {
+        const ar = isAr();
+        if (!confirm(ar ? 'هل تريد تسجيل الخروج؟' : 'Log out?')) return;
+        const c = db();
+        try { if (c && c.auth) await c.auth.signOut(); } catch (e) {}
+        try {
+            const lang = localStorage.getItem('app_lang');
+            Object.keys(localStorage).filter(k => k.startsWith('zelo_')).forEach(k => localStorage.removeItem(k));
+            if (lang) localStorage.setItem('app_lang', lang);
+        } catch (e) {}
+        location.reload();
+    };
+
+    // ===== حفظ التعديلات =====
+    window.saveProfileData = async function() {
+        readInputsIntoDraft();
+        const ar = isAr();
+
+        const hasArabic = /[\u0600-\u06FF]/.test(draft.nickname);
+        const nickAr = hasArabic ? draft.nickname : '';
+        const nickEn = hasArabic ? '' : draft.nickname;
+
+        LS.set('zelo_nickname_ar', nickAr);
+        LS.set('zelo_nickname_en', nickEn);
+        LS.set('zelo_dob', draft.dob);
+        LS.set('zelo_bio', draft.bio);
+        LS.set('zelo_photo_url', draft.photoUrl);
+        LS.set('zelo_badge_club', draft.badgeClub || '');
+
+        if (typeof userState !== 'undefined') {
+            Object.assign(userState, {
+                nickname_ar: nickAr,
+                nickname_en: nickEn,
+                dob: draft.dob,
+                bio: draft.bio,
+                photoUrl: draft.photoUrl,
+                badgeClub: draft.badgeClub || ''
+            });
+        }
+
+        let dbOk = true, dbMsg = '';
+        const c = db();
+        if (c && US().userId) {
+            const { error } = await c.from('users').upsert({
+                user_id: String(US().userId),
+                nickname_ar: nickAr || null,
+                nickname_en: nickEn || null,
+                bio: draft.bio || null,
+                dob: draft.dob || null,
+                photo_url: draft.photoUrl || null,
+                badge_club: draft.badgeClub || null
+            }, { onConflict: 'user_id' });
+            if (error) { dbOk = false; dbMsg = error.message; console.error('profile save error', error); }
+        }
+
+        alert(dbOk
+            ? (ar ? 'تم حفظ الملف الشخصي بنجاح ✅' : 'Profile saved successfully ✅')
+            : ((ar ? 'تم الحفظ محلياً، لكن قاعدة البيانات رفضت: ' : 'Saved locally, database rejected: ') + dbMsg));
+        mode = 'view';
+        redraw();
+    };
+})();
