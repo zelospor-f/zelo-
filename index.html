@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" id="app-html">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#121215">
+
+    <!-- وسوم إجبار متصفح الـ APK على عدم تخزين أي نسخة قديمة -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
+    <title>ZELO FC Mobile</title>
+
+    <!-- أداة فحص الأخطاء للموبايل (vConsole) - احذفها قبل النشر النهائي -->
+    <script src="https://cdn.jsdelivr.net/npm/vconsole@latest/dist/vconsole.min.js"></script>
+    <script>
+        var vConsole = new VConsole();
+    </script>
+
+    <!-- Supabase JS Client v2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        (function() {
+            var savedLang = localStorage.getItem('app_lang') ||
+                            localStorage.getItem('lang') ||
+                            localStorage.getItem('language') ||
+                            'ar';
+
+            var isAr = savedLang.startsWith('ar');
+            document.documentElement.lang = isAr ? 'ar' : 'en';
+            document.documentElement.dir = isAr ? 'rtl' : 'ltr';
+
+            var localUserId = localStorage.getItem('zelo_user_id');
+            if (!localUserId) {
+                localUserId = Math.floor(100000000 + Math.random() * 900000000).toString();
+                localStorage.setItem('zelo_user_id', localUserId);
+            }
+
+            window.userState = window.userState || {
+                userId: localUserId,
+                points: 0,
+                lang: savedLang,
+                walletConnected: false,
+                walletAddress: ''
+            };
+        })();
+    </script>
+
+    <style>
+        :root {
+            --bg-dark: #121215;
+            --bg-card: rgba(28, 28, 34, 0.6);
+            --text-main: #f8fafc;
+            --text-muted: #888899;
+            --accent-purple: #833ab4;
+            --accent-red: #fd1d1d;
+            --accent-gold: #fcb045;
+            --glass-border: rgba(255, 255, 255, 0.05);
+        }
+
+        button,
+        input[type="button"],
+        input[type="submit"] {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            background-color: transparent;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { display: none; }
+
+        .container {
+            margin-top: 95px;
+            margin-bottom: 100px;
+            padding: 15px;
+            min-height: calc(100vh - 195px);
+            animation: fadeUp 0.6s ease-out forwards;
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 10px;
+            left: 15px;
+            right: 15px;
+            height: 68px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            direction: ltr; /* ثبات الترتيب: بطاقة سولانا يسار، الأيقونة الشخصية يمين */
+            background: rgba(18, 18, 22, 0.85);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            padding: 0 12px;
+            border-radius: 16px;
+            border: 1px solid rgba(252, 176, 69, 0.25);
+            box-shadow: 0 5px 25px rgba(253, 29, 29, 0.15);
+            z-index: 1000;
+        }
+
+        /* بطاقة سعر سولانا داخل الشريط العلوي */
+        .sol-card {
+            flex: 1;
+            min-width: 0;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            direction: ltr; /* شعار + (الاسم والسعر) يسار، ZELO يمين */
+        }
+        .sol-logo {
+            width: 38px; height: 38px; border-radius: 12px;
+            background: rgba(153, 69, 255, 0.18);
+            border: 1px solid rgba(153, 69, 255, 0.45);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .sol-logo i {
+            display: block; width: 18px; height: 4px; border-radius: 2px;
+            background: linear-gradient(90deg, #9945FF, #14F195);
+            margin: 2px 0;
+        }
+        .sol-logo-bars { display: flex; flex-direction: column; align-items: center; }
+        .sol-logo-bars i:nth-child(1) { transform: skewX(-20deg); }
+        .sol-logo-bars i:nth-child(2) { transform: skewX(20deg); }
+        .sol-logo-bars i:nth-child(3) { transform: skewX(-20deg); }
+        .sol-info { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; text-align: left; }
+        .sol-name { font-size: 0.95rem; font-weight: 900; color: #fff; }
+        .sol-sub { font-size: 0.7rem; color: var(--text-muted); }
+
+        /* السعر صار تحت SOL / USD (مكان ZELO القديم) */
+        .sol-price {
+            font-size: 0.78rem; font-weight: 900;
+            color: #14F195;
+            direction: ltr; text-align: left;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+            transition: color 0.3s;
+        }
+        .sol-price.down { color: #ff4d4d; }
+
+        /* ZELO صار في الطرف الأيمن بالحجم الكبير (مكان السعر القديم) */
+        .sol-points {
+            margin-left: auto;
+            display: flex; align-items: center; gap: 5px;
+            font-size: 1.15rem; font-weight: 900; color: #ffd700;
+            direction: ltr;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+        .sol-points small { font-size: 0.72rem; font-weight: 900; }
+
+        .profile-header-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #9945FF, #14F195);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(153, 69, 255, 0.35);
+            transition: transform 0.2s;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .profile-header-btn:active {
+            transform: scale(0.92);
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 4%;
+            right: 4%;
+            width: 92%;
+            height: 70px;
+            background: rgba(18, 18, 22, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.9), 0 0 15px rgba(131, 58, 180, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            background: none; border: none; outline: none; padding: 0; cursor: pointer;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            width: 60px; height: 60px; border-radius: 20px; color: var(--text-muted); transition: all 0.3s ease;
+        }
+
+        .icon-wrapper {
+            font-size: 1.5rem; margin-bottom: 3px; transition: all 0.3s ease; filter: grayscale(100%) opacity(0.6);
+        }
+
+        .nav-text { font-size: 0.7rem; font-weight: bold; transition: color 0.3s ease; }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, rgba(131, 58, 180, 0.15), rgba(253, 29, 29, 0.15));
+            border: 1px solid rgba(253, 29, 29, 0.3); box-shadow: inset 0 0 10px rgba(252, 176, 69, 0.2);
+        }
+
+        .nav-item.active .icon-wrapper {
+            filter: grayscale(0%) opacity(1);
+            animation: floatIcon 2.5s ease-in-out infinite, pulseGlowIcon 2s infinite alternate;
+        }
+
+        .nav-item.active .nav-text { color: var(--accent-gold); text-shadow: 0 0 5px var(--accent-red); }
+
+        .btn-action {
+            position: relative; width: 100%;
+            background: linear-gradient(270deg, var(--accent-purple), var(--accent-red), var(--accent-gold), var(--accent-red), var(--accent-purple));
+            background-size: 400% 400%; animation: gradientMove 3s ease infinite, pulseShadow 2s infinite alternate;
+            color: #fff; border: none; padding: 16px; border-radius: 14px; font-weight: 900; font-size: 1.1rem;
+            cursor: pointer; margin-top: 10px; transition: transform 0.2s; text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            overflow: hidden; z-index: 1;
+        }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes gradientMove { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        @keyframes pulseShadow { 0% { box-shadow: 0 0 10px rgba(253, 29, 29, 0.4); } 100% { box-shadow: 0 0 25px rgba(252, 176, 69, 0.6); } }
+        @keyframes floatIcon { 0% { transform: translateY(0px) scale(1.1); } 50% { transform: translateY(-5px) scale(1.15); } 100% { transform: translateY(0px) scale(1.1); } }
+        @keyframes pulseGlowIcon { 0% { filter: drop-shadow(0 0 5px var(--accent-purple)); } 50% { filter: drop-shadow(0 0 15px var(--accent-red)); } 100% { filter: drop-shadow(0 0 8px var(--accent-gold)); } }
+    </style>
+</head>
+<body>
+
+    <!-- الهيدر العلوي: بطاقة سعر سولانا + نقاط اللاعب + زر القائمة الجانبية -->
+    <header class="top-bar" id="top-bar" style="display: none;">
+        <div class="sol-card" id="top-sol-card">
+            <div class="sol-logo">
+                <div class="sol-logo-bars"><i></i><i></i><i></i></div>
+            </div>
+            <div class="sol-info">
+                <div class="sol-name">Solana</div>
+                <div class="sol-sub">SOL / USD</div>
+                <div class="sol-price" id="top-sol-price">$--.--</div>
+            </div>
+            <div class="sol-points">
+                <span>🪙</span>
+                <span id="top-points">0</span>
+                <small>ZELO</small>
+            </div>
+        </div>
+
+        <div class="profile-header-btn" id="profile-header-btn" onclick="window.openSideDrawer && window.openSideDrawer()" title="القائمة">👤</div>
+
+        <!-- عناصر مخفية يستخدمها باقي الكود (حتى لا تحدث أخطاء) -->
+        <div id="club" style="display:none;"></div>
+        <div id="points" style="display:none;"></div>
+    </header>
+
+    <main class="container" id="main-content">
+        <div id="app-loading" style="text-align: center; padding-top: 50px;">
+            <div style="font-size: 2rem; margin-bottom: 10px;">⚽</div>
+            <div style="color: var(--accent-gold); font-weight: bold;">جاري تحميل ZELO FC...</div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation: الرئيسية | المباريات | المهام | الترتيب | الرسائل -->
+    <nav class="bottom-nav" id="bottom-nav" style="display: none;">
+        <button class="nav-item active" onclick="showPage('home')">
+            <span class="icon icon-wrapper">🏠</span>
+            <span class="nav-text" data-i18n="navHome">الرئيسية</span>
+        </button>
+        <button class="nav-item" onclick="showPage('matches')">
+            <span class="icon icon-wrapper">⚽</span>
+            <span class="nav-text" data-i18n="navMatches">المباريات</span>
+        </button>
+        <button class="nav-item" onclick="showPage('tasks')">
+            <span class="icon icon-wrapper">⚡</span>
+            <span class="nav-text" data-i18n="navTasks">المهام</span>
+        </button>
+        <button class="nav-item" onclick="showPage('leaderboard')">
+            <span class="icon icon-wrapper">🏆</span>
+            <span class="nav-text" data-i18n="navLeaderboard">الترتيب</span>
+        </button>
+        <button class="nav-item" onclick="showPage('messages')">
+            <span class="icon icon-wrapper">💬</span>
+            <span class="nav-text" data-i18n="navMessages">الرسائل</span>
+        </button>
+    </nav>
+
+
+    <script>
+        window.addEventListener('error', function(e) {
+            console.error("Global Error Caught Mobile:", e);
+            const container = document.getElementById('main-content');
+            if (container && container.querySelector('#app-loading')) {
+                container.innerHTML = `
+                    <div style="text-align:center; padding: 30px; color: #ff4d4d;">
+                        <h3>⚠️ حدث خطأ أثناء تحميل التطبيق</h3>
+                        <p style="font-size: 0.85rem; color: #aaa;">${e.message || 'خطأ غير معروف'}</p>
+                        <button onclick="location.reload(true)" class="btn-action" style="margin-top:15px; width: auto; padding: 10px 20px;">إعادة التحميل</button>
+                    </div>
+                `;
+            }
+        });
+    </script>
+
+    <!-- سعر سولانا في الشريط العلوي -->
+    <script>
+        (function() {
+            var lastPrice = null;
+
+            // يمكن لأي ملف آخر (مثل home.js) استدعاء هذه الدالة لتحديث السعر
+            window.updateTopSolPrice = function(price) {
+                var el = document.getElementById('top-sol-price');
+                var p = Number(price);
+                if (!el || !isFinite(p)) return;
+                el.textContent = '$' + p.toFixed(2);
+                el.classList.toggle('down', lastPrice !== null && p < lastPrice);
+                lastPrice = p;
+            };
+
+            function fetchPrice() {
+                fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT')
+                    .then(function(r) { return r.json(); })
+                    .then(function(j) { if (j && j.price) window.updateTopSolPrice(j.price); })
+                    .catch(function() {});
+            }
+
+            fetchPrice();
+            setInterval(fetchPrice, 5000);
+        })();
+    </script>
+
+    <!-- نقاط اللاعب في الشريط العلوي (تتحدث تلقائيًا من userState.points) -->
+    <script>
+        (function() {
+            function updateTopPoints() {
+                var el = document.getElementById('top-points');
+                if (!el) return;
+                var pts = (window.userState && Number(window.userState.points)) || 0;
+                el.textContent = pts.toLocaleString('en-US');
+            }
+            window.updateTopPoints = updateTopPoints;
+            updateTopPoints();
+            setInterval(updateTopPoints, 1000);
+        })();
+    </script>
+
+    <!-- تحميل جميع الملفات ديناميكياً برقم وقت فريد يمنع الـ APK من حفظ القديم -->
+    <script>
+        (function() {
+            var timeStamp = '?v=' + new Date().getTime();
+            var scriptFiles = [
+                'env.js',
+                'clubsData.js',
+                'data.js',
+                'countries.js',
+                'i18n-helpers.js',
+                'ranking.js',
+                'auth.js',
+                'login.js',
+                'weekly_match_rankings.js',
+                'matches.js',
+                'home.js',
+                'profile/core.js',
+                'profile/styles.js',
+                'profile/feed.js',
+                'profile/post-actions.js',
+                'profile/follow.js',
+                'profile/share.js',
+                'profile/edit.js',
+                'profile/index.js',
+                'settings.js',
+                'nft-market.js',
+                'tasks.js',
+                'leaderboard.js',
+                'wallet-solana.js',
+                'side-drawer.js',
+                'app.js'
+            ];
+
+            scriptFiles.forEach(function(file) {
+                var scriptElement = document.createElement('script');
+                scriptElement.src = file + timeStamp;
+                scriptElement.async = false;
+                document.body.appendChild(scriptElement);
+            });
+        })();
+    </script>
+
+</body>
+</html>
