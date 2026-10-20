@@ -160,7 +160,7 @@ app.post('/api/claim', async (req, res) => {
         await supabase
             .from('users')
             .update({ points: 0 })
-            .eq('telegram_id', telegramId);
+            .eq('telegramId', telegramId); // تم التصحيح ليتوافق مع العمود في جدول users
 
         return res.json({ 
             success: true, 
@@ -176,6 +176,52 @@ app.post('/api/claim', async (req, res) => {
     }
 });
 
+// نقطة نهاية جديدة (API) لإضافة نقاط زيلو عند مشاهدة الإعلان
+app.post('/api/reward-ad', async (req, res) => {
+    const { telegramId, rewardAmount } = req.body;
+
+    if (!telegramId || telegramId === 'guest') {
+        return res.status(400).json({ success: false, error: "Invalid or missing User ID" });
+    }
+    if (!supabase) {
+        return res.status(500).json({ success: false, error: "Supabase connection not initialized" });
+    }
+
+    try {
+        // جلب النقاط الحالية للمستخدم أولاً
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('points')
+            .eq('telegram_id', telegramId)
+            .single();
+
+        if (fetchError || !user) {
+            return res.status(404).json({ success: false, error: "User not found" });
+        }
+
+        const currentPoints = Number(user.points || 0);
+        const addedPoints = Number(rewardAmount || 10);
+        const newTotalPoints = currentPoints + addedPoints;
+
+        // تحديث النقاط في جدول المستخدمين
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ points: newTotalPoints })
+            .eq('telegram_id', telegramId);
+
+        if (updateError) throw updateError;
+
+        return res.json({ 
+            success: true, 
+            message: 'Points added successfully', 
+            newBalance: newTotalPoints 
+        });
+    } catch (err) {
+        console.error("Error adding ad reward:", err);
+        return res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Zelo FC Backend Server running on port ${PORT}`));
-            
+                                         
