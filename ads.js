@@ -6,8 +6,8 @@
     // أسماء الـ placements يجب أن تطابق ما أنشأته في لوحة Unity بالضبط
     const UNITY = {
         gameId: '800409387',
-        rewardPlacement: 'Rewarded_Android',
-        bannerPlacement: 'Banner_Android',
+        rewardPlacement: 'BP_Rewarded_Android',
+        bannerPlacement: 'BP_Banner_Android',
         testMode: false               // اجعلها true أثناء التجربة
     };
     const COOLDOWN_MS = 30 * 1000;    // فاصل بين المكافآت اليدوية (الحماية الحقيقية في السيرفر)
