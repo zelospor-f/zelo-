@@ -8,8 +8,8 @@
     /* ---------- الإعدادات: الأسعار والمزايا (عدّلها من هنا فقط) ---------- */
     const PLANS = [
         // id = معرّف المنتج (يطابق Google Play لاحقاً)، period = monthly | yearly
-        { id: 'zelo_monthly', period: 'monthly', price: 2.99,  months: 1  },
-        { id: 'zelo_yearly',  period: 'yearly',  price: 24.99, months: 12 }   // التوفير يُحسب تلقائياً
+        { id: 'zelo_monthly', period: 'monthly', price: 1.99,  months: 1  },
+        { id: 'zelo_yearly',  period: 'yearly',  price: 11.99, months: 12 }   // التوفير يُحسب تلقائياً
     ];
 
     const FEATURES = [
