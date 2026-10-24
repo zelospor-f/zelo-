@@ -2,22 +2,22 @@
     'use strict';
 
     // ====== الإعدادات ======
-    // إعدادات Unity Ads (Game ID من لوحة Unity Dashboard)[span_2](start_span)[span_2](end_span)
-    // أسماء الـ placements يجب أن تطابق ما أنشأته في لوحة Unity بالضبط[span_3](start_span)[span_3](end_span)
+    // إعدادات Unity Ads (Game ID المحدث من لوحة Unity Dashboard)
+    // أسماء الـ placements تطابق ما أنشأته في لوحة Unity بالضبط
     const UNITY = {
-        gameId: '800409387',
+        gameId: '800410114',
         rewardPlacement: 'BP_Rewarded_Android',
         bannerPlacement: 'BP_Banner_Android',
-        testMode: true                // وضع التجربة: إعلانات تجريبية مؤقتاً[span_4](start_span)[span_4](end_span)
+        testMode: true                // وضع التجربة: إعلانات تجريبية مؤقتاً
     };
-    const COOLDOWN_MS = 30 * 1000;    // فاصل بين المكافآت اليدوية (الحماية الحقيقية في السيرفر)[span_5](start_span)[span_5](end_span)
-    const REWARD_POINTS = 50;         // للعرض فقط، القيمة الفعلية يحددها السيرفر[span_6](start_span)[span_6](end_span)
-    const TOP_BANNER_MARGIN = 68;     // بُعد البانر عن أعلى الشاشة (يطابق مساحة الإعلان داخل البطاقة العلوية)[span_7](start_span)[span_7](end_span)
+    const COOLDOWN_MS = 30 * 1000;    // فاصل بين المكافآت اليدوية (الحماية الحقيقية في السيرفر)
+    const REWARD_POINTS = 50;         // للعرض فقط، القيمة الفعلية يحددها السيرفر
+    const TOP_BANNER_MARGIN = 68;     // بُعد البانر عن أعلى الشاشة (يطابق مساحة الإعلان داخل البطاقة العلوية)
 
     const isAr = () => (window.userState?.lang || 'ar').startsWith('ar');
     const L = (ar, en) => (isAr() ? ar : en);
 
-    // ====== الجسر إلى إضافة Capacitor الخاصة بـ Unity ======[span_8](start_span)[span_8](end_span)
+    // ====== الجسر إلى إضافة Capacitor الخاصة بـ Unity ======
     const getUnity = () => window.Capacitor?.Plugins?.UnityAds || null;
 
     let initialized = false;
@@ -85,7 +85,7 @@
         return null;
     }
 
-    // بعد الإعلان: السيرفر يضيف النقاط عبر callback من Unity، فنسأل القاعدة عدة مرات[span_9](start_span)[span_9](end_span)
+    // بعد الإعلان: السيرفر يضيف النقاط عبر callback من Unity، فنسأل القاعدة عدة مرات
     async function waitForPoints() {
         const before = Number(window.userState?.points || 0);
         for (let i = 0; i < 6; i++) {
@@ -100,7 +100,7 @@
         return false;
     }
 
-    // ---------- عرض إعلان مكافأة (عام - تم تحديثه لمعالجة adMarkup) ----------
+    // ---------- عرض إعلان مكافأة (عام - مع التحميل المسبق) ----------
     let lastAdError = '';
     async function showRewardAd(customData) {
         const Unity = getUnity();
@@ -108,7 +108,6 @@
         if (!(await initUnity())) throw new Error('init failed');
 
         try {
-            // محاولة تحميل الإعلان مسبقاً لتلافي خطأ فقدان بيانات الـ adMarkup
             if (typeof Unity.loadRewardedAd === 'function') {
                 await Unity.loadRewardedAd({ placementId: UNITY.rewardPlacement });
                 await new Promise(r => setTimeout(r, 1500));
@@ -130,7 +129,7 @@
         return !!(res && res.completed);
     }
 
-    // ---------- 1) المكافأة اليدوية (القائمة الجانبية) ----------[span_10](start_span)[span_10](end_span)
+    // ---------- 1) المكافأة اليدوية (القائمة الجانبية) ----------
     async function watchRewardAd() {
         if (busy) return;
 
@@ -169,7 +168,7 @@
         }
     }
 
-    // ---------- 2) البانر أسفل/أعلى الشاشة ----------[span_11](start_span)[span_11](end_span)
+    // ---------- 2) البانر أسفل/أعلى الشاشة ----------
     async function showBanner() {
         if (bannerShown) return;
         const Unity = getUnity();
@@ -187,7 +186,6 @@
         }
     }
 
-    // البانر عنصر أصلي فوق الصفحة؛ نخفيه أثناء كتابة منشور/رد وفي صفحة الاشتراكات حتى لا يغطي المحتوى[span_12](start_span)[span_12](end_span)
     function startBannerAutoHide() {
         const Unity = getUnity();
         if (!Unity || typeof MutationObserver === 'undefined') return;
@@ -205,7 +203,6 @@
         }).observe(document.body, { childList: true });
     }
 
-    // ينتظر ظهور الشريط السفلي (بعد تسجيل الدخول) ثم يعرض البانر[span_13](start_span)[span_13](end_span)
     function startBannerWatcher() {
         if (!getUnity()) return;
         const timer = setInterval(() => {
@@ -218,7 +215,7 @@
         }, 2000);
     }
 
-    // ---------- 3) ضاعف مكافأتك بعد المهمة ----------[span_14](start_span)[span_14](end_span)
+    // ---------- 3) ضاعف مكافأتك بعد المهمة ----------
     window.zeloOfferDoubleReward = function (taskId, points) {
         if (!getUnity() || !window.userState?.userId) return;
         if (document.getElementById('zads-double-modal')) return;
@@ -262,7 +259,7 @@
         };
     };
 
-    // ---------- صفحة "اربح نقاط" ----------[span_15](start_span)[span_15](end_span)
+    // ---------- صفحة "اربح نقاط" ----------
     function renderAdsPage(container) {
         const el = container || document.getElementById('main-content');
         if (!el) return;
@@ -298,3 +295,4 @@
     startBannerWatcher();
     startBannerAutoHide();
 })();
+                                                                                                                                                          
