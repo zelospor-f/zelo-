@@ -2,22 +2,19 @@
     'use strict';
 
     // ====== الإعدادات ======
-    // إعدادات Unity Ads (Game ID المحدث من لوحة Unity Dashboard)
-    // أسماء الـ placements تطابق ما أنشأته في لوحة Unity بالضبط
     const UNITY = {
         gameId: '800410114',
         rewardPlacement: 'BP_Rewarded_Android',
         bannerPlacement: 'BP_Banner_Android',
-        testMode: true                // وضع التجربة: إعلانات تجريبية مؤقتاً
+        testMode: true
     };
-    const COOLDOWN_MS = 30 * 1000;    // فاصل بين المكافآت اليدوية (الحماية الحقيقية في السيرفر)
-    const REWARD_POINTS = 50;         // للعرض فقط، القيمة الفعلية يحددها السيرفر
-    const TOP_BANNER_MARGIN = 68;     // بُعد البانر عن أعلى الشاشة (يطابق مساحة الإعلان داخل البطاقة العلوية)
+    const COOLDOWN_MS = 30 * 1000;
+    const REWARD_POINTS = 50;
+    const TOP_BANNER_MARGIN = 68;
 
     const isAr = () => (window.userState?.lang || 'ar').startsWith('ar');
     const L = (ar, en) => (isAr() ? ar : en);
 
-    // ====== الجسر إلى إضافة Capacitor الخاصة بـ Unity ======
     const getUnity = () => window.Capacitor?.Plugins?.UnityAds || null;
 
     let initialized = false;
@@ -85,7 +82,6 @@
         return null;
     }
 
-    // بعد الإعلان: السيرفر يضيف النقاط عبر callback من Unity، فنسأل القاعدة عدة مرات
     async function waitForPoints() {
         const before = Number(window.userState?.points || 0);
         for (let i = 0; i < 6; i++) {
@@ -100,36 +96,48 @@
         return false;
     }
 
-    // ---------- عرض إعلان مكافأة (عام - مع التحميل المسبق) ----------
+    // ---------- التحميل المسبق الصريح للإعلان ----------
+    async function loadRewardedAd() {
+        const Unity = getUnity();
+        if (!Unity) return false;
+        try {
+            if (typeof Unity.loadRewardedAd === 'function') {
+                await Unity.loadRewardedAd({ placementId: UNITY.rewardPlacement });
+            } else if (typeof Unity.load === 'function') {
+                await Unity.load({ placementId: UNITY.rewardPlacement });
+            }
+            return true;
+        } catch (e) {
+            console.warn('[ZELO] فشل تحميل الإعلان المسبق:', e);
+            return false;
+        }
+    }
+
+    // ---------- عرض إعلان مكافأة (مع الانتظار الصريح) ----------
     let lastAdError = '';
     async function showRewardAd(customData) {
         const Unity = getUnity();
         if (!Unity) throw new Error('no unity plugin');
         if (!(await initUnity())) throw new Error('init failed');
 
-        try {
-            if (typeof Unity.loadRewardedAd === 'function') {
-                await Unity.loadRewardedAd({ placementId: UNITY.rewardPlacement });
-                await new Promise(r => setTimeout(r, 1500));
-            } else if (typeof Unity.load === 'function') {
-                await Unity.load({ placementId: UNITY.rewardPlacement });
-                await new Promise(r => setTimeout(r, 1500));
-            }
-        } catch (loadErr) {
-            console.warn('[ZELO] تحذير أثناء محاولة التحميل المسبق للإعلان:', loadErr);
-        }
+        // طلب التحميل أولاً
+        setStatus(L('جارٍ تحميل بيانات الإعلان...', 'Loading ad data...'));
+        await loadRewardedAd();
+
+        // إعطاء مهلة إضافية 2.5 ثانية لضمان جاهزية الـ adMarkup في الإضافة
+        await new Promise(r => setTimeout(r, 2500));
 
         const res = await Unity.showRewardedAd({
             placementId: UNITY.rewardPlacement,
-            userId: String(window.userState.userId),
+            userId: String(window.userState.userId || 'guest'),
             customData: customData ? String(customData) : undefined
         });
-        
+
         lastAdError = (res && res.error) ? String(res.error) : '';
         return !!(res && res.completed);
     }
 
-    // ---------- 1) المكافأة اليدوية (القائمة الجانبية) ----------
+    // ---------- 1) المكافأة اليدوية ----------
     async function watchRewardAd() {
         if (busy) return;
 
@@ -148,7 +156,7 @@
         }
 
         busy = true;
-        setButton(true, L('جارٍ تحميل الإعلان...', 'Loading ad...'));
+        setButton(true, L('جارٍ التحضير...', 'Preparing...'));
         setStatus('');
         try {
             lastShownAt = Date.now();
@@ -168,7 +176,7 @@
         }
     }
 
-    // ---------- 2) البانر أسفل/أعلى الشاشة ----------
+    // ---------- 2) البانر ----------
     async function showBanner() {
         if (bannerShown) return;
         const Unity = getUnity();
@@ -215,7 +223,7 @@
         }, 2000);
     }
 
-    // ---------- 3) ضاعف مكافأتك بعد المهمة ----------
+    // ---------- 3) ضاعف مكافأتك ----------
     window.zeloOfferDoubleReward = function (taskId, points) {
         if (!getUnity() || !window.userState?.userId) return;
         if (document.getElementById('zads-double-modal')) return;
@@ -286,7 +294,11 @@
         `;
 
         document.getElementById('zads-watch-btn')?.addEventListener('click', watchRewardAd);
-        initUnity();
+        
+        // البدء بالتهيئة والتحميل المسبق عند فتح الصفحة
+        initUnity().then(() => {
+            loadRewardedAd();
+        });
     }
 
     window.renderAdsPage = renderAdsPage;
@@ -295,4 +307,4 @@
     startBannerWatcher();
     startBannerAutoHide();
 })();
-                                                                                                                                                          
+            
