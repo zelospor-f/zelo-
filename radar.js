@@ -5,7 +5,10 @@
  * - window.renderFanRadarPage(box)   يرسم الصفحة داخل أي حاوية
  * - window.FanPulse.push(event)      لتغذية الرادار ببيانات حقيقية:
  *     { city, lon, lat, match, ev, dom: 'joy'|'hype'|'rage', mix: {joy,hype,rage}, fans }
- * وبدون تغذية خارجية يعمل بأحداث تجريبية (محاكاة) حتى يُربط بالبيانات الحقيقية.
+ * الوضع الحقيقي (عند توفر supabaseClient):
+ *   - المباريات الجارية من جدول matches، والضغطات عبر rpc cast_pulse (pulse.sql)
+ *   - Realtime: match_pulse (ضغطات الجمهور) + match_events (أهداف وبطاقات)
+ * وضع العرض التجريبي (محاكاة) يعمل فقط بدون supabase أو بطلب المستخدم.
  * ============================================================ */
 (function () {
     'use strict';
@@ -71,6 +74,8 @@
     function stop() {
         S.timers.forEach(clearInterval); S.timers = [];
         cancelAnimationFrame(S.raf);
+        try { const c = sb(); if (S.ch && c) c.removeChannel(S.ch); } catch (e) {}
+        S.ch = null;
     }
 
     // إضافة حدث (من مصدر حقيقي أو من المحاكاة)
@@ -137,7 +142,7 @@
             const col = COL[o.dom];
             for (let r = 0; r < 3; r++) {
                 const a = ((age * 0.5) + r / 3) % 1;
-                ctx.beginPath(); ctx.arc(o.x, o.y, 6 + a * (22 + o.fans / 25000), 0, 7);
+                ctx.beginPath(); ctx.arc(o.x, o.y, 6 + a * (22 + Math.max(0, (Math.log10(o.fans + 1) - 2) * 7)), 0, 7);
                 ctx.strokeStyle = col; ctx.globalAlpha = (1 - a) * 0.8 * Math.max(fade, 0.35); ctx.lineWidth = 2; ctx.stroke();
             }
             ctx.globalAlpha = Math.max(fade, 0.4);
@@ -156,9 +161,179 @@
         S.raf = requestAnimationFrame(loop);
     }
 
+
+    /* ================= الوضع الحقيقي: مباريات + Realtime ================= */
+    const sb = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
+    const toast = m => { try { if (typeof window.showToast === 'function') window.showToast(m); } catch (e) {} };
+
+    // إحداثيات تقريبية للبلدان (lon, lat) — الاسم بالإنجليزية|العربية. أضف ما تحتاجه.
+    const COUNTRY_RAW = {
+        'brazil|البرازيل': [-47, -15], 'argentina|الأرجنتين': [-64, -34], 'france|فرنسا': [2, 47], 'spain|إسبانيا': [-3.7, 40],
+        'england|إنجلترا': [-1, 52], 'germany|ألمانيا': [10, 51], 'italy|إيطاليا': [12, 42], 'portugal|البرتغال': [-8, 39.5],
+        'netherlands|هولندا': [5, 52], 'belgium|بلجيكا': [4.5, 50.8], 'croatia|كرواتيا': [16, 45], 'uruguay|الأوروغواي': [-56, -33],
+        'colombia|كولومبيا': [-74, 4.6], 'mexico|المكسيك': [-99, 19.4], 'usa|united states|الولايات المتحدة': [-98, 38],
+        'canada|كندا': [-100, 56], 'japan|اليابان': [138, 36], 'south korea|كوريا الجنوبية': [127.5, 36.5],
+        'australia|أستراليا': [134, -25], 'saudi arabia|السعودية': [45, 24], 'egypt|مصر': [31, 27], 'morocco|المغرب': [-7, 32],
+        'tunisia|تونس': [9.5, 34], 'algeria|الجزائر': [3, 28], 'senegal|السنغال': [-14.5, 14.5], 'nigeria|نيجيريا': [8, 9],
+        'ghana|غانا': [-1.5, 7.9], 'cameroon|الكاميرون': [12.5, 5.7], 'iran|إيران': [53, 32], 'qatar|قطر': [51.2, 25.3],
+        'turkey|تركيا': [35, 39], 'switzerland|سويسرا': [8, 46.8], 'denmark|الدنمارك': [10, 56], 'poland|بولندا': [19, 52],
+        'scotland|اسكتلندا': [-4, 56.5], 'ecuador|الإكوادور': [-78, -1.8], 'paraguay|باراغواي': [-58, -23], 'chile|تشيلي': [-71, -33],
+        'iraq|العراق': [44, 33], 'jordan|الأردن': [36, 31], 'uae|الإمارات': [54, 24], 'south africa|جنوب أفريقيا': [25, -29]
+    };
+    const COUNTRY = {};
+    Object.keys(COUNTRY_RAW).forEach(k => k.split('|').forEach(n => { COUNTRY[n.trim().toLowerCase()] = COUNTRY_RAW[k]; }));
+
+    // موقع المباراة على الخريطة: أعمدة lon/lat إن وُجدت، ثم بلد الفريق، ثم وسط الخريطة
+    function matchXY(m) {
+        let ll = (m.lon != null && m.lat != null) ? [Number(m.lon), Number(m.lat)] : null;
+        const find = name => {
+            const n = String(name || '').trim().toLowerCase();
+            if (COUNTRY[n]) return COUNTRY[n];
+            if (typeof allWorldCupCountriesClubs !== 'undefined') {
+                for (const key in allWorldCupCountriesClubs) {
+                    if ((allWorldCupCountriesClubs[key] || []).some(c => String(c.name || '').toLowerCase() === n)) {
+                        const k = String(key).toLowerCase();
+                        if (COUNTRY[k]) return COUNTRY[k];
+                    }
+                }
+            }
+            return null;
+        };
+        if (!ll) ll = find(m.team_a) || find(m.team_b) || [10, 30];
+        const p = proj(ll[0] + (Math.random() - 0.5) * 4, ll[1] + (Math.random() - 0.5) * 3);
+        return { x: p[0], y: p[1] };
+    }
+
+    function isLive(m) {
+        const st = String(m.status || '').toUpperCase().trim();
+        if (st === 'FINISHED') return false;
+        if (['LIVE', 'IN_PLAY', 'PAUSED', 'HALF_TIME'].includes(st)) return true;
+        const mins = (Date.now() - new Date(m.match_date).getTime()) / 60000;
+        return mins >= 0 && mins <= 150;                 // نافذة تقديرية لمدة المباراة
+    }
+
+    async function loadMatches() {
+        const c = sb();
+        const r = await c.from('matches').select('*').neq('status', 'FINISHED').order('match_date', { ascending: true });
+        S.matches = (r.data || []).filter(isLive);
+        S.byId = {}; S.matches.forEach(m => { S.byId[String(m.id)] = m; });
+        if (S.matches.length) {
+            const ids = S.matches.map(m => String(m.id));
+            const pr = await c.from('match_pulse').select('*').in('match_id', ids);
+            (pr.data || []).forEach(x => { S.last[String(x.match_id)] = { joy: x.joy, hype: x.hype, rage: x.rage }; });
+        }
+    }
+
+    function renderChips() {
+        const el = document.getElementById('fp-matches'); if (!el) return;
+        if (!S.matches.length) {
+            el.innerHTML = `<div class="fp-empty">${T('لا توجد مباراة مباشرة الآن.', 'No live match right now.')}
+                <button class="fp-chip" id="fp-demo">${T('عرض تجريبي', 'Demo mode')}</button></div>`;
+            const d = document.getElementById('fp-demo'); if (d) d.onclick = startDemo;
+            return;
+        }
+        el.innerHTML = S.matches.map(m => `<button class="fp-chip" data-m="${m.id}" aria-pressed="${String(m.id) === String(S.curr)}">${m.team_a} × ${m.team_b}</button>`).join('');
+        el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => selectMatch(b.dataset.m));
+    }
+    function selectMatch(id) {
+        S.curr = String(id);
+        renderChips();
+        const v = document.getElementById('fp-vote'); if (v) v.classList.remove('off');
+    }
+
+    // ضغطة المشجع: تُجمَّع ثم تُرسل كل ~1.2 ثانية (الحد الأقصى 20 لكل إرسال حسب cast_pulse)
+    function tap(emotion, btn) {
+        if (!S.curr) return toast(T('اختر مباراة مباشرة أولاً', 'Pick a live match first'));
+        S.pend[emotion]++;
+        if (btn) { btn.classList.remove('hit'); void btn.offsetWidth; btn.classList.add('hit'); }
+        try { navigator.vibrate && navigator.vibrate(12); } catch (e) {}
+    }
+    let flushErr = false;
+    async function flush() {
+        const c = sb(), n = S.pend;
+        if (!c || !S.curr || n.joy + n.hype + n.rage === 0) return;
+        S.pend = { joy: 0, hype: 0, rage: 0 };
+        try {
+            const { error } = await c.rpc('cast_pulse', { p_match: S.curr, p_joy: n.joy, p_hype: n.hype, p_rage: n.rage });
+            if (error) throw error;
+            flushErr = false;
+        } catch (e) {
+            if (!flushErr) toast(T('تعذّر إرسال تفاعلك', 'Could not send your reaction'));
+            flushErr = true;
+        }
+    }
+
+    // تغيّر عدّاد مباراة → نجمّع الفرق ثم نطلق نبضة كل ~1.5 ثانية
+    function onPulseRow(row) {
+        if (!row) return;
+        const id = String(row.match_id), prev = S.last[id];
+        S.last[id] = { joy: row.joy, hype: row.hype, rage: row.rage };
+        if (!prev) return;
+        const a = S.acc[id] || (S.acc[id] = { joy: 0, hype: 0, rage: 0 });
+        ['joy', 'hype', 'rage'].forEach(k => { a[k] += Math.max(0, row[k] - prev[k]); });
+    }
+    function drainAcc() {
+        Object.keys(S.acc).forEach(id => {
+            const a = S.acc[id], sum = a.joy + a.hype + a.rage;
+            if (!sum) return;
+            S.acc[id] = { joy: 0, hype: 0, rage: 0 };
+            const m = S.byId[id]; if (!m) return;
+            const mix = { joy: Math.round(a.joy / sum * 100), hype: Math.round(a.hype / sum * 100), rage: Math.round(a.rage / sum * 100) };
+            const xy = matchXY(m);
+            push({ x: xy.x, y: xy.y, city: m.team_a, match: m.team_a + ' × ' + m.team_b,
+                ev: T('تفاعل الجماهير', 'Fan reaction'), mix, fans: sum, silent: true });
+        });
+    }
+
+    const EV = {
+        goal:     { ar: 'هدف!', en: 'Goal!', mix: { joy: 62, hype: 30, rage: 8 } },
+        red_card: { ar: 'بطاقة حمراء', en: 'Red card', mix: { joy: 10, hype: 20, rage: 70 } },
+        penalty:  { ar: 'ركلة جزاء', en: 'Penalty', mix: { joy: 20, hype: 65, rage: 15 } },
+        var:      { ar: 'مراجعة VAR', en: 'VAR check', mix: { joy: 10, hype: 45, rage: 45 } },
+        kickoff:  { ar: 'انطلقت المباراة', en: 'Kick-off', mix: { joy: 25, hype: 65, rage: 10 } },
+        fulltime: { ar: 'نهاية المباراة', en: 'Full time', mix: { joy: 35, hype: 40, rage: 25 } }
+    };
+    function onEvent(e, age) {
+        if (!e || !EV[e.type]) return;
+        const d = EV[e.type], m = S.byId[String(e.match_id)] || { team_a: e.home, team_b: e.away };
+        const xy = matchXY(m), l = S.last[String(e.match_id)];
+        const taps = l ? l.joy + l.hype + l.rage : 0;
+        const score = (e.score_home != null && e.score_away != null) ? ' ' + e.score_home + '-' + e.score_away : '';
+        push({ x: xy.x, y: xy.y, city: e.team || e.home || '', match: (e.home || '') + ' × ' + (e.away || ''),
+            ev: T(d.ar, d.en) + (e.minute ? ' ' + e.minute + '’' : '') + score,
+            mix: d.mix, fans: Math.max(3000, taps), age: age || 0, silent: !!age });
+    }
+    async function loadRecentEvents() {
+        const c = sb();
+        const since = new Date(Date.now() - 30 * 60000).toISOString();
+        const r = await c.from('match_events').select('*').gte('created_at', since).order('created_at', { ascending: true }).limit(8);
+        (r.data || []).forEach(e => onEvent(e, Date.now() - new Date(e.created_at).getTime()));
+    }
+
+    async function startLive() {
+        const c = sb();
+        try { await loadMatches(); await loadRecentEvents(); } catch (e) { console.warn('[radar] load failed', e); }
+        renderChips();
+        if (S.matches.length) selectMatch(S.matches[0].id);
+        S.ch = c.channel('fan-pulse-' + Date.now())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'match_pulse' }, p => onPulseRow(p.new))
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'match_events' }, p => onEvent(p.new))
+            .subscribe();
+        S.timers.push(setInterval(flush, 1200));
+        S.timers.push(setInterval(drainAcc, 1500));
+        S.timers.push(setInterval(() => { loadMatches().then(renderChips).catch(() => {}); }, 120000)); // تحديث قائمة المباريات الجارية
+    }
+    function startDemo() {
+        S.demo = true;
+        const v = document.getElementById('fp-vote'); if (v) v.classList.add('off');
+        for (let i = 0; i < 5; i++) simulate(i * 3500);
+        S.timers.push(setInterval(() => simulate(0), 4500));
+    }
+
     window.renderFanRadarPage = function (box) {
         stop();
         S.pulses = []; S.feed = []; S.sel = null; S.filt = 'all';
+        S.last = {}; S.acc = {}; S.byId = {}; S.matches = []; S.curr = null; S.pend = { joy: 0, hype: 0, rage: 0 }; S.demo = false;
         const ar = isAr();
         box.innerHTML = `
         <style>
@@ -183,18 +358,32 @@
             .fp-detail p{color:#98a2d6;font-size:.8rem;margin:4px 0 0}
             .fp-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid #1d2566;font-size:.88rem}
             .fp-row span{color:#98a2d6;font-size:.75rem}
+            .fp-matches{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto;align-items:center}
+            .fp-empty{color:#98a2d6;font-size:.85rem;display:flex;gap:10px;align-items:center}
+            .fp-vote{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+            .fp-vote.off{opacity:.4;pointer-events:none}
+            .fp-vbtn{border:1px solid var(--c);background:rgba(17,26,74,.9);color:#fff;border-radius:16px;padding:14px 4px;font-size:1rem;font-weight:900;font-family:inherit;cursor:pointer;box-shadow:0 0 14px -4px var(--c)}
+            .fp-vbtn small{display:block;font-weight:600;color:#98a2d6;font-size:.7rem;margin-top:2px}
+            .fp-vbtn.hit{animation:fph .25s}
+            @keyframes fph{50%{transform:scale(.92);background:var(--c)}}
             .fp-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:8px}
         </style>
         <div class="fp-wrap">
             <div class="fp-head"><div><h2>📡 ${T('رادار نبض المشجعين', 'Fan Pulse Radar')}</h2>
-                <div class="fp-live"><i></i>${T('مباشر', 'Live')} · <span id="fp-fans">0</span> ${T('مشجع', 'fans')}</div></div></div>
+                <div class="fp-live"><i></i>${T('مباشر', 'Live')} · <span id="fp-fans">0</span> ${T('تفاعل', 'reactions')}</div></div></div>
             <div class="fp-chips" id="fp-chips">
                 <button class="fp-chip" data-f="all" aria-pressed="true">${T('الكل', 'All')}</button>
                 <button class="fp-chip" data-f="joy" style="--c:${COL.joy}" aria-pressed="false">${T('فرح', 'Joy')}</button>
                 <button class="fp-chip" data-f="hype" style="--c:${COL.hype}" aria-pressed="false">${T('حماس', 'Hype')}</button>
                 <button class="fp-chip" data-f="rage" style="--c:${COL.rage}" aria-pressed="false">${T('غضب', 'Anger')}</button>
             </div>
+            <div class="fp-matches" id="fp-matches"></div>
             <div class="fp-map" id="fp-map" dir="ltr"><canvas id="fp-canvas"></canvas></div>
+            <div class="fp-vote off" id="fp-vote">
+                <button class="fp-vbtn" data-e="joy" style="--c:${COL.joy}">😍 ${T('فرح', 'Joy')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
+                <button class="fp-vbtn" data-e="hype" style="--c:${COL.hype}">🔥 ${T('حماس', 'Hype')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
+                <button class="fp-vbtn" data-e="rage" style="--c:${COL.rage}">😡 ${T('غضب', 'Anger')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
+            </div>
             <div class="fp-card">
                 <h3>${T('مزاج الجماهير حول العالم الآن', 'Global fan mood right now')}</h3>
                 <div class="fp-bar"><div id="fp-bj" style="background:${COL.joy}"></div><div id="fp-bh" style="background:${COL.hype}"></div><div id="fp-br" style="background:${COL.rage}"></div></div>
@@ -225,8 +414,8 @@
             box.querySelectorAll('.fp-chip').forEach(c => c.setAttribute('aria-pressed', c === b));
         });
 
-        for (let i = 0; i < 5; i++) simulate(i * 3500);
-        S.timers.push(setInterval(() => simulate(0), 4500));
+        box.querySelectorAll('.fp-vbtn').forEach(b => b.addEventListener('click', () => tap(b.dataset.e, b)));
+        if (sb()) startLive(); else startDemo();
         S.timers.push(setInterval(() => {
             const el = document.getElementById('fp-fans');
             if (el) el.textContent = fmt(S.pulses.reduce((n, o) => n + o.fans, 0));
