@@ -87,8 +87,8 @@
             font-family:inherit;animation:zpIn .25s ease}
         @keyframes zpIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
         #zp-overlay>*{flex-shrink:0}
-        #zp-overlay .zp-close{width:40px;height:40px;border-radius:50%;border:none;background:#14206b;
-            color:#fff;font-size:1.2rem;cursor:pointer;align-self:flex-start}
+        #zp-overlay>.zp-close{width:40px;height:40px;border-radius:50%;border:none;background:#14206b;
+            color:#fff;font-size:1.2rem;cursor:pointer;align-self:flex-start;margin-bottom:60px}
         #zp-overlay h2{color:#fff;font-size:1.4rem;font-weight:900;margin:6px 0 2px}
         #zp-overlay .zp-sub{color:${C.muted};font-size:.8rem;margin-bottom:6px}
         #zp-overlay .zp-active{display:none;margin-bottom:6px;padding:6px 10px;border-radius:10px;
