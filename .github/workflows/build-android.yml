@@ -74,7 +74,7 @@ jobs:
           }
           JAVA
           python3 - <<'EOF'
-          UNITY_ADS_VERSION = '4.12.0'
+          UNITY_ADS_VERSION = '4.16.6'
           g = 'android/app/build.gradle'
           t = open(g, encoding='utf-8').read()
           if 'com.unity3d.ads:unity-ads' not in t:
