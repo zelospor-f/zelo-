@@ -16,7 +16,6 @@ import com.unity3d.ads.IUnityAdsLoadListener;
 import com.unity3d.ads.IUnityAdsShowListener;
 import com.unity3d.ads.UnityAds;
 import com.unity3d.ads.UnityAdsShowOptions;
-import com.unity3d.services.banners.BannerErrorInfo;
 import com.unity3d.services.banners.BannerView;
 import com.unity3d.services.banners.UnityBannerSize;
 
@@ -122,31 +121,6 @@ public class UnityAdsPlugin extends Plugin {
 
             ViewGroup root = getActivity().findViewById(android.R.id.content);
             root.addView(bannerView, params);
-            bannerView.setListener(new BannerView.IListener() {
-                @Override
-                public void onBannerLoaded(BannerView view) {
-                    JSObject o = new JSObject();
-                    o.put("placementId", placementId);
-                    UnityAdsPlugin.this.notifyListeners("bannerLoaded", o);
-                }
-
-                @Override
-                public void onBannerFailedToLoad(BannerView view, BannerErrorInfo errorInfo) {
-                    JSObject o = new JSObject();
-                    o.put("placementId", placementId);
-                    o.put("code", String.valueOf(errorInfo.errorCode));
-                    o.put("message", errorInfo.errorMessage);
-                    UnityAdsPlugin.this.notifyListeners("bannerError", o);
-                }
-
-                @Override
-                public void onBannerClick(BannerView view) {
-                }
-
-                @Override
-                public void onBannerLeftApplication(BannerView view) {
-                }
-            });
             bannerView.load();
             call.resolve();
         });
