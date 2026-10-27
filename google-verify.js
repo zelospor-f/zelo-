@@ -6,7 +6,7 @@
 
     // رابط السيرفر على Render (نفس الذي يستخدمه تطبيقك لباقي الطلبات مثل /api/claim)
     // إن كان تطبيقك يعرّف window.API_BASE (مثلاً في env.js) فسيُستخدم تلقائياً
-    const API_BASE = (window.API_BASE || 'https://YOUR-SERVER.onrender.com').replace(/\/+$/, '');
+    const API_BASE = (window.API_BASE || 'https://zelo-lwdb.onrender.com').replace(/\/+$/, '');
 
     // عميل Supabase في تطبيقك اسمه supabaseClient (أما window.supabase فهي المكتبة نفسها)
     function getClient() {
