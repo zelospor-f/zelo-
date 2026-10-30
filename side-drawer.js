@@ -291,8 +291,8 @@
     function faqItems() {
         return [
             [L('نسيت كلمة السر', 'I forgot my password'),
-             L('من شاشة تسجيل الدخول اختر «نسيت كلمة السر» وسيصلك رابط إعادة التعيين على بريدك. إن لم يصل خلال دقائق فافحص الرسائل غير المرغوب فيها.',
-               'On the sign-in screen choose “Forgot password” and a reset link will be sent to your email. If it does not arrive within a few minutes, check your spam folder.')],
+             L('من شاشة تسجيل الدخول اختر «نسيت كلمة السر» وسيصلك رمز تحقق على بريدك. إن لم يصل خلال دقائق فافحص الرسائل غير المرغوب فيها.',
+               'On the sign-in screen choose “Forgot password” and a verification code will be sent to your email. If it does not arrive within a few minutes, check your spam folder.')],
             [L('كيف أحذف حسابي؟', 'How do I delete my account?'),
              L('من الإعدادات ← حذف الحساب. الحذف لا يلغي اشتراك Google Play، فألغِه من المتجر بنفسك. وأنهِ أي طلب سحب معلّق قبل الحذف.',
                'Go to Settings → Delete account. Deleting does not cancel your Google Play subscription, so cancel it in the store yourself. Finish any pending withdrawal before deleting.')],
