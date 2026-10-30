@@ -89,7 +89,8 @@
         return { points: c ? Number(c.price_points) : Math.round(it.price * POINTS_PER_USD) };
     }
     function fmtPts(n) { return Number(n).toLocaleString('en-US'); }
-    function priceText(it) { return '🪙 ' + fmtPts(priceOf(it).points); }
+    const COIN_ICON = 'https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png';
+    function priceText(it) { return '<img src="' + COIN_ICON + '" alt="" style="width:15px;height:15px;vertical-align:-3px;margin-inline-end:4px;object-fit:contain">' + fmtPts(priceOf(it).points); }
     async function loadSupply() {
         const c = db();
         if (!c) return false;

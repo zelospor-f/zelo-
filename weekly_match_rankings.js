@@ -1,6 +1,8 @@
 const generateLegendaryAvatar = (name, photoUrl, size = '50px') => {
-    if (photoUrl) {
-        return `<img src="${photoUrl}" style="width:${size}; height:${size}; border-radius:50%; object-fit:cover; border:2px solid var(--accent-gold, #f5c35a); margin: 0 auto; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
+    const safeUrl = (typeof photoUrl === 'string' && /^(https:\/\/|data:image\/)/.test(photoUrl) && !/["'<>\s]/.test(photoUrl)) ? photoUrl : '';
+    name = String(name ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    if (safeUrl) {
+        return `<img src="${safeUrl}" style="width:${size}; height:${size}; border-radius:50%; object-fit:cover; border:2px solid var(--accent-gold, #f5c35a); margin: 0 auto; display: block; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">`;
     }
     const initial = name ? String(name).charAt(0).toUpperCase() : '👤';
     return `<div style="width:${size}; height:${size}; border-radius:50%; background: linear-gradient(135deg, #14206b, #2c4bb5, #f5c35a); color:white; display:flex; align-items:center; justify-content:center; font-size:calc(${size} / 2.2); font-weight:bold; margin: 0 auto; border:2px solid var(--accent-gold, #f5c35a); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">${initial}</div>`;
