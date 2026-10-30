@@ -269,7 +269,11 @@
 
     // ===== مركز المساعدة =====
     function openExternal(url) {
-        try { window.open(url, '_blank'); } catch (e) { location.href = url; }
+        try {
+            const B = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Browser;
+            if (B && typeof B.open === 'function') { B.open({ url }); return; }
+            window.open(url, '_blank');
+        } catch (e) { location.href = url; }
     }
 
     function supportMailto() {
@@ -398,7 +402,7 @@
         ads:         () => (typeof window.openAdsPage === 'function' ? window.openAdsPage() : toast(L('ملف الإعلانات غير محمّل', 'Ads file not loaded'))),
         // سوق بطاقات NFT (معرّف في ملف nft-market.js)
         nft:         () => (typeof window.renderNftMarketPage === 'function' ? window.renderNftMarketPage() : toast(L('ملف سوق NFT غير محمّل', 'NFT market file not loaded'))),
-        website:     () => window.openOfficialWebsite && window.openOfficialWebsite(),
+        website:     () => (typeof window.openOfficialWebsite === 'function' ? window.openOfficialWebsite() : openExternal(SITE)),
         // شاشة "أبطال اليوم" (الترتيب) المعرّفة في ملف الترتيب
         champions:   () => window.openLegendaryRankingScreen && window.openLegendaryRankingScreen(),
         // كود الإعدادات في ملف منفصل: settings.js
