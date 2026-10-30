@@ -316,27 +316,9 @@ window.confirmLogin = async function() {
 
             if (userErr) throw userErr;
 
-            let startingPoints = 0;
-            const { data: userData } = await supabaseClient
-                .from('users')
-                .select('points')
-                .eq('user_id', userState.userId)
-                .maybeSingle();
-
-            if (userData?.points) startingPoints = userData.points;
-
-            const rankingsData = userState.selectedClubs.map(clubId => ({
-                user_id: userState.userId,
-                club_id: String(clubId),
-                total_fan_points: startingPoints,
-                points_activity: 0,
-                referrals_count: 0
-            }));
-
-            const { error: rankErr } = await supabaseClient
-                .from('club_fans_rankings')
-                .upsert(rankingsData, { onConflict: 'user_id,club_id' });
-
+            const { error: rankErr } = await supabaseClient.rpc('join_clubs', {
+                p_clubs: userState.selectedClubs.map(String)
+            });
             if (rankErr) throw rankErr;
 
             if (userState.pendingReferrer && typeof window.apiProcessReferral === "function") {
