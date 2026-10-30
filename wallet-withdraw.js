@@ -37,7 +37,36 @@
   .zw-line{display:flex;gap:8px;align-items:center}
   .zw-line .zw-in{flex:1}
   .zw-line button{width:auto;margin:0;padding:11px 14px}
+  .zw-bal{align-items:stretch}
+  .zw-bal div{background:rgba(44,75,181,0.16);border:1px solid rgba(245,195,90,0.18);border-radius:12px;padding:12px 6px}
+  .zw-bal div:first-child{background:linear-gradient(135deg,rgba(245,195,90,0.22),rgba(44,75,181,0.2));border-color:rgba(245,195,90,0.5)}
+  .zw-bal b{font-size:22px;direction:ltr}
+  .zw-sum{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .zw-sum .zw-h{margin:0}
+  .zw-cnt{direction:ltr;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.08);color:#cbd5e1}
+  .zw-cnt.all{background:rgba(20,241,149,0.15);color:#14F195}
+  .zw-bar{height:6px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden;margin-bottom:12px}
+  .zw-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#2c4bb5,#14F195)}
+  .zw-chk{display:flex;align-items:center;gap:12px;padding:10px 12px;margin-bottom:8px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08)}
+  .zw-chk.ok{border-color:rgba(20,241,149,0.35);background:rgba(20,241,149,0.06)}
+  .zw-chk.no{border-color:rgba(255,77,77,0.35);background:rgba(255,77,77,0.06)}
+  .zw-mark{flex:none;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .zw-mark svg{width:16px;height:16px;fill:none;stroke:#fff;stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+  .zw-chk.ok .zw-mark{background:#14c27a}
+  .zw-chk.no .zw-mark{background:#e5484d}
+  .zw-chk .zw-t{font-weight:800;font-size:14px}
+  .zw-chk small{display:block;color:#9aa6d6;margin-top:2px;font-size:12px;line-height:1.5}
+  .zw-lbl{display:block;font-size:12px;color:#9aa6d6;margin:0 0 6px;font-weight:700}
+  .zw-est{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(245,195,90,0.1);color:#f5c35a;font-weight:800;font-size:14px;text-align:center}
+  .zw-h-row{align-items:center;padding:10px 0}
+  .zw-pill{font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.08)}
+  .zw-pill.sent{background:rgba(20,241,149,0.15);color:#14F195}
+  .zw-pill.failed,.zw-pill.rejected{background:rgba(255,77,77,0.15);color:#ff6b6b}
+  .zw-pill.pending,.zw-pill.review{background:rgba(245,195,90,0.15);color:#f5c35a}
   `;
+
+  const SVG_OK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const SVG_NO = '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
   function h(tag, cls, text) {
     const e = document.createElement(tag);
@@ -100,21 +129,31 @@
 
       // الشروط
       const cl = h('div', 'zw-card');
-      cl.appendChild(h('p', 'zw-h', 'شروط السحب'));
+      const sum = h('div', 'zw-sum');
+      sum.appendChild(h('p', 'zw-h', 'شروط السحب'));
       if (S.elig) {
+        const total = S.elig.checks.length;
+        const done = S.elig.checks.filter(c => c.ok).length;
+        sum.appendChild(h('span', 'zw-cnt' + (done === total ? ' all' : ''), done + ' / ' + total));
+        cl.appendChild(sum);
+        const bar = h('div', 'zw-bar'); const fill = h('i');
+        fill.style.width = (total ? Math.round(done / total * 100) : 0) + '%';
+        bar.appendChild(fill); cl.appendChild(bar);
         S.elig.checks.forEach(c => {
-          const row = h('div', 'zw-row');
-          row.appendChild(h('span', 'zw-ic', c.ok ? '✅' : '❌'));
-          const t = h('div'); t.appendChild(h('div', '', TITLES[c.key] || c.key)); t.appendChild(h('small', '', c.msg));
+          const row = h('div', 'zw-chk ' + (c.ok ? 'ok' : 'no'));
+          const mk = h('span', 'zw-mark'); mk.innerHTML = c.ok ? SVG_OK : SVG_NO;
+          row.appendChild(mk);
+          const t = h('div'); t.appendChild(h('div', 'zw-t', TITLES[c.key] || c.key)); t.appendChild(h('small', '', c.msg));
           row.appendChild(t); cl.appendChild(row);
         });
-      } else cl.appendChild(h('small', '', 'تعذّر تحميل الشروط'));
+      } else { cl.appendChild(sum); cl.appendChild(h('small', '', 'تعذّر تحميل الشروط')); }
       wrap.appendChild(cl);
 
       // العنوان
       const ac = h('div', 'zw-card');
       ac.appendChild(h('p', 'zw-h', 'عنوان محفظتك (شبكة BEP20 فقط)'));
       ac.appendChild(h('div', 'zw-warn', 'أرسل إلى عنوان BNB Smart Chain (BEP20) فقط. أي شبكة أخرى تضيّع المبلغ. تغيير العنوان يؤجّل السحب 48 ساعة.'));
+      ac.appendChild(h('label', 'zw-lbl', 'عنوان المحفظة'));
       const ai = h('input', 'zw-in'); ai.id = 'zw-addr'; ai.placeholder = '0x...';
       ai.value = S.addr ? S.addr.address : '';
       ac.appendChild(ai);
@@ -131,6 +170,7 @@
       // الطلب
       const rc = h('div', 'zw-card');
       rc.appendChild(h('p', 'zw-h', 'طلب سحب'));
+      rc.appendChild(h('label', 'zw-lbl', 'عدد الألماس المراد سحبه'));
       const line = h('div', 'zw-line');
       const ni = h('input', 'zw-in'); ni.id = 'zw-amt'; ni.type = 'number'; ni.inputMode = 'numeric';
       ni.placeholder = 'عدد الألماس'; ni.value = S.amount > 0 ? S.amount : '';
@@ -142,7 +182,7 @@
       const all = h('button', 'zw-btn sec', 'الكل');
       all.onclick = async () => { S.amount = S.avail; await checkElig(); render(); };
       line.appendChild(ni); line.appendChild(all); rc.appendChild(line);
-      if (S.amount > 0) rc.appendChild(h('small', '', 'ستستلم: ' + (S.amount / rate).toFixed(2) + ' USDT'));
+      if (S.amount > 0) rc.appendChild(h('div', 'zw-est', 'ستستلم: ' + (S.amount / rate).toFixed(2) + ' USDT'));
       const go = h('button', 'zw-btn', 'اطلب السحب');
       go.disabled = S.busy || !S.elig || S.elig.decision === 'rejected' || S.amount <= 0;
       go.onclick = async () => {
@@ -167,7 +207,7 @@
         S.hist.forEach(w => {
           const row = h('div', 'zw-h-row');
           row.appendChild(h('span', '', Number(w.amount_usdt).toFixed(2) + ' USDT'));
-          row.appendChild(h('span', '', STATUS[w.status] || w.status));
+          row.appendChild(h('span', 'zw-pill ' + w.status, STATUS[w.status] || w.status));
           hc.appendChild(row);
         });
         wrap.appendChild(hc);
