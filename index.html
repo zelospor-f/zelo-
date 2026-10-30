@@ -408,14 +408,17 @@
                 try {
                     var r = await c.from('club_fans_rankings').select('user_id, club_id, total_fan_points');
                     var rows = (r && r.data) || [];
-                    var pts = {}, myClub = null;
+                    var pts = {}, cnt = {}, myClub = null;
                     rows.forEach(function(f) {
                         pts[f.club_id] = (pts[f.club_id] || 0) + (f.total_fan_points || 0);
+                        cnt[f.club_id] = (cnt[f.club_id] || 0) + 1;
                         if (String(f.user_id) === uid) myClub = f.club_id;
                     });
                     if (!myClub) return;
-                    var list = allClubs().map(function(cl) { return { cl: cl, p: pts[cl.id] || 0 }; })
-                        .sort(function(a, b) { return b.p - a.p; });
+                    // نفس ترتيب لوحة الصدارة: الأندية التي لها مشجعون فقط
+                    var list = allClubs().filter(function(cl) { return (cnt[cl.id] || 0) > 0; })
+                        .map(function(cl) { return { cl: cl, p: pts[cl.id] || 0, n: cnt[cl.id] || 0 }; })
+                        .sort(function(a, b) { return (b.p - a.p) || (b.n - a.n); });
                     var idx = list.findIndex(function(x) { return x.cl.id === myClub; });
                     if (idx < 0) return;
                     numEl.textContent = String(idx + 1);

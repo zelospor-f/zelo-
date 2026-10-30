@@ -51,8 +51,12 @@ window.renderLeaderboardPage = async function(container) {
         const fansWord = lbTr('fansLabel', 'مشجع', 'Fans');
         const viewWord = lbTr('viewFansLabel', 'عرض المشجعين', 'View fans');
 
-        const leaderboardHtml = allClubsFlat
-            .sort((a, b) => b.points - a.points)
+        // نعرض فقط الأندية التي اختارها مشجعون (لا فائدة من عرض 240 نادياً فارغاً)
+        const activeClubs = allClubsFlat
+            .filter(c => c.members > 0)
+            .sort((a, b) => (b.points - a.points) || (b.members - a.members));
+
+        const leaderboardHtml = activeClubs
             .slice(0, 100)
             .map((club, idx) => {
                 const clubName = typeof getClubName === 'function' ? getClubName(club) : club.name;
@@ -77,6 +81,7 @@ window.renderLeaderboardPage = async function(container) {
                 </div>`;
             }).join('');
 
+        const emptyHtml = `<div style="text-align:center;padding:40px 16px;color:#94a3b8;font-weight:800;">${lbTr('noClubsYet', 'لا توجد أندية بعد. كن أول من يختار ناديه!', 'No clubs yet. Be the first to pick yours!')}</div>`;
         container.innerHTML = `
             <style>
                 .lb-row {
@@ -138,7 +143,7 @@ window.renderLeaderboardPage = async function(container) {
                 <p style="color: #94a3b8; font-size: 0.82rem; margin: 0; font-weight: bold;">${lbTr('leaderSub', 'الأندية الأكثر جمعاً للنقاط عبر مشجعيها', 'Top clubs ranked by total fan points')}</p>
             </div>
 
-            <div class="leaderboard-list">${leaderboardHtml}</div>
+            <div class="leaderboard-list">${leaderboardHtml || emptyHtml}</div>
             <div style="height: 20px;"></div>`;
         const meRow = container.querySelector('.my-club');
         if (meRow) setTimeout(() => meRow.scrollIntoView({ block: 'center', behavior: 'smooth' }), 200);
