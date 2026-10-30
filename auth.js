@@ -305,21 +305,21 @@
         const id = val('au-id');
         const pass = rawVal('au-pass');
         busy = true; setBtn(false); setMsg(T('جارٍ تسجيل الدخول...', 'Signing in...'));
-        let mail = id.toLowerCase();
+        let data = null, error = null;
         if (!id.includes('@')) {
-            // اسم مستخدم -> نجلب البريد المرتبط به
-            mail = '';
+            // اسم مستخدم -> الخادم يتحقق ويسجّل الدخول دون كشف البريد
             try {
-                const { data, error } = await c.rpc('get_email_by_username', { p_username: id });
-                if (!error && data) mail = String(data).toLowerCase();
-            } catch (e) {}
-            if (!mail) {
-                busy = false; setBtn(true);
-                setMsg(T('اسم المستخدم أو كلمة السر غير صحيحة', 'Incorrect username or password'), 'au-bad');
-                return;
-            }
+                const r = await c.functions.invoke('login-username', { body: { username: id, password: pass } });
+                const t = r && r.data;
+                if (t && t.access_token && t.refresh_token) {
+                    const s = await c.auth.setSession({ access_token: t.access_token, refresh_token: t.refresh_token });
+                    data = s.data; error = s.error;
+                } else { error = r && r.error ? r.error : new Error('invalid'); }
+            } catch (e) { error = e; }
+        } else {
+            const r = await c.auth.signInWithPassword({ email: id.toLowerCase(), password: pass });
+            data = r.data; error = r.error;
         }
-        const { data, error } = await c.auth.signInWithPassword({ email: mail, password: pass });
         busy = false;
         if (error || !data || !data.user) {
             setBtn(true);
