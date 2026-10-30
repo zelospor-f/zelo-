@@ -99,7 +99,8 @@
         const st = document.createElement('style');
         st.id = 'zrope-css';
         st.textContent = `
-            .zrope{margin:8px 0 2px;border:1px solid rgba(245,195,90,.28);border-radius:14px;padding:9px 12px;background:linear-gradient(160deg,rgba(245,195,90,.08),rgba(15,26,92,.5));}
+            .zrope{margin:10px 0 2px;padding:10px 0 0;border:none;border-top:1px solid rgba(245,195,90,.22);background:transparent;}
+            #feed-list .post-card.has-rope, .post-card.has-rope{margin:10px 8px;padding:12px 12px 8px;border:1px solid rgba(245,195,90,.45);border-radius:18px;background:linear-gradient(160deg,rgba(245,195,90,.10),rgba(15,26,92,.6) 40%,rgba(10,16,51,.95));box-shadow:0 0 18px rgba(245,195,90,.14);}
             .zrope-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
             .zrope-chip{padding:2px 9px;border-radius:999px;background:rgba(245,195,90,.16);color:#f5c35a;font-size:.7rem;font-weight:900;white-space:nowrap;}
             .zrope-name{font-weight:900;font-size:.86rem;color:#fff;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
