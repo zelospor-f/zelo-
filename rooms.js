@@ -1500,14 +1500,14 @@
         }, { passive: true });
 
         try {
-            const rooms = (await fetchMyRooms()).filter(r => String(r.owner_id) === me());
+            const rooms = await fetchMyRooms();   // غرفي = التي أنشأتها + التي انضممت إليها
             if (drawerEl !== el) return;
             list.innerHTML = rooms.length ? rooms.map(r => `
                 <div class="rm-card" data-room='${esc(JSON.stringify(r))}'>
                     <div class="logo">${avatar(r.emoji)}</div>
                     <div class="info">
                         <div class="name">${esc(r.name)}</div>
-                        <div class="sub">${r.requires_code ? ic('key', 12) + ' ' + esc(r.code) + ' · ' : ''}${esc(expLabel(r.expires_at))}</div>
+                        <div class="sub">${String(r.owner_id) === me() ? ic('crown', 12) + ' ' + T('rmOwnerTag', 'مالك', 'Owner') + ' · ' : T('rmMemberTag', 'عضو', 'Joined') + ' · '}${r.requires_code && r.code ? ic('key', 12) + ' ' + esc(r.code) + ' · ' : ''}${esc(expLabel(r.expires_at))}</div>
                     </div>
                     <span class="rm-chip open" data-cnt="${esc(r.id)}">0</span>
                 </div>`).join('')
