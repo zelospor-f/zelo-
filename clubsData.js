@@ -1,14 +1,14 @@
 const allWorldCupCountriesClubs = {
     
     england: [
-        { id: "man_united", nameAr: "مانشستر يونايتد", nameEn: "Manchester United", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8650.png", members: 0, points: 0, color: "linear-gradient(135deg, #da291c, #000000)" },
+        { id: "man_united", nameAr: "مانشستر يونايتد", nameEn: "Manchester United", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10260.png", members: 0, points: 0, color: "linear-gradient(135deg, #da291c, #000000)" },
         { id: "man_city", nameAr: "مانشستر سيتي", nameEn: "Manchester City", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8456.png", members: 0, points: 0, color: "linear-gradient(135deg, #6cabdd, #ffffff)" },
         { id: "liverpool", nameAr: "ليفربول", nameEn: "Liverpool", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8650.png", members: 0, points: 0, color: "linear-gradient(135deg, #c8102e, #00b2a9)" },
         { id: "arsenal", nameAr: "أرسنال", nameEn: "Arsenal", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/9825.png", members: 0, points: 0, color: "linear-gradient(135deg, #ef0107, #ffffff)" },
         { id: "chelsea", nameAr: "تشيلسي", nameEn: "Chelsea", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8455.png", members: 0, points: 0, color: "linear-gradient(135deg, #034694, #ffffff)" },
-        { id: "tottenham", nameAr: "توتنهام", nameEn: "Tottenham Hotspur", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/1650.png", members: 0, points: 0, color: "linear-gradient(135deg, #132257, #ffffff)" },
-        { id: "newcastle", nameAr: "نيوكاسل يونايتد", nameEn: "Newcastle United", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10260.png", members: 0, points: 0, color: "linear-gradient(135deg, #000000, #41b6e6)" },
-        { id: "aston_villa", nameAr: "أستون فيلا", nameEn: "Aston Villa", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10238.png", members: 0, points: 0, color: "linear-gradient(135deg, #95bfe5, #7a003c)" }
+        { id: "tottenham", nameAr: "توتنهام", nameEn: "Tottenham Hotspur", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/8586.png", members: 0, points: 0, color: "linear-gradient(135deg, #132257, #ffffff)" },
+        { id: "newcastle", nameAr: "نيوكاسل يونايتد", nameEn: "Newcastle United", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10261.png", members: 0, points: 0, color: "linear-gradient(135deg, #000000, #41b6e6)" },
+        { id: "aston_villa", nameAr: "أستون فيلا", nameEn: "Aston Villa", countryFlag: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", logo: "https://images.fotmob.com/image_resources/logo/teamlogo/10252.png", members: 0, points: 0, color: "linear-gradient(135deg, #95bfe5, #7a003c)" }
     ],
 
     france: [
