@@ -1206,8 +1206,16 @@
 
     function roomLink(code) {
         const base = (window.env && window.env.APP_URL)
-            || (/^https?:/.test(location.protocol) ? location.origin + location.pathname : '');
+            || ((/^https?:/.test(location.protocol) && !/localhost|127\.0\.0\.1/.test(location.hostname)) ? location.origin + location.pathname : '');
         return base ? base + '?room=' + encodeURIComponent(code) : '';
+    }
+
+    function openExternalUrl(url) {
+        try {
+            const P = window.Capacitor && window.Capacitor.Plugins;
+            if (P && P.Browser && P.Browser.open) { P.Browser.open({ url }); return; }
+        } catch (e) { /* نكمل */ }
+        window.open(url, '_blank');
     }
 
     async function shareRoom(room) {
@@ -1216,12 +1224,25 @@
             'انضم إلى غرفتي «{name}» في ZELO FC\nالرمز: {code}',
             'Join my room "{name}" on ZELO FC\nCode: {code}',
             { name: room.name, code: room.code }) + (link ? '\n' + link : '');
+
+        // 1) نافذة المشاركة الأصلية (إضافة Capacitor Share إن وُجدت، أو المتصفح)
+        try {
+            const P = window.Capacitor && window.Capacitor.Plugins;
+            if (P && P.Share && P.Share.share) { await P.Share.share({ text }); return; }
+        } catch (e) { if (e && /cancel/i.test(String(e.message || e))) return; }
         if (navigator.share) {
             try { await navigator.share({ text }); return; }
             catch (e) { if (e && e.name === 'AbortError') return; }
         }
-        copyText(text);
-        toast(T('rmCopied', 'تم النسخ ✅', 'Copied ✅'));
+
+        // 2) نافذة مشاركة داخل التطبيق
+        const enc = encodeURIComponent(text);
+        actionSheet([
+            { icon: 'chat', label: 'WhatsApp', run: () => openExternalUrl('https://wa.me/?text=' + enc) },
+            { icon: 'send', label: 'Telegram', run: () => openExternalUrl('https://t.me/share/url?url=' + encodeURIComponent(link || 'https://zelosport.net') + '&text=' + encodeURIComponent(text)) },
+            { icon: 'copy', label: T('rmCopyAll', 'نسخ الرمز والرابط', 'Copy code & link'),
+              run: () => { copyText(text); toast(T('rmCopied', 'تم النسخ ✅', 'Copied ✅')); } }
+        ]);
     }
 
     async function createRoomFlow() {
