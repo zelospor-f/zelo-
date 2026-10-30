@@ -24,7 +24,7 @@
     let usernameOk = false;
     let checkTimer = null;
 
-    const MIN_AGE = 13;
+    const MIN_AGE = 18;
     const MIN_PASS = 6;
 
     // رابط صورة الشعار (ضع رابط صورتك هنا). إذا تركته فارغاً أو فشل التحميل يظهر الحرف Z
