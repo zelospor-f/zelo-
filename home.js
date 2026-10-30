@@ -122,6 +122,8 @@
             .zrope-btn.b{background:rgba(255,77,109,.12);border-color:rgba(255,77,109,.5);color:#ff8fa1;}
             .zrope-btn.b.on{background:#ff4d6d;color:#fff;}
             .post-card.has-rope .post-text{display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;}
+            #feed-list .post-card.has-rope .post-img{max-height:220px;object-fit:cover;}
+            #feed-list .post-card.has-rope .post-video{max-height:260px !important;}
             .zrope-more{display:none;color:#f5c35a;font-size:.8rem;font-weight:800;margin-top:4px;}
             .post-card.has-rope .zrope-more{display:block;}
             .topic-box{padding:8px 16px 4px;border-top:1px solid rgba(255,255,255,.08);}
