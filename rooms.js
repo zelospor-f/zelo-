@@ -1465,6 +1465,9 @@
             <h3 class="rm-mt">${T('rmDrawerTitle', 'غرفي', 'My rooms')}</h3>
             <div id="rm-dr-list"><div class="rm-empty">${T('rmLoading', 'جاري التحميل...', 'Loading...')}</div></div>
             <button class="rm-dr-create" data-act="create">${ic('plus', 18)} ${T('rmCreateTitle', 'إنشاء غرفة', 'Create a room')}</button>
+            <button class="rm-dr-create" data-act="joincode" style="background:rgba(255,255,255,.08);box-shadow:none;border:1px solid rgba(245,195,90,.35);color:#f5c35a">${ic('key', 18)} ${T('rmJoinTitle', 'الانضمام برمز', 'Join with a code')}</button>
+            <div class="rm-sub-head">${ic('globe', 16)}<span>${T('rmPublicH', 'الغرف العامة', 'Public rooms')}</span></div>
+            <div id="rm-dr-pub"><div class="rm-empty">${T('rmLoading', 'جاري التحميل...', 'Loading...')}</div></div>
         </div>`;
         document.body.appendChild(el);
         drawerEl = el;
@@ -1475,9 +1478,14 @@
         el.addEventListener('click', e => {
             if (e.target === el) { closeDrawer(); return; }
             if (e.target.closest('[data-act="create"]')) { closeDrawer(); createRoomFlow(); return; }
+            if (e.target.closest('[data-act="joincode"]')) { closeDrawer(); joinFlow(); return; }
             const card = e.target.closest('[data-room]');
             if (card) {
-                try { const r = JSON.parse(card.dataset.room); closeDrawer(); openCustomRoom(r); }
+                try {
+                    const r = JSON.parse(card.dataset.room);
+                    closeDrawer();
+                    if (r.pub && !r.member) enterPublicRoom(r); else openCustomRoom(r);
+                }
                 catch (err) { console.error(err); }
             }
         });
@@ -1522,6 +1530,20 @@
         } catch (err) {
             console.error('[rooms] drawer failed:', err);
             list.innerHTML = `<div class="rm-empty">${T('rmLoadFail', 'تعذر التحميل', 'Could not load')}</div>`;
+        }
+
+        // الغرف العامة (غير غرفي)
+        const pubEl = el.querySelector('#rm-dr-pub');
+        try {
+            const mineIds = new Set((await fetchMyRooms()).map(r => String(r.id)));
+            const pub = (await loadPublicRooms()).filter(r => !mineIds.has(String(r.id)));
+            if (drawerEl !== el) return;
+            pubEl.innerHTML = pub.length
+                ? pub.map(r => roomCardHtml(r, true)).join('')
+                : emptyBox('globe', T('rmNoPublic', 'لا توجد غرف عامة الآن', 'No public rooms right now'));
+        } catch (err) {
+            console.error('[rooms] drawer public failed:', err);
+            if (pubEl) pubEl.innerHTML = emptyBox('alert', T('rmLoadFail', 'تعذر التحميل', 'Could not load'));
         }
     }
 
