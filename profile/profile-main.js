@@ -484,33 +484,40 @@
                     <div style="width:64px;"></div>
                 </div>
 
-                <div class="card hero">
-                    <div class="wall">${P.wallHtml(matched)}</div>
-                    <div class="hero-body">
-                        <div class="avatar-stage">
-                            <div class="avatar-box"><div class="avatar-ring"><div class="avatar-inner"><img src="${esc(avatarSrc)}" alt=""></div></div></div>
+                <div class="pp">
+                    <div class="pp-head">
+                        <div class="pp-av"><div><img src="${esc(avatarSrc)}" alt=""></div></div>
+                        <div class="pp-id">
+                            <h4 class="pp-name"><span>${esc(displayName)}</span>${window.zeloVerifiedBadge(d.badgeClub, 20)}</h4>
+                            <div class="pp-user">${d.username && d.nickname ? '@' + esc(d.username) : ''}</div>
                         </div>
-                        <h4 class="hero-name">${esc(displayName)}${window.zeloVerifiedBadge(d.badgeClub, 20)}</h4>
-                        <div class="hero-user">${d.username && d.nickname ? '@' + esc(d.username) : ''}</div>
-                        ${d.bio ? `<div class="hero-bio">${esc(d.bio).replace(/\n/g, '<br>')}</div>` : ''}
-                        ${d.dob ? `<div class="hero-meta">🎂 ${esc(d.dob)}</div>` : ''}
-
-                        <div class="stats">
-                            <div><span class="stat-num" id="stat-invited">${d.invited.toLocaleString('en-US')}</span><span class="stat-lbl">${tr('ui_invited', 'مدعوون', 'Invited')}</span></div>
-                            <div style="cursor:pointer;" onclick="window.openFollowList('followers')"><span class="stat-num">${d.followers.toLocaleString('en-US')}</span><span class="stat-lbl">${tr('ui_followers', 'متابِعون', 'Followers')}</span></div>
-                            <div style="cursor:pointer;" onclick="window.openFollowList('following')"><span class="stat-num">${d.following.toLocaleString('en-US')}</span><span class="stat-lbl">${tr('ui_following', 'يتابِع', 'Following')}</span></div>
-                        </div>
-
-                        <div class="hero-balance">${d.points.toLocaleString('en-US')} <img src="zelo-coin.png" alt="" style="width:18px;height:18px;object-fit:contain;vertical-align:middle;margin:0 2px;" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png';}else{this.style.display='none';}"> ZELOFC</div>
-
-                        <div class="x-btns">
-                            <button class="x-btn" onclick="window.openEditProfile()">${tr('ui_edit_profile', 'تعديل الملف الشخصي', 'Edit profile')}</button>
-                            <button class="x-btn" onclick="window.openShareSheet()">${tr('ui_share', 'مشاركة', 'Share')}</button>
-                        </div>
-                        ${(d.badgeClub && matched.length <= 1) ? '' : `<button class="verify-btn" onclick="window.openBadgePicker()">
-                            ${d.badgeClub ? '🔄 ' + (tr('ui_switch_badge', 'تبديل شارة النادي', 'Switch club badge')) : '✔️ ' + (tr('ui_verify_your_account_with', 'وثّق حسابك بشارة ناديك', 'Verify your account with your club badge'))}
-                        </button>`}
                     </div>
+
+                    <div class="pp-stats">
+                        <div class="pp-stat tap" onclick="window.openFollowList('following')"><b>${d.following.toLocaleString('en-US')}</b><span>${tr('ui_following', 'يتابِع', 'Following')}</span></div>
+                        <div class="pp-stat tap" onclick="window.openFollowList('followers')"><b>${d.followers.toLocaleString('en-US')}</b><span>${tr('ui_followers', 'متابِعون', 'Followers')}</span></div>
+                        <div class="pp-stat"><b id="stat-invited">${d.invited.toLocaleString('en-US')}</b><span>${tr('ui_invited', 'مدعوون', 'Invited')}</span></div>
+                    </div>
+
+                    ${matched.length ? `<div class="pp-badges">${matched.map(c => `<div class="pp-badge"><img src="${esc(c.logo || c.flag || '')}" alt="" onerror="this.style.display='none'"></div>`).join('')}</div>` : ''}
+                    ${d.bio ? `<div class="pp-bio">${esc(d.bio).replace(/\n/g, '<br>')}</div>` : ''}
+                    ${d.dob ? `<div class="pp-meta">🎂 ${esc(d.dob)}</div>` : ''}
+
+                    <div class="pp-btns">
+                        <button class="pp-btn" onclick="window.openEditProfile()"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>${tr('ui_edit_profile', 'تعديل الملف الشخصي', 'Edit profile')}</button>
+                        <button class="pp-btn" onclick="window.openShareSheet()"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>${tr('ui_share', 'مشاركة', 'Share')}</button>
+                    </div>
+
+                    <div class="pp-short">
+                        <button class="pp-sc" onclick="window.openStorePage && window.openStorePage()"><svg viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M5 9v11h14V9"/><path d="M4 9a3 3 0 006 0 3 3 0 006 0 3 3 0 004 0"/></svg>${tr('pp_store', 'المتجر', 'Store')}</button>
+                        <button class="pp-sc" onclick="(function(){var c=typeof supabaseClient!=='undefined'?supabaseClient:null;if(window.openWithdrawWallet&&c)window.openWithdrawWallet(c);})()"><svg viewBox="0 0 24 24"><path d="M4 7h14a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V7z"/><path d="M4 7l11-3v3"/><circle cx="16" cy="13.5" r="1.2"/></svg>${tr('pp_wallet', 'محفظتي', 'Wallet')}</button>
+                        <button class="pp-sc" onclick="window.openSubscriptions && window.openSubscriptions()"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2l1.1-6.2L3 9.6l6.2-.9L12 3z"/></svg>${tr('pp_sub', 'الاشتراك', 'Premium')}</button>
+                        <button class="pp-sc" onclick="window.openNftStore()"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 14l3-5 3 5-3 3-3-3z"/></svg>${tr('pp_nft', 'بطاقات NFT', 'NFT cards')}</button>
+                    </div>
+
+                    ${(d.badgeClub && matched.length <= 1) ? '' : `<button class="verify-btn" onclick="window.openBadgePicker()">
+                        ${d.badgeClub ? '🔄 ' + (tr('ui_switch_badge', 'تبديل شارة النادي', 'Switch club badge')) : '✔️ ' + (tr('ui_verify_your_account_with', 'وثّق حسابك بشارة ناديك', 'Verify your account with your club badge'))}
+                    </button>`}
                 </div>
 
             </div>`;
