@@ -26,29 +26,6 @@
           badge: { ar: 'الأكبر', en: 'Biggest' } }
     ];
 
-    // ---------- بصمة الحساب: تربط الشراء بحساب المستخدم لدى Google ويتحقق منها الخادم ----------
-    let acct = '';
-    async function accountHash(uid) {
-        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('zelo:' + uid));
-        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-    }
-    const currentUid = () => String((window.userState && window.userState.userId) || '');
-
-    // التحقق من الشراء في الخادم (google-verify). الخادم يحدد عدد النقاط بنفسه من معرّف المنتج.
-    // يرجع true عند النجاح (ويشمل «تم تسجيله سابقاً») حتى يُنهي التطبيق العملية.
-    if (typeof window.zeloVerifyGooglePurchase !== 'function') {
-        window.zeloVerifyGooglePurchase = async ({ productId, purchaseToken }) => {
-            const c = (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
-            if (!c) return false;
-            try {
-                const { data, error } = await c.functions.invoke('google-verify',
-                    { body: { product_id: productId, purchase_token: purchaseToken } });
-                if (error) { console.warn('[store] verify error', error.message); return false; }
-                return !!(data && data.ok);
-            } catch (e) { console.warn('[store] verify failed', e); return false; }
-        };
-    }
-
     // ---------- Google Play Billing (cordova-plugin-purchase داخل Capacitor) ----------
     let billingReady = false;
     let billingInit = null;
@@ -76,57 +53,35 @@
 
     function initPlayBilling() {
         if (billingInit) return billingInit;
-        if (!isNativeAndroid() || !lib()) return Promise.resolve();
-        const { store, ProductType, Platform } = lib();
-
-        store.register(PACKAGES.map(p => ({
-            id: p.gid, type: ProductType.CONSUMABLE, platform: Platform.GOOGLE_PLAY
-        })));
-
-        // عند الموافقة على الشراء (وعند إعادة فتح التطبيق لمشتريات معلّقة) تحقّق من السيرفر ثم أنهِ العملية
-        store.when().approved(async transaction => {
-            const native = transaction.nativePurchase || {};
-            const token = native.purchaseToken;
-            const productId = transaction.products?.[0]?.id || native.productId;
-            const p = PACKAGES.find(x => x.gid === productId);
-            if (!p || !token || typeof window.zeloVerifyGooglePurchase !== 'function') return;
-            let ok = false;
-            try {
-                ok = !!(await window.zeloVerifyGooglePurchase({ pkg: { ...p }, productId, purchaseToken: token }));
-            } catch (_) { ok = false; }
-            if (ok) {
-                transaction.finish();          // يستهلك المنتج ويؤكد الشراء لدى Google
-                refreshStoreBalance();
-                toast(L('تمت إضافة الرصيد بنجاح', 'Coins added successfully'));
-            } else {
-                toast(L('تعذّر التحقق من الشراء', 'Could not verify the purchase'));
-            }
-        });
-
-        billingInit = (async () => {
-            try {
-                const uid = currentUid();
-                if (uid) acct = await accountHash(uid);
-                store.applicationUsername = () => acct || undefined;   // يصل إلى Google كمعرّف الحساب
-                await store.initialize([Platform.GOOGLE_PLAY]);
-                billingReady = PACKAGES.some(p => !!gProduct(p));
-            } catch (err) {
-                console.warn('Play Billing unavailable:', err);
-                billingReady = false;
-            }
-        })();
+        if (!isNativeAndroid() || !lib() || !window.zeloBilling) return Promise.resolve();
+        billingInit = window.zeloBilling.init()
+            .then(() => { billingReady = PACKAGES.some(p => !!gProduct(p)); })
+            .catch(err => { console.warn('Play Billing unavailable:', err); billingReady = false; });
         return billingInit;
     }
+
+    // نتيجة التحقق من السيرفر (تأتي من google-verify.js)
+    document.addEventListener('zelo-purchase', e => {
+        const d = e.detail || {};
+        if (d.kind !== 'coins') return;
+        if (d.ok) {
+            refreshStoreBalance();
+            toast(L('تمت إضافة الرصيد بنجاح', 'Coins added successfully'));
+        } else if (d.msg === 'pending') {
+            toast(L('الدفع قيد المعالجة', 'Payment is pending'));
+        } else {
+            toast(L('تعذّر التحقق من الشراء', 'Could not verify the purchase'));
+        }
+    });
 
     async function buyWithGoogle(p) {
         if (buying) return;
         const prod = gProduct(p);
         const offer = prod && prod.getOffer && prod.getOffer();
         if (!offer) { toast(L('المنتج غير متاح حالياً', 'Product unavailable right now')); return; }
-        if (!currentUid()) { toast(L('سجّل الدخول أولاً', 'Please sign in first')); return; }
-        if (!acct) acct = await accountHash(currentUid());
         buying = true;
         try {
+            if (window.zeloBilling) await window.zeloBilling.prepare();
             const err = await lib().store.order(offer);
             // إلغاء المستخدم لا يُعدّ خطأً
             if (err && err.code !== lib().ErrorCode.PAYMENT_CANCELLED) {
@@ -376,8 +331,7 @@
     }
 
     // استدعها بعد نجاح الدفع لتحديث الرقم المعروض
-    async function refreshStoreBalance() {
-        try { if (typeof window.zeloSyncPointsPool === 'function') await window.zeloSyncPointsPool(); } catch (_) {}
+    function refreshStoreBalance() {
         const el = document.getElementById('zs-bal');
         if (el) el.textContent = fmt(balance());
     }

@@ -231,18 +231,6 @@
         return dgService;
     }
 
-    // بصمة الحساب: تربط الشراء بحساب المستخدم لدى Google ويتحقق منها الخادم (google-verify)
-    let acct = '';
-    async function ensureAcct() {
-        const uid = me();
-        if (!uid) return '';
-        if (!acct) {
-            const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('zelo:' + uid));
-            acct = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-        return acct;
-    }
-
     // يرسل رمز الشراء للسيرفر: يتحقق لدى Google، يؤكّد الشراء (acknowledge)، ثم يفعّل الاشتراك
     async function verifyOnServer(productId, token) {
         const c = db();
@@ -283,53 +271,26 @@
 
     // --- المسار 2: إضافة الشراء (Capacitor / Cordova) ---
     function setupPlugin() {
-        if (storeReady || !hasPlugin()) return;
-        const { store, ProductType, Platform } = window.CdvPurchase;
-        store.register(PLANS.map(p => ({ id: p.id, type: ProductType.PAID_SUBSCRIPTION, platform: Platform.GOOGLE_PLAY })));
-        store.applicationUsername = () => acct || undefined;   // يصل إلى Google كمعرّف الحساب
-        // أي عملية شراء معتمدة (حتى المعلّقة من جلسة سابقة) تُرسل للسيرفر ثم تُنهى
-        store.when().approved(async tx => {
-            const token = tx.nativePurchase && tx.nativePurchase.purchaseToken;
-            const prod = tx.products && tx.products[0] && tx.products[0].id;
-            if (!token || !prod) return;
-            if (!PLANS.some(x => x.id === prod)) return;   // مشتريات النقاط يعالجها store.js
-            const v = await verifyOnServer(prod, token);
-            if (v.ok) { try { await tx.finish(); } catch (e) {} onPaid(); }
-            else toast((isAr() ? 'تعذّر تفعيل الاشتراك: ' : 'Could not activate: ') + v.msg);
-        });
-        store.initialize([Platform.GOOGLE_PLAY]);
+        if (storeReady || !hasPlugin() || !window.zeloBilling) return;
+        window.zeloBilling.init();
         storeReady = true;
     }
+    // نتيجة التحقق من السيرفر (تأتي من google-verify.js)
+    document.addEventListener('zelo-purchase', e => {
+        const d = e.detail || {};
+        if (d.kind !== 'sub') return;
+        if (d.ok) onPaid();
+        else toast((isAr() ? 'تعذّر تفعيل الاشتراك: ' : 'Could not activate: ') + d.msg);
+    });
     document.addEventListener('deviceready', () => { try { setupPlugin(); } catch (e) {} });
 
-    // يعيد إرسال الاشتراكات القائمة للخادم مرة واحدة في الجلسة: يمدّد التجديد التلقائي ويحدّث الانتهاء
-    let revalidated = false;
-    async function revalidateOwned() {
-        if (revalidated || !hasPlugin() || !me()) return;
-        revalidated = true;
-        try {
-            await ensureAcct();
-            setupPlugin();
-            const { store, Platform } = window.CdvPurchase;
-            const txs = (store.localTransactions || []).filter(t => t.platform === Platform.GOOGLE_PLAY);
-            let n = 0;
-            for (const tx of txs) {
-                const prod = tx.products && tx.products[0] && tx.products[0].id;
-                const token = tx.nativePurchase && tx.nativePurchase.purchaseToken;
-                if (!token || !PLANS.some(p => p.id === prod) || n++ >= 3) continue;
-                const v = await verifyOnServer(prod, token);
-                if (v.ok) { await isPremium(true); break; }
-            }
-        } catch (e) { console.warn('[premium] revalidate failed', e); }
-    }
-
     async function buyWithPlugin(planId) {
-        if (!(await ensureAcct())) return { ok: false, msg: 'not_signed_in' };
         setupPlugin();
         const { store, Platform, ErrorCode } = window.CdvPurchase;
         const product = store.get(planId, Platform.GOOGLE_PLAY);
         const offer = product && product.getOffer();
         if (!offer) return { ok: false, msg: 'product_not_found' };
+        if (window.zeloBilling) await window.zeloBilling.prepare();
         const err = await store.order(offer);
         if (err) return { ok: false, msg: (ErrorCode && err.code === ErrorCode.PAYMENT_CANCELLED) ? 'cancelled' : (err.message || 'order_failed') };
         return { ok: true, pending: true };   // التفعيل يتم داخل approved
@@ -409,7 +370,6 @@
 
     /* ---------- بطاقة "وثّق حسابك" في الملف الشخصي (لغير المشتركين) ---------- */
     async function mountPromo() {
-        revalidateOwned();
         const box = document.getElementById('verify-promo');
         if (!box) return;
         injectStyle();
@@ -445,7 +405,6 @@
         subscribe: planId => startPay(planId),
         restore: restorePurchases,
         has: uid => !!(known.get(String(uid)) || {}).pro,
-        refresh: () => isPremium(true),
-        revalidate: revalidateOwned
+        refresh: () => isPremium(true)
     };
 })();
