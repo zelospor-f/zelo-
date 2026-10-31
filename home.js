@@ -860,6 +860,28 @@
     }
 
     // اختيار صورة من الهاتف للمنشور الجديد
+    // الصور في المنشورات للمشتركين فقط (والخادم يتحقق أيضاً)
+    async function imageGate(onDenied) {
+        const ok = window.ZeloPremium ? await window.ZeloPremium.isPremium() : false;
+        if (!ok) { onDenied(); return false; }
+        return true;
+    }
+    function chooseImage(handler) {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = () => handler(input);
+        input.click();
+    }
+    window.openPostImagePicker = async function() {
+        const ok = await imageGate(() => window.zeloComposeNotice(isAr() ? '📷 اشترك لكي تستطيع نشر الصور' : '📷 Subscribe to post images', true, 'image'));
+        if (ok) chooseImage(window.pickPostImage);
+    };
+    window.openEditImagePicker = async function(id) {
+        const ok = await imageGate(() => { if (window.openSubscriptions) window.openSubscriptions(); else alert(postErrText({ message: 'premium_required' })); });
+        if (ok) chooseImage(inp => window.pickEditImage(id, inp));
+    };
+
     window.pickPostImage = async function(input) {
         pendingVideo = null;
         const file = input.files && input.files[0];
@@ -1117,10 +1139,9 @@
                     <button class="img-remove" onclick="window.removeEditImage(${id})">✕</button>
                 </div>` : ''}
             <div class="tool-row">
-                <label class="tool-btn" style="margin:0;">
+                <button type="button" class="tool-btn" style="margin:0;" onclick="window.openEditImagePicker(${id})">
                     📷 ${isAr() ? 'تغيير الصورة' : 'Change image'}
-                    <input type="file" accept="image/*" style="display:none;" onchange="window.pickEditImage(${id}, this)">
-                </label>
+                </button>
                 <div style="display:flex; gap:8px;">
                     <button class="act-btn" style="padding:7px 14px;" onclick="window.cancelEditPost(${id})">${isAr() ? 'إلغاء' : 'Cancel'}</button>
                     <button class="save-mini" onclick="window.saveEditPost(${id})">${isAr() ? 'حفظ' : 'Save'}</button>
@@ -1410,10 +1431,7 @@
             </div>
             <div id="reply-panel" style="display:none;"></div>
             <div class="compose-tools">
-                <label class="tool-btn" style="margin:0;">
-                    📷
-                    <input type="file" accept="image/*" style="display:none;" onchange="window.pickReplyImage(this)">
-                </label>
+                <button type="button" class="tool-btn" style="margin:0;" onclick="window.openReplyImagePicker()">📷</button>
                 <button class="tool-btn" onclick="window.toggleReplyPanel('emoji')">😀</button>
                 <button class="tool-btn" onclick="window.toggleReplyPanel('stickers')">🎉 ${isAr() ? 'ملصقات' : 'Stickers'}</button>
             </div>
@@ -1426,6 +1444,25 @@
         document.getElementById('reply-overlay')?.remove();
         replyImage = '';
         replyParentId = null;
+    };
+
+    // الصور في الردود للمشتركين فقط (والخادم يتحقق أيضاً)
+    window.zeloReplyNeedSub = function() {
+        const pv = document.getElementById('reply-preview');
+        if (!pv) return;
+        pv.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(17,26,74,0.95);border:1px solid rgba(245,195,90,0.3);border-radius:14px;padding:8px 12px;color:#f8fafc;font-size:0.82rem;font-weight:800;margin-top:8px;">
+            <span>📷 ${isAr() ? 'اشترك لكي تستطيع إرسال الصور' : 'Subscribe to send images'}</span>
+            <button type="button" class="btn-action" onclick="window.closeReply(); window.openSubscriptions && window.openSubscriptions()" style="flex-shrink:0;width:auto;margin-top:0;padding:7px 18px;font-size:0.82rem;border-radius:999px;">${isAr() ? 'اشترك' : 'Subscribe'}</button>
+        </div>`;
+    };
+    window.openReplyImagePicker = async function() {
+        const ok = window.ZeloPremium ? await window.ZeloPremium.isPremium() : false;
+        if (!ok) { window.zeloReplyNeedSub(); return; }
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        input.onchange = () => window.pickReplyImage(input);
+        input.click();
     };
 
     window.pickReplyImage = async function(input) {
@@ -1503,6 +1540,7 @@
 
         const { error } = await c.from('post_comments').insert([row]);
         if (error) {
+            if (String(error.message || '').includes('premium_required')) { window.zeloReplyNeedSub(); return; }
             alert((isAr() ? 'فشل إرسال الرد: ' : 'Reply failed: ') + error.message +
                 (isAr() ? '\n(تأكد من تشغيل أوامر SQL المحدّثة)' : '\n(make sure the updated SQL has been run)'));
             return;
@@ -2082,10 +2120,9 @@
                 <div id="compose-notice" style="display:none; flex:0 0 100%; align-items:center; justify-content:space-between; gap:10px;
                      background:rgba(17,26,74,0.95); border:1px solid rgba(245,195,90,0.3); border-radius:14px;
                      padding:8px 12px; color:#f8fafc; font-size:0.82rem; font-weight:800;"></div>
-                <label class="tool-btn" style="margin:0;">
+                <button type="button" class="tool-btn" style="margin:0;" onclick="window.openPostImagePicker()">
                     📷 ${isAr() ? 'إضافة صورة' : 'Add image'}
-                    <input type="file" accept="image/*" style="display:none;" onchange="window.pickPostImage(this)">
-                </label>
+                </button>
                 <button type="button" class="tool-btn" style="margin:0;" onclick="window.pickPostVideo()">
                     🎬 ${isAr() ? 'فيديو' : 'Video'}
                 </button>
