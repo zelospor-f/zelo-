@@ -248,7 +248,8 @@
             .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 18px; text-align: center; }
             .pp-stat { cursor: default; }
             .pp-stat.tap { cursor: pointer; }
-            .pp-stat b { display: block; font-size: 1.35rem; font-weight: 900; color: #fff; }
+            .pp-stat b { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 1.7rem; font-weight: 900; color: #fff; line-height: 1.1; }
+            .pp-stat b svg { width: 22px; height: 22px; stroke: #f5c35a; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
             .pp-stat span { display: block; font-size: 0.76rem; font-weight: 700; color: #9aa6d6; margin-top: 2px; }
             .pp-badges { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
             .pp-badge { width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.45); border: 1px solid rgba(245,195,90,0.35); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px -3px rgba(245,195,90,0.5); }

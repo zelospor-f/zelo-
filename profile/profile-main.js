@@ -494,9 +494,9 @@
                     </div>
 
                     <div class="pp-stats">
-                        <div class="pp-stat tap" onclick="window.openFollowList('following')"><b>${d.following.toLocaleString('en-US')}</b><span>${tr('ui_following', 'يتابِع', 'Following')}</span></div>
-                        <div class="pp-stat tap" onclick="window.openFollowList('followers')"><b>${d.followers.toLocaleString('en-US')}</b><span>${tr('ui_followers', 'متابِعون', 'Followers')}</span></div>
-                        <div class="pp-stat"><b id="stat-invited">${d.invited.toLocaleString('en-US')}</b><span>${tr('ui_invited', 'مدعوون', 'Invited')}</span></div>
+                        <div class="pp-stat tap" onclick="window.openFollowList('following')"><b><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 11.5l2 2 3.5-3.5"/></svg>${d.following.toLocaleString('en-US')}</b><span>${tr('ui_following', 'يتابِع', 'Following')}</span></div>
+                        <div class="pp-stat tap" onclick="window.openFollowList('followers')"><b><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M18.5 8v6M15.5 11h6"/></svg>${d.followers.toLocaleString('en-US')}</b><span>${tr('ui_followers', 'متابِعون', 'Followers')}</span></div>
+                        <div class="pp-stat"><b><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M12 9v11M3 13h18"/><path d="M12 9c-2.5 0-4-1-4-2.5S9.5 4 11 5c.8.6 1 2 1 4zM12 9c2.5 0 4-1 4-2.5S14.5 4 13 5c-.8.6-1 2-1 4z"/></svg><i id="stat-invited" style="font-style:normal;">${d.invited.toLocaleString('en-US')}</i></b><span>${tr('ui_invited', 'مدعوون', 'Invited')}</span></div>
                     </div>
 
                     ${matched.length ? `<div class="pp-badges">${matched.map(c => `<div class="pp-badge"><img src="${esc(c.logo || c.flag || '')}" alt="" onerror="this.style.display='none'"></div>`).join('')}</div>` : ''}
