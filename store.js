@@ -149,12 +149,12 @@
             box-shadow: 0 0 0 2px #f5c35a, 0 4px 10px rgba(0,0,0,0.55);
         }
 
-        /* الباقات */
-        .zs-list { display: flex; flex-direction: column; gap: 16px; }
+        /* الباقات (شبكة من عمودين) */
+        .zs-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .zs-pack {
-            position: relative; width: 100%;
-            display: flex; align-items: center; gap: 14px;
-            padding: 18px 16px; border-radius: 20px; cursor: pointer;
+            position: relative; width: 100%; min-width: 0; overflow: hidden;
+            display: flex; flex-direction: column; align-items: stretch; gap: 14px;
+            padding: 30px 12px 14px; border-radius: 20px; cursor: pointer;
             text-align: start; color: inherit;
             background: #101847; border: 1px solid rgba(255,255,255,0.09);
             transition: transform 0.15s ease;
@@ -166,36 +166,34 @@
             background: linear-gradient(135deg, #f8d27a 0%, #f5c35a 45%, #c98a2b 100%);
             border-color: transparent; color: #0a1033;
             box-shadow: 0 14px 34px rgba(245,195,90,0.28);
-            padding-block: 24px;
         }
 
-        .zs-stack { position: relative; width: 96px; height: 44px; flex: none; }
-        .zs-st { position: absolute; top: 3px; inset-inline-start: calc(var(--i) * 18px); z-index: calc(var(--i) + 1); }
+        .zs-top-row { display: flex; align-items: center; gap: 8px; direction: ltr; justify-content: flex-start; }
+        [dir="rtl"] .zs-top-row { justify-content: flex-end; }
         .zs-pack.t4 .zs-coin { box-shadow: 0 0 0 2px #0a1033, 0 4px 10px rgba(0,0,0,0.4); }
-
-        .zs-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-        .zs-name { font-size: 0.85rem; font-weight: 700; color: #f5c35a; }
-        .zs-pack.t4 .zs-name { color: #0a1033; opacity: 0.8; }
         .zs-amt {
-            font-size: 1.6rem; line-height: 1.1; font-weight: 900; direction: ltr; text-align: start;
+            font-size: 1.9rem; line-height: 1; font-weight: 900; direction: ltr;
             font-variant-numeric: tabular-nums;
         }
-        .zs-amt small { font-size: 0.72rem; font-weight: 700; margin-inline-start: 6px; opacity: 0.7; }
+        .zs-name { font-size: 0.88rem; font-weight: 700; color: #9aa6d6; text-align: start; }
+        .zs-pack.t4 .zs-name { color: #0a1033; opacity: 0.75; }
 
         .zs-price {
-            flex: none; min-width: 64px; text-align: center; direction: ltr;
-            padding: 10px 14px; border-radius: 14px;
+            text-align: center; direction: ltr;
+            padding: 12px 10px; border-radius: 999px;
             background: linear-gradient(180deg, #f8d27a, #f5c35a); color: #0a1033;
             font-size: 1rem; font-weight: 900;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.3);
         }
         .zs-pack.t4 .zs-price { background: #0a1033; color: #f5c35a; }
 
+        /* شريط الزاوية */
         .zs-badge {
-            position: absolute; top: -10px; inset-inline-end: 18px;
-            padding: 3px 12px; border-radius: 999px;
-            background: #2c4bb5; color: #fff; font-size: 0.72rem; font-weight: 800;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            position: absolute; top: 0; inset-inline-end: 0;
+            padding: 5px 12px 5px 14px; border-radius: 0 0 0 14px;
+            background: #2c4bb5; color: #fff; font-size: 0.72rem; font-weight: 800; white-space: nowrap;
         }
+        [dir="rtl"] .zs-badge { border-radius: 0 0 14px 0; padding: 5px 14px 5px 12px; }
         .zs-pack.t4 .zs-badge { background: #0a1033; color: #f5c35a; }
 
         .zs-note { margin: 22px 8px 0; text-align: center; font-size: 0.78rem; color: #7f8bbd; line-height: 1.6; }
@@ -248,16 +246,14 @@
     }
 
     function packRow(p) {
-        const stack = Array.from({ length: p.tier }, (_, i) =>
-            `<span class="zs-st" style="--i:${i}">${coin(38)}</span>`).join('');
         return `
             <button class="zs-pack t${p.tier}" data-pack="${p.id}">
                 ${p.badge ? `<span class="zs-badge">${esc(L(p.badge.ar, p.badge.en))}</span>` : ''}
-                <span class="zs-stack">${stack}</span>
-                <span class="zs-info">
-                    <span class="zs-name">${esc(L(p.ar, p.en))}</span>
-                    <span class="zs-amt">${fmt(p.coins)}<small>Zelo Coin</small></span>
+                <span class="zs-top-row">
+                    <span class="zs-amt">${fmt(p.coins)}</span>
+                    ${coin(p.tier === 4 ? 44 : 36)}
                 </span>
+                <span class="zs-name">${esc(L(p.ar, p.en))}</span>
                 <span class="zs-price" data-price="${p.id}">${esc(priceLabel(p))}</span>
             </button>`;
     }
