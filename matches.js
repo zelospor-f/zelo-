@@ -94,13 +94,16 @@ function renderMatchList(overlay, isAr, asPage) {
             const formattedDate = !isNaN(matchDate.getTime()) ? matchDate.toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : '';
             const formattedTime = !isNaN(matchDate.getTime()) ? matchDate.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
 
+            const GEM = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7fe3ff" stroke-width="1.8" stroke-linejoin="round" style="flex:none"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M9 3l3 6 3-6M12 21L9 9M12 21l3-12"/></svg>';
+            const BALL = '<img src="zelo-coin.png" alt="" style="width:16px;height:16px;flex:none" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png\';}else{this.style.display=\'none\';}">';
+            const winLine = `<div style="font-size:0.72rem; font-weight:700; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px;">${isAr ? 'واكسب' : 'Win'} ${BALL} ${isAr ? 'أو' : 'or'} ${GEM}</div>`;
             let buttonHtml = '';
             if (hasPredicted) {
                 buttonHtml = `<button disabled style="width:100%; padding:12px; background:rgba(245, 195, 90, 0.2); color:#f5c35a; border:1px solid #f5c35a; border-radius:12px; font-size:1rem; font-weight:bold;">${getT('btnPredicted')}</button>`;
             } else if (isStarted) {
                 buttonHtml = `<button disabled style="width:100%; padding:12px; background:rgba(255,255,255,0.05); color:#9aa6d6; border:1px solid #14206b; border-radius:12px; font-size:0.95rem;">${getT('btnClosed')}</button>`;
             } else {
-                buttonHtml = `<button id="btn-predict-${m.id}" onclick="window.showPredictionModal(${m.id}, '${m.team_a}', '${m.team_b}')" style="width:100%; padding:12px; background:var(--gradient-primary, linear-gradient(135deg, #2c4bb5, #14206b, #f5c35a)); border:none; color:white; border-radius:12px; font-weight:bold; font-size:1rem; cursor:pointer;">${getT('btnPredictNow')}</button>`;
+                buttonHtml = `<button id="btn-predict-${m.id}" onclick="window.showPredictionModal(${m.id}, '${m.team_a}', '${m.team_b}')" style="width:100%; padding:12px; background:var(--gradient-primary, linear-gradient(135deg, #2c4bb5, #14206b, #f5c35a)); border:none; color:white; border-radius:12px; font-weight:bold; font-size:1rem; cursor:pointer; line-height:1.3;">${getT('btnPredictNow')}${winLine}</button>`;
             }
 
             const fcBtn = (!isStarted && window.fcMatchButton) ? window.fcMatchButton(m.id) : '';
@@ -245,9 +248,12 @@ window.submitPrediction = async function(matchId, team1, team2) {
 
     const btnContainer = document.getElementById(`btn-container-${matchId}`);
     if (btnContainer) {
-        btnContainer.innerHTML = `<button disabled style="width:100%; padding:12px; background:rgba(245, 195, 90, 0.2); color:#f5c35a; border:1px solid #f5c35a; border-radius:12px; font-size:1rem; font-weight:bold;">${getT('btnPredicted')}</button>`;
+        const doneBtn = (w) => `<button disabled style="${w} padding:12px; background:rgba(245, 195, 90, 0.2); color:#f5c35a; border:1px solid #f5c35a; border-radius:12px; font-size:1rem; font-weight:bold;">${getT('btnPredicted')}</button>`;
+        btnContainer.innerHTML = window.fcMatchButton
+            ? `<div style="display:flex; gap:10px;">${doneBtn('flex:1;')}${window.fcMatchButton(matchId)}</div>`
+            : doneBtn('width:100%;');
     }
-    // متابعة تحدّي الأصدقاء بعد التوقع (إن كان المستخدم قد بدأه)
+    // إعادة تحميل صفحة تحدّياتي بعد التوقع من داخلها (إن كان ذلك مطلوباً)
     const fcw = window._fcAfterPredict;
     if (fcw && fcw.matchId === matchId) { window._fcAfterPredict = null; setTimeout(fcw.fn, 50); }
 };
@@ -310,19 +316,8 @@ window.openPredictionHistoryScreen = function() {};
     };
 
     /* ---------- بدء تحدٍّ: يجب أن يكون المستخدم قد توقع المباراة ---------- */
-    window.fcStart = function (matchId) {
-        matchId = Number(matchId);
-        const predicted = (userState.predictedMatches || []).includes(matchId);
-        if (!predicted) {
-            const m = (typeof globalMatches !== 'undefined' ? globalMatches : []).find(x => x.id === matchId);
-            if (!m) return;
-            toast(L('توقّع المباراة أولاً ثم اختر أصدقاءك', 'Predict first, then pick your friends'));
-            window._fcAfterPredict = { matchId, fn: () => window.fcStart(matchId) };
-            window.showPredictionModal(m.id, m.team_a, m.team_b);
-            return;
-        }
-        openPicker(matchId);
-    };
+    // تحدّي الأصدقاء منفصل عن التوقع: يفتح قائمة الأصدقاء مباشرة
+    window.fcStart = function (matchId) { openPicker(Number(matchId)); };
 
     function avatarHtml(u, size) {
         const name = (isAr() ? (u.nickname_ar || u.nickname_en) : (u.nickname_en || u.nickname_ar)) || u.username || '?';
@@ -445,11 +440,14 @@ window.openPredictionHistoryScreen = function() {};
                 const col = c.state === 'settled' ? (m.winner ? '#7ee0c3' : '#ff8f8f') : '#fff';
                 right = `<span style="color:${col};font-weight:900;">${m.pred_home} - ${m.pred_away}${c.state === 'settled' ? (m.winner ? ' ✓' : ' ✗') : ''}</span>`;
             } else if (m.predicted) right = `<span style="color:#9aa6d6;">${L('مخفي حتى بداية المباراة', 'Hidden until kick-off')}</span>`;
-            else right = `<span style="color:#9aa6d6;">—</span>`;
+            else right = `<span style="color:#9aa6d6;">${L('لم يتوقع بعد', 'Not predicted yet')}</span>`;
             return `<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:.85rem;font-weight:700;"><span style="${m.winner ? 'color:#ffd98a;' : ''}">${esc(nm)}</span>${right}</div>`;
         }).join('');
-        const actions = (c.my_status === 'invited' && c.state === 'open')
-            ? `<div style="display:flex;gap:10px;"><button onclick="window.fcRespond(${c.id}, true)" style="flex:1;padding:11px;border:0;border-radius:999px;background:${GOLD};color:#0a1033;font-weight:900;font-family:inherit;">${L('قبول', 'Accept')}</button><button onclick="window.fcRespond(${c.id}, false)" style="flex:1;padding:11px;border-radius:999px;background:transparent;border:1px solid rgba(255,255,255,.25);color:#cbd5e1;font-weight:800;font-family:inherit;">${L('رفض', 'Decline')}</button></div>` : '';
+        const mine = members.find(m => m.user_id === me);
+        const predictBtn = (c.state === 'open' && mine && !mine.predicted)
+            ? `<button onclick="window.fcPredict(${c.id})" style="padding:11px;border:0;border-radius:999px;background:linear-gradient(135deg,#2c4bb5,#14206b 50%,#f5c35a);color:#fff;font-weight:900;font-family:inherit;">${L('توقّع هذه المباراة', 'Predict this match')}</button>` : '';
+        const actions = predictBtn + ((c.my_status === 'invited' && c.state === 'open')
+            ? `<div style="display:flex;gap:10px;"><button onclick="window.fcRespond(${c.id}, true)" style="flex:1;padding:11px;border:0;border-radius:999px;background:${GOLD};color:#0a1033;font-weight:900;font-family:inherit;">${L('قبول', 'Accept')}</button><button onclick="window.fcRespond(${c.id}, false)" style="flex:1;padding:11px;border-radius:999px;background:transparent;border:1px solid rgba(255,255,255,.25);color:#cbd5e1;font-weight:800;font-family:inherit;">${L('رفض', 'Decline')}</button></div>` : '');
         const hl = String(focusId) === String(c.id) ? `border:1px solid ${GOLD};` : (c.state === 'waiting' ? 'border:1px dashed rgba(245,195,90,.5);' : 'border:1px solid rgba(255,255,255,.1);');
         return `<div id="fc-card-${c.id}" style="border-radius:20px;background:#111a4a;${hl}padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:11px;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
@@ -513,6 +511,13 @@ window.openPredictionHistoryScreen = function() {};
         if (window.fcRefreshBadge) window.fcRefreshBadge();
     };
 
+    window.fcPredict = function (id) {
+        const ch = list.find(x => x.id === id);
+        if (!ch) return;
+        window._fcAfterPredict = { matchId: ch.match_id, fn: async () => { await load(); render(); } };
+        window.showPredictionModal(ch.match_id, ch.team_a, ch.team_b);
+    };
+
     window.fcRespond = async function (id, accept) {
         const c = db();
         if (!c) return;
@@ -521,15 +526,6 @@ window.openPredictionHistoryScreen = function() {};
             if (r.error) throw r.error;
             const st = r.data && r.data.status;
             if (st === 'ok') { await load(); render(); toast(accept ? L('انضممت إلى التحدي', 'You joined') : L('تم الرفض', 'Declined')); return; }
-            if (st === 'predict_first') {
-                const ch = list.find(x => x.id === id);
-                if (ch) {
-                    toast(L('توقّع المباراة أولاً لتنضم', 'Predict the match first to join'));
-                    window._fcAfterPredict = { matchId: ch.match_id, fn: () => window.fcRespond(id, true) };
-                    window.showPredictionModal(ch.match_id, ch.team_a, ch.team_b);
-                }
-                return;
-            }
             if (st === 'match_started') { toast(L('بدأت المباراة', 'The match has started')); await load(); render(); return; }
             toast(L('تعذّر تنفيذ الطلب', 'Could not complete'));
         } catch (e) { console.warn(e); toast(L('تعذّر الاتصال', 'Connection failed')); }
