@@ -1889,7 +1889,27 @@
         .pc-post { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); color: #e2e8f0; font-size: 0.86rem; line-height: 1.6; word-break: break-word; }
         .pc-post .t { color: #7782b0; font-size: 0.68rem; font-weight: 700; margin-bottom: 4px; }
         .pc-post img { width: 100%; max-height: 260px; object-fit: cover; border-radius: 12px; margin-top: 8px; }
-        .pc-empty { padding: 24px; text-align: center; color: #7782b0; font-weight: 700; }`;
+        .pc-empty { padding: 24px; text-align: center; color: #7782b0; font-weight: 700; }
+        .pcx { padding: calc(64px + env(safe-area-inset-top, 0px)) 16px 0; }
+        .pcx-head { display: flex; align-items: center; gap: 14px; }
+        .pcx-av { width: 92px; height: 92px; min-width: 92px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: linear-gradient(135deg, #2c4bb5, #f5c35a, #14206b); box-shadow: 0 0 18px rgba(245,195,90,0.3); }
+        .pcx-av div { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; border: 2px solid #0a1033; background: #0a1033; }
+        .pcx-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .pcx-id { flex: 1; min-width: 0; }
+        .pcx-name { margin: 0; font-size: 1.15rem; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 5px; overflow: hidden; }
+        .pcx-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .pcx-user { font-size: 0.8rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: ltr; text-align: start; unicode-bidi: plaintext; }
+        .pcx-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 18px; text-align: center; }
+        .pcx-stat b { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 1.7rem; font-weight: 900; color: #fff; line-height: 1.1; }
+        .pcx-stat b svg { width: 22px; height: 22px; stroke: #f5c35a; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+        .pcx-stat span { display: block; font-size: 0.76rem; font-weight: 700; color: #9aa6d6; margin-top: 2px; }
+        .pcx-btns { display: flex; gap: 10px; margin-top: 16px; }
+        .pcx-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.06); color: #fff; font-weight: 800; font-size: 0.84rem; padding: 12px 8px; border-radius: 999px; border: 1px solid rgba(245,195,90,0.3); font-family: inherit; }
+        .pcx-btn:active { background: rgba(245,195,90,0.14); }
+        .pcx-btn.main { background: #f5c35a; color: #0a1033; border-color: #f5c35a; }
+        .pcx-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+        .pcx-tabs { margin-top: 18px; display: flex; gap: 8px; }
+        .pcx-tab { padding: 8px 18px; border-radius: 999px; background: rgba(245,195,90,0.16); border: 1px solid rgba(245,195,90,0.4); color: #ffd98a; font-weight: 900; font-size: 0.85rem; }`;
         document.head.appendChild(s);
     })();
 
@@ -1944,27 +1964,34 @@
         const nf = followers.count || 0;
 
         const buttons = isMe ? '' : `
-            <button class="pc-btn" id="pc-msg">${isAr() ? 'رسالة' : 'Message'}</button>
-            <button class="pc-btn ${followed ? 'on' : 'main'}" id="pc-follow">${followed ? (isAr() ? 'متابَع' : 'Following') : (isAr() ? 'متابعة' : 'Follow')}</button>`;
+            <button class="pcx-btn" id="pc-msg"><svg viewBox="0 0 24 24"><path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/></svg>${isAr() ? 'رسالة' : 'Message'}</button>
+            <button class="pcx-btn ${followed ? '' : 'main'}" id="pc-follow">${followed ? (isAr() ? 'متابَع' : 'Following') : (isAr() ? 'متابعة' : 'Follow')}</button>`;
+
+        const ico = {
+            fing: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 11.5l2 2 3.5-3.5"/></svg>',
+            fers: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M18.5 8v6M15.5 11h6"/></svg>',
+            post: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>'
+        };
 
         ov.firstElementChild.innerHTML = `
             <button class="pc-close" onclick="window.closeUserProfile()">${isAr() ? '→' : '←'}</button>
-            <div class="pc-cover"></div>
-            <div class="pc-top">
-                <img class="pc-avatar" src="${esc(avatarUrl(name, avatar))}" onerror="this.style.display='none'">
-                <div class="pc-btns">${buttons}</div>
+            <div class="pcx">
+                <div class="pcx-head">
+                    <div class="pcx-av"><div><img src="${esc(avatarUrl(name, avatar))}" alt="" onerror="this.style.display='none'"></div></div>
+                    <div class="pcx-id">
+                        <h4 class="pcx-name"><span>${esc(name)}</span>${badgeHtml(uid, 20)}</h4>
+                        ${handle ? `<div class="pcx-user">@${esc(handle)}</div>` : ''}
+                    </div>
+                </div>
+                <div class="pcx-stats">
+                    <div class="pcx-stat"><b>${ico.fing}${following.count || 0}</b><span>${isAr() ? 'يتابِع' : 'Following'}</span></div>
+                    <div class="pcx-stat"><b>${ico.fers}<i id="pc-nfollowers" style="font-style:normal;">${nf}</i></b><span>${isAr() ? 'متابِعون' : 'Followers'}</span></div>
+                    <div class="pcx-stat"><b>${ico.post}${postsCount.count || 0}</b><span>${isAr() ? 'منشور' : 'Posts'}</span></div>
+                </div>
+                ${buttons ? `<div class="pcx-btns">${buttons}</div>` : ''}
+                <div class="pcx-tabs"><div class="pcx-tab">${isAr() ? 'المنشورات' : 'Posts'}</div></div>
             </div>
-            <div class="pc-info">
-                <div class="pc-name">${esc(name)}${badgeHtml(uid, 18)}</div>
-                ${handle ? `<div class="pc-handle">@${esc(handle)}</div>` : ''}
-            </div>
-            <div class="pc-stats">
-                <span><b id="pc-nfollowers">${nf}</b> ${isAr() ? 'متابِع' : 'Followers'}</span>
-                <span><b>${following.count || 0}</b> ${isAr() ? 'يتابِع' : 'Following'}</span>
-                <span><b>${postsCount.count || 0}</b> ${isAr() ? 'منشور' : 'Posts'}</span>
-            </div>
-            <div class="pc-tab">${isAr() ? 'المنشورات' : 'Posts'}</div>
-            <div class="pc-posts">
+            <div class="pc-posts" style="margin-top:12px;">
                 ${posts.length ? posts.map(p => `
                     <div class="pc-post" data-pid="${p.id}">
                         <div class="pc-post-body" onclick="window.openPostPage(${p.id})">
@@ -1982,7 +2009,7 @@
             await toggleFollow(uid);
             const now = followSet.has(uid);
             if (now === was) return;
-            fb.className = 'pc-btn ' + (now ? 'on' : 'main');
+            fb.className = 'pcx-btn ' + (now ? '' : 'main');
             fb.textContent = now ? (isAr() ? 'متابَع' : 'Following') : (isAr() ? 'متابعة' : 'Follow');
             const el = document.getElementById('pc-nfollowers');
             if (el) el.textContent = Math.max(0, (parseInt(el.textContent, 10) || 0) + (now ? 1 : -1));
@@ -2263,22 +2290,26 @@
             #zvv .zvv-feed::-webkit-scrollbar { display: none; }
             #zvv .zvv-item { position: relative; height: 100vh; height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always; background: #000; overflow: hidden; }
             #zvv video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
-            #zvv .zvv-close, #zvv .zvv-mute { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); width: 40px; height: 40px; border: 0; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; font-size: 18px; z-index: 5; display: flex; align-items: center; justify-content: center; }
-            #zvv .zvv-close { inset-inline-start: 12px; }
-            #zvv .zvv-mute { inset-inline-end: 12px; }
-            #zvv .zvv-info { position: absolute; inset-inline: 14px 74px; bottom: calc(26px + env(safe-area-inset-bottom, 0px)); color: #fff; z-index: 4; text-shadow: 0 1px 5px #000; }
+            #zvv .zvv-close, #zvv .zvv-more { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); width: 42px; height: 42px; border: 0; border-radius: 50%; background: rgba(60,60,60,.55); color: #fff; font-size: 20px; z-index: 5; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+            #zvv .zvv-close { inset-inline-end: 12px; }
+            #zvv .zvv-more { inset-inline-start: 12px; font-size: 22px; }
+            #zvv .zvv-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 14px calc(14px + env(safe-area-inset-bottom, 0px)); color: #fff; z-index: 4; background: linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.45) 60%, rgba(0,0,0,0)); }
             #zvv .zvv-user { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
             #zvv .zvv-user img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; cursor: pointer; flex-shrink: 0; }
             #zvv .zvv-names { min-width: 0; flex: 1; cursor: pointer; }
-            #zvv .zvv-name { font-weight: 800; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            #zvv .zvv-handle { font-size: 12px; opacity: .8; direction: ltr; text-align: start; }
-            #zvv .zvv-follow { border: 0; border-radius: 18px; padding: 6px 14px; font-weight: 800; font-size: 13px; background: #fff; color: #000; flex-shrink: 0; }
-            #zvv .zvv-follow.on { background: transparent; color: #fff; border: 1px solid #fff; }
-            #zvv .zvv-text { font-size: 14px; line-height: 1.5; max-height: 4.5em; overflow: hidden; }
-            #zvv .zvv-actions { position: absolute; inset-inline-end: 10px; bottom: calc(40px + env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 18px; z-index: 4; align-items: center; }
-            #zvv .zvv-act { background: none; border: 0; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 12px; text-shadow: 0 1px 4px #000; padding: 0; }
-            #zvv .zvv-act svg { width: 28px; height: 28px; filter: drop-shadow(0 1px 3px rgba(0,0,0,.7)); }
+            #zvv .zvv-name { font-weight: 800; font-size: 16px; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            #zvv .zvv-handle { font-size: 13px; opacity: .8; direction: ltr; text-align: start; }
+            #zvv .zvv-follow { border: 0; border-radius: 999px; padding: 8px 18px; font-weight: 800; font-size: 13px; background: rgba(255,255,255,.22); color: #fff; flex-shrink: 0; cursor: pointer; }
+            #zvv .zvv-follow.on { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.6); }
+            #zvv .zvv-text { font-size: 15px; line-height: 1.5; max-height: 4.6em; overflow: hidden; margin-bottom: 10px; }
+            #zvv .zvv-acts { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+            #zvv .zvv-act { flex: 1; min-width: 0; background: rgba(60,60,60,.55); border: 0; border-radius: 999px; color: #fff; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 13px; padding: 9px 4px; cursor: pointer; }
+            #zvv .zvv-act svg { width: 20px; height: 20px; flex: none; }
             #zvv .zvv-act.liked { color: #ff3b6b; }
+            #zvv .zvv-act.saved { color: #f5c35a; }
+            #zvv .zvv-ctl { display: flex; align-items: center; gap: 16px; direction: ltr; padding-top: 4px; }
+            #zvv .zvv-ctl button { background: none; border: 0; color: #fff; font-size: 20px; padding: 4px; cursor: pointer; }
+            #zvv .zvv-time { margin-inline-start: auto; font-size: 13px; opacity: .9; font-variant-numeric: tabular-nums; }
             #zvv .zvv-bar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,.25); z-index: 5; direction: ltr; }
             #zvv .zvv-bar i { display: block; height: 100%; width: 0; background: #fff; }
             #zvv .zvv-pp { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 64px; color: #fff; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 3; }
@@ -2307,43 +2338,51 @@
     function zvvItemHtml(p) {
         const mine = String(p.user_id) === me().id;
         const followed = followSet.has(String(p.user_id));
-        const handle = handleOf(p.user_id);
         return `
             <div class="zvv-item" data-pid="${p.id}" data-uid="${esc(p.user_id)}">
                 <video src="${esc(p.video_url)}" playsinline loop preload="auto"></video>
                 <div class="zvv-pp">▶</div>
+                <button class="zvv-more" onclick="window.openPostMenu(${p.id})" aria-label="more">⋮</button>
                 <div class="zvv-info">
                     <div class="zvv-user">
                         <img src="${esc(avatarUrl(p.author_name, p.author_avatar))}" onclick="window.zvvOpenUser('${esc(p.user_id)}')" onerror="this.style.display='none'">
                         <div class="zvv-names" onclick="window.zvvOpenUser('${esc(p.user_id)}')">
                             <div class="zvv-name">${esc(p.author_name)}${badgeHtml(p.user_id)}</div>
-                            ${handle ? `<div class="zvv-handle">@${esc(handle)}</div>` : ''}
+                            ${handleOf(p.user_id) ? `<div class="zvv-handle">@${esc(handleOf(p.user_id))}</div>` : ''}
                         </div>
                         ${mine ? '' : `<button class="zvv-follow ${followed ? 'on' : ''}" data-follow="${esc(p.user_id)}" onclick="window.zvvFollow('${esc(p.user_id)}')">${followed ? (isAr() ? 'متابَع' : 'Following') : (isAr() ? 'متابعة' : 'Follow')}</button>`}
                     </div>
                     ${p.content ? `<div class="zvv-text">${esc(p.content).replace(/\n/g, '<br>')}</div>` : ''}
+                    <div class="zvv-acts">${zvvActionsHtml(p)}</div>
+                    <div class="zvv-ctl">
+                        <button class="zvv-pbtn" aria-label="play">⏸</button>
+                        <button class="zvv-mbtn" aria-label="sound">${zvvMuted ? '🔇' : '🔊'}</button>
+                        <span class="zvv-time">0:00</span>
+                    </div>
                 </div>
-                <div class="zvv-actions">${zvvActionsHtml(p)}</div>
                 <div class="zvv-bar"><i></i></div>
             </div>`;
     }
 
     function zvvActionsHtml(p) {
         return `
-            <button class="zvv-act ${p.liked ? 'liked' : ''}" onclick="window.zvvLike(${p.id})">${ICONS.heart(p.liked)}<span>${p.likes || 0}</span></button>
             <button class="zvv-act" onclick="window.openReply(${p.id})">${ICONS.reply}<span>${p.comments || 0}</span></button>
             <button class="zvv-act ${p.reposted ? 'liked' : ''}" onclick="window.zvvRepost(${p.id})">${ICONS.repost}<span>${p.reposts || 0}</span></button>
+            <button class="zvv-act ${p.liked ? 'liked' : ''}" onclick="window.zvvLike(${p.id})">${ICONS.heart(p.liked)}<span>${p.likes || 0}</span></button>
+            <span class="zvv-act" style="cursor:default;">${ICONS.views}<span>${p.views || 0}</span></span>
+            <button class="zvv-act ${p.saved ? 'saved' : ''}" onclick="window.zvvSave(${p.id})">${ICONS.save(p.saved)}</button>
             <button class="zvv-act" onclick="window.sharePost(${p.id})">${ICONS.share}</button>`;
     }
 
     function zvvRefreshActions(id) {
         const p = postCache[id];
-        const box = document.querySelector(`#zvv .zvv-item[data-pid="${id}"] .zvv-actions`);
+        const box = document.querySelector(`#zvv .zvv-item[data-pid="${id}"] .zvv-acts`);
         if (p && box) box.innerHTML = zvvActionsHtml(p);
     }
 
     window.zvvLike = async function (id) { await window.toggleLike(id); zvvRefreshActions(id); };
     window.zvvRepost = async function (id) { await window.toggleRepost(id); zvvRefreshActions(id); };
+    window.zvvSave = async function (id) { await window.toggleBookmark(id); zvvRefreshActions(id); };
     window.zvvFollow = async function (uid) {
         await toggleFollow(uid);
         const on = followSet.has(String(uid));
@@ -2372,8 +2411,7 @@
         root.id = 'zvv';
         root.dir = isAr() ? 'rtl' : 'ltr';
         root.innerHTML = `
-            <button class="zvv-close" onclick="window.closeVideoViewer()" aria-label="close">✕</button>
-            <button class="zvv-mute" id="zvv-mute" aria-label="sound">${zvvMuted ? '🔇' : '🔊'}</button>
+            <button class="zvv-close" onclick="window.closeVideoViewer()" aria-label="close">${isAr() ? '→' : '←'}</button>
             <div class="zvv-feed">${ids.map(id => zvvItemHtml(postCache[id])).join('')}</div>`;
         document.body.appendChild(root);
 
@@ -2381,24 +2419,33 @@
         const items = [...feed.querySelectorAll('.zvv-item')];
 
         // الصوت وشريط التقدّم والضغط للإيقاف/التشغيل
+        const fmt = t => { t = Math.max(0, Math.round(t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
         items.forEach(it => {
             const v = it.querySelector('video');
             const bar = it.querySelector('.zvv-bar i');
             const pp = it.querySelector('.zvv-pp');
+            const pbtn = it.querySelector('.zvv-pbtn');
+            const mbtn = it.querySelector('.zvv-mbtn');
+            const tm = it.querySelector('.zvv-time');
             v.muted = zvvMuted;
-            v.addEventListener('timeupdate', () => { if (v.duration) bar.style.width = (v.currentTime / v.duration * 100) + '%'; });
-            v.addEventListener('click', () => {
+            v.addEventListener('timeupdate', () => {
+                if (v.duration) { bar.style.width = (v.currentTime / v.duration * 100) + '%'; tm.textContent = '-' + fmt(v.duration - v.currentTime); }
+            });
+            v.addEventListener('play', () => { pbtn.textContent = '⏸'; });
+            v.addEventListener('pause', () => { pbtn.textContent = '▶'; });
+            const toggle = () => {
                 if (v.paused) { v.play().catch(() => {}); pp.textContent = '▶'; }
                 else { v.pause(); pp.textContent = '⏸'; }
                 pp.classList.add('show');
                 setTimeout(() => pp.classList.remove('show'), 500);
-            });
+            };
+            v.addEventListener('click', toggle);
+            pbtn.onclick = toggle;
+            mbtn.onclick = () => {
+                zvvMuted = !zvvMuted;
+                items.forEach(x => { x.querySelector('video').muted = zvvMuted; x.querySelector('.zvv-mbtn').textContent = zvvMuted ? '🔇' : '🔊'; });
+            };
         });
-        root.querySelector('#zvv-mute').onclick = e => {
-            zvvMuted = !zvvMuted;
-            items.forEach(it => { it.querySelector('video').muted = zvvMuted; });
-            e.currentTarget.textContent = zvvMuted ? '🔇' : '🔊';
-        };
 
         // شغّل الفيديو الظاهر فقط
         const viewed = new Set();
