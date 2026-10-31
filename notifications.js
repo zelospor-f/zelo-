@@ -355,6 +355,7 @@
         else if (kind === 'match' && window.openMatchRoom) window.openMatchRoom(arg);
         else if (kind === 'user' && window.openUserProfile) window.openUserProfile(arg);
         else if (kind === 'post' && window.openPostPage) { const [pid, cid] = arg.split(':'); window.openPostPage(pid, cid); }
+        else if (kind === 'challenge' && window.openFriendChallenges) window.openFriendChallenges(arg);
         else if (kind === 'followers' && window.openFollowers) window.openFollowers();
     }
 
