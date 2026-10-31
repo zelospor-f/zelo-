@@ -63,7 +63,7 @@ function renderMatchList(overlay, isAr, asPage) {
     let html = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
             <h2 style="margin:0; color:var(--accent-gold, #f5c35a);">🏆 ${getT('weeklyChallenges')}</h2>
-            ${asPage ? '' : '<button onclick="window.closeChallengesScreen()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">✕</button>'}
+            <div style="display:flex; align-items:center; gap:10px;">${window.mrRankChip ? window.mrRankChip() : ''}${asPage ? '' : '<button onclick="window.closeChallengesScreen()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">✕</button>'}</div>
         </div>
         ${window.fcEntryHtml ? window.fcEntryHtml() : ''}
         <div id="matches-container">
@@ -131,6 +131,7 @@ function renderMatchList(overlay, isAr, asPage) {
     html += `</div>`;
     overlay.innerHTML = html;
     if (window.fcRefreshBadge) window.fcRefreshBadge();
+    if (window.mrRefreshRank) window.mrRefreshRank();
 }
 
 // صفحة المباريات (تبويب Matches): نفس قائمة المباريات + أيقونة الغرف الجانبية
@@ -529,5 +530,33 @@ window.openPredictionHistoryScreen = function() {};
             if (st === 'match_started') { toast(L('بدأت المباراة', 'The match has started')); await load(); render(); return; }
             toast(L('تعذّر تنفيذ الطلب', 'Could not complete'));
         } catch (e) { console.warn(e); toast(L('تعذّر الاتصال', 'Connection failed')); }
+    };
+})();
+
+
+/* ===== شارة ترتيبي + "أبطال اليوم" بجانب عنوان تحديات الأسبوع ===== */
+(function () {
+    const isAr = () => (typeof userState !== 'undefined' && userState && userState.lang === 'ar');
+    let cached = null;
+    function fmt(n) { n = Number(n); return (isFinite(n) && n > 0) ? (n > 999 ? '999+' : String(n)) : '—'; }
+    window.mrRankChip = function () {
+        return `<button onclick="window.openLegendaryRankingScreen && window.openLegendaryRankingScreen()" aria-label="${isAr() ? 'أبطال اليوم' : "Today's champions"}" style="background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit;">
+            <span style="width:46px;height:46px;border-radius:50%;box-sizing:border-box;padding:2px;background:linear-gradient(135deg,#2c4bb5,#f5c35a,#14206b);box-shadow:0 0 14px rgba(245,195,90,.35);display:block;">
+                <span id="mr-rank-num" style="width:100%;height:100%;border-radius:50%;background:#0a1033;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:${cached && String(fmt(cached)).length > 3 ? '.8rem' : '1.05rem'};font-variant-numeric:tabular-nums;">${cached == null ? '…' : fmt(cached)}</span>
+            </span>
+            <span style="font-size:.68rem;font-weight:800;color:#f5c35a;white-space:nowrap;">${isAr() ? 'أبطال اليوم' : "Today's champions"}</span>
+        </button>`;
+    };
+    window.mrRefreshRank = async function () {
+        const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
+        const uid = (typeof userState !== 'undefined' && userState && userState.userId) ? String(userState.userId) : '';
+        if (!c || !uid) return;
+        try {
+            const { data, error } = await c.rpc('get_user_rank', { p_user_id: uid, p_category: 'weekly' });
+            if (error) return;
+            cached = data;
+            const el = document.getElementById('mr-rank-num');
+            if (el) { el.textContent = fmt(cached); el.style.fontSize = String(fmt(cached)).length > 3 ? '.8rem' : '1.05rem'; }
+        } catch (e) {}
     };
 })();
