@@ -94,16 +94,15 @@ function renderMatchList(overlay, isAr, asPage) {
             const formattedDate = !isNaN(matchDate.getTime()) ? matchDate.toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : '';
             const formattedTime = !isNaN(matchDate.getTime()) ? matchDate.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
 
-            const GEM = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7fe3ff" stroke-width="1.8" stroke-linejoin="round" style="flex:none"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M9 3l3 6 3-6M12 21L9 9M12 21l3-12"/></svg>';
             const BALL = '<img src="zelo-coin.png" alt="" style="width:16px;height:16px;flex:none" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png\';}else{this.style.display=\'none\';}">';
-            const winLine = `<div style="font-size:0.72rem; font-weight:700; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px;">${isAr ? 'واكسب' : 'Win'} ${BALL} ${isAr ? 'أو' : 'or'} ${GEM}</div>`;
+            const winLine = `<div style="font-size:0.72rem; font-weight:700; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px;">${isAr ? 'واكسب' : 'Win'} ${BALL}</div>`;
             let buttonHtml = '';
             if (hasPredicted) {
                 buttonHtml = `<button disabled style="width:100%; padding:12px; background:rgba(245, 195, 90, 0.2); color:#f5c35a; border:1px solid #f5c35a; border-radius:12px; font-size:1rem; font-weight:bold;">${getT('btnPredicted')}</button>`;
             } else if (isStarted) {
                 buttonHtml = `<button disabled style="width:100%; padding:12px; background:rgba(255,255,255,0.05); color:#9aa6d6; border:1px solid #14206b; border-radius:12px; font-size:0.95rem;">${getT('btnClosed')}</button>`;
             } else {
-                buttonHtml = `<button id="btn-predict-${m.id}" onclick="window.showPredictionModal(${m.id}, '${m.team_a}', '${m.team_b}')" style="width:100%; padding:12px; background:var(--gradient-primary, linear-gradient(135deg, #2c4bb5, #14206b, #f5c35a)); border:none; color:white; border-radius:12px; font-weight:bold; font-size:1rem; cursor:pointer; line-height:1.3;">${getT('btnPredictNow')}${winLine}</button>`;
+                buttonHtml = `<button id="btn-predict-${m.id}" onclick="window.showPredictionModal(${m.id}, '${m.team_a}', '${m.team_b}')" style="width:100%; padding:12px; background:var(--gradient-primary, linear-gradient(135deg, #2c4bb5, #14206b, #f5c35a)); border:none; color:white; border-radius:12px; font-weight:bold; font-size:1rem; cursor:pointer; line-height:1.3;">${String(getT('btnPredictNow')).replace(/⚽️?/g, '').trim()}${winLine}</button>`;
             }
 
             const fcBtn = (!isStarted && window.fcMatchButton) ? window.fcMatchButton(m.id) : '';
