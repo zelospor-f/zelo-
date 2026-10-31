@@ -614,6 +614,12 @@
         } catch (e) {
             btn.disabled = false;
             btn.textContent = label;
+            let code = '';
+            try { const b = e && e.context && e.context.json ? await e.context.json() : null; code = (b && b.error) || ''; } catch (x) {}
+            if (code === 'pending_withdrawal') {
+                toast(tr('set_delete_pending_withdrawal', 'عندك سحب معلّق، انتظر حتى ينتهي ثم احذف حسابك', 'You have a pending withdrawal. Wait until it finishes, then delete your account'));
+                return;
+            }
             toast(tr('set_could_not_delete_the', 'تعذر حذف الحساب، حاول لاحقاً', 'Could not delete the account, try later'));
             return;
         }
