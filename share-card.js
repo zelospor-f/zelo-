@@ -130,7 +130,25 @@
             if (!blob) return;
             const file = new File([blob], 'zelo-prediction.png', { type: 'image/png' });
 
-            // المشاركة الأصلية في الهاتف
+            // تطبيق أندرويد (Capacitor): نحفظ الصورة مؤقتاً ثم نفتح قائمة المشاركة الأصلية
+            try {
+                const P = window.Capacitor && window.Capacitor.Plugins;
+                if (P && P.Filesystem && P.Share) {
+                    const b64 = await new Promise((res, rej) => {
+                        const fr = new FileReader();
+                        fr.onload = () => res(String(fr.result).split(',')[1]);
+                        fr.onerror = rej;
+                        fr.readAsDataURL(blob);
+                    });
+                    const saved = await P.Filesystem.writeFile({ path: 'zelo-prediction.png', data: b64, directory: 'CACHE' });
+                    await P.Share.share({ title: 'ZELO SPORT', files: [saved.uri] });
+                    return;
+                }
+            } catch (e) {
+                if (e && /cancel/i.test(String(e.message || e))) return;
+            }
+
+            // المشاركة الأصلية في المتصفح
             if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({ files: [file], title: 'ZELO SPORT' });
