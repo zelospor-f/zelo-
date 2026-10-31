@@ -3,11 +3,15 @@ function getT(key) {
     return (typeof i18n !== 'undefined' && i18n[lang] && i18n[lang][key]) ? i18n[lang][key] : key;
 }
 
+const zrEsc = v => String(v ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
+const zrSafeUrl = u => (typeof u === 'string' && /^(https:\/\/|data:image\/)/.test(u) && !/["'<>\s]/.test(u)) ? u : '';
+
 const generateAvatar = (name, photoUrl, size = '50px') => {
+    photoUrl = zrSafeUrl(photoUrl);
     if (photoUrl) {
         return `<img src="${photoUrl}" style="width:${size}; height:${size}; border-radius:50%; object-fit:cover; border:2px solid var(--accent-gold, #fcb045); margin: 0 auto; display: block;">`;
     }
-    const initial = name ? String(name).charAt(0).toUpperCase() : '👤';
+    const initial = name ? zrEsc(String(name).charAt(0).toUpperCase()) : '👤';
     return `<div style="width:${size}; height:${size}; border-radius:50%; background: linear-gradient(135deg, #833ab4, #fd1d1d); color:white; display:flex; align-items:center; justify-content:center; font-size:calc(${size} / 2.2); font-weight:bold; margin: 0 auto; border:2px solid var(--accent-gold, #fcb045);">${initial}</div>`;
 };
 
@@ -30,13 +34,14 @@ window.renderRankingScreen = async function(container) {
                 .from('weekly_match_rankings')
                 .select('*')
                 .eq('category', 'weekly')
+                .eq('is_eliminated', false)
                 .order('points_earned', { ascending: false })
                 .limit(3);
             rankings = rankData || [];
 
             try {
                 const { data: userRank } = await supabaseClient.rpc('get_user_rank', {
-                    p_telegram_id: currentUserId,
+                    p_user_id: String(currentUserId),
                     p_category: 'weekly'
                 });
                 myRank = userRank;
@@ -45,7 +50,7 @@ window.renderRankingScreen = async function(container) {
             const { data: predData } = await supabaseClient
                 .from('match_predictions')
                 .select('*')
-                .eq('telegram_id', currentUserId)
+                .eq('user_id', String(currentUserId))
                 .order('created_at', { ascending: false });
             predictions = predData || [];
         }
@@ -101,34 +106,34 @@ window.renderRankingScreen = async function(container) {
             html += `<div class="podium-container">`;
             
             if (secondPlace) {
-                const name2 = secondPlace.username || 'ID: ' + String(secondPlace.telegram_id).slice(-4);
+                const name2 = secondPlace.username || 'ID: ' + String(secondPlace.user_id).slice(-4);
                 html += `
                     <div class="podium-card rank-2">
                         <div style="font-size: 1.5rem; margin-bottom: 5px;">🥈</div>
-                        ${generateAvatar(name2, null, '50px')}
-                        <div class="podium-name">${name2}</div>
+                        ${generateAvatar(name2, secondPlace.photo_url, '50px')}
+                        <div class="podium-name">${zrEsc(name2)}</div>
                         <div class="podium-pts" style="color: #c0c0c0;">${secondPlace.points_earned || 0}</div>
                     </div>`;
             } else { html += `<div style="flex: 1;"></div>`; }
 
             if (firstPlace) {
-                const name1 = firstPlace.username || 'ID: ' + String(firstPlace.telegram_id).slice(-4);
+                const name1 = firstPlace.username || 'ID: ' + String(firstPlace.user_id).slice(-4);
                 html += `
                     <div class="podium-card rank-1">
                         <div style="font-size: 2rem; margin-bottom: 5px;">👑</div>
-                        ${generateAvatar(name1, null, '65px')}
-                        <div class="podium-name">${name1}</div>
+                        ${generateAvatar(name1, firstPlace.photo_url, '65px')}
+                        <div class="podium-name">${zrEsc(name1)}</div>
                         <div class="podium-pts" style="color: var(--accent-gold, #fcb045);">${firstPlace.points_earned || 0}</div>
                     </div>`;
             }
 
             if (thirdPlace) {
-                const name3 = thirdPlace.username || 'ID: ' + String(thirdPlace.telegram_id).slice(-4);
+                const name3 = thirdPlace.username || 'ID: ' + String(thirdPlace.user_id).slice(-4);
                 html += `
                     <div class="podium-card rank-3">
                         <div style="font-size: 1.5rem; margin-bottom: 5px;">🥉</div>
-                        ${generateAvatar(name3, null, '45px')}
-                        <div class="podium-name">${name3}</div>
+                        ${generateAvatar(name3, thirdPlace.photo_url, '45px')}
+                        <div class="podium-name">${zrEsc(name3)}</div>
                         <div class="podium-pts" style="color: #cd7f32;">${thirdPlace.points_earned || 0}</div>
                     </div>`;
             } else { html += `<div style="flex: 1;"></div>`; }
@@ -145,7 +150,7 @@ window.renderRankingScreen = async function(container) {
                     <div style="font-size: ${rankFontSize}; font-weight: bold; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${displayRank}</div>
                     ${generateAvatar(userState?.username, userState?.photoUrl, '60px')}
                     <div style="text-align: ${isAr ? 'right' : 'left'};">
-                        <div style="font-weight: bold; font-size: 1.2rem;">${userState?.username || 'User'}</div>
+                        <div style="font-weight: bold; font-size: 1.2rem;">${zrEsc(userState?.username || 'User')}</div>
                         <div style="color: #fff; font-weight: bold; font-size: 1.1rem; margin-top: 3px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 8px; display: inline-block;">
                             ${myExactPoints} ${getT('pts')}
                         </div>
@@ -176,7 +181,7 @@ window.renderRankingScreen = async function(container) {
                 return `
                     <div style="background:var(--bg-card, #1c1c22); padding:15px; border-radius:12px; margin-bottom:15px; border: 1px solid rgba(255,255,255,0.05); display:flex; justify-content:space-between; align-items:center;">
                         <div>
-                            <div style="font-weight:bold; font-size:1rem; margin-bottom:5px; color:#fff;">${match.team_a} vs ${match.team_b}</div>
+                            <div style="font-weight:bold; font-size:1rem; margin-bottom:5px; color:#fff;">${zrEsc(match.team_a)} vs ${zrEsc(match.team_b)}</div>
                             <div style="color:#aaa; font-size:0.9rem;">
                                 ${getT('yourPrediction')} <b style="color:#fff;">${pred.predicted_home} - ${pred.predicted_away}</b>
                             </div>
