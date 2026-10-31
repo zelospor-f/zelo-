@@ -19,9 +19,10 @@
         { icon: '🚫', ar: 'خالي من الإعلانات', en: 'Ad-free experience' },
         { icon: '🏅', ar: 'شعار ناديك المفضل بجانب اسمك', en: 'Your favorite club badge next to your name' },
         { icon: '✍️', ar: 'منشورات أطول حتى 1000 حرف',     en: 'Longer posts up to 1000 characters' },
+        { icon: '🖼️', ar: 'نشر الصور في المنشورات والردود', en: 'Post images in posts and replies' },
         { icon: '🎙️', ar: 'رسائل صوتية داخل الغرف',        en: 'Voice messages inside rooms' },
         { icon: '✨', ar: 'استخدام الذكاء الاصطناعي (مساعد المباراة)', en: 'AI assistant (match assistant)' },
-        { icon: '🎬', ar: 'فيديو حتى 45 ثانية',            en: 'Videos up to 45 seconds' }
+        { icon: '🎬', ar: 'فيديو حتى 60 ثانية',            en: 'Videos up to 60 seconds' }
     ];
 
     /* ---------- ألوان متناسقة مع التطبيق ---------- */
@@ -83,7 +84,7 @@
         const s = document.createElement('style');
         s.id = 'zp-style';
         s.textContent = `
-        #zp-overlay{position:fixed;inset:0;z-index:99999;background:${C.bg};overflow:hidden;
+        #zp-overlay{position:fixed;inset:0;z-index:99999;background:${C.bg};overflow-y:auto;
             padding:10px 14px;box-sizing:border-box;display:flex;flex-direction:column;
             font-family:inherit;animation:zpIn .25s ease}
         @keyframes zpIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
