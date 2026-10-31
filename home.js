@@ -2298,7 +2298,8 @@
             #zvv .zvv-user img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; cursor: pointer; flex-shrink: 0; }
             #zvv .zvv-names { min-width: 0; flex: 1; cursor: pointer; }
             #zvv .zvv-name { font-weight: 800; font-size: 16px; display: flex; align-items: center; gap: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            #zvv .zvv-handle { font-size: 13px; opacity: .8; direction: ltr; text-align: start; }
+            #zvv .zvv-handle { font-size: 13px; opacity: .8; direction: ltr; text-align: left; margin-top: 2px; }
+            #zvv[dir=rtl] .zvv-handle { text-align: right; }
             #zvv .zvv-follow { border: 0; border-radius: 999px; padding: 8px 18px; font-weight: 800; font-size: 13px; background: rgba(255,255,255,.22); color: #fff; flex-shrink: 0; cursor: pointer; }
             #zvv .zvv-follow.on { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.6); }
             #zvv .zvv-text { font-size: 15px; line-height: 1.5; max-height: 4.6em; overflow: hidden; margin-bottom: 10px; }
