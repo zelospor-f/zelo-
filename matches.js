@@ -299,7 +299,7 @@ window.openPredictionHistoryScreen = function() {};
     /* ---------- زر "تحدّياتي" أعلى قائمة المباريات + زر البطاقة ---------- */
     window.fcEntryHtml = function () {
         return `<button onclick="window.openFriendChallenges()" style="width:100%;display:flex;align-items:center;justify-content:space-between;border-radius:16px;padding:12px 14px;margin-bottom:14px;background:rgba(245,195,90,.1);border:1px solid rgba(245,195,90,.4);color:#fff;font-family:inherit;cursor:pointer;">
-            <span style="display:flex;align-items:center;gap:10px;font-weight:900;font-size:.95rem;color:${GOLD};">${ICON_PPL}${L('تحدّياتي', 'My challenges')}</span>
+            <span style="display:flex;align-items:center;gap:10px;font-weight:900;font-size:.95rem;color:${GOLD};">${ICON_PPL}${L('تحدّياتي مع الأصدقاء', 'My challenges with friends')}</span>
             <span id="fc-badge" style="display:none;min-width:22px;height:22px;border-radius:999px;background:${GOLD};color:#0a1033;font-weight:900;font-size:.8rem;align-items:center;justify-content:center;padding:0 6px;"></span>
         </button>`;
     };
@@ -475,7 +475,7 @@ window.openPredictionHistoryScreen = function() {};
             <div style="max-width:520px;margin:0 auto;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
                     <button onclick="window.closeFriendChallenges()" aria-label="close" style="width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:#fff;font-size:1.2rem;cursor:pointer;">${isAr() ? '→' : '←'}</button>
-                    <div style="font-weight:900;font-size:1.1rem;">${L('تحدّياتي', 'My challenges')}</div>
+                    <div style="font-weight:900;font-size:1.1rem;">${L('تحدّياتي مع الأصدقاء', 'My challenges with friends')}</div>
                     <div style="width:42px;"></div>
                 </div>
                 <div style="display:flex;gap:8px;margin-bottom:14px;">${chip('all', L('الكل', 'All'))}${chip('live', L('الجارية', 'Active'))}${chip('done', L('المنتهية', 'Finished'))}</div>
