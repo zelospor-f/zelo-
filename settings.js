@@ -32,9 +32,9 @@
             border-bottom: 1px solid var(--glass-border, rgba(245, 195, 90, 0.12));
         }
         .zs-back {
-            width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
-            background: rgba(245, 195, 90, 0.08); border: 1px solid var(--glass-border, rgba(245, 195, 90, 0.12));
-            color: var(--accent-gold, #f5c35a); font-size: 1.2rem; cursor: pointer;
+            width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+            background: rgba(44,75,181,.2); border: 1px solid rgba(245,195,90,.35);
+            color: #f5c35a; font-size: 20px; cursor: pointer; padding: 0;
             transition: transform 0.15s ease, background 0.2s ease;
         }
         .zs-back:active { transform: scale(0.92); background: rgba(245, 195, 90, 0.18); }
@@ -198,7 +198,7 @@
     }
     function clearTimers() { clearTimeout(SET.timer); clearInterval(SET.rt); }
     function mount(html) { const z = $('zset'); if (z) z.innerHTML = html; }
-    const backBtn = () => `<button class="zs-back" id="zs-back">${isAr() ? '➔' : '←'}</button>`;
+    const backBtn = () => `<button class="zs-back" id="zs-back">${isAr() ? '›' : '‹'}</button>`;
 
     // ---------- الشاشة الرئيسية ----------
     function screenMain() {

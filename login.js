@@ -251,9 +251,7 @@ window.showClubsForCountry = function(countryKey, keepScroll) {
         <div class="login-screen-wrapper ${keepScroll ? '' : 'animate-screen'}">
             <div>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <div class="btn-back-vip" onclick="renderLoginScreen()">
-                        <span>🔙</span> <span>${safeT('btnBack', 'Back to countries')}</span>
-                    </div>
+                    ${window.zeloBackBtn('renderLoginScreen()')}
                 </div>
 
                 <div style="text-align: center; margin-bottom: 10px; background: rgba(20, 20, 28, 0.65); padding: 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.05);">

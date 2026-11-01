@@ -1595,7 +1595,7 @@
         ov.dataset.pid = String(id);
         ov.innerHTML = `
             <div class="pp-top">
-                <button class="pp-back" onclick="window.closePostPage()">${isAr() ? '→' : '←'}</button>
+                ${window.zeloBackBtn('window.closePostPage()', isAr())}
                 <div class="pp-title">${isAr() ? 'نشر' : 'Post'}</div>
             </div>
             <div class="pp-scroll">
@@ -1640,7 +1640,7 @@
         ov.className = 'pp-overlay';
         ov.innerHTML = `
             <div class="pp-top">
-                <button class="pp-back" onclick="document.getElementById('fl-overlay')?.remove()">${isAr() ? '→' : '←'}</button>
+                ${window.zeloBackBtn("document.getElementById('fl-overlay')?.remove()", isAr())}
                 <div class="pp-title">${isAr() ? 'المتابِعون' : 'Followers'}</div>
             </div>
             <div class="pp-scroll"><div class="pp-main" id="fl-list"><div class="cm-empty">...</div></div></div>`;
@@ -1903,6 +1903,7 @@
         .pc-overlay { position: fixed; inset: 0; z-index: 4500; background: #0a1033; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; animation: zhFade 0.18s ease-out; }
         .pc-sheet { width: 100%; max-width: 520px; min-height: 100%; margin: 0 auto; background: #0a1033; position: relative; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
         .pc-cover { height: 110px; background: linear-gradient(135deg, #14206b, #2c4bb5, #f5c35a); }
+        .zelo-back.pc-back { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); inset-inline-start: 12px; z-index: 2; background: rgba(10,16,51,.85); }
         .pc-close { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); inset-inline-start: 12px; z-index: 2; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(0,0,0,0.6); color: #fff; font-size: 1.2rem; font-weight: 900; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .pc-top { display: flex; justify-content: space-between; align-items: flex-end; padding: 0 16px; margin-top: -36px; }
         .pc-avatar { width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 4px solid #0a1033; background: #0a1033; }
@@ -1974,7 +1975,7 @@
         const ov = document.createElement('div');
         ov.id = 'pc-overlay';
         ov.className = 'pc-overlay';
-        ov.innerHTML = `<div class="pc-sheet"><button class="pc-close" onclick="window.closeUserProfile()">${isAr() ? '→' : '←'}</button><div class="pc-empty">${isAr() ? 'جارٍ التحميل...' : 'Loading...'}</div></div>`;
+        ov.innerHTML = `<div class="pc-sheet">${window.zeloBackBtn('window.closeUserProfile()', isAr(), 'pc-back')}<div class="pc-empty">${isAr() ? 'جارٍ التحميل...' : 'Loading...'}</div></div>`;
         document.body.appendChild(ov);
         try { history.pushState({ pc: 1 }, ''); pcPushed = true; window.addEventListener('popstate', onPcPop); } catch (e) {}
 
@@ -2005,7 +2006,7 @@
         };
 
         ov.firstElementChild.innerHTML = `
-            <button class="pc-close" onclick="window.closeUserProfile()">${isAr() ? '→' : '←'}</button>
+            ${window.zeloBackBtn('window.closeUserProfile()', isAr(), 'pc-back')}
             <div class="pcx">
                 <div class="pcx-head">
                     <div class="pcx-av"><div><img src="${esc(avatarUrl(name, avatar))}" alt="" onerror="this.style.display='none'"></div></div>
@@ -2323,6 +2324,7 @@
             #zvv video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; }
             #zvv .zvv-close, #zvv .zvv-more { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); width: 42px; height: 42px; border: 0; border-radius: 50%; background: rgba(60,60,60,.55); color: #fff; font-size: 20px; z-index: 5; display: flex; align-items: center; justify-content: center; cursor: pointer; }
             #zvv .zvv-close { inset-inline-end: 12px; }
+            #zvv .zvv-back { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); inset-inline-end: 12px; z-index: 5; background: rgba(10,16,51,.85); }
             #zvv .zvv-more { inset-inline-start: 12px; font-size: 22px; }
             #zvv .zvv-info { position: absolute; left: 0; right: 0; bottom: 0; padding: 40px 14px calc(14px + env(safe-area-inset-bottom, 0px)); color: #fff; z-index: 4; background: linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.45) 60%, rgba(0,0,0,0)); }
             #zvv .zvv-user { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
@@ -2443,7 +2445,7 @@
         root.id = 'zvv';
         root.dir = isAr() ? 'rtl' : 'ltr';
         root.innerHTML = `
-            <button class="zvv-close" onclick="window.closeVideoViewer()" aria-label="close">${isAr() ? '→' : '←'}</button>
+            ${window.zeloBackBtn('window.closeVideoViewer()', isAr(), 'zvv-back')}
             <div class="zvv-feed">${ids.map(id => zvvItemHtml(postCache[id])).join('')}</div>`;
         document.body.appendChild(root);
 

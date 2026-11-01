@@ -291,7 +291,7 @@
             </style>
             <div class="nm-wrap">
                 <div class="nm-top">
-                    <button class="nm-back" onclick="window.nftBackToProfile()">${ar ? '➔ الملف الشخصي' : '➔ Profile'}</button>
+                    ${window.zeloBackBtn('window.nftBackToProfile()', ar)}
                     <h3 class="nm-title">👑 ${ar ? 'سوق بطاقات NFT' : 'NFT Market'}</h3>
                     <div style="width:64px;"></div>
                 </div>

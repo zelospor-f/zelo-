@@ -114,8 +114,8 @@
             padding: 10px 14px;
         }
         .zs-back {
-            width: 44px; height: 44px; border-radius: 50%;
-            background: rgba(255,255,255,0.06); border: none; color: #f5c35a;
+            width: 40px; height: 40px; border-radius: 12px;
+            background: rgba(44,75,181,.2); border: 1px solid rgba(245,195,90,.35); color: #f5c35a;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
         .zs[dir="ltr"] .zs-back svg { transform: scaleX(-1); }
