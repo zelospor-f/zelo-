@@ -22,9 +22,9 @@ window.openChallengesScreen = async function() {
     document.body.appendChild(overlay);
 
     overlay.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
-            <h2 style="margin:0; color:var(--accent-gold, #f5c35a);">🏆 ${getT('weeklyChallenges')}</h2>
-            <button onclick="window.closeChallengesScreen()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">✕</button>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 25px;">
+            ${window.zeloBackBtn('window.closeChallengesScreen()', isAr)}
+            <h2 style="margin:0; flex:1; color:var(--accent-gold, #f5c35a);">🏆 ${getT('weeklyChallenges')}</h2>
         </div>
         <div style="text-align:center; color:#9aa6d6; padding:50px;">⏳ ${getT('loadingMatches')}</div>
     `;
@@ -61,9 +61,10 @@ window.openChallengesScreen = async function() {
 
 function renderMatchList(overlay, isAr, asPage) {
     let html = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 25px;">
-            <h2 style="margin:0; color:var(--accent-gold, #f5c35a);">🏆 ${getT('weeklyChallenges')}</h2>
-            <div style="display:flex; align-items:center; gap:10px;">${window.mrRankChip ? window.mrRankChip() : ''}${asPage ? '' : '<button onclick="window.closeChallengesScreen()" style="background:none; border:none; color:white; font-size:1.8rem; cursor:pointer;">✕</button>'}</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 25px;">
+            ${asPage ? '' : window.zeloBackBtn('window.closeChallengesScreen()', isAr)}
+            <h2 style="margin:0; flex:1; color:var(--accent-gold, #f5c35a);">🏆 ${getT('weeklyChallenges')}</h2>
+            ${window.mrRankChip ? window.mrRankChip() : ''}
         </div>
         ${window.fcEntryHtml ? window.fcEntryHtml() : ''}
         <div id="matches-container">
@@ -479,10 +480,9 @@ window.openPredictionHistoryScreen = function() {};
         if (!ov) return;
         ov.innerHTML = `
             <div style="max-width:520px;margin:0 auto;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-                    <button onclick="window.closeFriendChallenges()" aria-label="close" style="width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.08);color:#fff;font-size:1.2rem;cursor:pointer;">${isAr() ? '→' : '←'}</button>
-                    <div style="font-weight:900;font-size:1.1rem;">${L('تحدّياتي مع الأصدقاء', 'My challenges with friends')}</div>
-                    <div style="width:42px;"></div>
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                    ${window.zeloBackBtn('window.closeFriendChallenges()', isAr())}
+                    <div style="flex:1;font-weight:900;font-size:1.1rem;">${L('تحدّياتي مع الأصدقاء', 'My challenges with friends')}</div>
                 </div>
                 <div style="display:flex;gap:8px;margin-bottom:14px;">${chip('all', L('الكل', 'All'))}${chip('live', L('الجارية', 'Active'))}${chip('done', L('المنتهية', 'Finished'))}</div>
                 ${listHtml()}

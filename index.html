@@ -129,6 +129,15 @@
             font-size: 0.7rem;
         }
 
+        /* زر الرجوع الموحّد (مربع مدوّر بسهم ذهبي) */
+        .zelo-back {
+            width: 40px; height: 40px; flex: none; border-radius: 12px; cursor: pointer; padding: 0;
+            border: 1px solid rgba(245,195,90,.35); background: rgba(44,75,181,.2); color: #f5c35a;
+            font-size: 20px; line-height: 1; font-family: inherit;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .zelo-back:active { transform: scale(.94); }
+
         /* شريط الإعلان السفلي (البانر الفعلي يظهر فوقه من ads.js) */
         .bottom-ad-slot {
             position: fixed; left: 0; right: 0;
@@ -502,6 +511,14 @@
             setInterval(updateMsgBadge, 15000);
             setTimeout(updateMsgBadge, 4000);
         })();
+    </script>
+
+    <script>
+        // زر رجوع موحّد تستخدمه كل الشاشات: window.zeloBackBtn("window.closeX()", isArabic)
+        window.zeloBackBtn = function (onclick, ar) {
+            if (ar === undefined) ar = ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
+            return '<button class="zelo-back" onclick="' + String(onclick).replace(/"/g, '&quot;') + '" aria-label="' + (ar ? 'رجوع' : 'Back') + '">' + (ar ? '›' : '‹') + '</button>';
+        };
     </script>
 
     <!-- تحميل جميع الملفات ديناميكياً برقم وقت فريد يمنع الـ APK من حفظ القديم -->
