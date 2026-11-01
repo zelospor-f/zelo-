@@ -484,6 +484,7 @@
                     <div style="width:64px;"></div>
                 </div>
 
+                ${window.zeloBanNoteHtml ? window.zeloBanNoteHtml() : ''}
                 <div class="pp">
                     <div class="pp-head">
                         <div class="pp-av"><div><img src="${esc(avatarSrc)}" alt=""></div></div>
