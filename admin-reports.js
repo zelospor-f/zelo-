@@ -5,6 +5,18 @@
     const L = (a, e) => (isAr() ? a : e);
     const db = () => (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    // رسالة مفهومة بدل account_banned عند محاولة تفاعل وأنت محظور
+    (function () {
+        const origAlert = window.alert ? window.alert.bind(window) : null;
+        window.alert = function (m) {
+            if (typeof m === 'string' && m.indexOf('account_banned') !== -1) {
+                m = ((window.userState && window.userState.lang) || 'ar').startsWith('ar')
+                    ? 'حسابك موقوف حاليًا عن النشر والتفاعل، يمكنك التصفح فقط. تفاصيل الإيقاف في ملفك الشخصي.'
+                    : 'Your account is currently suspended from posting and interacting. See your profile for details.';
+            }
+            return origAlert ? origAlert(m) : undefined;
+        };
+    })();
     const isAdmin = () => ADMIN_IDS.includes(String((window.userState && window.userState.userId) || ''));
 
     const REASONS = { spam: 'محتوى مزعج أو إعلاني', abuse: 'إساءة أو تحرّش', hate: 'خطاب كراهية', violence: 'عنف أو محتوى صادم', adult: 'محتوى للبالغين', misinfo: 'معلومات مضللة', other: 'سبب آخر' };
