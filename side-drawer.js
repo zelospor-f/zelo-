@@ -329,7 +329,7 @@
 
         sheet.innerHTML = `
             <div class="zhelp-bar">
-                <button class="zhelp-back" data-act="close" aria-label="${esc(L('رجوع', 'Back'))}">${ICONS.back}</button>
+                ${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn('window.closeHelpCenter()', isAr()) : `<button class="zhelp-back" data-act="close" aria-label="${esc(L('رجوع', 'Back'))}">${ICONS.back}</button>`}
                 <div class="zhelp-title">${esc(L('مركز المساعدة', 'Help center'))}</div>
             </div>
             <div class="zhelp-body">
@@ -594,6 +594,7 @@
     window.openSideDrawer = openSideDrawer;
     window.closeSideDrawer = closeSideDrawer;
     window.openHelpCenter = openHelpCenter;
+    window.closeHelpCenter = closeHelpCenter;
 
     if (document.readyState !== 'loading') build();
     else document.addEventListener('DOMContentLoaded', build);
