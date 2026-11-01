@@ -28,6 +28,7 @@
     const T = (ar, en) => (isAr() ? ar : en);
 
     let box = null;
+    const MAP = {};
     let tab = 'up';
 
     function lgName(code, fallback) {
@@ -114,12 +115,7 @@
         box.innerHTML = `
             <div class="lg-top"><div class="lg-title">⚽ ${T('المباريات', 'Matches')}</div>${window.mrRankChip ? window.mrRankChip() : ''}</div>
             ${window.fcEntryHtml ? window.fcEntryHtml() : ''}
-            <div class="lg-sec">${T('التوقعات', 'Predictions')}</div>
-            <button class="lg-row" onclick="window.openChallengesScreen && window.openChallengesScreen()">
-                <span class="lg-ic"><span style="font-size:20px">⭐</span></span>
-                <span class="lg-nm"><b>${T('مباريات التوقع', 'Predict matches')}</b><small>${T('توقّع النتيجة واربح', 'Predict scores and win')}</small></span>
-                <span style="color:#8d99cf">${isAr() ? '‹' : '›'}</span>
-            </button>
+            <div style="margin:0 2px 4px;font-size:.78rem;color:#8d99cf">${T('اختر دوريًا وتوقّع مبارياته مباشرة', 'Pick a league and predict its matches')}</div>
             <div class="lg-sec">${T('الدوريات والبطولات', 'Leagues & cups')}</div>
             ${list.length ? list.map(row).join('') : `<div class="lg-empty">${T('لا توجد مباريات الآن', 'No matches right now')}</div>`}
             <div class="lg-sec">${T('الدوريات العربية', 'Arab leagues')}</div>
@@ -148,7 +144,7 @@
                 ms = data || [];
                 const uid = window.userState && window.userState.userId;
                 if (uid && ms.length) {
-                    const ids = ms.filter(m => m.status === 'FINISHED').map(m => m.id);
+                    const ids = ms.map(m => m.id);
                     if (ids.length) {
                         const r = await c.from('match_predictions').select('match_id,predicted_home,predicted_away')
                             .eq('user_id', uid).in('match_id', ids);
@@ -157,6 +153,7 @@
                 }
             } catch (e) { console.error('[ZELO] league:', e); }
         }
+        ms.forEach(m => { MAP[m.id] = m; });
         const name = ms[0] ? lgName(code, ms[0].competition_name) : lgName(code);
         const up = ms.filter(m => m.status === 'NOT_STARTED' || m.status === 'LIVE');
         const fin = ms.filter(m => m.status === 'FINISHED').reverse();
@@ -183,8 +180,20 @@
                     pr = `<div class="lg-pr"><span>${T('توقعك', 'Your pick')}: <b>${p.predicted_home} - ${p.predicted_away}</b></span>${res}</div>`;
                 }
             }
+            let act = '';
+            if (!fin_) {
+                const started = (Date.now() + 3600000) >= new Date(m.match_date).getTime();
+                const p = preds[m.id] || ((window.userState && window.userState.predictedMatches || []).includes(m.id) ? {} : null);
+                const BALL = '<img src="zelo-coin.png" alt="" style="width:15px;height:15px;flex:none" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png\';}else{this.style.display=\'none\';}">';
+                let btn;
+                if (p) btn = `<button disabled style="flex:1;padding:11px;background:rgba(245,195,90,.2);color:#f5c35a;border:1px solid #f5c35a;border-radius:12px;font-weight:bold;font-family:inherit">${T('تم التوقع', 'Predicted')}${p.predicted_home != null ? ` · ${p.predicted_home} - ${p.predicted_away}` : ''}</button>`;
+                else if (started) btn = `<button disabled style="flex:1;padding:11px;background:rgba(255,255,255,.05);color:#9aa6d6;border:1px solid #14206b;border-radius:12px;font-family:inherit">${T('مغلق', 'Closed')}</button>`;
+                else btn = `<button onclick="window.lgPredict(${m.id})" style="flex:1;padding:11px;background:linear-gradient(135deg,#2c4bb5,#14206b,#f5c35a);border:none;color:#fff;border-radius:12px;font-weight:bold;cursor:pointer;line-height:1.3;font-family:inherit">${T('توقّع الآن', 'Predict now')}<div style="font-size:.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:5px">${T('واكسب', 'Win')} ${BALL}</div></button>`;
+                const fc = (!started && window.fcMatchButton) ? window.fcMatchButton(m.id) : '';
+                act = `<div id="btn-container-${m.id}" style="margin-top:10px"><div style="display:flex;gap:10px">${btn}${fc}</div></div>`;
+            }
             return `<div class="lg-m">${live ? `<div class="lg-live">● ${T('مباشر', 'LIVE')}</div>` : ''}
-                <div class="lg-mr"><div class="lg-t">${esc(m.team_a)}</div>${mid}<div class="lg-t">${esc(m.team_b)}</div></div>${pr}</div>`;
+                <div class="lg-mr"><div class="lg-t">${esc(m.team_a)}</div>${mid}<div class="lg-t">${esc(m.team_b)}</div></div>${pr}${act}</div>`;
         };
         const grouped = arr => {
             if (!arr.length) return `<div class="lg-empty">${T('لا توجد مباريات', 'No matches')}</div>`;
@@ -206,6 +215,11 @@
             ${tab === 'up' ? grouped(up) : grouped(fin)}`;
         box.scrollTop = 0;
         window.scrollTo(0, 0);
+    };
+
+    window.lgPredict = function (id) {
+        const m = MAP[id];
+        if (m && window.showPredictionModal) window.showPredictionModal(m.id, String(m.team_a).replace(/'/g, '\u2019'), String(m.team_b).replace(/'/g, '\u2019'));
     };
 
     window.renderLeaguesHub = function () { return renderHub(box); };
