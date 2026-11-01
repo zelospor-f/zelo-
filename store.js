@@ -115,7 +115,7 @@
         }
         .zs-back {
             width: 40px; height: 40px; border-radius: 12px;
-            background: rgba(44,75,181,.2); border: 1px solid rgba(245,195,90,.35); color: #f5c35a;
+            background: rgba(44,75,181,.2); border: 1px solid rgba(245,195,90,.35); color: #f5c35a; font-size: 20px; line-height: 1; padding: 0;
             display: flex; align-items: center; justify-content: center; cursor: pointer;
         }
         .zs[dir="ltr"] .zs-back svg { transform: scaleX(-1); }
@@ -236,7 +236,7 @@
         el._t = setTimeout(() => el.classList.remove('show'), 2200);
     }
 
-    const ICON_BACK = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+    /* STORE-BACK-V3 */ const ICON_BACK = '<span style="font-size:20px;line-height:1">' + ((window.userState && window.userState.lang || 'ar').startsWith('ar') ? '›' : '‹') + '</span>';
 
     const coin = size => `<img class="zs-coin" src="${COIN_SRC}" alt="" width="${size}" height="${size}" draggable="false">`;
 
@@ -264,7 +264,7 @@
         root.dir = isAr() ? 'rtl' : 'ltr';
         root.innerHTML = `
             <header class="zs-top">
-                <button class="zs-back" data-act="close" aria-label="${esc(L('رجوع', 'Back'))}">${ICON_BACK}</button>
+                <button class="zs-back" data-act="close" aria-label="${esc(L('رجوع', 'Back'))}">${isAr() ? '›' : '‹'}</button>
                 <h1 class="zs-title">${esc(L('المتجر', 'Store'))}</h1>
                 <span></span>
             </header>
