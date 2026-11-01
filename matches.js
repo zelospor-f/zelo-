@@ -242,7 +242,7 @@ window.submitPrediction = async function(matchId, team1, team2) {
             userState.predictedMatches.push(matchId);
         } catch (err) {
             console.error("Error submitting prediction:", err);
-            alert(err.message?.includes('Tampering rejected') || err.message?.includes('التلاعب') ? getT('matchStartedError') : getT('connectionError'));
+            alert(err.message?.includes('account_banned') || JSON.stringify(err || '').includes('account_banned') ? 'account_banned' : (err.message?.includes('Tampering rejected') || err.message?.includes('التلاعب') ? getT('matchStartedError') : getT('connectionError')));
             submitBtn.disabled = false;
             submitBtn.innerText = getT('submitPredictionBtn');
             return;
