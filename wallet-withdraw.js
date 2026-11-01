@@ -16,7 +16,7 @@
   .zw-wrap{max-width:520px;margin:0 auto;padding:16px 16px 40px}
   .zw-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .zw-top h2{margin:0;font-size:20px;color:#f5c35a}
-  .zw-x{background:rgba(44,75,181,0.22);border:0;color:#f8fafc;width:36px;height:36px;border-radius:10px;font-size:18px;cursor:pointer}
+  .zw-x{background:rgba(44,75,181,.2);border:1px solid rgba(245,195,90,.35);color:#f5c35a;width:40px;height:40px;border-radius:12px;font-size:20px;line-height:1;padding:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
   .zw-card{box-shadow:0 0 12px rgba(245,195,90,0.08);background:rgba(17,26,74,0.85);border:1px solid rgba(245,195,90,0.22);border-radius:14px;padding:14px;margin-bottom:12px}
   .zw-bal{display:flex;gap:12px}
   .zw-bal div{flex:1;text-align:center}
@@ -115,8 +115,8 @@
       wrap.textContent = '';
       const top = h('div', 'zw-top');
       top.appendChild(h('h2', '', 'محفظتي'));
-      const x = h('button', 'zw-x', '✕'); x.onclick = () => ov.remove();
-      top.appendChild(x); wrap.appendChild(top);
+      const x = h('button', 'zw-x', ((window.userState&&window.userState.lang)||'ar').startsWith('ar') ? '›' : '‹'); x.onclick = () => ov.remove();
+      top.insertBefore(x, top.firstChild); wrap.appendChild(top);
 
       // الرصيد
       const bal = h('div', 'zw-card zw-bal');
