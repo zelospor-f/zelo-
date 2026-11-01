@@ -229,14 +229,14 @@
             const b = r && r.data;
             if (!b || (b.banned_until && new Date(b.banned_until) <= new Date())) { window.zeloMyBan = null; return; }
             window.zeloMyBan = b;
-            try { const ap = await c.rpc('get_my_appeal'); window.zeloMyAppeal = (ap.data && ap.data[0]) || null; } catch (e) {}
+            try { const ap = await c.rpc('get_my_appeal'); window.zeloMyAppeal = (ap.data && ap.data[0]) || null; const st = document.getElementById('zban-status'); if (st) st.innerHTML = appealStatusHtml(); } catch (e) {}
             if (b.kind === 'full') {
                 if (banShown) return; banShown = true;
                 const ov = document.createElement('div');
                 ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0a1033;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;font-family:inherit;direction:' + (isAr() ? 'rtl' : 'ltr');
                 ov.innerHTML = `<div style="font-size:64px">🚫</div><h2 style="margin:14px 0 8px;font-weight:900;color:#f5c35a">${L('تم إيقاف حسابك', 'Your account is suspended')}</h2>
                     <p style="color:#c9d1f5;line-height:1.8;max-width:340px">${L('لمخالفة شروط الاستخدام.', 'For violating the terms.')}<br>${L('للاستفسار راسلنا على', 'Contact')} <span dir="ltr">support@zelosport.net</span></p>
-                    <div style="max-width:340px">${appealStatusHtml()}</div>
+                    <div id="zban-status" style="max-width:340px">${appealStatusHtml()}</div>
                     <button id="zban-appeal-btn" style="margin-top:20px;padding:13px 40px;border-radius:999px;border:none;background:linear-gradient(135deg,#f5c35a,#fde9a8);color:#0a1033;font-weight:900;font-family:inherit;font-size:1rem">${L('طعن', 'Appeal')}</button>
                     <button id="zban-out" style="margin-top:12px;padding:11px 34px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-weight:800;font-family:inherit;font-size:.95rem">${L('تسجيل الخروج', 'Log out')}</button>`;
                 document.body.appendChild(ov);
@@ -246,5 +246,5 @@
         } catch (e) {}
     }
     let tries = 0;
-    const iv = setInterval(() => { tries++; if (window.userState && window.userState.userId) { clearInterval(iv); checkMyBan(); setInterval(checkMyBan, 300000); } else if (tries > 60) clearInterval(iv); }, 2000);
+    const iv = setInterval(() => { tries++; if (window.userState && window.userState.userId) { clearInterval(iv); checkMyBan(); setInterval(checkMyBan, 60000); } else if (tries > 60) clearInterval(iv); }, 2000);
 })();
