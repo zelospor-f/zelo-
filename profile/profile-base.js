@@ -310,6 +310,8 @@
             .pf-act .ic { display:inline-flex; align-items:center; justify-content:center; }
             .pf-act .ic svg { display:block; }
             .pf-act[onclick] { cursor:pointer; }
+            .pf-like-on { color:#f91880; background:rgba(249,24,128,0.12); }
+            .pf-rp-on { color:#14F195; background:rgba(20,241,149,0.12); }
             .pf-save { opacity:0.6; }
             .pf-save.saved { opacity:1; color:#f5c35a; background:rgba(245,195,90,0.12); }
         `;
@@ -334,11 +336,17 @@
         const T = FT();
         const pid = e => String(e.kind === 'reply' ? e.item.post_id : e.item.id);
         const ids = [...new Set(rows.map(pid))].map(x => isNaN(x) ? x : Number(x));
+        const myId = String(US().userId);
+        const mineOf = {};
         const count = async (table) => {
             const m = {};
+            const mine = mineOf[table] = {};
             try {
-                const r = await c.from(table).select('post_id').in('post_id', ids);
-                (r.data || []).forEach(x => { const k = String(x.post_id); m[k] = (m[k] || 0) + 1; });
+                const r = await c.from(table).select('post_id,user_id').in('post_id', ids);
+                (r.data || []).forEach(x => {
+                    const k = String(x.post_id); m[k] = (m[k] || 0) + 1;
+                    if (String(x.user_id) === myId) mine[k] = 1;
+                });
             } catch (e) {}
             return m;
         };
@@ -359,6 +367,8 @@
             const k = pid(e);
             e.counts = { likes: likes[k] || 0, replies: comments[k] || 0, reposts: reposts[k] || 0, views: views[k] || 0 };
             e.saved = !!marks[k];
+            e.liked = !!(mineOf['post_likes'] || {})[k];
+            e.reposted = !!(mineOf[T.reposts] || {})[k];
             if (e.kind === 'reply') e.parent = parents[k] || null;
         });
         // المنشور المثبّت أولاً (الترتيب الباقي يبقى كما هو)
@@ -440,8 +450,8 @@
                 </div>
                 <div class="pf-actions">
                         <span class="pf-act"><span class="ic">${IC.reply}</span><span class="cnt">${n(cn.replies)}</span></span>
-                        <span class="pf-act"><span class="ic">${IC.repost}</span><span class="cnt">${n(cn.reposts)}</span></span>
-                        <span class="pf-act"><span class="ic">${IC.heart(false)}</span><span class="cnt">${n(cn.likes)}</span></span>
+                        <span class="pf-act ${e.reposted ? 'pf-rp-on' : ''}"><span class="ic">${IC.repost}</span><span class="cnt">${n(cn.reposts)}</span></span>
+                        <span class="pf-act ${e.liked ? 'pf-like-on' : ''}"><span class="ic">${IC.heart(!!e.liked)}</span><span class="cnt">${n(cn.likes)}</span></span>
                         <span class="pf-act"><span class="ic">${IC.views}</span><span class="cnt">${n(cn.views)}</span></span>
                         <span class="pf-act pf-save ${e.saved ? 'saved' : ''}" data-on="${e.saved ? 1 : 0}" onclick="event.stopPropagation();window.pfToggleBookmark('${sid}', this)"><span class="ic">${IC.save(!!e.saved)}</span></span>
                         <span class="pf-act" onclick="event.stopPropagation();window.pfSharePost('${sid}')"><span class="ic">${IC.share}</span></span>
