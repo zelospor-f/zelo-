@@ -126,6 +126,22 @@
         }));
     }
 
+    function askReply(act) {
+        return new Promise(res => {
+            const d = document.createElement('div');
+            d.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(3,6,24,.8);display:flex;align-items:flex-end;justify-content:center;direction:' + (isAr() ? 'rtl' : 'ltr');
+            const def = act === 'unban' ? L('تمت مراجعة طعنك وتم رفع الحظر. التزم بشروط الاستخدام.', 'Your appeal was accepted and the ban lifted.') : L('تمت مراجعة طعنك وتم رفضه. الحظر باقٍ.', 'Your appeal was reviewed and rejected.');
+            d.innerHTML = `<div style="width:100%;max-width:520px;background:#0f1a5c;border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));color:#fff">
+                <div style="font-weight:900;margin-bottom:8px">${act === 'unban' ? L('قبول الطعن — رسالة للمستخدم', 'Accept — message to user') : L('رفض الطعن — رسالة للمستخدم', 'Reject — message to user')}</div>
+                <textarea rows="4" maxlength="500" style="width:100%;box-sizing:border-box;background:#0a1033;color:#fff;border:1px solid rgba(245,195,90,.35);border-radius:14px;padding:12px;font-family:inherit;font-size:1rem;resize:none">${def}</textarea>
+                <div style="display:flex;gap:10px;margin-top:10px"><button data-k="0" style="flex:1;padding:12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:800;font-family:inherit">${L('إلغاء', 'Cancel')}</button>
+                <button data-k="1" style="flex:1;padding:12px;border-radius:999px;border:none;background:linear-gradient(135deg,#f5c35a,#fde9a8);color:#0a1033;font-weight:900;font-family:inherit">${L('إرسال', 'Send')}</button></div></div>`;
+            document.body.appendChild(d);
+            d.querySelector('[data-k="0"]').onclick = () => { d.remove(); res(null); };
+            d.querySelector('[data-k="1"]').onclick = () => { const v = d.querySelector('textarea').value.trim(); d.remove(); res(v); };
+        });
+    }
+
     async function loadAppeals(body) {
         body.innerHTML = '<div class="zadm-empty">' + L('جارٍ التحميل…', 'Loading…') + '</div>';
         const c = db();
@@ -138,8 +154,11 @@
             <div class="zadm-content">${esc(a.message)}</div>
             <div class="zadm-btns"><button class="zadm-btn" data-ap="unban">${L('قبول وفك الحظر', 'Accept & unban')}</button><button class="zadm-btn del" data-ap="reject">${L('رفض', 'Reject')}</button></div></div>`).join('');
         body.querySelectorAll('[data-ap]').forEach(x => x.addEventListener('click', async () => {
-            const card = x.closest('.zadm-card'); card.querySelectorAll('button').forEach(k => k.disabled = true);
-            const r = await c.rpc('admin_resolve_appeal', { p_appeal_id: Number(card.dataset.aid), p_action: x.dataset.ap });
+            const card = x.closest('.zadm-card'), act = x.dataset.ap;
+            const reply = await askReply(act);
+            if (reply === null) return;
+            card.querySelectorAll('button').forEach(k => k.disabled = true);
+            const r = await c.rpc('admin_resolve_appeal', { p_appeal_id: Number(card.dataset.aid), p_action: act, p_reply: reply });
             if (r.error) { alert(r.error.message); card.querySelectorAll('button').forEach(k => k.disabled = false); return; }
             loadAppeals(body);
         }));
@@ -186,6 +205,12 @@
         };
     }
     window.zeloOpenAppeal = () => appealSheet(db());
+    function appealStatusHtml() {
+        const a = window.zeloMyAppeal; if (!a) return '';
+        if (a.status === 'open') return `<div style="margin-top:10px;color:#c9d1f5;font-size:.88rem">⏳ ${L('طعنك قيد المراجعة.', 'Your appeal is under review.')}</div>`;
+        if (a.status === 'rejected') return `<div style="margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.08);font-size:.88rem;line-height:1.7"><b>${L('ردّ الإدارة:', 'Admin reply:')}</b> ${esc(a.reply || L('تم رفض الطعن.', 'Appeal rejected.'))}</div>`;
+        return '';
+    }
     // بطاقة تنبيه تظهر في الملف الشخصي للمحظور من النشر
     window.zeloBanNoteHtml = function () {
         const b = window.zeloMyBan;
@@ -194,7 +219,7 @@
         return `<div style="margin:0 0 14px;padding:14px;border-radius:16px;background:rgba(122,31,31,.35);border:1px solid rgba(255,107,107,.45);color:#fff;line-height:1.8;font-size:.9rem">
             <b style="color:#ff9b9b">⛔ ${L('حسابك موقوف عن النشر والتفاعل', 'Your posting is suspended')}</b><br>
             ${L('حتى: ', 'Until: ')}${b.banned_until ? new Date(b.banned_until).toLocaleDateString() : ''} — ${L('يمكنك التصفح فقط.', 'You can only browse.')}
-            <div style="margin-top:8px"><button onclick="window.zeloOpenAppeal()" style="padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-weight:800;font-family:inherit">${L('طعن', 'Appeal')}</button></div></div>`;
+            <div style="margin-top:8px"><button onclick="window.zeloOpenAppeal()" style="padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-weight:800;font-family:inherit">${L('طعن', 'Appeal')}</button></div>${appealStatusHtml()}</div>`;
     };
     async function checkMyBan() {
         const c = db(), uid = window.userState && window.userState.userId;
@@ -204,12 +229,14 @@
             const b = r && r.data;
             if (!b || (b.banned_until && new Date(b.banned_until) <= new Date())) { window.zeloMyBan = null; return; }
             window.zeloMyBan = b;
+            try { const ap = await c.rpc('get_my_appeal'); window.zeloMyAppeal = (ap.data && ap.data[0]) || null; } catch (e) {}
             if (b.kind === 'full') {
                 if (banShown) return; banShown = true;
                 const ov = document.createElement('div');
                 ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0a1033;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;font-family:inherit;direction:' + (isAr() ? 'rtl' : 'ltr');
                 ov.innerHTML = `<div style="font-size:64px">🚫</div><h2 style="margin:14px 0 8px;font-weight:900;color:#f5c35a">${L('تم إيقاف حسابك', 'Your account is suspended')}</h2>
                     <p style="color:#c9d1f5;line-height:1.8;max-width:340px">${L('لمخالفة شروط الاستخدام.', 'For violating the terms.')}<br>${L('للاستفسار راسلنا على', 'Contact')} <span dir="ltr">support@zelosport.net</span></p>
+                    <div style="max-width:340px">${appealStatusHtml()}</div>
                     <button id="zban-appeal-btn" style="margin-top:20px;padding:13px 40px;border-radius:999px;border:none;background:linear-gradient(135deg,#f5c35a,#fde9a8);color:#0a1033;font-weight:900;font-family:inherit;font-size:1rem">${L('طعن', 'Appeal')}</button>
                     <button id="zban-out" style="margin-top:12px;padding:11px 34px;border-radius:999px;border:1px solid rgba(255,255,255,.25);background:transparent;color:#fff;font-weight:800;font-family:inherit;font-size:.95rem">${L('تسجيل الخروج', 'Log out')}</button>`;
                 document.body.appendChild(ov);
