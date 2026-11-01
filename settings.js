@@ -252,15 +252,19 @@
         }
         const names = {};
         try {
-            const u = await c.from('users').select('user_id,nickname_ar,nickname_en,username').in('user_id', ids);
+            const u = await c.from('public_profiles').select('user_id,nickname_ar,nickname_en,nickname,username,photo_url').in('user_id', ids);
             (u.data || []).forEach(x => names[String(x.user_id)] = x);
         } catch (e) {}
         box.innerHTML = ids.map(id => {
-            const u = names[id] || {};
-            const nm = u.nickname_ar || u.nickname_en || u.username || id;
-            return `<div class="zs-row" data-id="${esc(id)}" style="cursor:default;">
-                <span class="zs-row-txt"><b>${esc(nm)}</b><small dir="ltr">${u.username ? '@' + esc(u.username) : ''}</small></span>
-                <button class="zs-pill" data-unblock="${esc(id)}" style="width:auto;padding:8px 16px;font-size:.85rem;">${tr('set_unblock', 'إلغاء الحظر', 'Unblock')}</button>
+            const u = names[id];
+            const nm = u ? (u.nickname_ar || u.nickname_en || u.nickname || u.username) : '';
+            const label = nm || tr('set_blocked_gone', 'حساب غير متاح', 'Unavailable account');
+            const av = (u && u.photo_url) ? `<img src="${esc(u.photo_url)}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;" onerror="this.style.visibility='hidden'">`
+                : `<span style="width:44px;height:44px;border-radius:50%;background:#14206b;flex:none;display:inline-flex;align-items:center;justify-content:center;color:#f5c35a;font-weight:900;">${esc((label || '?').charAt(0).toUpperCase())}</span>`;
+            return `<div class="zs-row" data-id="${esc(id)}" style="cursor:default;display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;margin:0 0 10px;">
+                ${av}
+                <span class="zs-row-txt" style="flex:1;min-width:0;"><b>${esc(label)}</b><small dir="ltr" style="text-align:start;">${u && u.username ? '@' + esc(u.username) : ''}</small></span>
+                <button class="zs-pill" data-unblock="${esc(id)}" style="width:auto;flex:none;padding:8px 14px;font-size:.85rem;margin:0;">${tr('set_unblock', 'إلغاء الحظر', 'Unblock')}</button>
             </div>`;
         }).join('');
         box.querySelectorAll('[data-unblock]').forEach(btn => btn.addEventListener('click', async () => {
