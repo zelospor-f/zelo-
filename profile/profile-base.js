@@ -210,7 +210,7 @@
             .fl-main { flex: 1; min-width: 0; }
             .fl-tag { color: #9aa6d6; font-size: 0.72rem; font-weight: 800; margin-bottom: 2px; }
             .fl-name { font-weight: 900; font-size: 0.95rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .fl-user { color: #9aa6d6; font-size: 0.8rem; font-weight: 700; direction: ltr; unicode-bidi: plaintext; text-align: start; }
+            .fl-user { color: #9aa6d6; font-size: 0.8rem; font-weight: 700; direction: inherit; unicode-bidi: plaintext; text-align: start; }
             .fl-bio { color: #e2e8f0; font-size: 0.84rem; margin-top: 4px; line-height: 1.5; word-break: break-word; }
             .fl-btn { border: none; cursor: pointer; background: #f5c35a; color: #0a1033; font-weight: 900; font-size: 0.8rem; padding: 8px 16px; border-radius: 999px; white-space: nowrap; }
             .fl-btn.on { background: transparent; color: #fff; border: 1px solid rgba(245,195,90,0.45); }
