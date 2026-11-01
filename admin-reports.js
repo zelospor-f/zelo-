@@ -169,6 +169,7 @@
             if (t.length < 5) { msg.textContent = L('اكتب 5 أحرف على الأقل', 'Write at least 5 characters'); return; }
             const r = await c.rpc('submit_ban_appeal', { p_message: t });
             if (r.error) { msg.textContent = /one appeal/.test(r.error.message) ? L('أرسلت طعنًا اليوم، حاول غدًا', 'You already appealed today') : r.error.message; return; }
+            try { c.functions.invoke('notify-appeal'); } catch (e) {}
             sh.innerHTML = `<div style="width:100%;max-width:520px;background:#0f1a5c;border-radius:22px 22px 0 0;padding:26px;text-align:center;color:#fff"><div style="font-size:40px">✅</div><div style="font-weight:900;margin:8px 0">${L('تم إرسال طعنك', 'Appeal sent')}</div><div style="color:#c9d1f5;font-size:.9rem">${L('سنراجعه ونرد عليك.', 'We will review it.')}</div><button style="margin-top:14px;padding:12px 30px;border-radius:999px;border:none;background:#f5c35a;color:#0a1033;font-weight:900;font-family:inherit" onclick="document.getElementById('zban-appeal').remove()">${L('حسنًا', 'OK')}</button></div>`;
         };
     }
