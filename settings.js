@@ -215,6 +215,7 @@
                 ${row('zs-r-nick', '👤', tr('set_nickname', 'الاسم المستعار', 'Nickname'), currentNick())}
                 ${row('zs-r-email', '✉️', tr('set_email', 'البريد الإلكتروني', 'Email'), currentEmail() || '—')}
                 ${row('zs-r-pass', '🔑', tr('set_password', 'كلمة المرور', 'Password'), '••••••••')}
+                ${row('zs-r-blocked', '🚫', tr('set_blocked', 'المحظورون', 'Blocked users'), tr('set_blocked_sub', 'إدارة من حظرتهم', 'Manage people you blocked'))}
                 <button class="zs-logout" id="zs-logout">🚪 ${tr('set_log_out', 'تسجيل الخروج', 'Log out')}</button>
                 <div style="margin-top:56px;padding-top:14px;border-top:1px solid rgba(255,107,107,.25);">
                     <div style="font-size:.75rem;color:#ff9b9b;font-weight:700;margin:0 4px 10px;">⚠️ ${tr('set_danger_zone', 'منطقة الخطر', 'Danger zone')}</div>
@@ -225,8 +226,51 @@
         $('zs-r-nick').addEventListener('click', screenNick);
         $('zs-r-email').addEventListener('click', startEmailFlow);
         $('zs-r-pass').addEventListener('click', () => screenPass(false));
+        $('zs-r-blocked').addEventListener('click', screenBlocked);
         $('zs-logout').addEventListener('click', doLogout);
         $('zs-del-open').addEventListener('click', screenDelete);
+    }
+
+    // ---------- المحظورون ----------
+    async function screenBlocked() {
+        clearTimers();
+        mount(`
+            <div class="zs-head line">${backBtn()}<div class="zs-title">🚫 ${tr('set_blocked', 'المحظورون', 'Blocked users')}</div></div>
+            <div class="zs-body" id="zs-bl-body"><div class="zset-note">${tr('set_loading', 'جارٍ التحميل…', 'Loading…')}</div></div>`);
+        $('zs-back').addEventListener('click', screenMain);
+        const c = sdb(), uid = String(US().userId || '');
+        const box = $('zs-bl-body');
+        if (!c || !uid) { box.innerHTML = ''; return; }
+        let ids = [];
+        try {
+            const r = await c.from('user_blocks').select('blocked_id').eq('user_id', uid).order('created_at', { ascending: false });
+            ids = (r.data || []).map(x => String(x.blocked_id));
+        } catch (e) {}
+        if (!ids.length) {
+            box.innerHTML = `<div class="zset-note" style="text-align:center;padding:30px 0;">${tr('set_blocked_none', 'لا يوجد مستخدمون محظورون', 'No blocked users')}</div>`;
+            return;
+        }
+        const names = {};
+        try {
+            const u = await c.from('users').select('user_id,nickname_ar,nickname_en,username').in('user_id', ids);
+            (u.data || []).forEach(x => names[String(x.user_id)] = x);
+        } catch (e) {}
+        box.innerHTML = ids.map(id => {
+            const u = names[id] || {};
+            const nm = u.nickname_ar || u.nickname_en || u.username || id;
+            return `<div class="zs-row" data-id="${esc(id)}" style="cursor:default;">
+                <span class="zs-row-txt"><b>${esc(nm)}</b><small dir="ltr">${u.username ? '@' + esc(u.username) : ''}</small></span>
+                <button class="zs-pill" data-unblock="${esc(id)}" style="width:auto;padding:8px 16px;font-size:.85rem;">${tr('set_unblock', 'إلغاء الحظر', 'Unblock')}</button>
+            </div>`;
+        }).join('');
+        box.querySelectorAll('[data-unblock]').forEach(btn => btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-unblock');
+            btn.disabled = true;
+            const r = await c.from('user_blocks').delete().eq('user_id', uid).eq('blocked_id', id);
+            if (r.error) { btn.disabled = false; return; }
+            const row = btn.closest('.zs-row'); if (row) row.remove();
+            if (!box.querySelector('.zs-row')) box.innerHTML = `<div class="zset-note" style="text-align:center;padding:30px 0;">${tr('set_blocked_none', 'لا يوجد مستخدمون محظورون', 'No blocked users')}</div>`;
+        }));
     }
 
     // ---------- الاسم المستعار ----------

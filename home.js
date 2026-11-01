@@ -1799,9 +1799,39 @@
             ['other',    '…',  'سبب آخر',                   'Something else']
         ];
         openSheet(
-            reasons.map(r => ({ icon: r[1], label: isAr() ? r[2] : r[3], action: () => submitReport(type, id, r[0]) })),
+            reasons.map(r => ({ icon: r[1], label: isAr() ? r[2] : r[3], action: () => (r[0] === 'other' ? openReportText(type, id) : submitReport(type, id, r[0])) })),
             isAr() ? 'ما سبب البلاغ؟' : 'Why are you reporting this?'
         );
+    }
+
+    // نافذة كتابة سبب البلاغ عند اختيار «سبب آخر»
+    function openReportText(type, id) {
+        document.getElementById('zrt-ov')?.remove();
+        const ov = document.createElement('div');
+        ov.id = 'zrt-ov';
+        ov.style.cssText = 'position:fixed;inset:0;z-index:6000;background:rgba(3,6,24,.7);display:flex;align-items:flex-end;justify-content:center;';
+        ov.innerHTML = `
+            <div style="width:100%;max-width:520px;background:#0f1a5c;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));direction:${isAr() ? 'rtl' : 'ltr'};color:#fff;">
+                <div style="font-weight:900;font-size:1.05rem;margin-bottom:10px;">${isAr() ? 'اكتب سبب البلاغ' : 'Describe the problem'}</div>
+                <textarea id="zrt-txt" maxlength="300" rows="4" placeholder="${isAr() ? 'اشرح المشكلة باختصار…' : 'Briefly explain…'}" style="width:100%;box-sizing:border-box;background:#0a1033;color:#fff;border:1px solid rgba(245,195,90,.35);border-radius:14px;padding:12px;font-family:inherit;font-size:1rem;resize:none;"></textarea>
+                <div style="display:flex;gap:10px;margin-top:12px;">
+                    <button id="zrt-cancel" style="flex:1;padding:12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:800;font-family:inherit;">${isAr() ? 'إلغاء' : 'Cancel'}</button>
+                    <button id="zrt-send" style="flex:1;padding:12px;border-radius:999px;border:none;background:linear-gradient(135deg,#f5c35a,#fde9a8);color:#0a1033;font-weight:900;font-family:inherit;opacity:.5;" disabled>${isAr() ? 'إرسال' : 'Send'}</button>
+                </div>
+            </div>`;
+        document.body.appendChild(ov);
+        const t = ov.querySelector('#zrt-txt'), send = ov.querySelector('#zrt-send');
+        t.addEventListener('input', () => { const ok = t.value.trim().length >= 3; send.disabled = !ok; send.style.opacity = ok ? 1 : .5; });
+        ov.querySelector('#zrt-cancel').onclick = () => ov.remove();
+        ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+        send.onclick = async () => {
+            const txt = t.value.trim().slice(0, 300);
+            if (txt.length < 3) return;
+            send.disabled = true;
+            ov.remove();
+            await submitReport(type, id, 'other: ' + txt);
+        };
+        setTimeout(() => t.focus(), 50);
     }
 
     async function submitReport(type, id, reason) {
