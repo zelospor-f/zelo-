@@ -213,6 +213,7 @@
             <div class="zs-head line">${backBtn()}<div class="zs-title">⚙️ ${tr('set_settings', 'الإعدادات', 'Settings')}</div></div>
             <div class="zs-body">
                 ${row('zs-r-nick', '👤', tr('set_nickname', 'الاسم المستعار', 'Nickname'), currentNick())}
+                ${row('zs-r-user', '@', tr('set_username', 'اسم المستخدم', 'Username'), US().username ? '@' + US().username : '—')}
                 ${row('zs-r-email', '✉️', tr('set_email', 'البريد الإلكتروني', 'Email'), currentEmail() || '—')}
                 ${row('zs-r-pass', '🔑', tr('set_password', 'كلمة المرور', 'Password'), '••••••••')}
                 ${row('zs-r-blocked', '🚫', tr('set_blocked', 'المحظورون', 'Blocked users'), tr('set_blocked_sub', 'إدارة من حظرتهم', 'Manage people you blocked'))}
@@ -224,6 +225,7 @@
             </div>`);
         $('zs-back').addEventListener('click', closeSettings);
         $('zs-r-nick').addEventListener('click', screenNick);
+        $('zs-r-user').addEventListener('click', screenUsername);
         $('zs-r-email').addEventListener('click', startEmailFlow);
         $('zs-r-pass').addEventListener('click', () => screenPass(false));
         $('zs-r-blocked').addEventListener('click', screenBlocked);
@@ -275,6 +277,88 @@
             const row = btn.closest('.zs-row'); if (row) row.remove();
             if (!box.querySelector('.zs-row')) box.innerHTML = `<div class="zset-note" style="text-align:center;padding:30px 0;">${tr('set_blocked_none', 'لا يوجد مستخدمون محظورون', 'No blocked users')}</div>`;
         }));
+    }
+
+    // ---------- اسم المستخدم (@) ----------
+    const USER_RE = /^[A-Za-z0-9_]{3,20}$/;
+    const RESERVED = ['admin', 'administrator', 'support', 'official', 'moderator', 'zelosport', 'zelo_sport', 'zelo'];
+    async function isUserTaken(u) {
+        const c = sdb();
+        if (!c) return null;
+        try {
+            const { data, error } = await c.rpc('is_username_available', { p_username: u });
+            if (error) return null;
+            return data === false;
+        } catch (e) { return null; }
+    }
+    function screenUsername() {
+        clearTimers();
+        const cur = US().username || '';
+        mount(`
+            <div class="zs-head line">${backBtn()}
+                <div><div class="zs-title">${tr('set_username', 'اسم المستخدم', 'Username')}</div><div class="zs-sub">${cur ? '@' + esc(cur) : ''}</div></div>
+            </div>
+            <div class="zs-body">
+                <div class="zs-box off"><span class="zs-lbl">${tr('set_current', 'الحالي', 'Current')}</span><input value="${esc(cur ? '@' + cur : '')}" disabled dir="ltr"></div>
+                <div class="zs-box"><span class="zs-lbl">${tr('set_new', 'جديد', 'New')}</span>
+                    <input id="zs-un" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false" dir="ltr" value="${esc(cur)}">
+                    <span class="zset-ico" id="zs-un-ico"></span>
+                </div>
+                <div class="zset-note" id="zs-un-msg">${tr('set_username_rules', 'حروف إنجليزية وأرقام و _ فقط، من 3 إلى 20 حرفًا. يُستخدم هذا الاسم لتسجيل الدخول أيضًا.', 'English letters, numbers and _ only, 3–20 characters. This name is also used to sign in.')}</div>
+            </div>
+            <div class="zs-foot"><button class="zs-pill" id="zs-done" disabled>${tr('set_done', 'تمّ', 'Done')}</button></div>`);
+        $('zs-back').addEventListener('click', screenMain);
+        $('zs-un').addEventListener('input', onUserInput);
+        $('zs-done').addEventListener('click', saveUsername);
+        setTimeout(() => { const i = $('zs-un'); if (i) { i.focus(); i.select(); } }, 80);
+    }
+    function unIco(cls, g) { const el = $('zs-un-ico'); if (el) { el.className = 'zset-ico' + (cls ? ' ' + cls : ''); el.textContent = g || ''; } }
+    function onUserInput() {
+        const input = $('zs-un'), btn = $('zs-done');
+        if (!input || !btn) return;
+        const n = input.value.trim();
+        btn.disabled = true;
+        clearTimeout(SET.timer);
+        const cur = US().username || '';
+        if (!n) { unIco('', ''); return; }
+        if (!USER_RE.test(n)) { unIco('bad', '✖'); setNote('zs-un-msg', 'bad', tr('set_username_bad', 'حروف إنجليزية وأرقام و _ فقط، من 3 إلى 20', 'English letters, numbers and _ only, 3–20 chars')); return; }
+        if (n.toLowerCase() === cur.toLowerCase() && n === cur) { unIco('ok', '✔'); setNote('zs-un-msg', 'ok', tr('set_this_is_your_current_u', 'هذا اسمك الحالي', 'This is your current username')); return; }
+        if (RESERVED.includes(n.toLowerCase()) && n.toLowerCase() !== cur.toLowerCase()) { unIco('bad', '✖'); setNote('zs-un-msg', 'bad', tr('set_username_reserved', 'هذا الاسم محجوز', 'This name is reserved')); return; }
+        unIco('', '…'); setNote('zs-un-msg', '', tr('set_checking', 'جارٍ الفحص...', 'Checking...'));
+        SET.timer = setTimeout(async () => {
+            // تغيير حالة الأحرف فقط لاسمك نفسه مسموح
+            const sameLower = n.toLowerCase() === cur.toLowerCase();
+            const taken = sameLower ? false : await isUserTaken(n);
+            if (input.value.trim() !== n) return;
+            if (taken === null) { unIco('', '⚠'); setNote('zs-un-msg', 'bad', tr('set_could_not_check_the', 'تعذر فحص الاسم، حاول مرة أخرى', 'Could not check the name, try again')); return; }
+            if (taken) { unIco('bad', '✖'); setNote('zs-un-msg', 'bad', tr('set_name_is_taken', 'الاسم مأخوذ', 'Name is taken')); }
+            else { unIco('ok', '✔'); setNote('zs-un-msg', 'ok', tr('set_name_is_available', 'الاسم متاح', 'Name is available')); btn.disabled = false; }
+        }, 400);
+    }
+    async function saveUsername() {
+        const input = $('zs-un'), btn = $('zs-done');
+        const n = input.value.trim();
+        if (!USER_RE.test(n)) return;
+        btn.disabled = true;
+        const cur = US().username || '';
+        const c = sdb(), uid = String(US().userId || '');
+        if (n.toLowerCase() !== cur.toLowerCase()) {
+            const taken = await isUserTaken(n);
+            if (taken !== false) { btn.disabled = false; unIco(taken ? 'bad' : '', taken ? '✖' : '⚠'); setNote('zs-un-msg', 'bad', taken ? tr('set_name_is_taken', 'الاسم مأخوذ', 'Name is taken') : tr('set_could_not_check_the_2', 'تعذر فحص الاسم', 'Could not check the name')); return; }
+        }
+        if (c && uid) {
+            const { error } = await c.from('users').update({ username: n }).eq('user_id', uid);
+            if (error) {
+                btn.disabled = false;
+                if (error.code === '23505') { unIco('bad', '✖'); setNote('zs-un-msg', 'bad', tr('set_name_is_taken', 'الاسم مأخوذ', 'Name is taken')); return; }
+                setNote('zs-un-msg', 'bad', tr('set_save_failed', 'تعذر الحفظ: ', 'Save failed: ') + error.message);
+                return;
+            }
+        }
+        if (window.userState) window.userState.username = n;
+        LS.set('zelo_username', n);
+        toast(tr('set_username_saved', 'تم حفظ اسم المستخدم ✅', 'Username saved ✅'));
+        screenMain();
     }
 
     // ---------- الاسم المستعار ----------
