@@ -177,7 +177,7 @@
         wrap.id = 'zp-overlay';
         wrap.dir = dir;
         wrap.innerHTML = `
-            ${window.zeloBackBtn('', ar, 'zp-close')}
+            ${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn('window.closeSubscriptions()', ar, 'zp-close') : '<button class="zp-close" aria-label="back" style="width:40px;height:40px;border-radius:12px;border:1px solid rgba(245,195,90,.35);background:rgba(44,75,181,.2);color:#f5c35a;font-size:20px;cursor:pointer">' + (ar ? '›' : '‹') + '</button>'}
             <h2>${ar ? 'الاشتراكات' : 'Subscriptions'}</h2>
             <div class="zp-sub">${ar ? 'شارك ناديك المفضل واحصل على مزايا إضافية.' : 'Show your favorite club and unlock extra perks.'}</div>
             <div class="zp-active" id="zp-active">${ar ? '✅ اشتراكك فعّال' : '✅ Your subscription is active'}</div>
@@ -188,7 +188,7 @@
             <button class="zp-btn ghost" id="zp-restore" style="margin-top:8px">${ar ? 'استعادة مشترياتي' : 'Restore purchases'}</button>`;
         document.body.appendChild(wrap);
 
-        wrap.querySelector('.zp-close').onclick = closeSubscriptions;
+        wrap.querySelector('.zp-close').addEventListener('click', function (e) { e.preventDefault(); closeSubscriptions(); });
         isPremium().then(ok => {
             const a = document.getElementById('zp-active');
             if (a && ok) a.style.display = 'block';
