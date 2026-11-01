@@ -146,7 +146,7 @@
         ov.dir = tr('ui_ltr', 'rtl', 'ltr');
         ov.innerHTML = `
             <div class="fl-top">
-                <button class="fl-back" onclick="window.closeFollowList()">${tr('ui_text', '→', '←')}</button>
+                ${window.zeloBackBtn('window.closeFollowList()')}
                 <div><div class="fl-head-name">${esc(name)}</div><div class="fl-head-sub" id="fl-sub"></div></div>
             </div>
             <div class="fl-tabs">
@@ -334,7 +334,7 @@
         target.innerHTML = P.styles(ar) + `
             <div class="profile-wrap">
                 <div class="edit-top">
-                    <button class="back-btn" onclick="window.closeEditProfile()">${tr('ui_text_2', '➔', '←')}</button>
+                    ${window.zeloBackBtn('window.closeEditProfile()')}
                     <div class="edit-title">${tr('ui_edit_profile', 'تعديل الملف الشخصي', 'Edit profile')}</div>
                     <button class="edit-save" onclick="window.saveProfileData()">${tr('ui_save', 'حفظ', 'Save')}</button>
                 </div>
@@ -479,7 +479,7 @@
         target.innerHTML = P.styles(ar) + `
             <div class="profile-wrap">
                 <div class="profile-top">
-                    <button class="back-btn" onclick="if(typeof window.showPage === 'function') window.showPage('home');">${tr('ui_home', '➔ الرئيسية', '➔ Home')}</button>
+                    ${window.zeloBackBtn("if(typeof window.showPage === 'function') window.showPage('home');")}
                     <h3 class="page-title">${tr('ui_profile', 'الملف الشخصي', 'Profile')}</h3>
                     <div style="width:64px;"></div>
                 </div>
