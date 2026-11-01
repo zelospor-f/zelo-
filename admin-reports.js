@@ -1,11 +1,11 @@
 (function () {
     'use strict';
-    const ADMIN_ID = '8610b5cf-1eb6-44c3-b5c8-af737fd961d9';
+    const ADMIN_IDS = ['eb880283-f32e-4fb5-a84a-e6007b633352'];
     const isAr = () => ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
     const L = (a, e) => (isAr() ? a : e);
     const db = () => (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const isAdmin = () => String((window.userState && window.userState.userId) || '') === ADMIN_ID;
+    const isAdmin = () => ADMIN_IDS.includes(String((window.userState && window.userState.userId) || ''));
 
     const REASONS = { spam: 'محتوى مزعج أو إعلاني', abuse: 'إساءة أو تحرّش', hate: 'خطاب كراهية', violence: 'عنف أو محتوى صادم', adult: 'محتوى للبالغين', misinfo: 'معلومات مضللة', other: 'سبب آخر' };
     const reasonText = r => {
