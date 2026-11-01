@@ -173,14 +173,25 @@
             sh.innerHTML = `<div style="width:100%;max-width:520px;background:#0f1a5c;border-radius:22px 22px 0 0;padding:26px;text-align:center;color:#fff"><div style="font-size:40px">✅</div><div style="font-weight:900;margin:8px 0">${L('تم إرسال طعنك', 'Appeal sent')}</div><div style="color:#c9d1f5;font-size:.9rem">${L('سنراجعه ونرد عليك.', 'We will review it.')}</div><button style="margin-top:14px;padding:12px 30px;border-radius:999px;border:none;background:#f5c35a;color:#0a1033;font-weight:900;font-family:inherit" onclick="document.getElementById('zban-appeal').remove()">${L('حسنًا', 'OK')}</button></div>`;
         };
     }
+    window.zeloOpenAppeal = () => appealSheet(db());
+    // بطاقة تنبيه تظهر في الملف الشخصي للمحظور من النشر
+    window.zeloBanNoteHtml = function () {
+        const b = window.zeloMyBan;
+        if (!b || b.kind === 'full') return '';
+        if (b.banned_until && new Date(b.banned_until) <= new Date()) return '';
+        return `<div style="margin:0 0 14px;padding:14px;border-radius:16px;background:rgba(122,31,31,.35);border:1px solid rgba(255,107,107,.45);color:#fff;line-height:1.8;font-size:.9rem">
+            <b style="color:#ff9b9b">⛔ ${L('حسابك موقوف عن النشر والتفاعل', 'Your posting is suspended')}</b><br>
+            ${L('حتى: ', 'Until: ')}${b.banned_until ? new Date(b.banned_until).toLocaleDateString() : ''} — ${L('يمكنك التصفح فقط.', 'You can only browse.')}
+            <div style="margin-top:8px"><button onclick="window.zeloOpenAppeal()" style="padding:8px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-weight:800;font-family:inherit">${L('طعن', 'Appeal')}</button></div></div>`;
+    };
     async function checkMyBan() {
         const c = db(), uid = window.userState && window.userState.userId;
         if (!c || !uid) return;
         try {
             const r = await c.from('user_bans').select('banned_until,kind').eq('user_id', String(uid)).maybeSingle();
             const b = r && r.data;
-            const bar = document.getElementById('zban-bar');
-            if (!b || (b.banned_until && new Date(b.banned_until) <= new Date())) { if (bar) bar.remove(); return; }
+            if (!b || (b.banned_until && new Date(b.banned_until) <= new Date())) { window.zeloMyBan = null; return; }
+            window.zeloMyBan = b;
             if (b.kind === 'full') {
                 if (banShown) return; banShown = true;
                 const ov = document.createElement('div');
@@ -192,13 +203,6 @@
                 document.body.appendChild(ov);
                 ov.querySelector('#zban-appeal-btn').onclick = () => appealSheet(c);
                 ov.querySelector('#zban-out').onclick = async () => { try { await c.auth.signOut(); } catch (e) {} try { localStorage.clear(); } catch (e) {} location.reload(); };
-            } else {
-                // حظر من النشر: تصفح فقط + شريط تنبيه
-                if (bar) return;
-                const d = document.createElement('div'); d.id = 'zban-bar';
-                d.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99990;background:#7a1f1f;color:#fff;font-size:.8rem;font-weight:800;text-align:center;padding:calc(env(safe-area-inset-top,0px) + 4px) 10px 5px;direction:' + (isAr() ? 'rtl' : 'ltr');
-                d.textContent = '⛔ ' + L('حسابك موقوف عن النشر والتفاعل حتى ', 'Posting is suspended until ') + new Date(b.banned_until).toLocaleDateString() + L(' — يمكنك التصفح فقط', ' — browse only');
-                document.body.appendChild(d);
             }
         } catch (e) {}
     }
