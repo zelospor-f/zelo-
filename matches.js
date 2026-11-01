@@ -137,6 +137,12 @@ function renderMatchList(overlay, isAr, asPage) {
 window.renderMatchesPage = async function(container) {
     container = container || document.getElementById('main-content');
     if (!container) return;
+    // صفحة الدوريات الجديدة (leagues.js): قائمة الدوريات ثم داخل كل دوري
+    if (typeof window.renderLeaguesPage === 'function') {
+        await window.renderLeaguesPage(container);
+        if (window.attachRoomsHandle) window.attachRoomsHandle(document.body);
+        return;
+    }
     const isAr = (userState?.lang === 'ar');
     container.innerHTML = `<div style="text-align:center; color:#9aa6d6; padding:50px;">⏳ ${getT('loadingMatches')}</div>`;
 
