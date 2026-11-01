@@ -323,7 +323,7 @@
         if (!n) { unIco('', ''); return; }
         if (!USER_RE.test(n)) { unIco('bad', '✖'); setNote('zs-un-msg', 'bad', tr('set_username_bad', 'حروف إنجليزية وأرقام و _ فقط، من 3 إلى 20', 'English letters, numbers and _ only, 3–20 chars')); return; }
         if (n.toLowerCase() === cur.toLowerCase() && n === cur) { unIco('ok', '✔'); setNote('zs-un-msg', 'ok', tr('set_this_is_your_current_u', 'هذا اسمك الحالي', 'This is your current username')); return; }
-        if (RESERVED.includes(n.toLowerCase()) && n.toLowerCase() !== cur.toLowerCase()) { unIco('bad', '✖'); setNote('zs-un-msg', 'bad', tr('set_username_reserved', 'هذا الاسم محجوز', 'This name is reserved')); return; }
+        if (RESERVED.includes(n.toLowerCase()) && n.toLowerCase() !== cur.toLowerCase() && !(window.zeloIsAdmin && window.zeloIsAdmin())) { unIco('bad', '✖'); setNote('zs-un-msg', 'bad', tr('set_username_reserved', 'هذا الاسم محجوز', 'This name is reserved')); return; }
         unIco('', '…'); setNote('zs-un-msg', '', tr('set_checking', 'جارٍ الفحص...', 'Checking...'));
         SET.timer = setTimeout(async () => {
             // تغيير حالة الأحرف فقط لاسمك نفسه مسموح
