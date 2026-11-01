@@ -259,6 +259,7 @@
         settings:  svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>'),
         invite:    svg('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.6 15.4 6.4M8.6 13.4l6.8 4.2"/>'),
         lang:      svg('<path d="M4 5h9M8.5 3v2M6 5c0 4 3 7 7 8M12 5c0 3-3 6-7 8"/><path d="M13 21l4-9 4 9M14.5 18h5"/>'),
+        reports:   svg('<path d="M5 21V4"/><path d="M5 4h12l-2 4 2 4H5"/>'),
         help:      svg('<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 .9-1 1.7"/><circle cx="12" cy="17" r=".6"/>'),
         mail:      svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
         copy:      svg('<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>'),
@@ -413,6 +414,7 @@
             else if (typeof window.copyReferralLink === 'function') window.copyReferralLink();
             else toast(L('ملف المشاركة غير محمّل', 'Share file not loaded'));
         },
+        reports:     () => (typeof window.openReportsPanel === 'function' ? window.openReportsPanel() : toast(L('ملف البلاغات غير محمّل', 'Reports file not loaded'))),
         // مركز المساعدة: بريد الدعم + الأسئلة الشائعة + الروابط القانونية
         help:        () => openHelpCenter(),
         lang: async () => {
@@ -460,7 +462,7 @@
                     items: [
                         { key: 'website',  ar: 'الموقع الرسمي', en: 'Official Website' },
                         { key: 'settings', ar: 'الإعدادات',     en: 'Settings' }
-                    ]
+                    ].concat((window.zeloIsAdmin && window.zeloIsAdmin()) ? [{ key: 'reports', ar: 'البلاغات (للإدارة)', en: 'Reports (admin)' }] : [])
                 }
             ],
             footer: [

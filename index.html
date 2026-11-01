@@ -515,9 +515,9 @@
 
     <script>
         // زر رجوع موحّد تستخدمه كل الشاشات: window.zeloBackBtn("window.closeX()", isArabic)
-        window.zeloBackBtn = function (onclick, ar) {
+        window.zeloBackBtn = function (onclick, ar, extra) {
             if (ar === undefined) ar = ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
-            return '<button class="zelo-back" onclick="' + String(onclick).replace(/"/g, '&quot;') + '" aria-label="' + (ar ? 'رجوع' : 'Back') + '">' + (ar ? '›' : '‹') + '</button>';
+            return '<button class="zelo-back' + (extra ? ' ' + extra : '') + '" onclick="' + String(onclick).replace(/"/g, '&quot;') + '" aria-label="' + (ar ? 'رجوع' : 'Back') + '">' + (ar ? '›' : '‹') + '</button>';
         };
     </script>
 
@@ -540,6 +540,7 @@
                 'share-card.js',
                 'matches.js',
                 'leagues.js',
+                'admin-reports.js',
                 'home.js',
                 'boost.js',
                 'support.js',
