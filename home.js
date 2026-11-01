@@ -1913,7 +1913,7 @@
         .pc-btn.on { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.25); }
         .pc-info { padding: 10px 16px 0; }
         .pc-name { color: #fff; font-weight: 900; font-size: 1.15rem; display: flex; align-items: center; gap: 4px; }
-        .pc-handle { color: #7782b0; font-size: 0.85rem; direction: ltr; text-align: start; }
+        .pc-handle { color: #7782b0; font-size: 0.85rem; direction: inherit; unicode-bidi: plaintext; text-align: start; }
         .pc-stats { display: flex; gap: 18px; padding: 12px 16px; color: #9aa6d6; font-size: 0.85rem; }
         .pc-stats b { color: #fff; font-weight: 900; }
         .pc-tab { padding: 10px 16px; color: #fff; font-weight: 900; border-bottom: 3px solid #f5c35a; display: inline-block; margin-inline-start: 16px; }
@@ -1930,7 +1930,7 @@
         .pcx-id { flex: 1; min-width: 0; }
         .pcx-name { margin: 0; font-size: 1.15rem; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 5px; overflow: hidden; }
         .pcx-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .pcx-user { font-size: 0.8rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: ltr; text-align: start; unicode-bidi: plaintext; }
+        .pcx-user { font-size: 0.8rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: inherit; text-align: start; unicode-bidi: plaintext; }
         .pcx-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 18px; text-align: center; }
         .pcx-stat b { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 1.7rem; font-weight: 900; color: #fff; line-height: 1.1; }
         .pcx-stat b svg { width: 22px; height: 22px; stroke: #f5c35a; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }

@@ -70,7 +70,7 @@
             font-size: 1.7rem; font-weight: 900; color: #fff; overflow: hidden;
         }
         .zdrawer-name { font-size: 1.15rem; font-weight: 900; color: #fff; margin-bottom: 2px; }
-        .zdrawer-handle { font-size: 0.85rem; color: #8f9bd0; direction: ltr; text-align: start; }
+        .zdrawer-handle { font-size: 0.85rem; color: #8f9bd0; direction: inherit; unicode-bidi: plaintext; text-align: start; }
 
         /* ===== الأقسام ===== */
         .zdrawer-section { padding: 6px 0 2px; }
