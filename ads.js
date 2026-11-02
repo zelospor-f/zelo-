@@ -14,9 +14,9 @@
         },
         // معرّفات الإنتاج الحقيقية من لوحة AdMob (استبدل القيم قبل الإطلاق)
         real: {
-            rewarded:     'ca-app-pub-XXXXXXXXXXXXXXXX/REWARDED_ID',
-            interstitial: 'ca-app-pub-XXXXXXXXXXXXXXXX/INTERSTITIAL_ID',
-            banner:       'ca-app-pub-XXXXXXXXXXXXXXXX/BANNER_ID'
+            rewarded:     'ca-app-pub-1758612048958433/8181428602',
+            interstitial: '',   // معطّل عمدًا: لا إعلانات تقاطع المستخدم
+            banner:       'ca-app-pub-1758612048958433/9630688759'
         }
     };
 
@@ -316,22 +316,19 @@
 
         el.innerHTML = `
             <div dir="${isAr() ? 'rtl' : 'ltr'}" style="padding:24px 18px; color:#f8fafc; text-align:center;">
+                <div style="text-align:start; margin:-8px 0 8px;">${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn("showPage('home')", isAr()) : '<button onclick="showPage(\'home\')" style="background:transparent;color:#f8fafc;border:1px solid rgba(255,255,255,.2);border-radius:12px;width:40px;height:40px;font-size:20px">' + (isAr() ? '›' : '‹') + '</button>'}</div>
                 <div style="font-size:3rem; margin-bottom:10px;">🎁</div>
                 <h2 style="font-size:1.4rem; font-weight:900; margin:0 0 8px;">
                     ${L('اربح نقاط مجانية', 'Earn free points')}
                 </h2>
                 <p style="color:#94a3b8; margin:0 0 22px; line-height:1.7;">
-                    ${L(`شاهد إعلانًا قصيرًا واحصل على ${REWARD_POINTS} ZELO.`,
-                        `Watch a short ad and get ${REWARD_POINTS} ZELO.`)}
+                    ${L('شاهد إعلانًا قصيرًا واحصل على ZELO.',
+                        'Watch a short ad and get ZELO.')}
                 </p>
                 <button id="zads-watch-btn" class="btn-action" style="min-width:220px;">
                     ${L('📺 شاهد الإعلان', '📺 Watch ad')}
                 </button>
                 <div id="zads-status" style="margin-top:16px; min-height:22px; font-size:0.9rem; color:#94a3b8;"></div>
-                <button class="btn-action" style="margin-top:24px; background:transparent; border:1px solid rgba(255,255,255,0.15);"
-                        onclick="showPage('home')">
-                    ${L('العودة للرئيسية', 'Back to Home')}
-                </button>
             </div>
         `;
 
@@ -394,5 +391,6 @@
 
     startBannerWatcher();
     startBannerAutoHide();
-    hookNavigation();
+    // الإعلان البيني معطّل عمدًا (لا نقاطع المستخدم). لتفعيله لاحقًا: أنشئ وحدة بينية وأعد السطر التالي.
+    // hookNavigation();
 })();
