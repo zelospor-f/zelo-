@@ -239,7 +239,7 @@
     function startBannerAutoHide() {
         const AdMob = getAdMob();
         if (!AdMob || typeof MutationObserver === 'undefined') return;
-        const sel = '#compose-overlay, #reply-overlay, #zsub-overlay';
+        const sel = '#compose-overlay, #reply-overlay, #zsub-overlay, #zp-overlay';
         new MutationObserver(async () => {
             if (!bannerShown) return;
             const need = !!document.querySelector(sel);
