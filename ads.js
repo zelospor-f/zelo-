@@ -240,9 +240,10 @@
         const AdMob = getAdMob();
         if (!AdMob || typeof MutationObserver === 'undefined') return;
         const sel = '#compose-overlay, #reply-overlay, #zsub-overlay, #zp-overlay';
-        new MutationObserver(async () => {
+        let drawerOpen = false;
+        const apply = async () => {
             if (!bannerShown) return;
-            const need = !!document.querySelector(sel);
+            const need = drawerOpen || !!document.querySelector(sel);
             if (need === bannerHidden) return;
             bannerHidden = need;
             try {
@@ -250,7 +251,11 @@
                 if (need) await AdMob.hideBanner();
                 else await AdMob.resumeBanner();
             } catch (e) {}
-        }).observe(document.body, { childList: true });
+        };
+        new MutationObserver(apply).observe(document.body, { childList: true });
+        // القائمة الجانبية تبقى في الصفحة وتُفتح بتغيير class، لذلك تُبلغنا بحدث
+        window.addEventListener('zdrawer:open', () => { drawerOpen = true; apply(); });
+        window.addEventListener('zdrawer:close', () => { drawerOpen = false; apply(); });
     }
 
     function startBannerWatcher() {

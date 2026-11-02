@@ -586,11 +586,13 @@
         void document.getElementById('zdrawer').offsetWidth;
         document.getElementById('zdrawer-overlay').classList.add('open');
         document.getElementById('zdrawer').classList.add('open');
+        try { window.dispatchEvent(new Event('zdrawer:open')); } catch (e) {}
     }
 
     function closeSideDrawer() {
         document.getElementById('zdrawer-overlay')?.classList.remove('open');
         document.getElementById('zdrawer')?.classList.remove('open');
+        try { window.dispatchEvent(new Event('zdrawer:close')); } catch (e) {}
     }
 
     window.openSideDrawer = openSideDrawer;
