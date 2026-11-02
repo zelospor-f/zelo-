@@ -79,6 +79,13 @@ jobs:
           if 'ACCESS_NETWORK_STATE' not in s:
               s = s.replace('<application', '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <application', 1)
           assert 'ACCESS_NETWORK_STATE' in s, 'network permission was not added'
+          # معرّف تطبيق AdMob (ليس سريًا). بدونه ينهار SDK الإعلانات عند التشغيل.
+          if 'com.google.android.gms.ads.APPLICATION_ID' not in s:
+              s = s.replace('</application>', '''    <meta-data
+                  android:name="com.google.android.gms.ads.APPLICATION_ID"
+                  android:value="ca-app-pub-1758612048958433~9861788893"/>
+          </application>''', 1)
+          assert 'com.google.android.gms.ads.APPLICATION_ID' in s, 'AdMob app id was not added'
           open(p, 'w', encoding='utf-8').write(s)
           EOF
 
