@@ -239,11 +239,25 @@
     function startBannerAutoHide() {
         const AdMob = getAdMob();
         if (!AdMob || typeof MutationObserver === 'undefined') return;
-        const sel = '#compose-overlay, #reply-overlay, #zsub-overlay, #zp-overlay';
+        const sel = '#compose-overlay, #reply-overlay, #zsub-overlay, #zp-overlay, #zsup-overlay, #zsup-list-overlay, #zadm, #zban-appeal';
         let drawerOpen = false;
+        // أي نافذة/ورقة تغطي أسفل الشاشة (حتى التي لا نعرف اسمها) يُخفى الشريط من فوقها
+        const coversBottom = () => {
+            const H = window.innerHeight;
+            for (const el of document.body.children) {
+                const id = el.id || '';
+                if (id === 'bottom-nav' || id === 'bottom-ad-slot' || id.indexOf('zdrawer') === 0) continue;
+                const cs = getComputedStyle(el);
+                if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) continue;
+                if ((parseInt(cs.zIndex, 10) || 0) < 100) continue;
+                const r = el.getBoundingClientRect();
+                if (r.height >= H * 0.35 && r.width >= window.innerWidth * 0.6 && r.bottom >= H - 4) return true;
+            }
+            return false;
+        };
         const apply = async () => {
             if (!bannerShown) return;
-            const need = drawerOpen || !!document.querySelector(sel);
+            const need = drawerOpen || !!document.querySelector(sel) || coversBottom();
             if (need === bannerHidden) return;
             bannerHidden = need;
             try {
