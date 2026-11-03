@@ -487,6 +487,7 @@
 
                 ${(!V && window.zeloBanNoteHtml) ? window.zeloBanNoteHtml() : ''}
                 <div class="pp">
+                    <div class="wall pp-wall">${P.wallHtml(matched)}</div>
                     <div class="pp-head">
                         <div class="pp-av"><div><img src="${esc(avatarSrc)}" alt=""></div></div>
                         <div class="pp-id">

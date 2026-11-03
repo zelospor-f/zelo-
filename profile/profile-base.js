@@ -241,9 +241,16 @@
             .pp-av { width: 76px; height: 76px; min-width: 76px; border-radius: 50%; padding: 2px; box-sizing: border-box; background: linear-gradient(135deg, #2c4bb5, #f5c35a, #14206b); box-shadow: 0 0 18px rgba(245,195,90,0.3); }
             .pp-av div { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; border: 2px solid #0a1033; background: #0a1033; }
             .pp-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+            .pp-wall { height: 132px; border-radius: 18px; margin-top: 2px; border: 1px solid rgba(245,195,90,0.22); }
+            .pp-wall .wall-mark { height: 92px; width: 92px; top: 20px; }
+            .pp-wall .wall-mark-center { height: 104px; width: 104px; top: 14px; margin-left: -52px; }
+            .pp-wall + .pp-head { margin-top: -38px; padding: 0 12px; position: relative; z-index: 2; align-items: flex-end; }
+            .pp-wall + .pp-head .pp-av { box-shadow: 0 0 0 4px #0a1033, 0 0 18px rgba(245,195,90,0.3); }
+            .pp-wall + .pp-head .pp-id { padding-bottom: 2px; }
             .pp-id { flex: 1; min-width: 0; }
             .pp-name { margin: 0; font-size: 1.05rem; font-weight: 900; display: flex; align-items: center; gap: 5px; overflow: hidden; }
-            .pp-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .pp-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
+            .pp-name > img { flex: none; margin: 0 !important; }
             .pp-user { font-size: 0.78rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: inherit; text-align: start; unicode-bidi: isolate; }
             .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; text-align: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(245,195,90,0.18); border-radius: 16px; padding: 10px 0; }
             .pp-stat + .pp-stat { border-inline-start: 1px solid rgba(255,255,255,0.08); }
