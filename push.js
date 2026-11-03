@@ -15,11 +15,24 @@
         } catch (e) {}
     }
 
+    // اختبار لمرة واحدة: يرسل إشعارًا إلى هذا الجهاز بعد 20 ثانية (اضغط زر الرئيسية لترى الإشعار)
+    function scheduleTest() {
+        try { if (localStorage.getItem('zelo_push_test_done')) return; } catch (e) {}
+        diag('اضغط زر الرئيسية الآن لتخرج من التطبيق وانتظر 20 ثانية ... Press Home now');
+        setTimeout(async () => {
+            try {
+                const r = await supabaseClient.functions.invoke('push-test');
+                try { localStorage.setItem('zelo_push_test_done', '1'); } catch (e) {}
+                diag('test result: ' + JSON.stringify((r && (r.data || r.error && r.error.message)) || r));
+            } catch (e) { diag('test failed: ' + (e && e.message)); }
+        }, 20000);
+    }
+
     async function saveToken(tok) {
         try {
             if (!tok || tok === lastSent || typeof supabaseClient === 'undefined') return;
             const { error } = await supabaseClient.rpc('register_device', { p_token: tok });
-            if (!error) { lastSent = tok; try { localStorage.setItem('zelo_push_tok', tok); } catch (e) {} diag('registered OK'); }
+            if (!error) { lastSent = tok; try { localStorage.setItem('zelo_push_tok', tok); } catch (e) {} diag('registered OK'); scheduleTest(); }
             else diag('rpc error: ' + (error.message || JSON.stringify(error)));
         } catch (e) { diag('save failed: ' + (e && e.message)); }
     }
