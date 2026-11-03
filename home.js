@@ -250,7 +250,7 @@
             </div>`;
     }
 
-    window.pickTopic = function (t) {
+    const doPickTopic = function (t) {
         pendingTopic = { type: t || null, name: '', nameB: '' };
         pendingPred = null;
         document.querySelectorAll('.topic-chip').forEach(b => b.classList.toggle('on', (b.dataset.t || '') === (t || '')));
@@ -282,6 +282,7 @@
         return { day, t };
     }
     window.pickPred = async function () {
+        if (!(await tier3Gate())) return;
         pendingTopic = { type: null, name: '', nameB: '' };
         pendingPred = { match: null, pick: null };
         document.querySelectorAll('.topic-chip').forEach(b => b.classList.toggle('on', b.dataset.t === '__pred'));
@@ -388,6 +389,16 @@
         updatePred(id);
     };
 
+    // أنواع المنشور والتوقّع: الباقة الكاملة (درجة 3)
+    async function tier3Gate() {
+        const ok = window.ZeloPremium && window.ZeloPremium.myTier ? (await window.ZeloPremium.myTier()) >= 3 : false;
+        if (!ok) window.zeloComposeNotice(isAr() ? '🧩 أنواع المنشور والتوقّع في الباقة الكاملة (4.99$)' : '🧩 Post types and predictions need the Pro plan', true, 'topic');
+        return ok;
+    }
+    window.pickTopic = function (t) {
+        if (!t) return doPickTopic('');
+        tier3Gate().then(ok => { if (ok) doPickTopic(t); });
+    };
     window.setTopicName = v => { pendingTopic.name = v; };
     window.setTopicNameB = v => { pendingTopic.nameB = v; };
 
@@ -1138,6 +1149,8 @@
             const msg = String(error.message || '');
             if (msg.includes('video_daily_limit')) { alert(isAr() ? 'وصلت إلى حد 5 فيديوهات اليوم.' : 'You reached the limit of 5 videos today.'); return; }
             if (msg.includes('premium_required')) { if (window.openSubscriptions) window.openSubscriptions(); return; }
+            if (msg.includes('tier3_required')) { alert(isAr() ? 'أنواع المنشور والتوقّع في الباقة الكاملة (4.99$).' : 'Post types and predictions need the Pro plan.'); if (window.openSubscriptions) window.openSubscriptions(); return; }
+            if (msg.includes('post_too_long')) { alert(isAr() ? 'المنشور أطول من 1000 حرف.' : 'Post is over 1000 characters.'); return; }
             alert(postErrText(error) || ((isAr() ? 'فشل النشر: ' : 'Post failed: ') + error.message));
             return;
         }
@@ -2309,9 +2322,9 @@
     const VIDEO_MAX_SECONDS = 60;
 
     window.pickPostVideo = async function() {
-        const ok = window.ZeloPremium ? await window.ZeloPremium.isPremium() : false;
+        const ok = window.ZeloPremium && window.ZeloPremium.myTier ? (await window.ZeloPremium.myTier()) >= 2 : false;
         if (!ok) {
-            window.zeloComposeNotice(isAr() ? '🎬 اشترك لكي تستطيع نشر فيديوهات' : '🎬 Subscribe to post videos', true, 'video');
+            window.zeloComposeNotice(isAr() ? '🎬 نشر الفيديو في الباقة المميّزة (1.99$) فما فوق' : '🎬 Video posts need the Plus plan or higher', true, 'video');
             return;
         }
         const input = document.createElement('input');

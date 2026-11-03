@@ -9,21 +9,31 @@
 
     /* ---------- الإعدادات: الأسعار والمزايا (عدّلها من هنا فقط) ---------- */
     const PLANS = [
-        // id = معرّف الاشتراك في Google Play Console (يجب أن يطابقه حرفياً)، period = monthly | yearly
-        // price = للعرض الاحتياطي فقط؛ السعر الحقيقي يُجلب من Google Play ويظهر بعملة المستخدم
-        { id: 'zelo_monthly', period: 'monthly', price: 1.99,  months: 1  },
-        { id: 'zelo_yearly',  period: 'yearly',  price: 16.99, months: 12 }   // التوفير يُحسب تلقائياً
+        // id = معرّف الاشتراك في Google Play Console (يجب أن يطابقه حرفياً) | tier = الدرجة | price = للعرض الاحتياطي فقط
+        { id: 'zelo_t1', tier: 1, period: 'monthly', price: 0.99, months: 1, ar: 'الأساسية', en: 'Basic' },
+        { id: 'zelo_t2', tier: 2, period: 'monthly', price: 1.99, months: 1, ar: 'المميّزة',  en: 'Plus' },
+        { id: 'zelo_t3', tier: 3, period: 'monthly', price: 4.99, months: 1, ar: 'الكاملة',   en: 'Pro', best: true }
     ];
 
-    const FEATURES = [
-        { icon: '🚫', ar: 'خالي من الإعلانات', en: 'Ad-free experience' },
-        { icon: '🏅', ar: 'شعار ناديك المفضل بجانب اسمك', en: 'Your favorite club badge next to your name' },
-        { icon: '✍️', ar: 'منشورات أطول حتى 1000 حرف',     en: 'Longer posts up to 1000 characters' },
-        { icon: '🖼️', ar: 'نشر الصور في المنشورات والردود', en: 'Post images in posts and replies' },
-        { icon: '🎙️', ar: 'رسائل صوتية داخل الغرف',        en: 'Voice messages inside rooms' },
-        { icon: '✨', ar: 'استخدام الذكاء الاصطناعي (مساعد المباراة)', en: 'AI assistant (match assistant)' },
-        { icon: '🎬', ar: 'فيديو حتى 60 ثانية',            en: 'Videos up to 60 seconds' }
-    ];
+    // المزايا الجديدة في كل درجة (الدرجة الأعلى تشمل ما قبلها)
+    const TIER_FEATURES = {
+        1: [
+            { icon: '🏅', ar: 'توثيق الحساب وشعار ناديك بجانب اسمك', en: 'Verified account with your club badge' },
+            { icon: '✍️', ar: 'منشورات أطول حتى 1000 حرف', en: 'Longer posts up to 1000 characters' },
+            { icon: '🖼️', ar: 'نشر الصور في المنشورات والردود', en: 'Post images in posts and replies' }
+        ],
+        2: [
+            { icon: '🎬', ar: 'نشر الفيديو', en: 'Video posts' },
+            { icon: '✨', ar: 'استخدام الذكاء الاصطناعي (مساعد المباراة)', en: 'AI assistant (match assistant)' },
+            { icon: '🎁', ar: 'دعم المنشورات (محدود)', en: 'Post support (limited)' }
+        ],
+        3: [
+            { icon: '🧩', ar: 'نوع المنشور (لاعب، مدرب، حكم، مقارنة...)', en: 'Post types (player, coach, referee, compare...)' },
+            { icon: '⚽', ar: 'توقّع المباريات داخل المنشور', en: 'Match predictions inside posts' },
+            { icon: '🎁', ar: 'دعم المنشورات (أكثر)', en: 'Post support (more)' }
+        ]
+    };
+    const FEATURES = [];
 
     /* ---------- ألوان متناسقة مع التطبيق ---------- */
     const C = {
@@ -39,7 +49,7 @@
     };
 
     const TTL = 5 * 60 * 1000;                       // نحفظ النتيجة 5 دقائق
-    const known = new Map();                         // user_id -> { pro, t }
+    const known = new Map();                         // user_id -> { pro, tier, t }
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const me = () => String((window.userState && window.userState.userId) || '');
     const isAr = () => ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
@@ -62,10 +72,11 @@
         const c = db();
         if (!c) return;
         try {
-            const { data, error } = await c.rpc('premium_among', { p_ids: need });
+            const { data, error } = await c.rpc('tier_among', { p_ids: need });
             if (error) throw error;
-            const pro = new Set((data || []).map(x => String(typeof x === 'string' ? x : (x.premium_among || x.user_id || ''))));
-            need.forEach(id => known.set(id, { pro: pro.has(id), t: now }));
+            const tiers = {};
+            (data || []).forEach(x => { tiers[String(x.user_id)] = Number(x.tier) || 0; });
+            need.forEach(id => known.set(id, { pro: (tiers[id] || 0) > 0, tier: tiers[id] || 0, t: now }));
         } catch (e) {
             console.warn('[premium] check failed', e);
         }
@@ -76,6 +87,14 @@
         if (!uid) return false;
         await ensure([uid], force);
         return !!(known.get(uid) || {}).pro;
+    }
+
+    // درجة المستخدم الحالي: 0 مجاني، 1..3
+    async function myTier(force) {
+        const uid = me();
+        if (!uid) return 0;
+        await ensure([uid], force);
+        return Number((known.get(uid) || {}).tier) || 0;
     }
 
     /* ---------- أنماط الصفحة (تُحقن مرة واحدة) ---------- */
@@ -97,7 +116,7 @@
         #zp-overlay .zp-feat{display:flex;align-items:center;gap:8px;padding:6px 2px;
             border-bottom:1px solid ${C.line};color:#fff;font-size:.85rem}
         #zp-overlay .zp-soon{color:${C.muted};font-size:.7rem}
-        #zp-overlay .zp-plans{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+        #zp-overlay .zp-plans{display:grid;grid-template-columns:1fr;gap:12px;margin-top:10px}
         #zp-overlay .zp-plan{position:relative;margin-top:6px;padding:12px 10px 10px;border-radius:16px;
             background:${C.card};border:1px solid ${C.goldLine}}
         #zp-overlay .zp-plan.best{border:1.5px solid transparent;
@@ -148,30 +167,28 @@
         const dir = ar ? 'rtl' : 'ltr';
         const save = savingPercent();
 
-        const feats = FEATURES.map(f => `
-            <div class="zp-feat"><span>${f.icon}</span>
-                <span>${ar ? f.ar : f.en}</span>
-                ${f.soon ? `<span class="zp-soon">${ar ? 'قريباً' : 'soon'}</span>` : ''}
-            </div>`).join('');
-
         const plans = PLANS.map(p => {
-            const yearly = p.period === 'yearly';
+            const lines = [];
+            for (let t = 1; t <= p.tier; t++) {
+                (TIER_FEATURES[t] || []).forEach(f => lines.push(`<div class="zp-feat"><span>${f.icon}</span><span>${ar ? f.ar : f.en}</span></div>`));
+            }
             return `
-            <div class="zp-plan ${yearly ? 'best' : ''}">
-                ${yearly ? `<div class="zp-tag">${ar ? 'الأفضل قيمة' : 'Best value'}</div>` : ''}
+            <div class="zp-plan ${p.best ? 'best' : ''}" data-tier="${p.tier}">
+                ${p.best ? `<div class="zp-tag">${ar ? 'الأفضل قيمة' : 'Best value'}</div>` : ''}
                 <div class="zp-row">
-                    <div class="zp-name">${yearly ? (ar ? 'سنوي' : 'Yearly') : (ar ? 'شهري' : 'Monthly')}</div>
+                    <div class="zp-name">${ar ? p.ar : p.en}</div>
                     <div>
                         <span class="zp-price">${money(p.price)}</span>
-                        <span class="zp-per">/ ${yearly ? (ar ? 'سنوياً' : 'year') : (ar ? 'شهرياً' : 'month')}</span>
+                        <span class="zp-per">/ ${ar ? 'شهرياً' : 'month'}</span>
                     </div>
                 </div>
-                ${yearly && save > 0 ? `<div class="zp-save">${ar ? `وفّر نحو ${save}٪` : `Save about ${save}%`}</div>` : ''}
-                <button class="zp-btn ${yearly ? 'main' : 'ghost'}" data-plan="${p.id}">
+                <div style="margin-top:6px">${p.tier > 1 ? `<div class="zp-soon" style="margin-bottom:2px">${ar ? 'كل مزايا الدرجة السابقة، و:' : 'Everything below, plus:'}</div>` : ''}${lines.slice(p.tier > 1 ? -(TIER_FEATURES[p.tier] || []).length : 0).join('')}</div>
+                <button class="zp-btn ${p.best ? 'main' : 'ghost'}" data-plan="${p.id}">
                     ${ar ? 'اشترك' : 'Subscribe'}
                 </button>
             </div>`;
         }).join('');
+        const feats = '';
 
         const wrap = document.createElement('div');
         wrap.id = 'zp-overlay';
@@ -189,9 +206,13 @@
         document.body.appendChild(wrap);
 
         wrap.querySelector('.zp-close').addEventListener('click', function (e) { e.preventDefault(); closeSubscriptions(); });
-        isPremium().then(ok => {
+        myTier().then(t => {
             const a = document.getElementById('zp-active');
-            if (a && ok) a.style.display = 'block';
+            if (a && t > 0) {
+                const pl = PLANS.find(p => p.tier === t);
+                a.textContent = (isAr() ? '✅ اشتراكك فعّال: ' : '✅ Active: ') + (pl ? (isAr() ? pl.ar : pl.en) : '');
+                a.style.display = 'block';
+            }
         });
         wrap.querySelectorAll('[data-plan]').forEach(b => {
             b.onclick = () => startPay(b.dataset.plan, b);
@@ -385,8 +406,8 @@
                     ${ar ? 'وثّق حسابك بشعار ناديك المفضل' : 'Verify your account with your favorite club badge'}
                 </div>
                 <div style="font-size:0.82rem; color:${C.muted}; line-height:1.6; margin-bottom:12px;">
-                    ${ar ? 'اشترك لتظهر بجانب اسمك شارة ناديك، مع منشورات أطول ورسائل صوتية في الغرف.'
-                         : 'Subscribe to show your club badge next to your name, with longer posts and voice messages in rooms.'}
+                    ${ar ? 'اشترك لتظهر بجانب اسمك شارة ناديك، مع منشورات أطول وصور، وباقات أعلى للفيديو والتوقّعات.'
+                         : 'Subscribe to show your club badge next to your name, with longer posts and images, and higher plans for video and predictions.'}
                 </div>
                 <button id="zp-promo-btn" onclick="window.openSubscriptions()">
                     ${ar ? 'عرض الاشتراكات' : 'View subscriptions'}
@@ -403,6 +424,8 @@
         PLANS,                      // الأسعار متاحة لباقي الملفات
         ensure,
         isPremium,
+        myTier,
+        tierOf: uid => Number((known.get(String(uid)) || {}).tier) || 0,
         mountPromo,
         openSubscriptions,
         closeSubscriptions,

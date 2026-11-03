@@ -22,7 +22,8 @@
         { id: 'pro',      tier: 2, coins: 500,  price: 5,  gid: 'zelo_coin_500',  ar: 'باقة المحترف', en: 'Pro',
           badge: { ar: 'الأكثر طلباً', en: 'Most popular' } },
         { id: 'elite',    tier: 3, coins: 1000, price: 10, gid: 'zelo_coin_1000', ar: 'باقة النجم',   en: 'Elite' },
-        { id: 'ultimate', tier: 4, coins: 2000, price: 20, gid: 'zelo_coin_2000', ar: 'باقة الأسطورة', en: 'Ultimate',
+        { id: 'ultimate', tier: 4, coins: 2000, price: 20, gid: 'zelo_coin_2000', ar: 'باقة الأسطورة', en: 'Ultimate' },
+        { id: 'king',     tier: 5, coins: 6000, price: 50, gid: 'zelo_coin_6000', ar: 'باقة الملوك',   en: 'Kings',
           badge: { ar: 'الأكبر', en: 'Biggest' } }
     ];
 
@@ -151,6 +152,7 @@
 
         /* الباقات (شبكة من عمودين) */
         .zs-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .zs-pack.t5 { grid-column: 1 / -1; }
         .zs-pack {
             position: relative; width: 100%; min-width: 0; overflow: hidden;
             display: flex; flex-direction: column; align-items: stretch; gap: 14px;
@@ -162,7 +164,7 @@
         .zs-pack:active { transform: scale(0.98); }
         .zs-pack.t2 { border-color: #2c4bb5; box-shadow: 0 0 0 1px rgba(44,75,181,0.5), 0 10px 26px rgba(44,75,181,0.22); }
         .zs-pack.t3 { border-color: rgba(245,195,90,0.55); box-shadow: 0 10px 26px rgba(245,195,90,0.10); }
-        .zs-pack.t4 {
+        .zs-pack.t4 , .zs-pack.t5 {
             background: linear-gradient(135deg, #f8d27a 0%, #f5c35a 45%, #c98a2b 100%);
             border-color: transparent; color: #0a1033;
             box-shadow: 0 14px 34px rgba(245,195,90,0.28);
@@ -170,13 +172,13 @@
 
         .zs-top-row { display: flex; align-items: center; gap: 8px; direction: ltr; justify-content: flex-start; }
         [dir="rtl"] .zs-top-row { justify-content: flex-end; }
-        .zs-pack.t4 .zs-coin { box-shadow: 0 0 0 2px #0a1033, 0 4px 10px rgba(0,0,0,0.4); }
+        .zs-pack.t4 .zs-coin , .zs-pack.t5 .zs-coin { box-shadow: 0 0 0 2px #0a1033, 0 4px 10px rgba(0,0,0,0.4); }
         .zs-amt {
             font-size: 1.9rem; line-height: 1; font-weight: 900; direction: ltr;
             font-variant-numeric: tabular-nums;
         }
         .zs-name { font-size: 0.88rem; font-weight: 700; color: #9aa6d6; text-align: start; }
-        .zs-pack.t4 .zs-name { color: #0a1033; opacity: 0.75; }
+        .zs-pack.t4 .zs-name , .zs-pack.t5 .zs-name { color: #0a1033; opacity: 0.75; }
 
         .zs-price {
             text-align: center; direction: ltr;
@@ -185,7 +187,7 @@
             font-size: 1rem; font-weight: 900;
             box-shadow: 0 6px 14px rgba(0,0,0,0.3);
         }
-        .zs-pack.t4 .zs-price { background: #0a1033; color: #f5c35a; }
+        .zs-pack.t4 .zs-price , .zs-pack.t5 .zs-price { background: #0a1033; color: #f5c35a; }
 
         /* شريط الزاوية */
         .zs-badge {
@@ -194,7 +196,7 @@
             background: #2c4bb5; color: #fff; font-size: 0.72rem; font-weight: 800; white-space: nowrap;
         }
         [dir="rtl"] .zs-badge { border-radius: 0 0 14px 0; padding: 5px 14px 5px 12px; }
-        .zs-pack.t4 .zs-badge { background: #0a1033; color: #f5c35a; }
+        .zs-pack.t4 .zs-badge , .zs-pack.t5 .zs-badge { background: #0a1033; color: #f5c35a; }
 
         .zs-note { margin: 22px 8px 0; text-align: center; font-size: 0.78rem; color: #7f8bbd; line-height: 1.6; }
 
@@ -251,7 +253,7 @@
                 ${p.badge ? `<span class="zs-badge">${esc(L(p.badge.ar, p.badge.en))}</span>` : ''}
                 <span class="zs-top-row">
                     <span class="zs-amt">${fmt(p.coins)}</span>
-                    ${coin(p.tier === 4 ? 44 : 36)}
+                    ${coin(p.tier >= 4 ? 44 : 36)}
                 </span>
                 <span class="zs-name">${esc(L(p.ar, p.en))}</span>
                 <span class="zs-price" data-price="${p.id}">${esc(priceLabel(p))}</span>

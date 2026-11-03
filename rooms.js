@@ -1010,10 +1010,10 @@
                 askAi('ask', q);
             };
             ov.querySelector('#rm-ai').addEventListener('click', async () => {
-                // مساعد المباراة للمشتركين فقط (مثل الرسائل الصوتية)
-                const ok = window.ZeloPremium ? await window.ZeloPremium.isPremium() : false;
+                // مساعد المباراة: الباقة المميّزة (درجة 2) فأعلى
+                const ok = window.ZeloPremium && window.ZeloPremium.myTier ? (await window.ZeloPremium.myTier()) >= 2 : false;
                 if (!ok) {
-                    toast(T('rmAiPremium', 'مساعد المباراة للمشتركين فقط', 'Match assistant is for subscribers only'));
+                    toast(T('rmAiPremium', 'مساعد المباراة في الباقة المميّزة فما فوق', 'Match assistant needs the Plus plan or higher'));
                     if (window.openSubscriptions) window.openSubscriptions();
                     return;
                 }
@@ -1069,7 +1069,7 @@
 
         // زر الذكاء الاصطناعي باهت لغير المشترك
         const aiBtn = ov.querySelector('#rm-ai');
-        if (window.ZeloPremium && aiBtn) window.ZeloPremium.isPremium().then(ok => { if (!ok) aiBtn.style.opacity = '0.45'; });
+        if (window.ZeloPremium && window.ZeloPremium.myTier && aiBtn) window.ZeloPremium.myTier().then(t => { if (t < 2) aiBtn.style.opacity = '0.45'; });
 
         await loadBlocked();
         if (isCustom) {
