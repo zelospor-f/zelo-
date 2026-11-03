@@ -1952,26 +1952,7 @@
         .pc-post .t { color: #7782b0; font-size: 0.68rem; font-weight: 700; margin-bottom: 4px; }
         .pc-post img { width: 100%; max-height: 260px; object-fit: cover; border-radius: 12px; margin-top: 8px; }
         .pc-empty { padding: 24px; text-align: center; color: #7782b0; font-weight: 700; }
-        .pcx { padding: calc(64px + env(safe-area-inset-top, 0px)) 16px 0; }
-        .pcx-head { display: flex; align-items: center; gap: 14px; }
-        .pcx-av { width: 92px; height: 92px; min-width: 92px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: linear-gradient(135deg, #2c4bb5, #f5c35a, #14206b); box-shadow: 0 0 18px rgba(245,195,90,0.3); }
-        .pcx-av div { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; border: 2px solid #0a1033; background: #0a1033; }
-        .pcx-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .pcx-id { flex: 1; min-width: 0; }
-        .pcx-name { margin: 0; font-size: 1.15rem; font-weight: 900; color: #fff; display: flex; align-items: center; gap: 5px; overflow: hidden; }
-        .pcx-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .pcx-user { font-size: 0.8rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: inherit; text-align: start; unicode-bidi: plaintext; }
-        .pcx-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 18px; text-align: center; }
-        .pcx-stat b { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 1.7rem; font-weight: 900; color: #fff; line-height: 1.1; }
-        .pcx-stat b svg { width: 22px; height: 22px; stroke: #f5c35a; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-        .pcx-stat span { display: block; font-size: 0.76rem; font-weight: 700; color: #9aa6d6; margin-top: 2px; }
-        .pcx-btns { display: flex; gap: 10px; margin-top: 16px; }
-        .pcx-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.06); color: #fff; font-weight: 800; font-size: 0.84rem; padding: 12px 8px; border-radius: 999px; border: 1px solid rgba(245,195,90,0.3); font-family: inherit; }
-        .pcx-btn:active { background: rgba(245,195,90,0.14); }
-        .pcx-btn.main { background: #f5c35a; color: #0a1033; border-color: #f5c35a; }
-        .pcx-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-        .pcx-tabs { margin-top: 18px; display: flex; gap: 8px; }
-        .pcx-tab { padding: 8px 18px; border-radius: 999px; background: rgba(245,195,90,0.16); border: 1px solid rgba(245,195,90,0.4); color: #ffd98a; font-weight: 900; font-size: 0.85rem; }`;
+        .pc-end { display: none; }`;
         document.head.appendChild(s);
     })();
 
@@ -1981,107 +1962,57 @@
         const o = document.getElementById('pc-overlay');
         if (o) o.remove();
         window.removeEventListener('popstate', onPcPop);
+        try { window.ZeloProfile && window.ZeloProfile.endOther && window.ZeloProfile.endOther(); } catch (e) {}
     }
     window.closeUserProfile = function () {
         const o = document.getElementById('pc-overlay');
         if (o) o.remove();
         window.removeEventListener('popstate', onPcPop);
+        try { window.ZeloProfile && window.ZeloProfile.endOther && window.ZeloProfile.endOther(); } catch (e) {}
         if (pcPushed) { pcPushed = false; try { history.back(); } catch (e) {} }
     };
 
+    // ملف أي مستخدم: يفتح الملف الأساسي نفسه (profile-main.js) بوضع العرض، لا نسخة منفصلة
     window.openUserProfile = async function (uid) {
         uid = String(uid || '');
         const c = db();
         if (!c || !uid) return;
         window.closeUserProfile();
+        if (uid === me().id) { if (typeof window.showPage === 'function') window.showPage('profile'); return; }
 
-        // الاسم والصورة من المنشورات أو الردود المحمّلة
         const src = Object.values(postCache).find(p => String(p.user_id) === uid)
                  || Object.values(cmCache).find(m => String(m.user_id) === uid) || {};
-        const isMe = uid === me().id;
-        const name = isMe ? me().name : (src.author_name || '');
-        const avatar = isMe ? me().avatar : (src.author_avatar || '');
 
         const ov = document.createElement('div');
         ov.id = 'pc-overlay';
         ov.className = 'pc-overlay';
-        ov.innerHTML = `<div class="pc-sheet">${window.zeloBackBtn('window.closeUserProfile()', isAr(), 'pc-back')}<div class="pc-empty">${isAr() ? 'جارٍ التحميل...' : 'Loading...'}</div></div>`;
+        ov.innerHTML = `<div class="pc-sheet"><div class="pc-empty">${isAr() ? 'جارٍ التحميل...' : 'Loading...'}</div></div>`;
         document.body.appendChild(ov);
         try { history.pushState({ pc: 1 }, ''); pcPushed = true; window.addEventListener('popstate', onPcPop); } catch (e) {}
 
-        const count = (table, col) =>
-            c.from(table).select('*', { count: 'exact', head: true }).eq(col, uid);
-        const [, followers, following, postsCount, postsRes] = await Promise.all([
+        const count = (table, col) => c.from(table).select('*', { count: 'exact', head: true }).eq(col, uid);
+        const [, prof, followers, following, postsCount] = await Promise.all([
             fetchBadges([uid]),
+            c.rpc('get_public_profile', { p_uid: uid }),
             count('user_follows', 'following_id'),
             count('user_follows', 'follower_id'),
-            count('posts', 'user_id'),
-            c.from('posts').select('*').eq('user_id', uid).order('created_at', { ascending: false }).limit(50)
+            count('posts', 'user_id')
         ]);
-
-        const handle = handleOf(uid);
-        const followed = followSet.has(uid);
-        const posts = postsRes.data || [];
-        await loadPostStats(posts);
-        const nf = followers.count || 0;
-
-        const buttons = isMe ? '' : `
-            <button class="pcx-btn" id="pc-msg"><svg viewBox="0 0 24 24"><path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/></svg>${isAr() ? 'رسالة' : 'Message'}</button>
-            <button class="pcx-btn ${followed ? '' : 'main'}" id="pc-follow">${followed ? (isAr() ? 'متابَع' : 'Following') : (isAr() ? 'متابعة' : 'Follow')}</button>`;
-
-        const ico = {
-            fing: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 11.5l2 2 3.5-3.5"/></svg>',
-            fers: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M18.5 8v6M15.5 11h6"/></svg>',
-            post: '<svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>'
-        };
-
-        ov.firstElementChild.innerHTML = `
-            ${window.zeloBackBtn('window.closeUserProfile()', isAr(), 'pc-back')}
-            <div class="pcx">
-                <div class="pcx-head">
-                    <div class="pcx-av"><div><img src="${esc(avatarUrl(name, avatar))}" alt="" onerror="this.style.display='none'"></div></div>
-                    <div class="pcx-id">
-                        <h4 class="pcx-name"><span>${esc(name)}</span>${badgeHtml(uid, 20)}</h4>
-                        ${handle ? `<div class="pcx-user">@${esc(handle)}</div>` : ''}
-                    </div>
-                </div>
-                <div class="pcx-stats">
-                    <div class="pcx-stat"><b>${ico.fing}${following.count || 0}</b><span>${isAr() ? 'يتابِع' : 'Following'}</span></div>
-                    <div class="pcx-stat"><b>${ico.fers}<i id="pc-nfollowers" style="font-style:normal;">${nf}</i></b><span>${isAr() ? 'متابِعون' : 'Followers'}</span></div>
-                    <div class="pcx-stat"><b>${ico.post}${postsCount.count || 0}</b><span>${isAr() ? 'منشور' : 'Posts'}</span></div>
-                </div>
-                ${buttons ? `<div class="pcx-btns">${buttons}</div>` : ''}
-                <div class="pcx-tabs"><div class="pcx-tab">${isAr() ? 'المنشورات' : 'Posts'}</div></div>
-            </div>
-            <div class="pc-posts" style="margin-top:12px;">
-                ${posts.length ? posts.map(p => `
-                    <div class="pc-post" data-pid="${p.id}">
-                        <div class="pc-post-body" onclick="window.openPostPage(${p.id})">
-                            <div class="t">${timeHtml(p.created_at)}</div>
-                            ${esc(p.content)}
-                            ${p.image_url ? `<img src="${esc(p.image_url)}" onerror="this.style.display='none'">` : ''}
-                        </div>
-                        <div class="post-actions">${actionsHtml(postCache[p.id] || p)}</div>
-                    </div>`).join('') : `<div class="pc-empty">${isAr() ? 'لا توجد منشورات' : 'No posts yet'}</div>`}
-            </div>`;
-
-        const fb = document.getElementById('pc-follow');
-        if (fb) fb.onclick = async () => {
-            const was = followSet.has(uid);
-            await toggleFollow(uid);
-            const now = followSet.has(uid);
-            if (now === was) return;
-            fb.className = 'pcx-btn ' + (now ? '' : 'main');
-            fb.textContent = now ? (isAr() ? 'متابَع' : 'Following') : (isAr() ? 'متابعة' : 'Follow');
-            const el = document.getElementById('pc-nfollowers');
-            if (el) el.textContent = Math.max(0, (parseInt(el.textContent, 10) || 0) + (now ? 1 : -1));
-        };
-        const mb = document.getElementById('pc-msg');
-        if (mb) mb.onclick = () => {
-            // اربطه بنظام الرسائل عندك
-            if (typeof window.openChat === 'function') { window.closeUserProfile(); window.openChat(uid); }
-            else alert(isAr() ? 'نظام الرسائل غير مربوط بعد' : 'Messaging is not linked yet');
-        };
+        if (document.getElementById('pc-overlay') !== ov) return; // أُغلق أثناء التحميل
+        let row = Array.isArray(prof.data) ? prof.data[0] : prof.data;
+        if (!row) row = { username: handleOf(uid) || '', nickname_ar: src.author_name || '', photo_url: src.author_avatar || '' };
+        const PF = window.ZeloProfile;
+        if (!PF || !PF.showOther) { ov.firstElementChild.innerHTML = `<div class="pc-empty">${isAr() ? 'تعذّر فتح الملف' : 'Could not open profile'}</div>`; return; }
+        PF.showOther(ov.firstElementChild, {
+            uid, row,
+            followers: followers.count || 0, following: following.count || 0, posts: postsCount.count || 0,
+            followed: followSet.has(uid),
+            onFollow: async () => { await toggleFollow(uid); return followSet.has(uid); },
+            onMessage: () => {
+                if (typeof window.openChat === 'function') { window.closeUserProfile(); window.openChat(uid); }
+                else alert(isAr() ? 'نظام الرسائل غير مربوط بعد' : 'Messaging is not linked yet');
+            }
+        });
     };
 
     // ===================== زر النشر العائم (مثل X) =====================
