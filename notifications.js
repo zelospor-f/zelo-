@@ -128,11 +128,20 @@
 
     /* ---------- الشارة ---------- */
     function setBadge(count) {
-        const el = document.getElementById('notif-badge');
-        if (!el) return;
-        el.textContent = count > 99 ? '99+' : String(count);
-        el.style.display = count > 0 ? 'block' : 'none';
+        window.__zNotifUnread = count;
+        if (typeof window.updateNavBadge === 'function') window.updateNavBadge();
+        const row = document.getElementById('dm-notif-badge');
+        if (row) { row.textContent = count > 99 ? '99+' : String(count); row.style.display = count > 0 ? 'flex' : 'none'; }
     }
+
+    // ملخص للصفحة الرئيسية للرسائل: عدد غير المقروء + آخر إشعار
+    window.zeloNotifSummary = async function () {
+        const list = await fetchAll();
+        const last = list[0] || null;
+        const unread = list.filter(n => !n.is_read).length;
+        setBadge(unread);
+        return { unread, last: last ? ((isAr() ? (last.title_ar || last.title_en) : (last.title_en || last.title_ar)) || '') : '', at: last ? last.created_at : '' };
+    };
 
     async function refreshNotifBadge() {
         try {
@@ -269,7 +278,8 @@
 
         container.innerHTML = `${CSS}
             <div class="nt-head">
-                <h2 class="nt-title">🔔 ${T('notifTitle', 'الإشعارات', 'Notifications')}</h2>
+                ${window.zeloBackBtn ? window.zeloBackBtn("showPage('messages')", isAr()) : ''}
+                <h2 class="nt-title" style="flex:1;">🔔 ${T('notifTitle', 'الإشعارات', 'Notifications')}</h2>
                 <div class="nt-actions">
                     ${unread ? `<button class="nt-btn" id="nt-read-all">${T('notifMarkAllRead', 'قراءة الكل', 'Mark all read')}</button>` : ''}
                     ${list.length ? `<button class="nt-btn danger" id="nt-clear">${T('notifClear', 'مسح', 'Clear')}</button>` : ''}

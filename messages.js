@@ -465,7 +465,11 @@
     .dm-dot { background:#1d9bf0; color:#fff; min-width:10px; height:10px; border-radius:999px; font-size:0.65rem; font-weight:900; padding:0 5px; display:flex; align-items:center; justify-content:center; }
     .dm-dot:not(:empty) { height:auto; min-width:18px; padding:1px 5px; }
     .dm-empty { color:#7a7f9a; text-align:center; padding:40px 16px; font-weight:700; }
-    .dm-fab { position:fixed; bottom:92px; inset-inline-start:18px; width:56px; height:56px; border-radius:50%; border:none; background:#1d9bf0; color:#fff; font-size:1.5rem; z-index:1500; box-shadow:0 6px 20px rgba(29,155,240,0.5); cursor:pointer; }
+    .dm-notif { display:flex; gap:12px; align-items:center; padding:12px 4px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:4px; }
+    .dm-notif:active { background:rgba(255,255,255,0.05); }
+    .dm-notif-ic { width:52px; height:52px; min-width:52px; border-radius:50%; background:linear-gradient(135deg,#f5c35a,#e08a2c); display:flex; align-items:center; justify-content:center; box-shadow:0 0 14px rgba(245,195,90,0.35); }
+    .dm-notif-ic svg { width:26px; height:26px; stroke:#0a1033; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+    .dm-fab { position:fixed; bottom:92px; left:18px; right:auto; inset-inline-start:auto; width:56px; height:56px; border-radius:50%; border:none; background:#1d9bf0; color:#fff; font-size:1.5rem; z-index:1500; box-shadow:0 6px 20px rgba(29,155,240,0.5); cursor:pointer; }
 
     .dm-sheet-ov { position:fixed; inset:0; z-index:4000; background:rgba(0,0,0,0.55); display:flex; align-items:flex-end; justify-content:center; }
     .dm-sheet { width:100%; max-width:520px; background:#1a1d2e; border-radius:18px 18px 0 0; padding:8px 0 18px; max-height:80vh; overflow-y:auto; }
@@ -513,8 +517,16 @@
         }
         container.innerHTML = `
             <div class="dm-wrap">
-                <div class="dm-title">${T('الدردشة', 'Messages')}</div>
+                <div class="dm-title">${T('الرسائل', 'Messages')}</div>
                 <input class="dm-search" id="dm-filter" placeholder="${T('بحث', 'Search')}">
+                <div class="dm-notif" id="dm-notif-row">
+                    <div class="dm-notif-ic"><svg viewBox="0 0 24 24"><path d="M6 17v-6a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21.5a2 2 0 0 0 4 0"/></svg></div>
+                    <div class="dm-body">
+                        <div class="dm-row1"><span class="dm-name">${T('الإشعارات', 'Notifications')}</span></div>
+                        <div class="dm-row2"><span class="dm-last" id="dm-notif-sub">${T('اضغط لعرض إشعاراتك', 'Tap to see your notifications')}</span></div>
+                    </div>
+                    <span class="dm-dot" id="dm-notif-badge" style="display:none;"></span>
+                </div>
                 <div id="dm-list"><div class="dm-empty">${T('جارٍ التحميل...', 'Loading...')}</div></div>
             </div>
             <button class="dm-fab" id="dm-fab">✉️</button>`;
@@ -522,17 +534,26 @@
         filterText = '';
         container.querySelector('#dm-filter').oninput = e => { filterText = e.target.value; renderList(); };
         container.querySelector('#dm-fab').onclick = newChatSheet;
+        container.querySelector('#dm-notif-row').onclick = () => { if (typeof showPage === 'function') showPage('notifications'); };
+        if (typeof window.zeloNotifSummary === 'function') {
+            window.zeloNotifSummary().then(r => {
+                const sub = document.getElementById('dm-notif-sub');
+                if (sub && r.last) sub.textContent = r.last;
+                else if (sub) sub.textContent = T('لا توجد إشعارات جديدة', 'No new notifications');
+            }).catch(() => {});
+        }
         bindListEvents();
         loadList();
 
         if (listTimer) clearInterval(listTimer);
+        let tick = 0;
         listTimer = setInterval(() => {
             if (!document.body.contains(listEl)) {          // غادر المستخدم الصفحة
                 clearInterval(listTimer); listTimer = null;
                 const f = document.getElementById('dm-fab'); if (f) f.remove();
                 return;
             }
-            if (!chat) loadList();
-        }, 10000);
+            if (!chat && ++tick % 7 === 0) loadList();      // كل ~10 ثوانٍ؛ والفحص أسرع لإزالة الزر فور مغادرة الصفحة
+        }, 1500);
     };
 })();

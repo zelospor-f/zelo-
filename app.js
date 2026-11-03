@@ -238,7 +238,7 @@ function showPage(pageId) {
 
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
     const activeNav = Array.from(document.querySelectorAll(".nav-item"))
-        .find(el => el.getAttribute("onclick")?.includes(`'${pageId}'`));
+        .find(el => el.getAttribute("onclick")?.includes(`'${pageId === 'notifications' ? 'messages' : pageId}'`));
     if (activeNav) activeNav.classList.add("active");
 
     const contentDiv = document.getElementById("main-content");
