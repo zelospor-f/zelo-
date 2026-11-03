@@ -255,7 +255,7 @@
             .pp-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 0 1 auto; }
             .pp-name > img { flex: none; margin: 0 !important; }
             .pp-user { font-size: 0.78rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: inherit; text-align: start; unicode-bidi: isolate; }
-            .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; text-align: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(245,195,90,0.18); border-radius: 16px; padding: 10px 0; }
+            .pp-stats { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 14px; text-align: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(245,195,90,0.18); border-radius: 16px; padding: 10px 0; }
             .pp-stat + .pp-stat { border-inline-start: 1px solid rgba(255,255,255,0.08); }
             .pp-stat { cursor: default; }
             .pp-stat.tap { cursor: pointer; }
@@ -308,8 +308,8 @@
         `<svg viewBox="0 0 24 24" width="19" height="19" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
     const IC = {
         reply:  svgIcon('<path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/>'),
-        repost: svgIcon('<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
-        heart:  on => svgIcon('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.6 1-1.1a5.5 5.5 0 0 0 0-7.7z"/>', on),
+        repost: svgIcon('<circle cx="6" cy="12" r="3"/><path d="M11.5 12H21"/><path d="M17 7.5l4.5 4.5-4.5 4.5"/>'),
+        heart:  on => `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="${on ? 'currentColor' : 'none'}"/><g stroke="${on ? '#0a1033' : 'currentColor'}"><path d="M12 8.2l3.2 2.3-1.2 3.7h-4l-1.2-3.7z"/><path d="M12 8.2V3.2M15.2 10.5l4.6-1.5M14 14.2l2.8 3.9M10 14.2l-2.8 3.9M8.8 10.5L4.2 9"/></g></svg>`,
         views:  svgIcon('<path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>'),
         save:   on => svgIcon('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>', on),
         share:  svgIcon('<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/>')
@@ -327,7 +327,7 @@
             .pf-act .ic { display:inline-flex; align-items:center; justify-content:center; }
             .pf-act .ic svg { display:block; }
             .pf-act[onclick] { cursor:pointer; }
-            .pf-like-on { color:#f91880; background:rgba(249,24,128,0.12); }
+            .pf-like-on { color:#f5c35a; background:rgba(245,195,90,0.14); }
             .pf-rp-on { color:#14F195; background:rgba(20,241,149,0.12); }
             .pf-save { opacity:0.6; }
             .pf-save.saved { opacity:1; color:#f5c35a; background:rgba(245,195,90,0.12); }
@@ -450,7 +450,7 @@
         const text = p.content ?? p.text ?? p.body ?? '';
         const img = p.image_url || p.media_url || p.image || '';
         const when = timeAgo(e.repostAt || p.created_at, ar);
-        const ctx = e.kind === 'repost' ? `<div class="feed-ctx">🔁 ${P.state.viewUid ? tr('ui_they_reposted', 'أعاد النشر', 'Reposted') : tr('ui_you_reposted', 'أعدتَ النشر', 'You reposted')}</div>`
+        const ctx = e.kind === 'repost' ? `<div class="feed-ctx">🔁 ${P.state.viewUid ? tr('ui_they_reposted', 'مرّر', 'Passed') : tr('ui_you_reposted', 'مرّرتَ', 'You passed')}</div>`
             : e.kind === 'reply' ? `<div class="feed-ctx">💬 ${P.state.viewUid ? tr('ui_they_replying_to', 'ردّ على', 'Replying to') : tr('ui_replying_to', 'رددتَ على', 'Replying to')} ${esc((e.parent && e.parent.author_name) || (tr('ui_a_post', 'منشور', 'a post')))}</div>` : '';
         const quote = (e.kind === 'reply' && e.parent && e.parent.content)
             ? `<div class="feed-quote">${esc(String(e.parent.content).slice(0, 140))}</div>` : '';
@@ -503,7 +503,7 @@
     function renderFeed(rows, box, ar) {
         if (!box) return;
         if (!rows.length) {
-            const msg = { videos: ['لا توجد فيديوهات بعد', 'No videos yet'], posts: ['لا توجد منشورات بعد', 'No posts yet'], replies: ['لا توجد ردود بعد', 'No replies yet'], reposts: ['لا توجد إعادة نشر بعد', 'No reposts yet'] }[F.tab];
+            const msg = { videos: ['لا توجد فيديوهات بعد', 'No videos yet'], posts: ['لا توجد منشورات بعد', 'No posts yet'], replies: ['لا توجد ردود بعد', 'No replies yet'], reposts: ['لا توجد تمريرات بعد', 'No passes yet'] }[F.tab];
             box.innerHTML = `<div class="feed-empty">${ar ? msg[0] : msg[1]}</div>`;
             return;
         }
@@ -528,7 +528,7 @@
 
     P.feedSectionHtml = function (ar) {
         const vidIcon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>';
-        const tabs = [['posts', tr('ui_posts', 'المنشورات', 'Posts')], ['replies', tr('ui_replies', 'الردود', 'Replies')], ['reposts', tr('ui_reposts', 'إعادة النشر', 'Reposts')], ['videos', vidIcon]];
+        const tabs = [['posts', tr('ui_posts', 'المنشورات', 'Posts')], ['replies', tr('ui_replies', 'الردود', 'Replies')], ['reposts', tr('ui_reposts', 'التمريرات', 'Passes')], ['videos', vidIcon]];
         // بطاقة "وثّق حسابك" (تظهر لغير المشتركين فقط، وتُملأ من premium.js)
         const other = !!P.state.viewUid;
         if (!other) {
@@ -649,8 +649,8 @@
             openSheet(
                 `<div style="padding:4px 20px 10px;font-weight:900;font-size:1rem;">📊 ${ar ? 'التفاعلات مع المنشور' : 'Post interactions'}</div>` +
                 sec('👁', ar ? 'المشاهدات' : 'Views', (vw.count || 0).toLocaleString('en-US'), '') +
-                sec('❤️', ar ? 'الإعجابات' : 'Likes', likeIds.length, list(likeIds, ar ? 'مستخدم' : 'User')) +
-                sec('🔁', ar ? 'إعادة النشر' : 'Reposts', repIds.length, list(repIds, ar ? 'مستخدم' : 'User')) +
+                sec('⚽', ar ? 'الأهداف' : 'Goals', likeIds.length, list(likeIds, ar ? 'مستخدم' : 'User')) +
+                sec('➡️', ar ? 'التمريرات' : 'Passes', repIds.length, list(repIds, ar ? 'مستخدم' : 'User')) +
                 sec('💬', ar ? 'الردود' : 'Replies', (cm.data || []).length, cmNames.length ? cmNames.slice(0, 40).map(n => `<div style="padding:6px 0;font-size:0.84rem;font-weight:700;color:#e2e8f0;">${esc(n)}</div>`).join('') : `<div style="font-size:0.8rem;color:#9aa6d6;font-weight:700;">${ar ? 'لا أحد بعد' : 'Nobody yet'}</div>`)
             );
         } catch (err) {

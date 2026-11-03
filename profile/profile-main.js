@@ -507,6 +507,7 @@
                         <div class="pp-stat${V ? '' : ' tap'}" ${V ? '' : `onclick="window.openFollowList('following')"`}><b><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 11.5l2 2 3.5-3.5"/></svg>${d.following.toLocaleString('en-US')}</b><span>${tr('ui_following', 'يتابِع', 'Following')}</span></div>
                         <div class="pp-stat${V ? '' : ' tap'}" ${V ? '' : `onclick="window.openFollowList('followers')"`}><b><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M18.5 8v6M15.5 11h6"/></svg><i id="pc-nfollowers" style="font-style:normal;">${d.followers.toLocaleString('en-US')}</i></b><span>${tr('ui_followers', 'متابِعون', 'Followers')}</span></div>
                         ${V ? `<div class="pp-stat"><b><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>${Number(d.posts || 0).toLocaleString('en-US')}</b><span>${tr('ui_posts_count', 'منشور', 'Posts')}</span></div>` : `<div class="pp-stat"><b><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M12 9v11M3 13h18"/><path d="M12 9c-2.5 0-4-1-4-2.5S9.5 4 11 5c.8.6 1 2 1 4zM12 9c2.5 0 4-1 4-2.5S14.5 4 13 5c-.8.6-1 2-1 4z"/></svg><i id="stat-invited" style="font-style:normal;">${d.invited.toLocaleString('en-US')}</i></b><span>${tr('ui_invited', 'مدعوون', 'Invited')}</span></div>`}
+                        <div class="pp-stat"><b><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8.2l3.2 2.3-1.2 3.7h-4l-1.2-3.7z"/><path d="M12 8.2V3.2M15.2 10.5l4.6-1.5M14 14.2l2.8 3.9M10 14.2l-2.8 3.9M8.8 10.5L4.2 9"/></svg><i id="pp-goals" style="font-style:normal;">–</i></b><span>${tr('ui_goals', 'أهداف', 'Goals')}</span></div>
                     </div>
 
                     ${d.bio ? `<div class="pp-bio">${esc(d.bio).replace(/\n/g, '<br>')}</div>` : ''}
@@ -541,7 +542,26 @@
         if (wrap) wrap.insertAdjacentHTML('beforeend', P.feedSectionHtml(isAr()));
         P.loadFeed(false);
         if (S.viewUid) wireOther(); else mountVerifyBtn();
+        loadGoals();
     };
+
+    // مجموع "الأهداف" التي سجّلها الآخرون على منشورات صاحب الملف
+    async function loadGoals() {
+        const c = db();
+        const uid = String(S.viewUid || US().userId || '');
+        if (!c || !uid) return;
+        try {
+            const pr = await c.from(P.FT().posts).select('id').eq('user_id', uid).limit(300);
+            const ids = (pr.data || []).map(r => r.id);
+            let n = 0;
+            if (ids.length) {
+                const r = await c.from('post_likes').select('*', { count: 'exact', head: true }).in('post_id', ids).neq('user_id', uid);
+                n = r.count || 0;
+            }
+            const el = document.getElementById('pp-goals');
+            if (el) el.textContent = n.toLocaleString('en-US');
+        } catch (e) {}
+    }
 
     // زر اختيار/تبديل شارة النادي: للمشتركين فقط (غير المشتركين يرون بطاقة الاشتراك أسفل الصفحة)
     async function mountVerifyBtn() {
