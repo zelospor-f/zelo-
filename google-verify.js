@@ -8,7 +8,7 @@
     'use strict';
 
     const COINS = ['zelo_coin_100', 'zelo_coin_500', 'zelo_coin_1000', 'zelo_coin_2000', 'zelo_coin_6000'];
-    const SUBS = ['zelo_t1', 'zelo_t2', 'zelo_t3'];
+    const SUBS = ['zelo_t1_m', 'zelo_t1_y', 'zelo_t2_m', 'zelo_t2_y', 'zelo_t3_m', 'zelo_t3_y'];
 
     const client = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : (window.supabaseClient || null);
     const isNativeAndroid = () => {

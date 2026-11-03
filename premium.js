@@ -9,11 +9,14 @@
 
     /* ---------- الإعدادات: الأسعار والمزايا (عدّلها من هنا فقط) ---------- */
     const PLANS = [
-        // id = معرّف الاشتراك في Google Play Console (يجب أن يطابقه حرفياً) | tier = الدرجة | price = للعرض الاحتياطي فقط
-        { id: 'zelo_t1', tier: 1, period: 'monthly', price: 0.99, months: 1, ar: 'الأساسية', en: 'Basic' },
-        { id: 'zelo_t2', tier: 2, period: 'monthly', price: 1.99, months: 1, ar: 'المميّزة',  en: 'Plus' },
-        { id: 'zelo_t3', tier: 3, period: 'monthly', price: 4.99, months: 1, ar: 'الكاملة',   en: 'Pro', best: true }
+        // m / y = معرّف المنتج في Google Play Console (يجب أن يطابقه حرفياً) + السعر الاحتياطي للعرض (السعر الحقيقي يُجلب من Google)
+        { tier: 1, ar: 'الأساسية', en: 'Basic', m: { id: 'zelo_t1_m', price: 0.99 }, y: { id: 'zelo_t1_y', price: 8.49 } },
+        { tier: 2, ar: 'المميّزة',  en: 'Plus',  m: { id: 'zelo_t2_m', price: 1.99 }, y: { id: 'zelo_t2_y', price: 16.99 } },
+        { tier: 3, ar: 'الكاملة',   en: 'Pro',   m: { id: 'zelo_t3_m', price: 4.99 }, y: { id: 'zelo_t3_y', price: 41.99 }, best: true }
     ];
+    const SKUS = PLANS.reduce((a, p) => a.concat([p.m.id, p.y.id]), []);
+    const planOfSku = id => PLANS.find(p => p.m.id === id || p.y.id === id);
+    const savePct = p => Math.round((1 - p.y.price / (p.m.price * 12)) * 100);
 
     // المزايا الجديدة في كل درجة (الدرجة الأعلى تشمل ما قبلها)
     const TIER_FEATURES = {
@@ -65,14 +68,6 @@
     const me = () => String((window.userState && window.userState.userId) || '');
     const isAr = () => ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
     const money = n => '$' + n.toFixed(2);
-
-    // نسبة التوفير للخطة السنوية مقارنة بالشهرية
-    function savingPercent() {
-        const m = PLANS.find(p => p.period === 'monthly');
-        const y = PLANS.find(p => p.period === 'yearly');
-        if (!m || !y) return 0;
-        return Math.round((1 - y.price / (m.price * y.months)) * 100);
-    }
 
     // يسأل السيرفر عن قائمة مستخدمين ويحفظ النتيجة
     async function ensure(ids, force) {
@@ -188,7 +183,6 @@
         closeSubscriptions();
         const ar = isAr();
         const dir = ar ? 'rtl' : 'ltr';
-        const save = savingPercent();
 
         const plans = PLANS.map(p => {
             const rows = MATRIX.map(f => {
@@ -201,10 +195,10 @@
                 ${p.best ? `<div class="zp-tag">${ar ? 'الأفضل قيمة' : 'Best value'}</div>` : ''}
                 <div class="zp-row" style="flex-direction:row;justify-content:space-between;align-items:baseline;width:100%;margin-bottom:6px">
                     <div class="zp-name">${ar ? p.ar : p.en}</div>
-                    <div><span class="zp-price">${money(p.price)}</span><span class="zp-per">/ ${ar ? 'شهرياً' : 'month'}</span></div>
+                    <div><span class="zp-price">${money(p.m.price)}</span><span class="zp-per">/ ${ar ? 'شهرياً' : 'month'}</span></div>
                 </div>
                 ${rows}
-                <button class="zp-btn ${p.best ? 'main' : 'ghost'}" data-plan="${p.id}">${ar ? 'اشترك' : 'Subscribe'}</button>
+                <button class="zp-btn ${p.best ? 'main' : 'ghost'}" data-tier="${p.tier}">${ar ? 'اشترك' : 'Subscribe'}</button>
             </div>`;
         }).join('');
         const feats = '';
@@ -234,8 +228,23 @@
                 a.style.display = 'block';
             }
         });
-        wrap.querySelectorAll('[data-plan]').forEach(b => {
-            b.onclick = () => startPay(b.dataset.plan, b);
+        let curTier = 0;
+        const refreshBtns = () => wrap.querySelectorAll('.zp-btn[data-tier]').forEach(b => {
+            const t = Number(b.dataset.tier);
+            b.textContent = curTier === 0 ? (ar ? 'اشترك' : 'Subscribe')
+                : t > curTier ? (ar ? 'ترقية' : 'Upgrade')
+                : t === curTier ? (ar ? 'باقتك الحالية' : 'Your current plan')
+                : (ar ? 'باقتك أعلى من هذه' : 'Your plan is higher');
+            b.style.opacity = t <= curTier && curTier > 0 ? '.55' : '1';
+        });
+        myTier().then(t => { curTier = t; refreshBtns(); });
+        wrap.querySelectorAll('.zp-btn[data-tier]').forEach(b => {
+            b.onclick = () => {
+                const t = Number(b.dataset.tier);
+                if (curTier > 0 && t === curTier) return toast(ar ? 'هذه باقتك الحالية' : 'This is your current plan');
+                if (curTier > 0 && t < curTier) return toast(ar ? 'لا يمكن النزول إلى باقة أقل أثناء اشتراكك الحالي' : 'You cannot move to a lower plan while subscribed');
+                openChooser(PLANS.find(p => p.tier === t), curTier > 0);
+            };
         });
         wrap.querySelector('#zp-restore').onclick = restorePurchases;
         const strip = wrap.querySelector('#zp-plans'), dots = wrap.querySelectorAll('#zp-dots i');
@@ -249,13 +258,52 @@
         strip.addEventListener('scroll', () => requestAnimationFrame(setDots));
         setTimeout(() => { const first = strip.firstElementChild; if (first) first.scrollIntoView({ inline: 'center', block: 'nearest' }); setDots(); }, 60);
         // الأسعار الحقيقية من Google Play (بعملة المستخدم)
-        loadPrices().then(m => wrap.querySelectorAll('[data-plan]').forEach(b => {
-            const el = b.closest('.zp-plan') && b.closest('.zp-plan').querySelector('.zp-price');
-            if (el && m[b.dataset.plan]) el.textContent = m[b.dataset.plan];
-        }));
+        loadPrices().then(m => {
+            realPrices = m || {};
+            wrap.querySelectorAll('.zp-plan').forEach(card => {
+                const p = PLANS.find(x => x.tier === Number(card.dataset.tier));
+                const el = card.querySelector('.zp-price');
+                if (p && el && realPrices[p.m.id]) el.textContent = realPrices[p.m.id];
+            });
+        });
+    }
+
+    let realPrices = {};
+    function openChooser(p, isUpgrade) {
+        const ar = isAr();
+        const ov = document.getElementById('zp-overlay');
+        if (!ov || !p) return;
+        const old = document.getElementById('zp-choose');
+        if (old) old.remove();
+        const pm = realPrices[p.m.id] || money(p.m.price), py = realPrices[p.y.id] || money(p.y.price);
+        const box = document.createElement('div');
+        box.id = 'zp-choose';
+        box.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;direction:' + (ar ? 'rtl' : 'ltr');
+        box.innerHTML = `
+            <div style="width:100%;background:${C.card};border-radius:20px 20px 0 0;padding:16px 16px 22px;box-sizing:border-box;border-top:1px solid ${C.goldLine}">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                    <div style="color:#fff;font-size:1.05rem;font-weight:900">${isUpgrade ? (ar ? 'ترقية إلى ' : 'Upgrade to ') : ''}${ar ? p.ar : p.en}</div>
+                    <button id="zp-ch-x" aria-label="close" style="background:none;border:none;color:${C.muted};font-size:1.3rem;cursor:pointer">✕</button>
+                </div>
+                <button class="zp-btn ghost" data-sku="${p.m.id}" style="margin-top:0;display:flex;justify-content:space-between;align-items:center">
+                    <span>${ar ? 'شهري' : 'Monthly'}</span><span>${esc(pm)} / ${ar ? 'شهر' : 'mo'}</span>
+                </button>
+                <button class="zp-btn main" data-sku="${p.y.id}" style="display:flex;justify-content:space-between;align-items:center;position:relative">
+                    <span>${ar ? 'سنوي' : 'Yearly'} <span style="background:#0a1033;color:${C.gold};font-size:.68rem;padding:2px 8px;border-radius:20px;margin-inline-start:6px">${ar ? 'وفّر ' + savePct(p) + '٪' : 'Save ' + savePct(p) + '%'}</span></span>
+                    <span>${esc(py)} / ${ar ? 'سنة' : 'yr'}</span>
+                </button>
+                ${isUpgrade ? `<div class="zp-note">${ar ? 'الترقية فورية. تُحسب لك المدة المتبقية من باقتك الحالية.' : 'Upgrades apply immediately. Your remaining time is credited.'}</div>` : ''}
+            </div>`;
+        document.body.appendChild(box);
+        box.querySelector('#zp-ch-x').onclick = () => box.remove();
+        box.addEventListener('click', e => { if (e.target === box) box.remove(); });
+        box.querySelectorAll('[data-sku]').forEach(b => {
+            b.onclick = async () => { await startPay(b.dataset.sku, b, isUpgrade); box.remove(); };
+        });
     }
 
     function closeSubscriptions() {
+        const c = document.getElementById('zp-choose'); if (c) c.remove();
         const el = document.getElementById('zp-overlay');
         if (el) el.remove();
     }
@@ -335,14 +383,28 @@
     });
     document.addEventListener('deviceready', () => { try { setupPlugin(); } catch (e) {} });
 
-    async function buyWithPlugin(planId) {
+    async function buyWithPlugin(planId, upgrade) {
         setupPlugin();
         const { store, Platform, ErrorCode } = window.CdvPurchase;
         const product = store.get(planId, Platform.GOOGLE_PLAY);
         const offer = product && product.getOffer();
         if (!offer) return { ok: false, msg: 'product_not_found' };
         if (window.zeloBilling) await window.zeloBilling.prepare();
-        const err = await store.order(offer);
+        let extra;
+        if (upgrade) {
+            // ترقية: نستبدل الاشتراك الحالي (الرمز القديم من الخادم)
+            try {
+                const { data } = await db().rpc('my_active_sub');
+                const row = Array.isArray(data) ? data[0] : data;
+                if (row && row.purchase_token) {
+                    const RM = window.CdvPurchase.GooglePlay && window.CdvPurchase.GooglePlay.ReplacementMode;
+                    const samePeriod = String(row.product_id || '').slice(-2) === String(planId).slice(-2);
+                    extra = { googlePlay: { oldPurchaseToken: row.purchase_token,
+                        replacementMode: RM ? (samePeriod ? RM.CHARGE_PRORATED_PRICE : RM.CHARGE_FULL_PRICE) : undefined } };
+                }
+            } catch (e) { console.warn('[premium] upgrade token failed', e); }
+        }
+        const err = extra ? await store.order(offer, extra) : await store.order(offer);
         if (err) return { ok: false, msg: (ErrorCode && err.code === ErrorCode.PAYMENT_CANCELLED) ? 'cancelled' : (err.message || 'order_failed') };
         return { ok: true, pending: true };   // التفعيل يتم داخل approved
     }
@@ -353,7 +415,7 @@
         try {
             const dg = await getDG();
             if (dg) {
-                const details = await dg.getDetails(PLANS.map(p => p.id));
+                const details = await dg.getDetails(SKUS);
                 (details || []).forEach(d => {
                     map[d.itemId] = new Intl.NumberFormat(isAr() ? 'ar' : 'en',
                         { style: 'currency', currency: d.price.currency }).format(Number(d.price.value));
@@ -361,11 +423,11 @@
             } else if (hasPlugin()) {
                 setupPlugin();
                 const { store, Platform } = window.CdvPurchase;
-                PLANS.forEach(p => {
-                    const pr = store.get(p.id, Platform.GOOGLE_PLAY);
+                SKUS.forEach(sku => {
+                    const pr = store.get(sku, Platform.GOOGLE_PLAY);
                     const o = pr && pr.getOffer();
                     const ph = o && o.pricingPhases && o.pricingPhases[0];
-                    if (ph && ph.price) map[p.id] = ph.price;
+                    if (ph && ph.price) map[sku] = ph.price;
                 });
             }
         } catch (e) { console.warn('[premium] prices failed', e); }
@@ -373,14 +435,14 @@
     }
 
     /* ---------- بدء الشراء ---------- */
-    async function startPay(planId, btn) {
+    async function startPay(planId, btn, upgrade) {
         const ar = isAr();
-        if (!PLANS.some(p => p.id === planId)) return;
+        if (!SKUS.includes(planId)) return;
         try {
             if (btn) btn.disabled = true;
             let r;
             if (await getDG()) r = await buyWithDigitalGoods(planId);
-            else if (hasPlugin()) r = await buyWithPlugin(planId);
+            else if (hasPlugin()) r = await buyWithPlugin(planId, upgrade);
             else return toast(ar ? 'الشراء متاح داخل تطبيق Google Play فقط' : 'Purchases are available in the Google Play app only');
             if (r.ok && !r.pending) return onPaid();
             if (!r.ok && r.msg !== 'cancelled') toast((ar ? 'تعذّر إتمام الشراء: ' : 'Purchase failed: ') + r.msg);
@@ -401,7 +463,7 @@
             if (dg) {
                 const list = await dg.listPurchases();
                 for (const p of (list || [])) {
-                    if (!PLANS.some(x => x.id === p.itemId)) continue;
+                    if (!SKUS.includes(p.itemId)) continue;
                     const v = await verifyOnServer(p.itemId, p.purchaseToken);
                     if (v.ok) return onPaid();
                 }
@@ -460,6 +522,7 @@
         openSubscriptions,
         closeSubscriptions,
         subscribe: planId => startPay(planId),
+        SKUS,
         restore: restorePurchases,
         has: uid => !!(known.get(String(uid)) || {}).pro,
         refresh: () => isPremium(true)
