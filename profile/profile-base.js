@@ -10,7 +10,7 @@
     const P = window.ZeloProfile = window.ZeloProfile || {};
 
     // الحالة المشتركة: كل الملفات تقرأ وتكتب هنا
-    P.state = { draft: null, currentTarget: null, mode: 'view' }; // mode: 'view' | 'edit'
+    P.state = { draft: null, currentTarget: null, mode: 'view', viewUid: null }; // mode: 'view' | 'edit'
 
     P.US = () => (typeof userState !== 'undefined' && userState) ? userState : {};
     P.LS = {
@@ -377,7 +377,7 @@
     }
 
     async function fetchFeedRaw(tab) {
-        const c = db(), uid = US().userId;
+        const c = db(), uid = P.state.viewUid || US().userId;
         if (!c || !uid) return [];
         const T = FT();
         const own = { user_id: String(uid) };
@@ -427,14 +427,14 @@
         const text = p.content ?? p.text ?? p.body ?? '';
         const img = p.image_url || p.media_url || p.image || '';
         const when = timeAgo(e.repostAt || p.created_at, ar);
-        const ctx = e.kind === 'repost' ? `<div class="feed-ctx">🔁 ${tr('ui_you_reposted', 'أعدتَ النشر', 'You reposted')}</div>`
-            : e.kind === 'reply' ? `<div class="feed-ctx">💬 ${tr('ui_replying_to', 'رددتَ على', 'Replying to')} ${esc((e.parent && e.parent.author_name) || (tr('ui_a_post', 'منشور', 'a post')))}</div>` : '';
+        const ctx = e.kind === 'repost' ? `<div class="feed-ctx">🔁 ${P.state.viewUid ? tr('ui_they_reposted', 'أعاد النشر', 'Reposted') : tr('ui_you_reposted', 'أعدتَ النشر', 'You reposted')}</div>`
+            : e.kind === 'reply' ? `<div class="feed-ctx">💬 ${P.state.viewUid ? tr('ui_they_replying_to', 'ردّ على', 'Replying to') : tr('ui_replying_to', 'رددتَ على', 'Replying to')} ${esc((e.parent && e.parent.author_name) || (tr('ui_a_post', 'منشور', 'a post')))}</div>` : '';
         const quote = (e.kind === 'reply' && e.parent && e.parent.content)
             ? `<div class="feed-quote">${esc(String(e.parent.content).slice(0, 140))}</div>` : '';
         const cn = e.counts || {};
         const sid = esc(String(e.kind === 'reply' ? p.post_id : p.id));
         const pinnedHtml = (e.kind === 'post' && p.pinned_at) ? `<div class="feed-ctx">📌 ${tr('ui_pinned', 'مثبّت', 'Pinned')}</div>` : '';
-        const menuBtn = e.kind === 'post' ? `<span class="feed-more" onclick="event.stopPropagation();window.pfOpenPostMenu('${sid}')">⋯</span>` : '';
+        const menuBtn = (e.kind === 'post' && !P.state.viewUid) ? `<span class="feed-more" onclick="event.stopPropagation();window.pfOpenPostMenu('${sid}')">⋯</span>` : '';
         const n = v => Number(v || 0).toLocaleString('en-US');
         return `
             <div class="feed-item" style="cursor:pointer;" onclick="window.openPostPage && window.openPostPage('${sid}')">
@@ -496,10 +496,13 @@
     P.feedSectionHtml = function (ar) {
         const tabs = [['posts', tr('ui_posts', 'المنشورات', 'Posts')], ['replies', tr('ui_replies', 'الردود', 'Replies')], ['reposts', tr('ui_reposts', 'إعادة النشر', 'Reposts')]];
         // بطاقة "وثّق حسابك" (تظهر لغير المشتركين فقط، وتُملأ من premium.js)
-        setTimeout(() => window.ZeloPremium && window.ZeloPremium.mountPromo && window.ZeloPremium.mountPromo(), 80);
-        setTimeout(() => window.ZeloPremium && window.ZeloPremium.mountPromo && window.ZeloPremium.mountPromo(), 500);
+        const other = !!P.state.viewUid;
+        if (!other) {
+            setTimeout(() => window.ZeloPremium && window.ZeloPremium.mountPromo && window.ZeloPremium.mountPromo(), 80);
+            setTimeout(() => window.ZeloPremium && window.ZeloPremium.mountPromo && window.ZeloPremium.mountPromo(), 500);
+        }
         return `
-            <div id="verify-promo"></div>
+            ${other ? '' : '<div id="verify-promo"></div>'}
             <div class="feed-tabs">
                 ${tabs.map(t => `<button class="feed-tab ${t[0] === F.tab ? 'active' : ''}" data-tab="${t[0]}" onclick="window.switchProfileTab('${t[0]}')">${t[1]}</button>`).join('')}
             </div>

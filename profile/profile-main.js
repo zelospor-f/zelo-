@@ -472,6 +472,7 @@
         if (S.mode === 'edit') return P.drawEdit(target);
         const ar = isAr();
         const d = S.draft;
+        const V = !!S.viewUid; // عرض ملف شخص آخر بنفس التصميم
         const matched = P.getMatchedClubs(d);
         const displayName = displayNameOf(d, ar);
         const avatarSrc = avatarOf(d, displayName);
@@ -479,32 +480,35 @@
         target.innerHTML = P.styles(ar) + `
             <div class="profile-wrap">
                 <div class="profile-top">
-                    ${window.zeloBackBtn("if(typeof window.showPage === 'function') window.showPage('home');")}
+                    ${window.zeloBackBtn(V ? "window.closeUserProfile()" : "if(typeof window.showPage === 'function') window.showPage('home');")}
                     <h3 class="page-title">${tr('ui_profile', 'الملف الشخصي', 'Profile')}</h3>
                     <div style="width:64px;"></div>
                 </div>
 
-                ${window.zeloBanNoteHtml ? window.zeloBanNoteHtml() : ''}
+                ${(!V && window.zeloBanNoteHtml) ? window.zeloBanNoteHtml() : ''}
                 <div class="pp">
                     <div class="pp-head">
                         <div class="pp-av"><div><img src="${esc(avatarSrc)}" alt=""></div></div>
                         <div class="pp-id">
                             <h4 class="pp-name"><span>${esc(displayName)}</span>${window.zeloVerifiedBadge(d.badgeClub, 20)}</h4>
-                            <div class="pp-user">${d.username && d.nickname ? '\u200E@' + esc(d.username) : ''}</div>
+                            <div class="pp-user">${d.username && (d.nickname || V) ? '\u200E@' + esc(d.username) : ''}</div>
                         </div>
                     </div>
 
                     <div class="pp-stats">
-                        <div class="pp-stat tap" onclick="window.openFollowList('following')"><b><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 11.5l2 2 3.5-3.5"/></svg>${d.following.toLocaleString('en-US')}</b><span>${tr('ui_following', 'يتابِع', 'Following')}</span></div>
-                        <div class="pp-stat tap" onclick="window.openFollowList('followers')"><b><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M18.5 8v6M15.5 11h6"/></svg>${d.followers.toLocaleString('en-US')}</b><span>${tr('ui_followers', 'متابِعون', 'Followers')}</span></div>
-                        <div class="pp-stat"><b><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M12 9v11M3 13h18"/><path d="M12 9c-2.5 0-4-1-4-2.5S9.5 4 11 5c.8.6 1 2 1 4zM12 9c2.5 0 4-1 4-2.5S14.5 4 13 5c-.8.6-1 2-1 4z"/></svg><i id="stat-invited" style="font-style:normal;">${d.invited.toLocaleString('en-US')}</i></b><span>${tr('ui_invited', 'مدعوون', 'Invited')}</span></div>
+                        <div class="pp-stat${V ? '' : ' tap'}" ${V ? '' : `onclick="window.openFollowList('following')"`}><b><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M16 11.5l2 2 3.5-3.5"/></svg>${d.following.toLocaleString('en-US')}</b><span>${tr('ui_following', 'يتابِع', 'Following')}</span></div>
+                        <div class="pp-stat${V ? '' : ' tap'}" ${V ? '' : `onclick="window.openFollowList('followers')"`}><b><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.5-3.6 3-5.5 6.5-5.5s6 1.9 6.5 5.5"/><path d="M18.5 8v6M15.5 11h6"/></svg><i id="pc-nfollowers" style="font-style:normal;">${d.followers.toLocaleString('en-US')}</i></b><span>${tr('ui_followers', 'متابِعون', 'Followers')}</span></div>
+                        ${V ? `<div class="pp-stat"><b><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>${Number(d.posts || 0).toLocaleString('en-US')}</b><span>${tr('ui_posts_count', 'منشور', 'Posts')}</span></div>` : `<div class="pp-stat"><b><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M12 9v11M3 13h18"/><path d="M12 9c-2.5 0-4-1-4-2.5S9.5 4 11 5c.8.6 1 2 1 4zM12 9c2.5 0 4-1 4-2.5S14.5 4 13 5c-.8.6-1 2-1 4z"/></svg><i id="stat-invited" style="font-style:normal;">${d.invited.toLocaleString('en-US')}</i></b><span>${tr('ui_invited', 'مدعوون', 'Invited')}</span></div>`}
                     </div>
 
                     ${matched.length ? `<div class="pp-badges">${matched.map(c => `<div class="pp-badge"><img src="${esc(c.logo || c.flag || '')}" alt="" onerror="this.style.display='none'"></div>`).join('')}</div>` : ''}
                     ${d.bio ? `<div class="pp-bio">${esc(d.bio).replace(/\n/g, '<br>')}</div>` : ''}
-                    ${d.dob ? `<div class="pp-meta">🎂 ${esc(d.dob)}</div>` : ''}
+                    ${(!V && d.dob) ? `<div class="pp-meta">🎂 ${esc(d.dob)}</div>` : ''}
 
-                    <div class="pp-btns">
+                    ${V ? `<div class="pp-btns">
+                        <button class="pp-btn" id="pc-msg"><svg viewBox="0 0 24 24"><path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/></svg>${tr('ui_message', 'رسالة', 'Message')}</button>
+                        <button class="pp-btn" id="pc-follow"></button>
+                    </div>` : `<div class="pp-btns">
                         <button class="pp-btn" onclick="window.openEditProfile()"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>${tr('ui_edit_profile', 'تعديل الملف الشخصي', 'Edit profile')}</button>
                         <button class="pp-btn" onclick="window.openShareSheet()"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>${tr('ui_share', 'مشاركة', 'Share')}</button>
                     </div>
@@ -518,7 +522,7 @@
 
                     ${(d.badgeClub && matched.length <= 1) ? '' : `<button class="verify-btn" onclick="window.openBadgePicker()">
                         ${d.badgeClub ? '🔄 ' + (tr('ui_switch_badge', 'تبديل شارة النادي', 'Switch club badge')) : '✔️ ' + (tr('ui_verify_your_account_with', 'وثّق حسابك بشارة ناديك', 'Verify your account with your club badge'))}
-                    </button>`}
+                    </button>`}`}
                 </div>
 
             </div>`;
@@ -531,6 +535,65 @@
         const wrap = target.querySelector('.profile-wrap');
         if (wrap) wrap.insertAdjacentHTML('beforeend', P.feedSectionHtml(isAr()));
         P.loadFeed(false);
+        if (S.viewUid) wireOther();
+    };
+
+    // ===== عرض ملف مستخدم آخر بنفس الملف الأساسي (بدل النسخة المبسطة) =====
+    function wireOther() {
+        const o = S.other; if (!o) return;
+        const fb = document.getElementById('pc-follow'), mb = document.getElementById('pc-msg');
+        const paint = f => {
+            if (!fb) return;
+            fb.textContent = f ? tr('ui_following_btn', 'متابَع', 'Following') : tr('ui_follow', 'متابعة', 'Follow');
+            fb.style.cssText = f ? '' : 'background:#f5c35a;color:#0a1033;border-color:#f5c35a;';
+        };
+        paint(o.followed);
+        if (fb) fb.onclick = async () => {
+            const was = !!o.followed;
+            const now = await o.onFollow();
+            if (now === was) return;
+            o.followed = now; paint(now);
+            const el = document.getElementById('pc-nfollowers');
+            if (el) el.textContent = Math.max(0, (parseInt(String(el.textContent).replace(/,/g, ''), 10) || 0) + (now ? 1 : -1)).toLocaleString('en-US');
+        };
+        if (mb) mb.onclick = () => o.onMessage();
+    }
+
+    P.showOther = function (container, o) {
+        if (!S.otherSnap) {
+            const snap = { draft: S.draft, target: S.currentTarget, mode: S.mode, tab: P.feed.tab, hadProfile: false };
+            const t = S.currentTarget;
+            // صفحة ملفي مفتوحة تحتها؟ نُفرغها مؤقتاً كي لا تتكرر المعرّفات، وتُعاد رسمها عند الإغلاق
+            if (t && t !== container && t.querySelector && t.querySelector('.profile-wrap')) { snap.hadProfile = true; t.innerHTML = ''; }
+            S.otherSnap = snap;
+        }
+        const r = o.row || {};
+        S.viewUid = String(o.uid);
+        S.other = o;
+        S.mode = 'view';
+        S.currentTarget = container;
+        container.style.padding = 'calc(14px + env(safe-area-inset-top, 0px)) 15px 40px';
+        S.draft = {
+            nickname: r.nickname_ar || r.nickname_en || '',
+            username: r.username || '',
+            dob: '', bio: r.bio || '', photoUrl: r.photo_url || '',
+            selectedClubs: (r.selected_clubs || []).map(String),
+            points: 0, invited: 0, email: '', badgeClub: String(r.badge_club || ''),
+            followers: Number(o.followers) || 0, following: Number(o.following) || 0, posts: Number(o.posts) || 0
+        };
+        P.feed.tab = 'posts';
+        Object.keys(P.feed.cache).forEach(k => delete P.feed.cache[k]);
+        P.drawProfile(container);
+    };
+
+    P.endOther = function () {
+        const snap = S.otherSnap;
+        if (!snap) return;
+        S.otherSnap = null; S.viewUid = null; S.other = null;
+        S.draft = snap.draft; S.currentTarget = snap.target; S.mode = snap.mode;
+        P.feed.tab = snap.tab;
+        Object.keys(P.feed.cache).forEach(k => delete P.feed.cache[k]);
+        if (snap.hadProfile && snap.target && snap.draft) P.drawProfile(snap.target);
     };
 
     async function loadCounts() {
@@ -548,6 +611,7 @@
     }
 
     window.renderProfilePage = function (container) {
+        S.viewUid = null; S.other = null; S.otherSnap = null;
         S.currentTarget = container || document.getElementById('main-content') || document.body;
         Object.keys(P.feed.cache).forEach(k => delete P.feed.cache[k]); // تحديث المحتوى عند كل فتح للملف
         if (!S.currentTarget) return;
