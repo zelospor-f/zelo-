@@ -93,7 +93,7 @@
             if (sub) sub.textContent = _tr('refInviteesCount', '{n} مدعواً · {done} مكتملة', '{n} invited · {done} completed', { n: FL.invitees.length, done: rewarded });
             const head = `
                 <div style="padding:12px;margin-bottom:10px;border-radius:14px;border:1px solid rgba(245,195,90,0.3);background:rgba(245,195,90,0.08);text-align:center;">
-                    <div style="font-size:0.78rem;font-weight:800;color:#fff;margin-bottom:4px;">${_tr('refRewardInfo', '🎁 لكل صديق يبدأ بجمع النقاط: 1000 عملة + 10% من رصيده', '🎁 For each friend who starts earning: 1,000 coins + 10% of their balance')}</div>
+                    <div style="font-size:0.78rem;font-weight:800;color:#fff;margin-bottom:4px;">${_tr('refRewardInfo', '🎁 لكل صديق يشارك في التطبيق: 10 كورة', '🎁 For each active friend you invite: 10 Kora')}</div>
                     <button class="fl-btn on" style="margin-top:6px;" onclick="window.copyReferralLink()">${_tr('refCopyBtn', 'نسخ رابط الدعوة 🔗', 'Copy invite link 🔗')}</button>
                 </div>`;
             list.innerHTML = head + (FL.invitees.length
