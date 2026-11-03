@@ -371,14 +371,16 @@
     /* ---------- بطاقة "وثّق حسابك" في الملف الشخصي (لغير المشتركين) ---------- */
     async function mountPromo() {
         const box = document.getElementById('verify-promo');
-        if (!box) return;
+        if (!box || box.dataset.closed === '1') return; // أغلقها المستخدم في هذه الزيارة
         injectStyle();
         const pro = await isPremium();
         if (pro) { box.innerHTML = ''; return; }
         const ar = isAr();
         box.innerHTML = `
-            <div style="margin:14px 0; padding:18px; border-radius:20px; direction:${ar ? 'rtl' : 'ltr'};
+            <div style="position:relative; margin:14px 0; padding:18px; border-radius:20px; direction:${ar ? 'rtl' : 'ltr'};
                         background:rgba(17,26,74,0.6); border:1px solid ${C.goldLine};">
+                <button id="zp-promo-x" aria-label="${ar ? 'إغلاق' : 'Close'}"
+                        style="position:absolute; top:8px; inset-inline-end:8px; width:30px; height:30px; padding:0; border-radius:50%; border:none; background:rgba(255,255,255,0.08); color:#9aa6d6; font-size:18px; line-height:1; cursor:pointer;">✕</button>
                 <div style="font-size:1.05rem; font-weight:900; color:#fff; margin-bottom:6px;">
                     ${ar ? 'وثّق حسابك بشعار ناديك المفضل' : 'Verify your account with your favorite club badge'}
                 </div>
@@ -390,6 +392,8 @@
                     ${ar ? 'عرض الاشتراكات' : 'View subscriptions'}
                 </button>
             </div>`;
+        const x = document.getElementById('zp-promo-x');
+        if (x) x.onclick = () => { box.dataset.closed = '1'; box.innerHTML = ''; }; // تظهر من جديد عند الدخول للملف في المرة القادمة
     }
 
     window.openSubscriptions = openSubscriptions;
