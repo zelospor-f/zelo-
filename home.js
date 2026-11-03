@@ -71,6 +71,8 @@
 
     // ===================== شدّ الحبل: أنماط المنشورات =====================
     let pendingTopic = { type: null, name: '', nameB: '' };
+    let pendingPred = null;   // { match, pick } توقّع مباراة
+    const predCache = {};
     const ropeCache = {};
     const TOPICS = {
         player:     { ar: 'لاعب',   en: 'Player',        a: ['يستحق', 'Deserves it'],      b: ['لا يستحق', "Doesn't"],        ph: ['اسم اللاعب', 'Player name'] },
@@ -132,6 +134,32 @@
             .topic-chips::-webkit-scrollbar{display:none;}
             .topic-chip{flex:none;padding:7px 13px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:transparent;color:#cdd6ff;font-size:.8rem;font-weight:800;font-family:inherit;cursor:pointer;}
             .topic-chip.on{background:#f5c35a;color:#0a1033;border-color:#f5c35a;}
+            .zpred{margin:8px 14px 6px;border-radius:14px;background:#111a4a;border:1px solid rgba(255,255,255,.1);padding:12px;}
+            .zpred-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;}
+            .zpred-pill{padding:3px 11px;border-radius:999px;font-size:.74rem;font-weight:900;background:rgba(245,195,90,.15);color:#f5c35a;border:1px solid rgba(245,195,90,.5);}
+            .zpred-pill.ok{background:rgba(45,226,196,.15);color:#2de2c4;border-color:rgba(45,226,196,.6);}
+            .zpred-pill.no{background:rgba(255,77,109,.15);color:#ff8fa1;border-color:rgba(255,77,109,.6);}
+            .zpred-comp{font-size:.72rem;color:#8f9bd1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .zpred-mid{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+            .zpred-team{flex:1;text-align:center;min-width:0;}
+            .zpred-crest{width:44px;height:44px;border-radius:50%;margin:0 auto 5px;display:flex;align-items:center;justify-content:center;background:#1c2766;border:1px solid rgba(255,255,255,.14);color:#fff;font-weight:900;font-size:.95rem;}
+            .zpred-tn{font-size:.78rem;font-weight:800;color:#e8ecff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .zpred-center{flex:none;text-align:center;min-width:76px;}
+            .zpred-day{font-size:.7rem;color:#8f9bd1;font-weight:800;}
+            .zpred-time{font-size:1.15rem;font-weight:900;color:#fff;direction:ltr;}
+            .zpred-score{font-size:1.5rem;font-weight:900;color:#f5c35a;direction:ltr;letter-spacing:2px;}
+            .zpred-mine{margin-top:9px;font-size:.78rem;color:#cdd6ff;font-weight:700;text-align:center;}
+            .zpred-btns{display:flex;gap:6px;margin-top:10px;}
+            .zpred-btn{flex:1;padding:9px 4px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:#e8ecff;font-weight:800;font-size:.78rem;font-family:inherit;cursor:pointer;}
+            .zpred-bars{margin-top:10px;display:flex;flex-direction:column;gap:6px;}
+            .zpred-bar{position:relative;height:30px;border-radius:8px;background:rgba(255,255,255,.06);overflow:hidden;cursor:pointer;}
+            .zpred-bar i{position:absolute;inset-block:0;inset-inline-start:0;background:rgba(245,195,90,.28);}
+            .zpred-bar.me i{background:rgba(45,226,196,.38);}
+            .zpred-bar span{position:relative;display:flex;justify-content:space-between;align-items:center;height:100%;padding:0 10px;font-size:.78rem;font-weight:800;color:#fff;}
+            .zpred-note{margin-top:7px;font-size:.7rem;color:#8f9bd1;text-align:center;}
+            .pred-list{max-height:190px;overflow-y:auto;margin-top:6px;}
+            .pred-item{padding:9px 10px;border-radius:9px;background:rgba(255,255,255,.05);margin-bottom:5px;font-size:.8rem;font-weight:800;color:#e8ecff;cursor:pointer;display:flex;justify-content:space-between;gap:8px;}
+            .pred-item small{color:#8f9bd1;font-weight:700;white-space:nowrap;}
             .topic-input{width:100%;box-sizing:border-box;margin-top:6px;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.06);color:#fff;font-family:inherit;font-size:.9rem;outline:none;}
             .topic-input:focus{border-color:#f5c35a;}
             .topic-hint{font-size:.72rem;color:#9aa6d8;margin-top:6px;line-height:1.6;}
@@ -212,7 +240,8 @@
     // ===== اختيار النمط في شاشة النشر =====
     function topicBoxHtml() {
         const chips = [`<button type="button" class="topic-chip on" data-t="" onclick="window.pickTopic('')">${isAr() ? 'رأي عام' : 'General'}</button>`]
-            .concat(Object.keys(TOPICS).map(k => `<button type="button" class="topic-chip" data-t="${k}" onclick="window.pickTopic('${k}')">${esc(topicTitle(k))}</button>`)).join('');
+            .concat(Object.keys(TOPICS).map(k => `<button type="button" class="topic-chip" data-t="${k}" onclick="window.pickTopic('${k}')">${esc(topicTitle(k))}</button>`))
+            .concat([`<button type="button" class="topic-chip" data-t="__pred" onclick="window.pickPred()">⚽ ${isAr() ? 'توقّع مباراة' : 'Match prediction'}</button>`]).join('');
         return `
             <div class="topic-box">
                 <div class="topic-title">${isAr() ? 'نوع المنشور' : 'Post type'}</div>
@@ -223,6 +252,7 @@
 
     window.pickTopic = function (t) {
         pendingTopic = { type: t || null, name: '', nameB: '' };
+        pendingPred = null;
         document.querySelectorAll('.topic-chip').forEach(b => b.classList.toggle('on', (b.dataset.t || '') === (t || '')));
         const box = document.getElementById('topic-fields');
         if (!box) return;
@@ -235,6 +265,129 @@
             ${person ? `<div class="topic-hint">${isAr() ? 'النقد للأداء والقرارات فقط. السب والاتهامات غير مسموحة.' : 'Criticism of performance and decisions only. No insults or accusations.'}</div>` : ''}
             ${t === 'prediction' ? `<div class="topic-hint">${isAr() ? 'التوقع مجاني دائماً، ويعطيك شارة فقط ولا يرتبط بأي مال.' : 'Predictions are always free: badges only, never money.'}</div>` : ''}`;
     };
+
+    // ===== توقّع مباراة =====
+    let predMatches = null;
+    const teamInit = n => { const w = String(n || '?').trim().split(/\s+/); return (w.length > 1 ? w[0][0] + w[1][0] : String(n || '?').slice(0, 2)).toUpperCase(); };
+    const crestHtml = n => `<div class="zpred-crest">${esc(teamInit(n))}</div>`;
+    function predWhen(iso) {
+        const d = new Date(iso), now = new Date();
+        const t = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        const sd = (a, b) => a.toDateString() === b.toDateString();
+        const tm = new Date(now.getTime() + 864e5);
+        let day;
+        if (sd(d, now)) day = isAr() ? 'اليوم' : 'Today';
+        else if (sd(d, tm)) day = isAr() ? 'غدًا' : 'Tomorrow';
+        else day = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+        return { day, t };
+    }
+    window.pickPred = async function () {
+        pendingTopic = { type: null, name: '', nameB: '' };
+        pendingPred = { match: null, pick: null };
+        document.querySelectorAll('.topic-chip').forEach(b => b.classList.toggle('on', b.dataset.t === '__pred'));
+        renderPredPicker('');
+        if (!predMatches) {
+            const c = db();
+            try {
+                const { data } = await c.from('matches').select('id,team_a,team_b,match_date,status,competition_name')
+                    .eq('status', 'NOT_STARTED').gt('match_date', new Date().toISOString()).order('match_date', { ascending: true }).limit(300);
+                predMatches = data || [];
+            } catch (e) { predMatches = []; }
+            if (pendingPred && !pendingPred.match) renderPredPicker('');
+        }
+    };
+    function renderPredPicker(q) {
+        const box = document.getElementById('topic-fields');
+        if (!box || !pendingPred) return;
+        const pm = pendingPred;
+        if (pm.match) {
+            const m = pm.match;
+            const lab = [m.team_a, isAr() ? 'تعادل' : 'Draw', m.team_b];
+            box.innerHTML = `
+                <div class="pred-item" onclick="window.predChange()"><span>${esc(m.team_a)} × ${esc(m.team_b)}</span><small>${isAr() ? 'تغيير' : 'Change'}</small></div>
+                <div class="topic-hint">${isAr() ? 'ما توقّعك للنتيجة؟' : 'Your prediction?'}</div>
+                <div class="zpred-btns">${[0, 1, 2].map(i => `<button type="button" class="zpred-btn" style="${pm.pick === i ? 'background:#f5c35a;color:#0a1033;border-color:#f5c35a;' : ''}" onclick="window.predSetPick(${i})">${i === 1 ? esc(lab[1]) : (isAr() ? 'فوز ' : 'Win ') + esc(lab[i])}</button>`).join('')}</div>
+                <div class="topic-hint">${isAr() ? 'التوقّع مجاني دائمًا، بلا مال ولا جوائز نقدية.' : 'Free forever: no money involved.'}</div>`;
+            return;
+        }
+        const ql = (q || '').trim().toLowerCase();
+        const list = (predMatches || []).filter(m => !ql || (m.team_a + ' ' + m.team_b + ' ' + (m.competition_name || '')).toLowerCase().includes(ql)).slice(0, 40);
+        box.innerHTML = `
+            <input class="topic-input" id="pred-q" placeholder="${isAr() ? 'ابحث عن مباراة أو فريق' : 'Search a match or team'}" value="${esc(q || '')}" oninput="window.predSearch(this.value)">
+            <div class="pred-list">${predMatches === null ? `<div class="topic-hint">${isAr() ? 'جارٍ التحميل...' : 'Loading...'}</div>`
+                : list.length ? list.map(m => { const w = predWhen(m.match_date); return `<div class="pred-item" onclick="window.predChoose('${esc(String(m.id))}')"><span>${esc(m.team_a)} × ${esc(m.team_b)}</span><small>${esc(w.day)} ${esc(w.t)}</small></div>`; }).join('')
+                : `<div class="topic-hint">${isAr() ? 'لا توجد مباريات قادمة مطابقة.' : 'No upcoming matches found.'}</div>`}</div>`;
+    }
+    window.predSearch = v => { renderPredPicker(v); const i = document.getElementById('pred-q'); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } };
+    window.predChoose = id => { const m = (predMatches || []).find(x => String(x.id) === String(id)); if (m && pendingPred) { pendingPred.match = m; pendingPred.pick = null; renderPredPicker(''); } };
+    window.predChange = () => { if (pendingPred) { pendingPred.match = null; pendingPred.pick = null; renderPredPicker(''); } };
+    window.predSetPick = i => { if (pendingPred) { pendingPred.pick = i; renderPredPicker(''); } };
+
+    async function fetchPreds(ids) {
+        const c = db();
+        ids = (ids || []).filter(Boolean);
+        if (!c || !ids.length) return;
+        try {
+            const { data, error } = await c.rpc('get_prediction_info', { p_ids: ids });
+            if (error) return;
+            ids.forEach(id => { delete predCache[id]; });
+            (data || []).forEach(r => { predCache[r.post_id] = r; });
+        } catch (e) { console.error('[ZELO] fetchPreds error:', e); }
+    }
+
+    function predHtml(p) {
+        const r = p && predCache[p.id];
+        if (!r) return '';
+        const fin = r.status === 'FINISHED' && r.home_score != null && r.away_score != null;
+        const started = !fin && (r.status !== 'NOT_STARTED' || new Date(r.match_date) <= new Date());
+        const outcome = fin ? (r.home_score > r.away_score ? 0 : r.home_score === r.away_score ? 1 : 2) : null;
+        const pillCls = fin ? (outcome === r.pick ? 'ok' : 'no') : '';
+        const pillTxt = fin ? (outcome === r.pick ? (isAr() ? 'صحّ ✓' : 'Correct ✓') : (isAr() ? 'خطأ ✗' : 'Wrong ✗')) : (isAr() ? 'توقّع' : 'Prediction');
+        const w = predWhen(r.match_date);
+        const center = fin ? `<div class="zpred-day">${isAr() ? 'انتهت' : 'Full time'}</div><div class="zpred-score">${r.home_score} - ${r.away_score}</div>`
+            : started ? `<div class="zpred-day">${isAr() ? 'جارية' : 'Live'}</div><div class="zpred-score">${r.home_score != null ? r.home_score + ' - ' + r.away_score : '—'}</div>`
+            : `<div class="zpred-day">${esc(w.day)}</div><div class="zpred-time">${esc(w.t)}</div>`;
+        const lab = [r.team_a, isAr() ? 'تعادل' : 'Draw', r.team_b];
+        const pickTxt = r.pick === 1 ? lab[1] : (isAr() ? 'فوز ' : 'Win ') + lab[r.pick];
+        let lower;
+        const open = !fin && !started;
+        if (r.n0 == null) {
+            lower = `<div class="zpred-btns">${[0, 1, 2].map(i => `<button class="zpred-btn" onclick="window.predVote(${p.id},${i})">${i === 1 ? esc(lab[1]) : (isAr() ? 'فوز ' : 'Win ') + esc(lab[i])}</button>`).join('')}</div>
+                <div class="zpred-note">${isAr() ? 'صوّت لترى نسب الجمهور' : 'Vote to see the results'}</div>`;
+        } else {
+            const n = [r.n0, r.n1, r.n2], tot = n[0] + n[1] + n[2];
+            lower = `<div class="zpred-bars">${[0, 1, 2].map(i => {
+                const pc = tot ? Math.round(n[i] / tot * 100) : 0;
+                const can = open && !r.is_owner;
+                return `<div class="zpred-bar${r.mine === i ? ' me' : ''}" ${can ? `onclick="window.predVote(${p.id},${i})"` : ''}><i style="width:${pc}%"></i><span><b>${i === 1 ? esc(lab[1]) : esc(lab[i])}${r.pick === i ? ' 📌' : ''}${r.mine === i ? ` · ${isAr() ? 'صوتك' : 'You'}` : ''}</b><b>${pc}%</b></span></div>`;
+            }).join('')}</div><div class="zpred-note">${tot} ${isAr() ? 'صوت' : 'votes'}</div>`;
+        }
+        return `
+            <div class="zpred-top"><span class="zpred-pill ${pillCls}">${pillTxt}</span><span class="zpred-comp">${esc(r.comp || '')}</span></div>
+            <div class="zpred-mid">
+                <div class="zpred-team">${crestHtml(r.team_a)}<div class="zpred-tn">${esc(r.team_a)}</div></div>
+                <div class="zpred-center">${center}</div>
+                <div class="zpred-team">${crestHtml(r.team_b)}<div class="zpred-tn">${esc(r.team_b)}</div></div>
+            </div>
+            <div class="zpred-mine">📌 ${isAr() ? 'توقّع صاحب المنشور: ' : "Author's pick: "}<b>${esc(pickTxt)}</b></div>
+            ${lower}`;
+    }
+    function updatePred(id) {
+        document.querySelectorAll(`.zpred[data-pid="${id}"]`).forEach(el => { el.innerHTML = predHtml(postCache[id]); });
+    }
+    window.predVote = async function (id, pick) {
+        const c = db(), r = predCache[id];
+        if (!c || !r || r.is_owner) return;
+        const { error } = await c.rpc('vote_prediction', { p_post: id, p_pick: pick });
+        if (error) {
+            const m = String(error.message || '');
+            if (m.includes('voting_closed')) alert(isAr() ? 'أُغلق التصويت: المباراة بدأت.' : 'Voting is closed: the match started.');
+            else alert((isAr() ? 'تعذّر تسجيل صوتك: ' : 'Could not save your vote: ') + m);
+        }
+        await fetchPreds([id]);
+        updatePred(id);
+    };
+
     window.setTopicName = v => { pendingTopic.name = v; };
     window.setTopicNameB = v => { pendingTopic.nameB = v; };
 
@@ -621,6 +774,7 @@
                 </div>
                 <div id="post-body-${p.id}">${postBodyHtml(p)}</div>
                 ${p.topic_type ? `<div class="zrope" data-pid="${p.id}">${ropeHtml(p)}</div>` : ''}
+                ${predCache[p.id] ? `<div class="zpred" data-pid="${p.id}">${predHtml(p)}</div>` : ''}
                 <div class="post-actions">${actionsHtml(p)}</div>
                 <div class="zsup" data-pid="${p.id}" data-owner="${esc(p.user_id)}"></div>
                 <div class="comments-box" id="comments-${p.id}" style="display: none;"></div>
@@ -847,6 +1001,7 @@
 
         await fetchBadges(visible.map(p => p.user_id));
         await fetchRope(visible.map(p => postCache[p.id]));
+        await fetchPreds(visible.map(p => p.id));
         list.innerHTML = visible.map(p => postHtml(postCache[p.id])).join('');
         observeViews();
         observeBoosts();
@@ -905,7 +1060,11 @@
         const textEl = document.getElementById('new-post-text');
         const content = (textEl?.value || '').trim();
 
-        if (!content && !pendingImage && !pendingVideo) {
+        if (pendingPred && (!pendingPred.match || pendingPred.pick === null)) {
+            alert(isAr() ? 'اختر المباراة ثم توقّعك.' : 'Choose a match and your prediction.');
+            return;
+        }
+        if (!content && !pendingImage && !pendingVideo && !pendingPred) {
             alert(isAr() ? 'اكتب نصاً أو أضف صورة أو فيديو أولاً.' : 'Write something or add an image or video first.');
             return;
         }
@@ -953,7 +1112,7 @@
             }
         }
 
-        const { error } = await c.from('posts').insert([{
+        const { data: newPost, error } = await c.from('posts').insert([{
             user_id: u.id,
             author_name: u.name,
             author_avatar: u.avatar,
@@ -962,7 +1121,17 @@
             video_url: videoUrl,
             video_path: videoPath,
             ...topicFields
-        }]);
+        }]).select('id').single();
+        if (!error && pendingPred && newPost) {
+            const { error: pe } = await c.rpc('attach_prediction', { p_post: newPost.id, p_match: String(pendingPred.match.id), p_pick: pendingPred.pick });
+            if (pe) {
+                try { await c.from('posts').delete().eq('id', newPost.id); } catch (e) {}
+                const pm = String(pe.message || '');
+                alert(pm.includes('match_started') ? (isAr() ? 'هذه المباراة بدأت، اختر مباراة أخرى.' : 'That match already started.')
+                    : (isAr() ? 'تعذّر نشر التوقّع: ' : 'Could not publish: ') + pm);
+                return;
+            }
+        }
         if (error) {
             // إذا رُفض المنشور بعد رفع الفيديو، نحذف الملف الذي رُفع
             if (videoPath) { try { await c.storage.from('post-videos').remove([videoPath]); } catch (e) {} }
@@ -974,6 +1143,7 @@
         }
 
         textEl.value = '';
+        pendingPred = null;
         window.clearPostImage();
         window.closeCompose();
         await loadFeed();
@@ -2056,6 +2226,7 @@
         if (document.getElementById('compose-overlay')) return;
         pendingImage = '';
         pendingTopic = { type: null, name: '', nameB: '' };
+        pendingPred = null;
         const u = me();
         const ov = document.createElement('div');
         ov.id = 'compose-overlay';
@@ -2181,6 +2352,7 @@
         document.getElementById('compose-overlay')?.remove();
         pendingImage = '';
         pendingTopic = { type: null, name: '', nameB: '' };
+        pendingPred = null;
     };
 
     // ===================== السحب للأسفل للتحديث =====================
