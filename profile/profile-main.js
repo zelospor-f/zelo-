@@ -481,8 +481,6 @@
             <div class="profile-wrap">
                 <div class="profile-top">
                     ${window.zeloBackBtn(V ? "window.closeUserProfile()" : "if(typeof window.showPage === 'function') window.showPage('home');")}
-                    <h3 class="page-title">${tr('ui_profile', 'الملف الشخصي', 'Profile')}</h3>
-                    <div style="width:64px;"></div>
                 </div>
 
                 ${(!V && window.zeloBanNoteHtml) ? window.zeloBanNoteHtml() : ''}
@@ -502,7 +500,6 @@
                         ${V ? `<div class="pp-stat"><b><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>${Number(d.posts || 0).toLocaleString('en-US')}</b><span>${tr('ui_posts_count', 'منشور', 'Posts')}</span></div>` : `<div class="pp-stat"><b><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M12 9v11M3 13h18"/><path d="M12 9c-2.5 0-4-1-4-2.5S9.5 4 11 5c.8.6 1 2 1 4zM12 9c2.5 0 4-1 4-2.5S14.5 4 13 5c-.8.6-1 2-1 4z"/></svg><i id="stat-invited" style="font-style:normal;">${d.invited.toLocaleString('en-US')}</i></b><span>${tr('ui_invited', 'مدعوون', 'Invited')}</span></div>`}
                     </div>
 
-                    ${matched.length ? `<div class="pp-badges">${matched.map(c => `<div class="pp-badge"><img src="${esc(c.logo || c.flag || '')}" alt="" onerror="this.style.display='none'"></div>`).join('')}</div>` : ''}
                     ${d.bio ? `<div class="pp-bio">${esc(d.bio).replace(/\n/g, '<br>')}</div>` : ''}
                     ${(!V && d.dob) ? `<div class="pp-meta">🎂 ${esc(d.dob)}</div>` : ''}
 
@@ -521,9 +518,7 @@
                         <button class="pp-sc" onclick="window.openNftStore()"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 14l3-5 3 5-3 3-3-3z"/></svg>${tr('pp_nft', 'بطاقات NFT', 'NFT cards')}</button>
                     </div>
 
-                    ${(d.badgeClub && matched.length <= 1) ? '' : `<button class="verify-btn" onclick="window.openBadgePicker()">
-                        ${d.badgeClub ? '🔄 ' + (tr('ui_switch_badge', 'تبديل شارة النادي', 'Switch club badge')) : '✔️ ' + (tr('ui_verify_your_account_with', 'وثّق حسابك بشارة ناديك', 'Verify your account with your club badge'))}
-                    </button>`}`}
+                    <div id="pp-verify-slot"></div>`}
                 </div>
 
             </div>`;
@@ -536,8 +531,26 @@
         const wrap = target.querySelector('.profile-wrap');
         if (wrap) wrap.insertAdjacentHTML('beforeend', P.feedSectionHtml(isAr()));
         P.loadFeed(false);
-        if (S.viewUid) wireOther();
+        if (S.viewUid) wireOther(); else mountVerifyBtn();
     };
+
+    // زر اختيار/تبديل شارة النادي: للمشتركين فقط (غير المشتركين يرون بطاقة الاشتراك أسفل الصفحة)
+    async function mountVerifyBtn() {
+        const slot = document.getElementById('pp-verify-slot');
+        const d = S.draft;
+        if (!slot || !d) return;
+        const matched = P.getMatchedClubs(d);
+        const html = label => `<button class="verify-btn" onclick="window.openBadgePicker()">${label}</button>`;
+        if (d.badgeClub) {
+            if (matched.length > 1) slot.innerHTML = html('🔄 ' + tr('ui_switch_badge', 'تبديل شارة النادي', 'Switch club badge'));
+            return;
+        }
+        try {
+            const pro = window.ZeloPremium && await window.ZeloPremium.isPremium();
+            const s2 = document.getElementById('pp-verify-slot');
+            if (pro && s2 && S.draft === d) s2.innerHTML = html('✔️ ' + tr('ui_verify_your_account_with', 'وثّق حسابك بشارة ناديك', 'Verify your account with your club badge'));
+        } catch (e) {}
+    }
 
     // ===== عرض ملف مستخدم آخر بنفس الملف الأساسي (بدل النسخة المبسطة) =====
     function wireOther() {

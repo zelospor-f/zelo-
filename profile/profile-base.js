@@ -131,7 +131,8 @@
         return `
         <style>
             .profile-wrap { width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; padding: 4px 0 20px 0; direction: ${dir}; color: #fff; text-align: ${align}; }
-            .profile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+            .profile-wrap { position: relative; }
+            .profile-top { position: absolute; top: 10px; inset-inline-start: 10px; z-index: 5; margin: 0; display: flex; }
             .back-btn { background: rgba(245,195,90,0.08); color: #f5c35a; border: 1px solid rgba(245,195,90,0.35); padding: 8px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
             .page-title { margin: 0; font-size: 1.05rem; font-weight: 900; background: linear-gradient(135deg, #ffd98a, #f5c35a, #6b8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
             .card { background: linear-gradient(135deg, rgba(17,26,74,0.95), rgba(10,16,51,0.95)); border: 1px solid rgba(245,195,90,0.25); border-radius: 16px; padding: 14px; margin-bottom: 14px; box-shadow: 0 0 14px rgba(44,75,181,0.25); }
