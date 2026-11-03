@@ -244,7 +244,7 @@
             .pp-id { flex: 1; min-width: 0; }
             .pp-name { margin: 0; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; gap: 5px; overflow: hidden; }
             .pp-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .pp-user { font-size: 0.8rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: ltr; text-align: ${align}; unicode-bidi: plaintext; }
+            .pp-user { font-size: 0.8rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: inherit; text-align: start; unicode-bidi: isolate; }
             .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 18px; text-align: center; }
             .pp-stat { cursor: default; }
             .pp-stat.tap { cursor: pointer; }

@@ -490,7 +490,7 @@
                         <div class="pp-av"><div><img src="${esc(avatarSrc)}" alt=""></div></div>
                         <div class="pp-id">
                             <h4 class="pp-name"><span>${esc(displayName)}</span>${window.zeloVerifiedBadge(d.badgeClub, 20)}</h4>
-                            <div class="pp-user">${d.username && d.nickname ? '@' + esc(d.username) : ''}</div>
+                            <div class="pp-user">${d.username && d.nickname ? '\u200E@' + esc(d.username) : ''}</div>
                         </div>
                     </div>
 
