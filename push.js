@@ -17,12 +17,12 @@
 
     // اختبار لمرة واحدة: يرسل إشعارًا إلى هذا الجهاز بعد 20 ثانية (اضغط زر الرئيسية لترى الإشعار)
     function scheduleTest() {
-        try { if (localStorage.getItem('zelo_push_test_done')) return; } catch (e) {}
+        try { if (localStorage.getItem('zelo_push_test_v2')) return; } catch (e) {}
         diag('اضغط زر الرئيسية الآن لتخرج من التطبيق وانتظر 20 ثانية ... Press Home now');
         setTimeout(async () => {
             try {
                 const r = await supabaseClient.functions.invoke('push-test');
-                try { localStorage.setItem('zelo_push_test_done', '1'); } catch (e) {}
+                try { localStorage.setItem('zelo_push_test_v2', '1'); } catch (e) {}
                 diag('test result: ' + JSON.stringify((r && (r.data || r.error && r.error.message)) || r));
             } catch (e) { diag('test failed: ' + (e && e.message)); }
         }, 20000);
