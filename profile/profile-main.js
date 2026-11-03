@@ -364,6 +364,10 @@
                 <div class="x-field">
                     <label>${tr('ui_date_of_birth', 'تاريخ الميلاد', 'Date of Birth')}</label>
                     <input id="input-dob" type="date" value="${esc(d.dob)}">
+                    <label style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:0.82rem;font-weight:700;color:#cbd5f5;cursor:pointer;">
+                        <input id="input-dobvis" type="checkbox" ${d.dobVisible ? 'checked' : ''} style="width:20px;height:20px;accent-color:#f5c35a;flex:none;">
+                        <span>${tr('ui_show_dob', 'إظهار تاريخ الميلاد للآخرين في ملفي', 'Show my birth date to others on my profile')}</span>
+                    </label>
                 </div>
                 <div class="x-field x-row" onclick="window.openBadgePicker()">
                     <div>
@@ -412,6 +416,7 @@
         LS.set('zelo_nickname_ar', nickAr);
         LS.set('zelo_nickname_en', nickEn);
         LS.set('zelo_dob', draft.dob);
+        LS.set('zelo_dob_visible', draft.dobVisible ? '1' : '0');
         LS.set('zelo_bio', draft.bio);
         LS.set('zelo_photo_url', draft.photoUrl);
         LS.set('zelo_badge_club', draft.badgeClub || '');
@@ -421,6 +426,7 @@
                 nickname_ar: nickAr,
                 nickname_en: nickEn,
                 dob: draft.dob,
+                dob_visible: !!draft.dobVisible,
                 bio: draft.bio,
                 photoUrl: draft.photoUrl,
                 badgeClub: draft.badgeClub || ''
@@ -430,14 +436,17 @@
         let dbOk = true, dbMsg = '';
         const c = db();
         if (c && US().userId) {
-            const { error } = await c.from('users').upsert({
+            const row = {
                 user_id: String(US().userId),
                 nickname_ar: nickAr || null,
                 nickname_en: nickEn || null,
                 bio: draft.bio || null,
                 dob: draft.dob || null,
                 photo_url: draft.photoUrl || null
-            }, { onConflict: 'user_id' });
+            };
+            let { error } = await c.from('users').upsert(Object.assign({ dob_visible: !!draft.dobVisible }, row), { onConflict: 'user_id' });
+            // قبل تشغيل ملف SQL الجديد: احفظ بدون الحقل الجديد كي لا يفشل الحفظ كله
+            if (error && /dob_visible/i.test(error.message || '')) ({ error } = await c.from('users').upsert(row, { onConflict: 'user_id' }));
             if (error) { dbOk = false; dbMsg = error.message; console.error('profile save error', error); }
         }
 
@@ -501,7 +510,7 @@
                     </div>
 
                     ${d.bio ? `<div class="pp-bio">${esc(d.bio).replace(/\n/g, '<br>')}</div>` : ''}
-                    ${(!V && d.dob) ? `<div class="pp-meta">🎂 ${esc(d.dob)}</div>` : ''}
+                    ${d.dob ? `<div class="pp-meta">🎂 ${esc(d.dob)}${(!V && !d.dobVisible) ? ' · 🔒 ' + tr('ui_dob_hidden', 'مخفي عن الآخرين', 'Hidden from others') : ''}</div>` : ''}
 
                     ${V ? `<div class="pp-btns">
                         <button class="pp-btn" id="pc-msg"><svg viewBox="0 0 24 24"><path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/></svg>${tr('ui_message', 'رسالة', 'Message')}</button>
@@ -591,7 +600,7 @@
         S.draft = {
             nickname: r.nickname_ar || r.nickname_en || '',
             username: r.username || '',
-            dob: '', bio: r.bio || '', photoUrl: r.photo_url || '',
+            dob: r.dob || '', bio: r.bio || '', photoUrl: r.photo_url || '',
             selectedClubs: (r.selected_clubs || []).map(String),
             points: 0, invited: 0, email: '', badgeClub: String(r.badge_club || ''),
             followers: Number(o.followers) || 0, following: Number(o.following) || 0, posts: Number(o.posts) || 0

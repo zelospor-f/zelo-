@@ -30,6 +30,7 @@
             nickname: u.nickname_ar || u.nickname_en || LS.get('zelo_nickname_ar') || LS.get('zelo_nickname_en') || String(u.email || LS.get('zelo_email') || '').split('@')[0],
             username: rawUser === 'Android Player' ? (LS.get('zelo_username') || '') : rawUser,
             dob: u.dob || LS.get('zelo_dob') || '',
+            dobVisible: (u.dob_visible !== undefined && u.dob_visible !== null) ? !!u.dob_visible : LS.get('zelo_dob_visible') === '1',
             bio: u.bio || LS.get('zelo_bio') || '',
             photoUrl: u.photoUrl || LS.get('zelo_photo_url') || '',
             selectedClubs: (u.selectedClubs || []).map(String),
@@ -48,6 +49,7 @@
         const g = id => document.getElementById(id);
         if (g('input-nick')) draft.nickname = g('input-nick').value.trim();
         if (g('input-dob')) draft.dob = g('input-dob').value;
+        if (g('input-dobvis')) draft.dobVisible = g('input-dobvis').checked;
         if (g('input-bio')) draft.bio = g('input-bio').value;
         if (g('input-email')) draft.emailInput = g('input-email').value.trim();
     };
@@ -279,6 +281,12 @@
             .feed-tab { border-radius: 999px; padding: 8px 4px; font-size: 0.82rem; }
             .feed-tab.active { background: rgba(245,195,90,0.18); color: #ffd98a; }
             .feed-tab.active::after { display: none; }
+            .feed-tab[data-tab="videos"] { flex: 0 0 52px; }
+            .vid-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; margin-top: 4px; }
+            .vid-tile { position: relative; aspect-ratio: 9 / 14; background: #000; border-radius: 8px; overflow: hidden; cursor: pointer; }
+            .vid-tile video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+            .vid-play { position: absolute; inset-inline-end: 6px; bottom: 6px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; }
+            .vid-play svg { width: 13px; height: 13px; fill: #fff; }
         </style>`;
     };
 })();
@@ -340,6 +348,7 @@
     // يجلب العناصر ثم يضيف العدّادات (إعجابات/ردود/إعادة نشر) وسياق الرد
     async function fetchFeed(tab) {
         const rows = await fetchFeedRaw(tab);
+        if (tab === 'videos') return rows;
         const c = db();
         if (!c || !rows.length) return rows;
         const T = FT();
@@ -394,6 +403,11 @@
             const r = await c.from(T.posts).select('*').eq('user_id', own.user_id).order('created_at', { ascending: false }).limit(40);
             if (r.error) throw r.error;
             return (r.data || []).map(p => ({ kind: 'post', item: p, author: null }));
+        }
+        if (tab === 'videos') {
+            const r = await c.from(T.posts).select('*').eq('user_id', own.user_id).not('video_url', 'is', null).order('created_at', { ascending: false }).limit(60);
+            if (r.error) throw r.error;
+            return (r.data || []).map(p => ({ kind: 'video', item: p, author: null }));
         }
         if (tab === 'replies') {
             const r = await c.from(T.comments).select('*').eq('user_id', own.user_id).order('created_at', { ascending: false }).limit(40);
@@ -489,8 +503,18 @@
     function renderFeed(rows, box, ar) {
         if (!box) return;
         if (!rows.length) {
-            const msg = { posts: ['لا توجد منشورات بعد', 'No posts yet'], replies: ['لا توجد ردود بعد', 'No replies yet'], reposts: ['لا توجد إعادة نشر بعد', 'No reposts yet'] }[F.tab];
+            const msg = { videos: ['لا توجد فيديوهات بعد', 'No videos yet'], posts: ['لا توجد منشورات بعد', 'No posts yet'], replies: ['لا توجد ردود بعد', 'No replies yet'], reposts: ['لا توجد إعادة نشر بعد', 'No reposts yet'] }[F.tab];
             box.innerHTML = `<div class="feed-empty">${ar ? msg[0] : msg[1]}</div>`;
+            return;
+        }
+        if (F.tab === 'videos') {
+            box.innerHTML = '<div class="vid-grid">' + rows.map(e => {
+                const id = esc(String(e.item.id));
+                return `<div class="vid-tile" onclick="window.openPostPage && window.openPostPage('${id}')">
+                    <video src="${esc(e.item.video_url)}#t=0.5" muted playsinline preload="metadata"></video>
+                    <span class="vid-play"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span>
+                </div>`;
+            }).join('') + '</div>';
             return;
         }
         box.innerHTML = rows.map(e => feedItemHtml(e, P.state.draft, ar)).join('');
@@ -503,7 +527,8 @@
     };
 
     P.feedSectionHtml = function (ar) {
-        const tabs = [['posts', tr('ui_posts', 'المنشورات', 'Posts')], ['replies', tr('ui_replies', 'الردود', 'Replies')], ['reposts', tr('ui_reposts', 'إعادة النشر', 'Reposts')]];
+        const vidIcon = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z" fill="currentColor"/></svg>';
+        const tabs = [['posts', tr('ui_posts', 'المنشورات', 'Posts')], ['replies', tr('ui_replies', 'الردود', 'Replies')], ['reposts', tr('ui_reposts', 'إعادة النشر', 'Reposts')], ['videos', vidIcon]];
         // بطاقة "وثّق حسابك" (تظهر لغير المشتركين فقط، وتُملأ من premium.js)
         const other = !!P.state.viewUid;
         if (!other) {
