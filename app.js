@@ -113,6 +113,8 @@ async function fetchDataAndRoute() {
             userState.points = Number(data.points) || 0;
             userState.selectedClubs = Array.isArray(data.selected_clubs) ? data.selected_clubs : [];
             userState.lang = data.lang || userState.lang;
+            if (data.dob) userState.dob = data.dob;
+            userState.dob_visible = !!data.dob_visible;
 
             // جلب صورة المستخدم إن وُجدت في الجدول
             if (data.photo_url) {
