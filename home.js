@@ -338,7 +338,7 @@
             font-size: 0.74rem; font-weight: 800; transition: transform 0.15s;
         }
         .act-btn:active { transform: scale(0.96); }
-        .act-btn.liked { color: #f472b6; border-color: rgba(244,114,182,0.4); background: rgba(244,114,182,0.1); }
+        .act-btn.liked { color: #f5c35a; border-color: rgba(245,195,90,0.4); background: rgba(245,195,90,0.1); }
 
         .comments-box { margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px; }
         .cm-form { display: flex; gap: 6px; margin-bottom: 10px; }
@@ -415,7 +415,7 @@
             font-size: 0.85rem; font-weight: 700;
         }
         .post-actions .act-btn .ic { font-size: 1.05rem; }
-        .post-actions .act-btn.liked { color: #f91880; background: rgba(249,24,128,0.12); border: none; }
+        .post-actions .act-btn.liked { color: #f5c35a; background: rgba(245,195,90,0.14); border: none; }
         .post-actions .act-btn.reposted { color: #14F195; background: rgba(20,241,149,0.12); }
 
         /* صور وملصقات وايموجي الردود */
@@ -443,7 +443,9 @@
         .cm-replying { color: #7782b0; font-size: 0.68rem; font-weight: 700; margin-top: 2px; }
         .cm-replying span { color: #f5c35a; direction: ltr; unicode-bidi: plaintext; }
         .cm-actions .cm-act { display: flex; align-items: center; gap: 4px; color: #9aa6d6; font-size: 0.74rem; font-weight: 800; padding: 2px 4px; }
-        .cm-actions .cm-act.liked { color: #f91880; }
+        .cm-actions .cm-act.liked { color: #f5c35a; }
+        .cm-act .cm-ball { font-size: 1rem; filter: grayscale(1); opacity: .55; }
+        .cm-act.liked .cm-ball { filter: none; opacity: 1; }
         .cm-thread.cm-focus { background: rgba(245,195,90,0.12); border-radius: 12px; transition: background .4s; }
         .fl-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); cursor: pointer; }
 
@@ -568,14 +570,14 @@
         `<svg viewBox="0 0 24 24" width="19" height="19" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
     const ICONS = {
         reply:  svgIcon('<path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/>'),
-        repost: svgIcon('<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>'),
-        heart:  on => svgIcon('<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.6 1-1.1a5.5 5.5 0 0 0 0-7.7z"/>', on),
+        repost: svgIcon('<circle cx="6" cy="12" r="3"/><path d="M11.5 12H21"/><path d="M17 7.5l4.5 4.5-4.5 4.5"/>'),   // تمريرة
+        heart:  on => `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="${on ? 'currentColor' : 'none'}"/><g stroke="${on ? '#0a1033' : 'currentColor'}"><path d="M12 8.2l3.2 2.3-1.2 3.7h-4l-1.2-3.7z"/><path d="M12 8.2V3.2M15.2 10.5l4.6-1.5M14 14.2l2.8 3.9M10 14.2l-2.8 3.9M8.8 10.5L4.2 9"/></g></svg>`,   // هدف
         views:  svgIcon('<path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>'),
         save:   on => svgIcon('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>', on),
         share:  svgIcon('<path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/>')
     };
 
-    // أزرار التفاعل مع الأعداد (تعليق · إعادة نشر · إعجاب · مشاهدات · حفظ · مشاركة)
+    // أزرار التفاعل مع الأعداد (تعليق · تمريرة · هدف · مشاهدات · حفظ · مشاركة)
     function actionsHtml(p) {
         return `
             <button class="act-btn" onclick="window.openReply(${p.id})">
@@ -985,10 +987,10 @@
             if (!c || !targetId || targetId === u.id) return;
             const n = u.name || 'Player';
             const T = {
-                like:    { ar: `${n} أعجب بمنشورك`,  en: `${n} liked your post` },
+                like:    { ar: `${n} سجّل هدفًا في منشورك ⚽`,  en: `${n} scored on your post ⚽` },
                 comment: { ar: `${n} علّق على منشورك`, en: `${n} commented on your post` },
                 reply:   { ar: `${n} ردّ على تعليقك`, en: `${n} replied to your comment` },
-                repost:  { ar: `${n} أعاد نشر منشورك`, en: `${n} reposted your post` },
+                repost:  { ar: `${n} مرّر منشورك`, en: `${n} passed your post` },
                 follow:  { ar: `${n} بدأ بمتابعتك`,   en: `${n} started following you` },
                 support: { ar: `${n} دعم منشورك بـ ${(extra && extra.amount) || 0} ZELO`, en: `${n} supported your post with ${(extra && extra.amount) || 0} ZELO` }
             }[kind];
@@ -1248,7 +1250,7 @@
                 <span>💬</span><span>${cm.replies || 0}</span>
             </button>
             <button class="cm-act ${cm.liked ? 'liked' : ''}" onclick="window.toggleCommentLike(${cm.id})">
-                <span>${cm.liked ? '❤️' : '🤍'}</span><span>${cm.likes || 0}</span>
+                <span class="cm-ball">⚽</span><span>${cm.likes || 0}</span>
             </button>
         `;
     }
@@ -1847,8 +1849,8 @@
         if (!p) return;
         openSheet([
             { stat: true, label: isAr() ? 'المشاهدات' : 'Views', value: p.views || 0 },
-            { stat: true, label: isAr() ? 'الإعجابات' : 'Likes', value: p.likes || 0 },
-            { stat: true, label: isAr() ? 'إعادة النشر' : 'Reposts', value: p.reposts || 0 },
+            { stat: true, label: isAr() ? 'الأهداف' : 'Goals', value: p.likes || 0 },
+            { stat: true, label: isAr() ? 'التمريرات' : 'Passes', value: p.reposts || 0 },
             { stat: true, label: isAr() ? 'الردود' : 'Replies', value: p.comments || 0 }
         ], isAr() ? 'التفاعلات مع المنشور' : 'Post engagements');
     }
