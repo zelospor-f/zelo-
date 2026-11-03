@@ -1023,7 +1023,7 @@
     // اختيار صورة من الهاتف للمنشور الجديد
     // الصور في المنشورات للمشتركين فقط (والخادم يتحقق أيضاً)
     async function imageGate(onDenied) {
-        const ok = window.ZeloPremium ? await window.ZeloPremium.isPremium() : false;
+        const ok = window.ZeloPremium && window.ZeloPremium.myTier ? (await window.ZeloPremium.myTier()) >= 2 : false;
         if (!ok) { onDenied(); return false; }
         return true;
     }
@@ -1035,7 +1035,7 @@
         input.click();
     }
     window.openPostImagePicker = async function() {
-        const ok = await imageGate(() => window.zeloComposeNotice(isAr() ? '📷 اشترك لكي تستطيع نشر الصور' : '📷 Subscribe to post images', true, 'image'));
+        const ok = await imageGate(() => window.zeloComposeNotice(isAr() ? '📷 نشر الصور في الباقة المميّزة (1.99$) فما فوق' : '📷 Images need the Plus plan or higher', true, 'image'));
         if (ok) chooseImage(window.pickPostImage);
     };
     window.openEditImagePicker = async function(id) {

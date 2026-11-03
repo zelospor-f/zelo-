@@ -19,10 +19,10 @@
     const TIER_FEATURES = {
         1: [
             { icon: '🏅', ar: 'توثيق الحساب وشعار ناديك بجانب اسمك', en: 'Verified account with your club badge' },
-            { icon: '✍️', ar: 'منشورات أطول حتى 1000 حرف', en: 'Longer posts up to 1000 characters' },
-            { icon: '🖼️', ar: 'نشر الصور في المنشورات والردود', en: 'Post images in posts and replies' }
+            { icon: '✍️', ar: 'منشورات أطول حتى 1000 حرف', en: 'Longer posts up to 1000 characters' }
         ],
         2: [
+            { icon: '🖼️', ar: 'نشر الصور في المنشورات والردود', en: 'Post images in posts and replies' },
             { icon: '🎬', ar: 'نشر الفيديو', en: 'Video posts' },
             { icon: '✨', ar: 'استخدام الذكاء الاصطناعي (مساعد المباراة)', en: 'AI assistant (match assistant)' },
             { icon: '🎁', ar: 'دعم المنشورات (محدود)', en: 'Post support (limited)' }
@@ -33,6 +33,17 @@
             { icon: '🎁', ar: 'دعم المنشورات (أكثر)', en: 'Post support (more)' }
         ]
     };
+    // جدول المزايا: لكل ميزة أقل درجة تفتحها (label = كلمة صغيرة بجانب العلامة حسب الدرجة)
+    const MATRIX = [
+        { min: 1, ar: 'توثيق الحساب وشعار النادي', en: 'Verified account and club badge' },
+        { min: 1, ar: 'منشور أطول (حتى 1000 حرف)', en: 'Longer posts (up to 1000 characters)' },
+        { min: 2, ar: 'نشر الصور', en: 'Post images' },
+        { min: 2, ar: 'نشر الفيديو', en: 'Post videos' },
+        { min: 2, ar: 'الذكاء الاصطناعي', en: 'AI assistant' },
+        { min: 2, ar: 'دعم المنشورات', en: 'Post support', label: { 2: ['محدود', 'Limited'], 3: ['أكثر', 'More'] } },
+        { min: 3, ar: 'نوع المنشور', en: 'Post types' },
+        { min: 3, ar: 'توقّع المباريات', en: 'Match predictions' }
+    ];
     const FEATURES = [];
 
     /* ---------- ألوان متناسقة مع التطبيق ---------- */
@@ -116,7 +127,19 @@
         #zp-overlay .zp-feat{display:flex;align-items:center;gap:8px;padding:6px 2px;
             border-bottom:1px solid ${C.line};color:#fff;font-size:.85rem}
         #zp-overlay .zp-soon{color:${C.muted};font-size:.7rem}
-        #zp-overlay .zp-plans{display:grid;grid-template-columns:1fr;gap:12px;margin-top:10px}
+        #zp-overlay .zp-plans{display:flex;gap:12px;margin-top:14px;overflow-x:auto;scroll-snap-type:x mandatory;
+            -webkit-overflow-scrolling:touch;scrollbar-width:none;padding:6px 2px 4px}
+        #zp-overlay .zp-plans::-webkit-scrollbar{display:none}
+        #zp-overlay .zp-plans .zp-plan{flex:0 0 82%;scroll-snap-align:center;margin-top:0}
+        #zp-overlay .zp-dots{display:flex;justify-content:center;gap:6px;margin-top:10px}
+        #zp-overlay .zp-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.25);transition:all .2s}
+        #zp-overlay .zp-dots i.on{background:${C.gold};width:18px;border-radius:6px}
+        #zp-overlay .zp-rw{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 0;
+            border-top:1px solid ${C.line};color:#fff;font-size:.82rem}
+        #zp-overlay .zp-rw.off{color:#6f7aa8}
+        #zp-overlay .zp-rw b{font-size:1rem;font-weight:900}
+        #zp-overlay .zp-rw .y{color:#2de2c4}#zp-overlay .zp-rw .n{color:#ff6b86}
+        #zp-overlay .zp-lb{font-size:.68rem;color:${C.muted};margin-inline-start:6px}
         #zp-overlay .zp-plan{position:relative;margin-top:6px;padding:12px 10px 10px;border-radius:16px;
             background:${C.card};border:1px solid ${C.goldLine}}
         #zp-overlay .zp-plan.best{border:1.5px solid transparent;
@@ -168,24 +191,20 @@
         const save = savingPercent();
 
         const plans = PLANS.map(p => {
-            const lines = [];
-            for (let t = 1; t <= p.tier; t++) {
-                (TIER_FEATURES[t] || []).forEach(f => lines.push(`<div class="zp-feat"><span>${f.icon}</span><span>${ar ? f.ar : f.en}</span></div>`));
-            }
+            const rows = MATRIX.map(f => {
+                const on = p.tier >= f.min;
+                const lb = on && f.label && f.label[p.tier] ? `<span class="zp-lb">${ar ? f.label[p.tier][0] : f.label[p.tier][1]}</span>` : '';
+                return `<div class="zp-rw ${on ? '' : 'off'}"><span>${ar ? f.ar : f.en}${lb}</span><b class="${on ? 'y' : 'n'}">${on ? '✓' : '✗'}</b></div>`;
+            }).join('');
             return `
             <div class="zp-plan ${p.best ? 'best' : ''}" data-tier="${p.tier}">
                 ${p.best ? `<div class="zp-tag">${ar ? 'الأفضل قيمة' : 'Best value'}</div>` : ''}
-                <div class="zp-row">
+                <div class="zp-row" style="flex-direction:row;justify-content:space-between;align-items:baseline;width:100%;margin-bottom:6px">
                     <div class="zp-name">${ar ? p.ar : p.en}</div>
-                    <div>
-                        <span class="zp-price">${money(p.price)}</span>
-                        <span class="zp-per">/ ${ar ? 'شهرياً' : 'month'}</span>
-                    </div>
+                    <div><span class="zp-price">${money(p.price)}</span><span class="zp-per">/ ${ar ? 'شهرياً' : 'month'}</span></div>
                 </div>
-                <div style="margin-top:6px">${p.tier > 1 ? `<div class="zp-soon" style="margin-bottom:2px">${ar ? 'كل مزايا الدرجة السابقة، و:' : 'Everything below, plus:'}</div>` : ''}${lines.slice(p.tier > 1 ? -(TIER_FEATURES[p.tier] || []).length : 0).join('')}</div>
-                <button class="zp-btn ${p.best ? 'main' : 'ghost'}" data-plan="${p.id}">
-                    ${ar ? 'اشترك' : 'Subscribe'}
-                </button>
+                ${rows}
+                <button class="zp-btn ${p.best ? 'main' : 'ghost'}" data-plan="${p.id}">${ar ? 'اشترك' : 'Subscribe'}</button>
             </div>`;
         }).join('');
         const feats = '';
@@ -199,7 +218,8 @@
             <div class="zp-sub">${ar ? 'شارك ناديك المفضل واحصل على مزايا إضافية.' : 'Show your favorite club and unlock extra perks.'}</div>
             <div class="zp-active" id="zp-active">${ar ? '✅ اشتراكك فعّال' : '✅ Your subscription is active'}</div>
             ${feats}
-            <div class="zp-plans">${plans}</div>
+            <div class="zp-plans" id="zp-plans">${plans}</div>
+            <div class="zp-dots" id="zp-dots">${PLANS.map((p, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('')}</div>
             <div class="zp-note">${ar ? 'الدفع عبر Google Play. يتجدد الاشتراك تلقائياً ويمكنك إلغاؤه في أي وقت من إعدادات الاشتراكات في Google Play.'
                                       : 'Billed through Google Play. The subscription renews automatically and you can cancel anytime in Google Play subscription settings.'}</div>
             <button class="zp-btn ghost" id="zp-restore" style="margin-top:8px">${ar ? 'استعادة مشترياتي' : 'Restore purchases'}</button>`;
@@ -218,6 +238,16 @@
             b.onclick = () => startPay(b.dataset.plan, b);
         });
         wrap.querySelector('#zp-restore').onclick = restorePurchases;
+        const strip = wrap.querySelector('#zp-plans'), dots = wrap.querySelectorAll('#zp-dots i');
+        const setDots = () => {
+            const cards = [...strip.children];
+            const mid = strip.getBoundingClientRect().left + strip.clientWidth / 2;
+            let best = 0, d = 1e9;
+            cards.forEach((c, i) => { const r = c.getBoundingClientRect(); const x = Math.abs(r.left + r.width / 2 - mid); if (x < d) { d = x; best = i; } });
+            dots.forEach((el, i) => el.classList.toggle('on', i === best));
+        };
+        strip.addEventListener('scroll', () => requestAnimationFrame(setDots));
+        setTimeout(() => { const first = strip.firstElementChild; if (first) first.scrollIntoView({ inline: 'center', block: 'nearest' }); setDots(); }, 60);
         // الأسعار الحقيقية من Google Play (بعملة المستخدم)
         loadPrices().then(m => wrap.querySelectorAll('[data-plan]').forEach(b => {
             const el = b.closest('.zp-plan') && b.closest('.zp-plan').querySelector('.zp-price');
