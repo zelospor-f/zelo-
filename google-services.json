@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "291426382867",
+    "project_id": "zelo-sport-e6e05",
+    "storage_bucket": "zelo-sport-e6e05.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:291426382867:android:55422554238f8977d1bbe6",
+        "android_client_info": {
+          "package_name": "com.zelosport.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCKR-5MgjbhpSbxl6rqN6m_VbQwqW6rylQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
