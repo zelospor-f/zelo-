@@ -572,6 +572,7 @@
         S.other = o;
         S.mode = 'view';
         S.currentTarget = container;
+        container.style.boxSizing = 'border-box'; container.style.overflowX = 'hidden';
         container.style.padding = 'calc(14px + env(safe-area-inset-top, 0px)) 15px 40px';
         S.draft = {
             nickname: r.nickname_ar || r.nickname_en || '',

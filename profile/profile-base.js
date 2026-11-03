@@ -130,7 +130,7 @@
         const align = tr('ui_left', 'right', 'left');
         return `
         <style>
-            .profile-wrap { width: 100%; box-sizing: border-box; padding: 4px 0 20px 0; direction: ${dir}; color: #fff; text-align: ${align}; }
+            .profile-wrap { width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box; padding: 4px 0 20px 0; direction: ${dir}; color: #fff; text-align: ${align}; }
             .profile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
             .back-btn { background: rgba(245,195,90,0.08); color: #f5c35a; border: 1px solid rgba(245,195,90,0.35); padding: 8px 14px; border-radius: 20px; font-weight: 800; font-size: 0.8rem; cursor: pointer; }
             .page-title { margin: 0; font-size: 1.05rem; font-weight: 900; background: linear-gradient(135deg, #ffd98a, #f5c35a, #6b8cff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
@@ -238,36 +238,37 @@
             /* ===== تصميم الرأس الجديد ===== */
             .pp { padding: 4px 2px 0; }
             .pp-head { display: flex; align-items: center; gap: 14px; }
-            .pp-av { width: 92px; height: 92px; min-width: 92px; border-radius: 50%; padding: 3px; box-sizing: border-box; background: linear-gradient(135deg, #2c4bb5, #f5c35a, #14206b); box-shadow: 0 0 18px rgba(245,195,90,0.3); }
+            .pp-av { width: 76px; height: 76px; min-width: 76px; border-radius: 50%; padding: 2px; box-sizing: border-box; background: linear-gradient(135deg, #2c4bb5, #f5c35a, #14206b); box-shadow: 0 0 18px rgba(245,195,90,0.3); }
             .pp-av div { width: 100%; height: 100%; border-radius: 50%; overflow: hidden; border: 2px solid #0a1033; background: #0a1033; }
             .pp-av img { width: 100%; height: 100%; object-fit: cover; display: block; }
             .pp-id { flex: 1; min-width: 0; }
-            .pp-name { margin: 0; font-size: 1.15rem; font-weight: 900; display: flex; align-items: center; gap: 5px; overflow: hidden; }
+            .pp-name { margin: 0; font-size: 1.05rem; font-weight: 900; display: flex; align-items: center; gap: 5px; overflow: hidden; }
             .pp-name > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-            .pp-user { font-size: 0.8rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: inherit; text-align: start; unicode-bidi: isolate; }
-            .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 18px; text-align: center; }
+            .pp-user { font-size: 0.78rem; color: #ffd98a; font-weight: 700; margin-top: 3px; direction: inherit; text-align: start; unicode-bidi: isolate; }
+            .pp-stats { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 14px; text-align: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(245,195,90,0.18); border-radius: 16px; padding: 10px 0; }
+            .pp-stat + .pp-stat { border-inline-start: 1px solid rgba(255,255,255,0.08); }
             .pp-stat { cursor: default; }
             .pp-stat.tap { cursor: pointer; }
-            .pp-stat b { display: flex; align-items: center; justify-content: center; gap: 7px; font-size: 1.7rem; font-weight: 900; color: #fff; line-height: 1.1; }
-            .pp-stat b svg { width: 22px; height: 22px; stroke: #f5c35a; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-            .pp-stat span { display: block; font-size: 0.76rem; font-weight: 700; color: #9aa6d6; margin-top: 2px; }
-            .pp-badges { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
-            .pp-badge { width: 44px; height: 44px; border-radius: 50%; background: rgba(0,0,0,0.45); border: 1px solid rgba(245,195,90,0.35); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px -3px rgba(245,195,90,0.5); }
-            .pp-badge img { width: 28px; height: 28px; object-fit: contain; }
+            .pp-stat b { display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 1.15rem; font-weight: 900; color: #fff; line-height: 1.2; }
+            .pp-stat b svg { width: 16px; height: 16px; stroke: #f5c35a; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+            .pp-stat span { display: block; font-size: 0.7rem; font-weight: 700; color: #9aa6d6; margin-top: 2px; }
+            .pp-badges { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+            .pp-badge { width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.45); border: 1px solid rgba(245,195,90,0.35); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px -3px rgba(245,195,90,0.5); }
+            .pp-badge img { width: 22px; height: 22px; object-fit: contain; }
             .pp-bio { font-size: 0.86rem; color: #e2e8f0; line-height: 1.6; margin-top: 12px; word-break: break-word; }
             .pp-meta { font-size: 0.72rem; color: #9aa6d6; font-weight: 700; margin-top: 6px; }
-            .pp-btns { display: flex; gap: 10px; margin-top: 16px; }
-            .pp-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.06); color: #fff; font-weight: 800; font-size: 0.84rem; padding: 12px 8px; border-radius: 999px; border: 1px solid rgba(245,195,90,0.3); font-family: inherit; }
+            .pp-btns { display: flex; gap: 8px; margin-top: 12px; }
+            .pp-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; background: rgba(255,255,255,0.06); color: #fff; font-weight: 800; font-size: 0.8rem; padding: 10px 8px; border-radius: 999px; border: 1px solid rgba(245,195,90,0.3); font-family: inherit; }
             .pp-btn:active { background: rgba(245,195,90,0.14); }
-            .pp-btn svg { width: 18px; height: 18px; stroke: #f5c35a; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-            .pp-short { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 18px; padding: 14px 4px 10px; background: rgba(17,26,74,0.6); border: 1px solid rgba(245,195,90,0.18); border-radius: 18px; }
+            .pp-btn svg { width: 16px; height: 16px; stroke: #f5c35a; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+            .pp-short { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; padding: 12px 4px 8px; background: rgba(17,26,74,0.6); border: 1px solid rgba(245,195,90,0.18); border-radius: 18px; }
             .pp-sc { background: none; border: none; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 7px; font-family: inherit; font-size: 0.74rem; font-weight: 800; padding: 0; }
-            .pp-sc svg { width: 30px; height: 30px; stroke: #f5c35a; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+            .pp-sc svg { width: 26px; height: 26px; stroke: #f5c35a; fill: none; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
             .pp-sc small { color: #ffd98a; font-size: 0.7rem; font-weight: 900; }
             .pp .verify-btn { width: 100%; margin-top: 12px; }
             /* تبويبات المنشورات بشكل مفتاح */
-            .feed-tabs { background: rgba(255,255,255,0.05); border: 1px solid rgba(245,195,90,0.2); border-radius: 999px; padding: 4px; gap: 4px; border-bottom: 1px solid rgba(245,195,90,0.2); margin: 18px 0 8px; }
-            .feed-tab { border-radius: 999px; padding: 10px 4px; }
+            .feed-tabs { background: rgba(255,255,255,0.05); border: 1px solid rgba(245,195,90,0.2); border-radius: 999px; padding: 4px; gap: 4px; border-bottom: 1px solid rgba(245,195,90,0.2); margin: 14px 0 8px; }
+            .feed-tab { border-radius: 999px; padding: 8px 4px; font-size: 0.82rem; }
             .feed-tab.active { background: rgba(245,195,90,0.18); color: #ffd98a; }
             .feed-tab.active::after { display: none; }
         </style>`;
