@@ -370,7 +370,7 @@
 
         /* زر النشر العائم (مثل X) */
         .fab-compose {
-            position: fixed; bottom: calc(var(--zelo-nav-h, 64px) + var(--zelo-ad-h, 0px) + 16px + env(safe-area-inset-bottom, 0px)); inset-inline-end: 16px;
+            position: fixed; bottom: calc(var(--zelo-nav-h, 64px) + 16px + env(safe-area-inset-bottom, 0px)); inset-inline-end: 16px;
             width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer;
             background: #2c4bb5; color: #fff; line-height: 1;
             display: flex; align-items: center; justify-content: center; padding: 0;

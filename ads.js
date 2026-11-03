@@ -25,8 +25,9 @@
 
     const COOLDOWN_MS = 30 * 1000;
     const REWARD_POINTS = 50;
-    const BANNER_MARGIN = 64;   // ارتفاع الشريط السفلي
-    const AD_SLOT_H = 72;       // 50 للبانر + 22 لرابط الاشتراك
+    const AD_SLOT_H = 80;       // 8 مسافة + 50 للبانر + 22 لرابط الاشتراك
+    // البانر أعلى الشاشة تحت الشريط العلوي مباشرة (مع مسافة 8 عن أزرار الشريط لتفادي النقر بالخطأ)
+    const bannerTop = () => { const b = document.getElementById('top-bar'); const h = b ? b.getBoundingClientRect().bottom : 0; return Math.round((h > 40 ? h : 60) + 8); };
     function setAdSlot(on) {
         const el = document.getElementById('bottom-ad-slot');
         if (el) {
@@ -225,8 +226,8 @@
             await AdMob.showBanner({
                 adId: ADS.banner,
                 adSize: 'BANNER',
-                position: 'BOTTOM_CENTER',
-                margin: BANNER_MARGIN,
+                position: 'TOP_CENTER',
+                margin: bannerTop(),
                 isTesting: IS_TESTING
             });
             bannerShown = true;
@@ -246,7 +247,7 @@
             const H = window.innerHeight;
             for (const el of document.body.children) {
                 const id = el.id || '';
-                if (id === 'bottom-nav' || id === 'bottom-ad-slot' || id.indexOf('zdrawer') === 0) continue;
+                if (id === 'bottom-nav' || id === 'bottom-ad-slot' || id === 'top-bar' || id.indexOf('zdrawer') === 0) continue;
                 const cs = getComputedStyle(el);
                 if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) continue;
                 if ((parseInt(cs.zIndex, 10) || 0) < 100) continue;
@@ -261,7 +262,7 @@
             if (need === bannerHidden) return;
             bannerHidden = need;
             try {
-                setAdSlot(!need);
+                { const sl = document.getElementById('bottom-ad-slot'); if (sl) sl.style.visibility = need ? 'hidden' : 'visible'; } // نُبقي المساحة كي لا تقفز الصفحة
                 if (need) await AdMob.hideBanner();
                 else await AdMob.resumeBanner();
             } catch (e) {}
