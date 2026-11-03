@@ -282,6 +282,7 @@
                 <h2 class="zs-sub">${esc(L('اختر باقتك', 'Choose a pack'))}</h2>
                 <div class="zs-list">${PACKAGES.map(packRow).join('')}</div>
                 <p class="zs-note">${esc(L('تُضاف النقاط إلى رصيدك بعد تأكيد الدفع.', 'Coins are added to your balance once payment is confirmed.'))}</p>
+                <p class="zs-note" style="color:#ffb4a8;">${esc(L('تحذير: أي تلاعب في النقاط أو المكافآت أو الإعلانات (بأي طريقة أو برنامج) يعرّض الحساب للحذف وخسارة كل الرصيد والمشتريات دون تعويض.', 'Warning: any manipulation of points, rewards or ads (by any method or tool) may lead to account deletion and loss of all balance and purchases, with no refund.'))}</p>
             </div>
         `;
     }
