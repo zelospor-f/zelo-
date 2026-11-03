@@ -249,7 +249,7 @@
                 const id = el.id || '';
                 if (id === 'bottom-nav' || id === 'bottom-ad-slot' || id === 'top-bar' || id.indexOf('zdrawer') === 0) continue;
                 const cs = getComputedStyle(el);
-                if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) continue;
+                if (cs.position !== 'fixed' || cs.display === 'none' || cs.visibility === 'hidden') continue;
                 if ((parseInt(cs.zIndex, 10) || 0) < 100) continue;
                 const r = el.getBoundingClientRect();
                 if (r.height >= H * 0.35 && r.width >= window.innerWidth * 0.6 && r.bottom >= H - 4) return true;
@@ -267,7 +267,8 @@
                 else await AdMob.resumeBanner();
             } catch (e) {}
         };
-        new MutationObserver(apply).observe(document.body, { childList: true });
+        new MutationObserver(apply).observe(document.body, { childList: true, attributes: true, attributeFilter: ['class', 'style'], subtree: false });
+        setInterval(apply, 800); // شبكة أمان: أي نافذة تُفتح أو تُغلق تُلتقط خلال أقل من ثانية
         // القائمة الجانبية تبقى في الصفحة وتُفتح بتغيير class، لذلك تُبلغنا بحدث
         window.addEventListener('zdrawer:open', () => { drawerOpen = true; apply(); });
         window.addEventListener('zdrawer:close', () => { drawerOpen = false; apply(); });
