@@ -7,7 +7,7 @@
     const CONFIG = {
         MIN_AMOUNT: 1,                              // الحد الأدنى للدعم بالنقاط
         DAILY_LIMIT: 5000,                          // الحد اليومي لكل مستخدم
-        FEE_PERCENT: 10,                            // عمولة المنصة %
+        FEE_PERCENT: 0,                             // عمولة المنصة % (ملغاة)
         COMBO_RESET_MS: 4000,                       // مدة انتظار الكومبو قبل أن يُصفَّر
         // الهدايا: السعر = عدد النقاط التي تُخصم (يجب أن يطابق حدود الدالة في القاعدة)
         // emoji: أيقونة جاهزة | shirt + num: قميص برقم عام (لا أسماء لاعبين حقيقيين)
@@ -205,7 +205,7 @@
                 </div>
 
                 <div style="display:flex;justify-content:space-between;align-items:center;background:${THEME.card};border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 16px;">
-                    <span style="color:${THEME.muted};font-size:.84rem;">${L(`يصل للكاتب (بعد عمولة ${CONFIG.FEE_PERCENT}%)`, `Author receives (after ${CONFIG.FEE_PERCENT}% fee)`)}</span>
+                    <span style="color:${THEME.muted};font-size:.84rem;">${(CONFIG.FEE_PERCENT > 0 ? L(`يصل للكاتب (بعد عمولة ${CONFIG.FEE_PERCENT}%)`, `Author receives (after ${CONFIG.FEE_PERCENT}% fee)`) : L('يصل للكاتب (بدون عمولة)', 'Author receives (no fee)'))}</span>
                     <span id="zsup-net" style="font-weight:900;color:${THEME.gold};font-variant-numeric:tabular-nums;"></span>
                 </div>
 

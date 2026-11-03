@@ -221,7 +221,7 @@
             else if (isOwned) btn = `<button class="nm-btn nm-btn-blue" onclick="window.useNftAvatar('${it.id}')">🖼️ ${ar ? 'اجعلها صورتي' : 'Use as avatar'}</button>`;
             else if (isExp) btn = `<button class="nm-btn nm-btn-gray" disabled>⌛ ${ar ? 'انتهى العرض' : 'Ended'}</button>`;
             else if (rem === 0) btn = `<button class="nm-btn nm-btn-gray" disabled>🚫 ${ar ? 'نفدت الكمية' : 'Sold out'}</button>`;
-            else btn = `<button class="nm-btn" onclick="window.buyPlayerNft('${it.id}')">🛒 ${ar ? 'شراء بالنقاط' : 'Buy with points'}</button>`;
+            else btn = `<button class="nm-btn" onclick="window.buyPlayerNft('${it.id}')">🛒 ${ar ? 'شراء بالكورة' : 'Buy with Kora'}</button>`;
 
             const badgeBg = mythic ? 'linear-gradient(90deg,#ff2e97,#f5c35a)' : (RARITY_COLOR[it.rarity] || '#4a6cff');
             let extra = '';
@@ -352,7 +352,7 @@
             ended:               ['انتهى العرض', 'Offer ended'],
             unauthorized:        ['سجّل الدخول أولاً', 'Please sign in first'],
             unknown_nft:         ['البطاقة غير متاحة', 'Card not available'],
-            insufficient_points: ['رصيدك من النقاط غير كافٍ', 'Not enough points'],
+            insufficient_points: ['رصيدك من الكورة غير كافٍ', 'Not enough Kora'],
             user_not_found:      ['تعذّر العثور على حسابك', 'Account not found']
         };
         const m = M[code];
@@ -386,7 +386,7 @@
         const price = priceOf(it).points;
         const name = ar ? it.ar : it.en;
         const ok = confirm(ar
-            ? `شراء «${name}» مقابل ${fmtPts(price)} نقطة؟`
+            ? `شراء «${name}» مقابل ${fmtPts(price)} كورة؟`
             : `Buy "${name}" for ${fmtPts(price)} points?`);
         if (!ok) return;
         buying = true;

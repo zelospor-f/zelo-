@@ -1,4 +1,4 @@
-// wallet-withdraw.js — صفحة "محفظتي": رصيد الألماس + شروط السحب + طلب سحب USDT (BEP20)
+// wallet-withdraw.js — صفحة "محفظتي": رصيد الكورة + شروط السحب + طلب سحب USDT (BEP20)
 // الاستخدام: أضف الملف إلى الصفحة ثم استدعِ openWithdrawWallet(supabaseClient) من زر المحفظة.
 (function () {
   const TITLES = {
@@ -84,24 +84,22 @@
     ov.appendChild(wrap);
     document.body.appendChild(ov);
 
-    const S = { cfg: null, avail: 0, held: 0, addr: null, hist: [], elig: null, amount: 0, msg: '', busy: false };
+    const S = { pro: false, cfg: null, avail: 0, held: 0, addr: null, hist: [], elig: null, amount: 0, msg: '', busy: false };
     let timer = null;
 
     async function load() {
       const [c, l, a, w] = await Promise.all([
         sb.from('usdt_withdraw_config').select('*').single(),
-        sb.from('diamond_ledger').select('delta,available_at'),
+        sb.rpc('my_coin_balance'),
         sb.from('withdraw_addresses').select('address,set_at').maybeSingle(),
         sb.from('usdt_withdrawals').select('id,diamonds,amount_usdt,status,created_at,tx_hash')
           .order('created_at', { ascending: false }).limit(10)
       ]);
       S.cfg = c.data;
-      const now = Date.now();
-      S.avail = 0; S.held = 0;
-      (l.data || []).forEach(r => {
-        if (new Date(r.available_at).getTime() <= now) S.avail += r.delta; else S.held += r.delta;
-      });
+      const bl = (l && l.data) || {};
+      S.avail = Number(bl.available) || 0; S.held = Number(bl.held) || 0;
       S.addr = a.data; S.hist = w.data || [];
+      try { S.pro = window.ZeloPremium ? await window.ZeloPremium.isPremium(true) : false; } catch (e) { S.pro = false; }
       await checkElig();
     }
 
@@ -120,7 +118,7 @@
 
       // الرصيد
       const bal = h('div', 'zw-card zw-bal');
-      const rate = S.cfg ? S.cfg.diamonds_per_usdt : 100;
+      const rate = S.cfg ? S.cfg.diamonds_per_usdt : 200;
       [[S.avail, 'قابل للسحب'], [S.held, 'قيد التعليق'],
        [(S.avail / rate).toFixed(2) + '$', 'يعادل']].forEach(([v, t]) => {
         const d = h('div'); d.appendChild(h('b', '', String(v))); d.appendChild(h('span', '', t)); bal.appendChild(d);
@@ -170,10 +168,10 @@
       // الطلب
       const rc = h('div', 'zw-card');
       rc.appendChild(h('p', 'zw-h', 'طلب سحب'));
-      rc.appendChild(h('label', 'zw-lbl', 'عدد الألماس المراد سحبه'));
+      rc.appendChild(h('label', 'zw-lbl', 'عدد الكورة المراد سحبه'));
       const line = h('div', 'zw-line');
       const ni = h('input', 'zw-in'); ni.id = 'zw-amt'; ni.type = 'number'; ni.inputMode = 'numeric';
-      ni.placeholder = 'عدد الألماس'; ni.value = S.amount > 0 ? S.amount : '';
+      ni.placeholder = 'عدد الكورة'; ni.value = S.amount > 0 ? S.amount : '';
       ni.oninput = () => {
         S.amount = Math.floor(Number(ni.value)) || 0;
         clearTimeout(timer);
@@ -184,9 +182,16 @@
       line.appendChild(ni); line.appendChild(all); rc.appendChild(line);
       if (S.amount > 0) rc.appendChild(h('div', 'zw-est', 'ستستلم: ' + (S.amount / rate).toFixed(2) + ' USDT'));
       const go = h('button', 'zw-btn', 'اطلب السحب');
-      go.disabled = S.busy || !S.elig || S.elig.decision === 'rejected' || S.amount <= 0;
+      go.disabled = S.busy || S.amount <= 0 || (S.pro && (!S.elig || S.elig.decision === 'rejected'));
       go.onclick = async () => {
-        if (!confirm('سحب ' + S.amount + ' ألماسة (' + (S.amount / rate).toFixed(2) + ' USDT) إلى:\n' + S.addr.address + '\nشبكة BEP20')) return;
+        if (!S.pro) {
+          S.msg = 'وثّق حسابك بالاشتراك لتتمكن من السحب';
+          render();
+          ov.remove();
+          if (window.openSubscriptions) window.openSubscriptions();
+          return;
+        }
+        if (!confirm('سحب ' + S.amount + ' كورة (' + (S.amount / rate).toFixed(2) + ' USDT) إلى:\n' + S.addr.address + '\nشبكة BEP20')) return;
         S.busy = true; render();
         const r = await sb.rpc('request_usdt_withdrawal', { p_diamonds: S.amount });
         S.busy = false;

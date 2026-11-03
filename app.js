@@ -201,7 +201,7 @@ async function updateTopBar() {
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
         const localeLang = userState.lang === 'ar' ? 'ar-EG' : 'en-US';
-        pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ZELOFC`;
+        pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ${localeLang.startsWith("ar") ? "كورة" : "Kora"}`;
     }
 
     if (clubEl && userState.selectedClubs.length > 0) {

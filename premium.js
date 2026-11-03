@@ -27,13 +27,11 @@
         2: [
             { icon: '🖼️', ar: 'نشر الصور في المنشورات والردود', en: 'Post images in posts and replies' },
             { icon: '🎬', ar: 'نشر الفيديو', en: 'Video posts' },
-            { icon: '✨', ar: 'استخدام الذكاء الاصطناعي (مساعد المباراة)', en: 'AI assistant (match assistant)' },
-            { icon: '🎁', ar: 'دعم المنشورات (محدود)', en: 'Post support (limited)' }
+            { icon: '✨', ar: 'استخدام الذكاء الاصطناعي (مساعد المباراة)', en: 'AI assistant (match assistant)' }
         ],
         3: [
             { icon: '🧩', ar: 'نوع المنشور (لاعب، مدرب، حكم، مقارنة...)', en: 'Post types (player, coach, referee, compare...)' },
-            { icon: '⚽', ar: 'توقّع المباريات داخل المنشور', en: 'Match predictions inside posts' },
-            { icon: '🎁', ar: 'دعم المنشورات (أكثر)', en: 'Post support (more)' }
+            { icon: '⚽', ar: 'توقّع المباريات داخل المنشور', en: 'Match predictions inside posts' }
         ]
     };
     // جدول المزايا: لكل ميزة أقل درجة تفتحها (label = كلمة صغيرة بجانب العلامة حسب الدرجة)
@@ -43,7 +41,6 @@
         { min: 2, ar: 'نشر الصور', en: 'Post images' },
         { min: 2, ar: 'نشر الفيديو', en: 'Post videos' },
         { min: 2, ar: 'الذكاء الاصطناعي', en: 'AI assistant' },
-        { min: 2, ar: 'دعم المنشورات', en: 'Post support', label: { 2: ['محدود', 'Limited'], 3: ['أكثر', 'More'] } },
         { min: 3, ar: 'نوع المنشور', en: 'Post types' },
         { min: 3, ar: 'توقّع المباريات', en: 'Match predictions' }
     ];
@@ -216,7 +213,7 @@
             <div class="zp-dots" id="zp-dots">${PLANS.map((p, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('')}</div>
             <div class="zp-note">${ar ? 'الدفع عبر Google Play. يتجدد الاشتراك تلقائياً ويمكنك إلغاؤه في أي وقت من إعدادات الاشتراكات في Google Play.'
                                       : 'Billed through Google Play. The subscription renews automatically and you can cancel anytime in Google Play subscription settings.'}</div>
-            <div class="zp-note" style="color:#ffb4a8">${ar ? 'تحذير: أي تلاعب في النقاط أو المكافآت أو الإعلانات يعرّض الحساب للحذف وخسارة كل شيء، بما في ذلك الاشتراك والرصيد، دون تعويض.' : 'Warning: any manipulation of points, rewards or ads may lead to account deletion and loss of everything, including your subscription and balance, with no refund.'}</div>
+            <div class="zp-note" style="color:#ffb4a8">${ar ? 'تحذير: أي تلاعب في الكورة أو المكافآت أو الإعلانات يعرّض الحساب للحذف وخسارة كل شيء، بما في ذلك الاشتراك والرصيد، دون تعويض.' : 'Warning: any manipulation of Kora, rewards or ads may lead to account deletion and loss of everything, including your subscription and balance, with no refund.'}</div>
             <button class="zp-btn ghost" id="zp-restore" style="margin-top:8px">${ar ? 'استعادة مشترياتي' : 'Restore purchases'}</button>`;
         document.body.appendChild(wrap);
 

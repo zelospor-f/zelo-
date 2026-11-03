@@ -310,9 +310,9 @@
             [L('كيف ألغي اشتراكي؟', 'How do I cancel my subscription?'),
              L('افتح متجر Google Play ← الملف الشخصي ← المدفوعات والاشتراكات ← الاشتراكات ← ZELO Sport ← إلغاء.',
                'Open Google Play → Profile → Payments & subscriptions → Subscriptions → ZELO Sport → Cancel.')],
-            [L('كيف يعمل سحب الألماس؟', 'How do diamond withdrawals work?'),
-             L('من «محفظتي». الحد الأدنى والرسوم ومدة المعالجة تظهر لك قبل تأكيد الطلب، وقد يُطلب منك تحقق إضافي. تأكد من عنوان المحفظة (USDT على شبكة BEP20) لأن العمليات لا تُلغى بعد التنفيذ.',
-               'From “My Wallet”. The minimum, fees and processing time are shown before you confirm, and extra verification may be required. Double-check the wallet address (USDT on BEP20) because transactions cannot be reversed once sent.')],
+            [L('كيف يعمل سحب الكورة؟', 'How do Kora withdrawals work?'),
+             L('من «محفظتي». السحب للمشتركين فقط، والحد الأدنى 1000 كورة (200 كورة = 1 USDT)، وتُعلَّق الكورة الجديدة 7 أيام. الحد الأدنى والرسوم ومدة المعالجة تظهر لك قبل تأكيد الطلب، وقد يُطلب منك تحقق إضافي. تأكد من عنوان المحفظة (USDT على شبكة BEP20) لأن العمليات لا تُلغى بعد التنفيذ.',
+               'From “My Wallet”. Withdrawals are for subscribers only, the minimum is 1,000 Kora (200 Kora = 1 USDT), and new Kora is held for 7 days. The minimum, fees and processing time are shown before you confirm, and extra verification may be required. Double-check the wallet address (USDT on BEP20) because transactions cannot be reversed once sent.')],
             [L('كيف أبلّغ عن منشور أو أحظر مستخدماً؟', 'How do I report a post or block a user?'),
              L('من قائمة المنشور (النقاط الثلاث) اختر «بلاغ» أو «حظر».',
                'From the post menu (three dots) choose “Report” or “Block”.')]
@@ -462,7 +462,7 @@
                     title: { ar: 'اكتشف', en: 'DISCOVER' },
                     items: [
                         { key: 'champions', ar: 'أبطال اليوم', en: "Today's Champions", highlight: true },
-                        { key: 'ads',       ar: 'اربح نقاط',   en: 'Earn Points', highlight: true },
+                        { key: 'ads',       ar: 'اربح كورة',   en: 'Earn Kora', highlight: true },
                         { key: 'nft',       ar: 'سوق NFT',     en: 'NFT Market' },
                         { key: 'community', ar: 'المجتمعات',   en: 'Community' }
                     ]

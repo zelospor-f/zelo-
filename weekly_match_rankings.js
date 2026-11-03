@@ -330,7 +330,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     <div class="legendary-points" style="padding: 3px 8px; margin: 0;">
                         <span style="font-size: 0.85rem;">🪙</span>
                         <span style="color: var(--accent-gold, #f5c35a); font-weight: 900; font-size: 0.95rem;">${myBalance.toLocaleString('en-US')}</span>
-                        <span style="color: rgba(255,255,255,0.7); font-size: 0.7rem; font-weight: bold;">${isAr ? 'ZELO' : 'ZELO'}</span>
+                        <span style="color: rgba(255,255,255,0.7); font-size: 0.7rem; font-weight: bold;">${isAr ? 'كورة' : 'Kora'}</span>
                     </div>
                 </div>
                 
