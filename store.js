@@ -21,10 +21,12 @@
         { id: 'starter',  tier: 1, coins: 100,  price: 1,  gid: 'zelo_coin_100',  ar: 'باقة المبتدئ', en: 'Starter' },
         { id: 'pro',      tier: 2, coins: 500,  price: 5,  gid: 'zelo_coin_500',  ar: 'باقة المحترف', en: 'Pro',
           badge: { ar: 'الأكثر طلباً', en: 'Most popular' } },
-        { id: 'elite',    tier: 3, coins: 1000, price: 10, gid: 'zelo_coin_1000', ar: 'باقة النجم',   en: 'Elite' },
-        { id: 'ultimate', tier: 4, coins: 2000, price: 20, gid: 'zelo_coin_2000', ar: 'باقة الأسطورة', en: 'Ultimate' },
-        { id: 'king',     tier: 5, coins: 6000, price: 50, gid: 'zelo_coin_6000', ar: 'باقة الملوك',   en: 'Kings',
-          badge: { ar: 'الأكبر', en: 'Biggest' } }
+        { id: 'elite',    tier: 3, coins: 1000, price: 10, gid: 'zelo_coin_1000', ar: 'باقة النجم',   en: 'Elite',
+          badge: { ar: 'اربح 250 إضافية', en: 'Get 250 extra' } },
+        { id: 'ultimate', tier: 4, coins: 2000, price: 20, gid: 'zelo_coin_2000', ar: 'باقة الأسطورة', en: 'Ultimate',
+          badge: { ar: 'اربح 500 إضافية', en: 'Get 500 extra' } },
+        { id: 'king',     tier: 5, coins: 5000, price: 50, gid: 'zelo_coin_6000', ar: 'باقة الملوك',   en: 'Kings',
+          badge: { ar: 'اربح 1000 إضافية', en: 'Get 1000 extra' } }
     ];
 
     // ---------- Google Play Billing (cordova-plugin-purchase داخل Capacitor) ----------
@@ -196,6 +198,7 @@
             background: #2c4bb5; color: #fff; font-size: 0.72rem; font-weight: 800; white-space: nowrap;
         }
         [dir="rtl"] .zs-badge { border-radius: 0 0 14px 0; padding: 5px 14px 5px 12px; }
+        .zs-pack.t3 .zs-badge { background: #f5c35a; color: #0a1033; }
         .zs-pack.t4 .zs-badge , .zs-pack.t5 .zs-badge { background: #0a1033; color: #f5c35a; }
 
         .zs-note { margin: 22px 8px 0; text-align: center; font-size: 0.78rem; color: #7f8bbd; line-height: 1.6; }
