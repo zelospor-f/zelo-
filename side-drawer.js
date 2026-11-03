@@ -54,6 +54,16 @@
         .zdrawer.from-left.open { transform: translateX(0); }
 
         /* ===== الرأس ===== */
+        .zdrawer-search { padding: 10px 14px 4px; }
+        .zdrawer-search input { width: 100%; box-sizing: border-box; padding: 11px 14px; border-radius: 14px; border: 1px solid rgba(245,195,90,.25); background: rgba(255,255,255,.06); color: #fff; font-size: .95rem; font-family: inherit; outline: none; }
+        .zdrawer-search input:focus { border-color: rgba(245,195,90,.6); }
+        .zdr-res { display: flex; align-items: center; gap: 12px; padding: 10px 6px; border-radius: 12px; cursor: pointer; }
+        .zdr-res:active { background: rgba(255,255,255,.08); }
+        .zdr-res img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; flex: none; background: #0c0e20; }
+        .zdr-res b { display: block; font-size: .95rem; color: #fff; }
+        .zdr-res small { color: #8f9bd0; font-size: .8rem; unicode-bidi: plaintext; }
+        .zdr-empty { padding: 18px 6px; text-align: center; color: #8f9bd0; font-size: .88rem; }
+        .zdrawer.zsearching .zdrawer-section, .zdrawer.zsearching .zdrawer-divider, .zdrawer.zsearching .zdrawer-footer { display: none; }
         .zdrawer-header {
             padding: calc(env(safe-area-inset-top, 0px) + 26px) 20px 18px;
             background: radial-gradient(120% 100% at 50% 0%, rgba(245,195,90,0.16) 0%, rgba(245,195,90,0) 70%);
@@ -514,6 +524,11 @@
                 <div class="zdrawer-handle">@${esc(handle)}</div>
             </div>
 
+            <div class="zdrawer-search">
+                <input id="zdrawer-q" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(L('🔍 ابحث عن مستخدم', '🔍 Search users'))}">
+                <div id="zdrawer-results"></div>
+            </div>
+
             ${sections}
 
             <div class="zdrawer-footer">
@@ -524,6 +539,52 @@
                 <div class="zdrawer-version">ZELO Sport v${esc(APP_VERSION)}</div>
             </div>
         `;
+        wireSearch(drawer);
+    }
+
+    // ===== بحث المستخدمين داخل الدرج (النتائج تظهر عند الكتابة فقط) =====
+    let searchSeq = 0;
+    function wireSearch(drawer) {
+        const inp = drawer.querySelector('#zdrawer-q');
+        const box = drawer.querySelector('#zdrawer-results');
+        if (!inp || !box) return;
+        let timer = null;
+        const clear = () => { box.innerHTML = ''; drawer.classList.remove('zsearching'); };
+        const avatar = (n, u) => u || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(n || 'P') + '&background=0c0e20&color=00FF87&size=96&bold=true';
+        const run = async () => {
+            const q = inp.value.trim().replace(/^@+/, '');
+            const my = ++searchSeq;
+            if (q.length < 2) { clear(); return; }
+            drawer.classList.add('zsearching');
+            box.innerHTML = '<div class="zdr-empty">' + esc(L('جارٍ البحث…', 'Searching…')) + '</div>';
+            const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
+            if (!c) { box.innerHTML = '<div class="zdr-empty">' + esc(L('تعذّر البحث الآن', 'Search unavailable')) + '</div>'; return; }
+            const { data, error } = await c.rpc('search_users', { p_q: q });
+            if (my !== searchSeq) return;
+            if (error) { box.innerHTML = '<div class="zdr-empty">' + esc(L('تعذّر البحث الآن', 'Search unavailable')) + '</div>'; return; }
+            const meId = String(window.userState?.userId || '');
+            let blocked = new Set();
+            try {
+                const b = await c.from('user_blocks').select('blocked_id').eq('user_id', meId);
+                blocked = new Set((b.data || []).map(r => String(r.blocked_id)));
+            } catch (e) {}
+            if (my !== searchSeq) return;
+            const rows = (data || []).filter(r => String(r.user_id) !== meId && !blocked.has(String(r.user_id)));
+            if (!rows.length) { box.innerHTML = '<div class="zdr-empty">' + esc(L('لا نتائج', 'No results')) + '</div>'; return; }
+            box.innerHTML = rows.map(r => {
+                const nick = (isAr() ? (r.nickname_ar || r.nickname_en) : (r.nickname_en || r.nickname_ar)) || r.username || '';
+                return '<div class="zdr-res" data-uid="' + esc(r.user_id) + '"><img src="' + esc(avatar(nick, r.photo_url)) + '" alt="" onerror="this.style.visibility=\'hidden\'"><div><b>' + esc(nick) + '</b>' + (r.username ? '<small>@' + esc(r.username) + '</small>' : '') + '</div></div>';
+            }).join('');
+        };
+        inp.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(run, 300); });
+        box.addEventListener('click', e => {
+            const row = e.target.closest('.zdr-res');
+            if (!row) return;
+            e.stopPropagation();
+            const uid = row.dataset.uid;
+            closeSideDrawer();
+            if (typeof window.openUserProfile === 'function') window.openUserProfile(uid);
+        });
     }
 
     // عرض صورة المستخدم في زر الهيدر (أو الرمز الافتراضي إن لم تتوفر صورة)
