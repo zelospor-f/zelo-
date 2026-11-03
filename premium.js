@@ -278,9 +278,9 @@
         const pm = realPrices[p.m.id] || money(p.m.price), py = realPrices[p.y.id] || money(p.y.price);
         const box = document.createElement('div');
         box.id = 'zp-choose';
-        box.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;direction:' + (ar ? 'rtl' : 'ltr');
+        box.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;direction:' + (ar ? 'rtl' : 'ltr');
         box.innerHTML = `
-            <div style="width:100%;background:${C.card};border-radius:20px 20px 0 0;padding:16px 16px 22px;box-sizing:border-box;border-top:1px solid ${C.goldLine}">
+            <div style="width:100%;background:#111a4a;border-radius:20px 20px 0 0;padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px));box-sizing:border-box;border-top:1px solid ${C.goldLine}">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
                     <div style="color:#fff;font-size:1.05rem;font-weight:900">${isUpgrade ? (ar ? 'ترقية إلى ' : 'Upgrade to ') : ''}${ar ? p.ar : p.en}</div>
                     <button id="zp-ch-x" aria-label="close" style="background:none;border:none;color:${C.muted};font-size:1.3rem;cursor:pointer">✕</button>
@@ -294,7 +294,7 @@
                 </button>
                 ${isUpgrade ? `<div class="zp-note">${ar ? 'الترقية فورية. تُحسب لك المدة المتبقية من باقتك الحالية.' : 'Upgrades apply immediately. Your remaining time is credited.'}</div>` : ''}
             </div>`;
-        document.body.appendChild(box);
+        ov.appendChild(box);
         box.querySelector('#zp-ch-x').onclick = () => box.remove();
         box.addEventListener('click', e => { if (e.target === box) box.remove(); });
         box.querySelectorAll('[data-sku]').forEach(b => {
