@@ -45,7 +45,7 @@
     }
     function team(name) {
         const u = logoFor(name);
-        const img = u ? `<img class="nt-logo" src="${esc(u)}" alt="" onerror="this.style.display='none'">` : '';
+        const img = u ? `<img class="nt-logo" src="${esc(u)}" alt="" width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;object-fit:contain;vertical-align:middle;margin:0 4px" onerror="this.style.display='none'">` : '';
         return img + esc(name);
     }
 
