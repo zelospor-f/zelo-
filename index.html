@@ -230,14 +230,14 @@
             -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
             mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
         }
-        .nt-track { display: inline-flex; align-items: center; white-space: nowrap; gap: 26px; will-change: transform; padding: 0 12px; animation: ntmove var(--nt-dur, 30s) linear infinite; }
-        .nt-track.static { animation: none; margin: 0 auto; }
+        .nt-track { display: inline-flex; align-items: center; white-space: nowrap; gap: 26px; will-change: transform; direction: ltr; padding: 0 0 0 100%; animation: ntmove var(--nt-dur, 30s) linear infinite; }
+        .nt-track.static { animation: none; margin: 0 auto; padding: 0 12px; }
         .news-ticker:active .nt-track { animation-play-state: paused; }
         .nt-item { font-size: 0.82rem; font-weight: 800; color: #fff; unicode-bidi: plaintext; }
         .nt-item b { color: #f5c35a; font-weight: 900; margin-inline-end: 5px; }
         .nt-item.live b { color: #ff5d7a; }
         .nt-sep { color: #7f9bff; font-size: 0.7rem; }
-        @keyframes ntmove { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+        @keyframes ntmove { from { transform: translateX(0); } to { transform: translateX(-100%); } }
 
         .wallet-coin { width: 30px; height: 30px; object-fit: contain; flex-shrink: 0; display: block; }
         .wallet-bal small { font-size: 0.9rem; font-weight: 900; }

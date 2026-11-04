@@ -34,7 +34,7 @@
     function paint(items) {
         const tr = document.getElementById('nt-track');
         if (!tr) return;
-        tr.dir = isAr() ? 'rtl' : 'ltr';
+        tr.dir = 'ltr';
         if (!items.length) {
             tr.className = 'nt-track static';
             tr.innerHTML = `<span class="nt-item"><b>ZELO SPORT</b>${isAr() ? 'أهلًا بك في عالم الكرة' : 'Welcome to the world of football'}</span>`;
@@ -44,7 +44,7 @@
         const html = items.map(i => `<span class="nt-item ${i.cls || ''}">${i.html}</span>`).join('<span class="nt-sep">&#9679;</span>');
         tr.innerHTML = html;
         const len = tr.textContent.length;
-        tr.style.setProperty('--nt-dur', Math.max(18, Math.round(len * 0.32)) + 's');
+        tr.style.setProperty('--nt-dur', Math.max(20, Math.round(len * 0.3) + 8) + 's');
     }
 
     let busy = false;
