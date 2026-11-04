@@ -720,7 +720,8 @@
         try {
             cur.recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         } catch (e) {
-            toast(T('rmMicDenied', 'اسمح للتطبيق باستخدام الميكروفون', 'Allow the app to use the microphone'));
+            const nm = (e && e.name) ? ' (' + e.name + ')' : '';
+            toast(T('rmMicDenied', 'اسمح للتطبيق باستخدام الميكروفون', 'Allow the app to use the microphone') + nm);
             return;
         }
         const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/mp4']
