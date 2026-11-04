@@ -15,6 +15,7 @@
 
     function build(rows) {
         const ar = isAr(), now = Date.now();
+        const ed = new Date(); ed.setHours(23, 59, 59, 999); const eod = ed.getTime();
         const live = [], soon = [], done = [];
         rows.forEach(m => {
             const t = new Date(m.match_date).getTime();
@@ -23,12 +24,13 @@
                 if (now - t < 24 * 3600e3) done.push({ t, html: `<b>${ar ? 'انتهت' : 'FT'}</b>${a} ${m.home_score} - ${m.away_score} ${b}` });
             } else if (m.live_status && m.live_home != null && m.live_away != null) {
                 live.push({ t, cls: 'live', html: `<b>${ar ? 'مباشر' : 'LIVE'}</b>${a} ${m.live_home} - ${m.live_away} ${b}` });
-            } else if (m.status === 'NOT_STARTED' && t > now && t - now < 6 * 3600e3) {
-                soon.push({ t, html: `<b>${inText(Math.round((t - now) / 60000))}</b>${a} × ${b}` });
+            } else if (m.status === 'NOT_STARTED' && t > now && t <= eod) {
+                const hm = new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+                soon.push({ t, html: `<b>${ar ? 'الساعة' : 'at'} ${hm}</b>${a} × ${b}` });
             }
         });
         soon.sort((x, y) => x.t - y.t); done.sort((x, y) => y.t - x.t);
-        return [...live, ...soon.slice(0, 5), ...done.slice(0, 6)];
+        return [...live, ...soon.slice(0, 12), ...done.slice(0, 6)];
     }
 
     function paint(items) {
@@ -54,7 +56,7 @@
         busy = true;
         try {
             const from = new Date(Date.now() - 24 * 3600e3).toISOString();
-            const to = new Date(Date.now() + 6 * 3600e3).toISOString();
+            const to = new Date(Date.now() + 24 * 3600e3).toISOString();
             const { data, error } = await c.from('matches')
                 .select('id,team_a,team_b,match_date,status,home_score,away_score,live_status,live_home,live_away')
                 .gte('match_date', from).lte('match_date', to)
