@@ -404,6 +404,7 @@
         const sig = msgs.map(x => x.id + ':' + (x.read_at ? 1 : 0)).join(',');
         if (sig !== chat.sig || first) {
             chat.sig = sig;
+            chat.msgs = msgs;
             renderMsgs(msgs);
         }
         // تعليم الواردة كمقروءة
@@ -420,7 +421,17 @@
         const mine = me().id;
         const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
         const lastMine = [...msgs].reverse().find(x => String(x.sender_id) === mine);
-        box.innerHTML = msgs.length ? msgs.map(x => {
+        const failed = (chat && chat.failed) || [];
+        const all = msgs.map(x => ({ t: new Date(x.created_at).getTime(), m: x }))
+            .concat(failed.map(f => ({ t: f.at, f })))
+            .sort((a, b) => a.t - b.t);
+        box.innerHTML = all.length ? all.map(it => {
+            if (it.f) {
+                return `<div class="dm-b me dm-failed" dir="auto">${esc(it.f.text)}
+                <div class="dm-bt">${esc(clock(new Date(it.f.at).toISOString()))}</div></div>
+                <div class="dm-err">⚠️ ${T('لا يمكن إرسال الرسائل لهذا الشخص', 'Messages cannot be sent to this person')}</div>`;
+            }
+            const x = it.m;
             const isMine = String(x.sender_id) === mine;
             return `<div class="dm-b ${isMine ? 'me' : 'them'}" dir="auto">${esc(x.content)}
                 <div class="dm-bt">${esc(clock(x.created_at))}</div></div>
@@ -444,8 +455,11 @@
         const { error } = await c.from('dm_messages').insert([{ sender_id: mine, receiver_id: uid, content: text }]);
         if (error) {
             const rls = /row-level security|violates/i.test(error.message || '');
-            alert(rls ? T('لا يمكنك مراسلة هذا الحساب. الحسابات الموثقة لا يراسلها إلا المشتركون، فوثّق حسابك بالاشتراك. وللتواصل مع الدعم استخدم «مركز المساعدة» من القائمة الجانبية.', 'You cannot message this account. Verified accounts can only be messaged by subscribers, so verify your account by subscribing. To contact support, use the Help center in the side menu.') : error.message);
-            inp.value = text; return;
+            if (!rls) { alert(error.message); inp.value = text; return; }
+            (chat.failed = chat.failed || []).push({ text, at: Date.now() });
+            renderMsgs(chat.msgs || []);
+            const bx = document.getElementById('dm-msgs'); if (bx) bx.scrollTop = bx.scrollHeight;
+            return;
         }
         if (prefs[uid] && prefs[uid].deleted_at) { /* الرسالة الجديدة أحدث من وقت الحذف فتظهر تلقائيًا */ }
         refreshChat(false);
@@ -492,6 +506,8 @@
     .dm-b.me { align-self:flex-end; background:#1d9bf0; color:#fff; border-bottom-right-radius:4px; }
     .dm-b.them { align-self:flex-start; background:#2a2d3d; color:#fff; border-bottom-left-radius:4px; }
     .dm-bt { font-size:0.62rem; opacity:0.65; margin-top:3px; text-align:end; }
+    .dm-failed { opacity:0.75; }
+    .dm-err { align-self:flex-end; color:#ff5d5d; font-size:0.72rem; font-weight:700; padding:0 4px; }
     .dm-seen { align-self:flex-end; color:#7a7f9a; font-size:0.7rem; padding:0 4px; }
     .dm-notice { text-align:center; color:#94a3b8; padding:12px; font-size:0.85rem; font-weight:700; border-top:1px solid rgba(255,255,255,0.08); }
     .dm-inputbar { display:flex; gap:8px; padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px)); border-top:1px solid rgba(255,255,255,0.08); }
