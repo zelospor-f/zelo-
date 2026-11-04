@@ -442,7 +442,11 @@
         if (bl && bl.length) { alert(T('لا يمكنك مراسلة هذا المستخدم.', 'You cannot message this user.')); return; }
         inp.value = '';
         const { error } = await c.from('dm_messages').insert([{ sender_id: mine, receiver_id: uid, content: text }]);
-        if (error) { alert(error.message); inp.value = text; return; }
+        if (error) {
+            const rls = /row-level security|violates/i.test(error.message || '');
+            alert(rls ? T('لا يمكنك مراسلة هذا الحساب. الحسابات الموثقة لا يراسلها إلا المشتركون، فوثّق حسابك بالاشتراك. وللتواصل مع الدعم استخدم «مركز المساعدة» من القائمة الجانبية.', 'You cannot message this account. Verified accounts can only be messaged by subscribers, so verify your account by subscribing. To contact support, use the Help center in the side menu.') : error.message);
+            inp.value = text; return;
+        }
         if (prefs[uid] && prefs[uid].deleted_at) { /* الرسالة الجديدة أحدث من وقت الحذف فتظهر تلقائيًا */ }
         refreshChat(false);
     }
