@@ -1,6 +1,7 @@
 /* ticker.js — شريط الأخبار المتحرك في الشريط العلوي (من جدول matches فقط) */
 (function () {
     'use strict';
+    const SHOW_LOGOS = false; // true لإظهار شعارات الأندية
     const isAr = () => ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -44,7 +45,7 @@
         return (logoCache[n] = url);
     }
     function team(name, right) {
-        const u = logoFor(name);
+        const u = SHOW_LOGOS ? logoFor(name) : '';
         const img = u ? `<img class="nt-logo" src="${esc(u)}" alt="" width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;object-fit:contain;flex:none" onerror="this.style.display='none'">` : '';
         const nm = `<span class="nt-nm" dir="auto">${esc(name)}</span>`;
         return `<span class="nt-t">${right ? nm + img : img + nm}</span>`;
