@@ -22,7 +22,8 @@
     const TIER_FEATURES = {
         1: [
             { icon: '🏅', ar: 'توثيق الحساب وشعار ناديك بجانب اسمك', en: 'Verified account with your club badge' },
-            { icon: '✍️', ar: 'منشورات أطول حتى 1000 حرف', en: 'Longer posts up to 1000 characters' }
+            { icon: '✍️', ar: 'منشورات أطول حتى 1000 حرف', en: 'Longer posts up to 1000 characters' },
+            { icon: '🎙️', ar: 'رسائل صوتية داخل الغرف', en: 'Voice messages in rooms' }
         ],
         2: [
             { icon: '🖼️', ar: 'نشر الصور في المنشورات والردود', en: 'Post images in posts and replies' },
@@ -38,6 +39,7 @@
     const MATRIX = [
         { min: 1, ar: 'توثيق الحساب وشعار النادي', en: 'Verified account and club badge' },
         { min: 1, ar: 'منشور أطول (حتى 1000 حرف)', en: 'Longer posts (up to 1000 characters)' },
+        { min: 1, ar: 'رسائل صوتية داخل الغرف', en: 'Voice messages in rooms' },
         { min: 2, ar: 'نشر الصور', en: 'Post images' },
         { min: 2, ar: 'نشر الفيديو', en: 'Post videos' },
         { min: 2, ar: 'الذكاء الاصطناعي', en: 'AI assistant' },
