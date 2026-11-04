@@ -47,19 +47,12 @@ jobs:
             --exclude 'package.json' \
             --exclude 'package-lock.json' \
             --exclude 'capacitor.config.json' \
-            --exclude 'server.js' \
-            --exclude 'google-services.json'
+            --exclude 'server.js'
           sed -i 's/"webDir": *"\."/"webDir": "www"/' capacitor.config.json
 
       - name: Add Android Platform
         run: |
           if [ ! -d android ]; then npx cap add android; fi
-
-      - name: Add Firebase config (push notifications)
-        run: |
-          test -f google-services.json || { echo "::error::google-services.json missing from repo root"; exit 1; }
-          cp google-services.json android/app/google-services.json
-          grep -q "google-services" android/build.gradle android/app/build.gradle || { echo "::error::google-services plugin not found in Gradle files"; exit 1; }
 
       - name: Configure Android Manifest (Google Login)
         run: |
@@ -83,11 +76,14 @@ jobs:
                   </intent>
               </queries>
           </manifest>''', 1)
-          if 'POST_NOTIFICATIONS' not in s:
-              s = s.replace('<application', '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <application', 1)
           if 'ACCESS_NETWORK_STATE' not in s:
               s = s.replace('<application', '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <application', 1)
           assert 'ACCESS_NETWORK_STATE' in s, 'network permission was not added'
+          # إذن الميكروفون للرسائل الصوتية داخل الغرف
+          for perm in ('RECORD_AUDIO', 'MODIFY_AUDIO_SETTINGS'):
+              if 'android.permission.' + perm not in s:
+                  s = s.replace('<application', '<uses-permission android:name="android.permission.' + perm + '" />\n    <application', 1)
+          assert 'android.permission.RECORD_AUDIO' in s, 'mic permission was not added'
           # معرّف تطبيق AdMob (ليس سريًا). بدونه ينهار SDK الإعلانات عند التشغيل.
           if 'com.google.android.gms.ads.APPLICATION_ID' not in s:
               s = s.replace('</application>', '''    <meta-data
