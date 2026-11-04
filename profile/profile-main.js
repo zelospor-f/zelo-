@@ -516,6 +516,7 @@
                     ${V ? `<div class="pp-btns">
                         <button class="pp-btn" id="pc-msg"><svg viewBox="0 0 24 24"><path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/></svg>${tr('ui_message', 'رسالة', 'Message')}</button>
                         <button class="pp-btn" id="pc-follow"></button>
+                        <button class="pp-btn" id="pc-bell" style="flex:0 0 48px;padding:10px 0;font-size:1.05rem;" aria-label="Notifications">🔕</button>
                     </div>` : `<div class="pp-btns">
                         <button class="pp-btn" onclick="window.openEditProfile()"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>${tr('ui_edit_profile', 'تعديل الملف الشخصي', 'Edit profile')}</button>
                         <button class="pp-btn" onclick="window.openShareSheet()"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>${tr('ui_share', 'مشاركة', 'Share')}</button>
@@ -600,6 +601,39 @@
             if (el) el.textContent = Math.max(0, (parseInt(String(el.textContent).replace(/,/g, ''), 10) || 0) + (now ? 1 : -1)).toLocaleString('en-US');
         };
         if (mb) mb.onclick = () => o.onMessage();
+
+        // زر الجرس: إشعار عند كل منشور جديد من هذا المستخدم
+        const bb = document.getElementById('pc-bell');
+        if (bb) {
+            let on = false;
+            const bellMsg = m => {
+                const d = document.createElement('div');
+                d.textContent = m;
+                d.style.cssText = 'position:fixed;left:16px;right:16px;bottom:96px;z-index:99999;background:#1b2559;color:#fff;border:1px solid #f5c35a;border-radius:12px;padding:10px 12px;font-size:13px;text-align:center';
+                document.body.appendChild(d); setTimeout(() => d.remove(), 2500);
+            };
+            const paintBell = () => {
+                bb.textContent = on ? '🔔' : '🔕';
+                bb.style.cssText = 'flex:0 0 48px;padding:10px 0;font-size:1.05rem;' + (on ? 'background:#f5c35a;border-color:#f5c35a;' : '');
+            };
+            paintBell();
+            const c = db();
+            if (c) c.rpc('get_bell', { p_target: String(o.uid) }).then(r => { on = !!r.data; paintBell(); });
+            bb.onclick = async () => {
+                if (!c) return;
+                const want = !on;
+                bb.disabled = true;
+                const r = await c.rpc('set_bell', { p_target: String(o.uid), p_on: want });
+                bb.disabled = false;
+                if (r.error) {
+                    const m = /bell_limit/.test(r.error.message || '') ? tr('ui_bell_limit', 'وصلت الحد الأقصى (200 جرس)', 'Bell limit reached (200)') : tr('ui_try_again', 'تعذّر الحفظ، حاول لاحقاً', 'Could not save, try again');
+                    bellMsg(m);
+                    return;
+                }
+                on = want; paintBell();
+                bellMsg(on ? tr('ui_bell_on', 'سيصلك إشعار بكل منشور جديد منه 🔔', 'You will be notified of every new post 🔔') : tr('ui_bell_off', 'تم إيقاف الإشعارات من هذا المستخدم', 'Notifications from this user turned off'));
+            };
+        }
     }
 
     P.showOther = function (container, o) {
