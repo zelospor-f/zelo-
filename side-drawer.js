@@ -80,6 +80,9 @@
             font-size: 1.7rem; font-weight: 900; color: #fff; overflow: hidden;
         }
         .zdrawer-name { font-size: 1.15rem; font-weight: 900; color: #fff; margin-bottom: 2px; }
+        .zdrawer-stats { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .zdrawer-bal, .zdrawer-rank { font-size: 0.85rem; font-weight: 900; padding: 6px 12px; border-radius: 999px; background: rgba(245,195,90,0.14); border: 1px solid rgba(245,195,90,0.35); color: #f5c35a; font-variant-numeric: tabular-nums; }
+        .zdrawer-rank { background: rgba(44,75,181,0.25); color: #fff; border-color: rgba(127,155,255,0.4); }
         .zdrawer-handle { font-size: 0.85rem; color: #8f9bd0; direction: inherit; unicode-bidi: plaintext; text-align: start; }
 
         /* ===== الأقسام ===== */
@@ -522,6 +525,10 @@
                 <div class="zdrawer-avatar-ring"><div class="zdrawer-avatar">${avatarHtml(name)}</div></div>
                 <div class="zdrawer-name">${esc(name)}</div>
                 <div class="zdrawer-handle">@${esc(handle)}</div>
+                <div class="zdrawer-stats">
+                    <span class="zdrawer-bal">🪙 ${Number(window.userState?.points || 0).toLocaleString('en-US')} ${esc(L('كورة', 'Kora'))}</span>
+                    ${/\d/.test((document.getElementById('rank-num') || {}).textContent || '') ? `<span class="zdrawer-rank">🏆 ${esc(L('الترتيب', 'Rank'))} ${esc((document.getElementById('rank-num') || {}).textContent)}</span>` : ''}
+                </div>
             </div>
 
             <div class="zdrawer-search">

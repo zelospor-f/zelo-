@@ -41,6 +41,29 @@
   .zw-bal div{background:rgba(44,75,181,0.16);border:1px solid rgba(245,195,90,0.18);border-radius:12px;padding:12px 6px}
   .zw-bal div:first-child{background:linear-gradient(135deg,rgba(245,195,90,0.22),rgba(44,75,181,0.2));border-color:rgba(245,195,90,0.5)}
   .zw-bal b{font-size:22px;direction:ltr}
+  .zw-hero{background:linear-gradient(160deg,rgba(44,75,181,.28),rgba(17,26,74,.9));border-color:rgba(245,195,90,.45)}
+  .zw-id{display:flex;align-items:center;gap:12px}
+  .zw-av{width:52px;height:52px;border-radius:50%;border:2px solid #f5c35a;background:#14206b;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#fff;overflow:hidden;flex:none}
+  .zw-av img{width:100%;height:100%;object-fit:cover}
+  .zw-who{flex:1;min-width:0}
+  .zw-who b{display:block;font-size:15px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .zw-who small{color:#9aa6d6;font-size:12px;direction:ltr;unicode-bidi:plaintext}
+  .zw-rk{text-align:center;flex:none}
+  .zw-rk small{display:block;color:#9aa6d6;font-size:11px}
+  .zw-rk b{color:#fff;font-size:16px}
+  .zw-big{text-align:center;margin:14px 0 4px}
+  .zw-big small{color:#9aa6d6;font-size:12px;display:block}
+  .zw-bn{color:#f5c35a;line-height:1.2}
+  .zw-bn b{font-size:36px;font-variant-numeric:tabular-nums}
+  .zw-bn span{font-size:16px;font-weight:700}
+  .zw-two{display:flex;gap:8px;margin-top:10px}
+  .zw-two div{flex:1;text-align:center;background:rgba(10,16,51,.55);border-radius:10px;padding:8px 4px}
+  .zw-two b{display:block;font-size:16px;color:#fff}
+  .zw-two span{font-size:11px;color:#9aa6d6}
+  .zw-prog{margin-top:12px}
+  .zw-prow{display:flex;justify-content:space-between;color:#9aa6d6;font-size:11px;margin-bottom:4px}
+  .zw-quick{display:flex;gap:8px;margin-bottom:12px}
+  .zw-q{flex:1;border:1px solid rgba(245,195,90,.35);background:rgba(44,75,181,.22);color:#f5c35a;border-radius:12px;padding:11px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
   .zw-sum{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
   .zw-sum .zw-h{margin:0}
   .zw-cnt{direction:ltr;font-size:12px;font-weight:800;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.08);color:#cbd5e1}
@@ -117,13 +140,53 @@
       top.insertBefore(x, top.firstChild); wrap.appendChild(top);
 
       // الرصيد
-      const bal = h('div', 'zw-card zw-bal');
       const rate = S.cfg ? S.cfg.diamonds_per_usdt : 200;
-      [[S.avail, 'قابل للسحب'], [S.held, 'قيد التعليق'],
-       [(S.avail / rate).toFixed(2) + '$', 'يعادل']].forEach(([v, t]) => {
-        const d = h('div'); d.appendChild(h('b', '', String(v))); d.appendChild(h('span', '', t)); bal.appendChild(d);
+      const minW = S.cfg ? S.cfg.min_diamonds : 1000;
+      const us = window.userState || {};
+      const ar0 = String(us.lang || 'ar').startsWith('ar');
+      const nm = (ar0 ? (us.nickname_ar || us.nickname_en) : (us.nickname_en || us.nickname_ar)) || us.username || '';
+      const total = S.avail + S.held;
+
+      const hero = h('div', 'zw-card zw-hero');
+      const idr = h('div', 'zw-id');
+      const av = h('div', 'zw-av');
+      if (us.photoUrl && /^(https?:\/\/|data:image\/)/.test(us.photoUrl)) {
+        const im = document.createElement('img'); im.src = us.photoUrl; im.alt = ''; av.appendChild(im);
+      } else { av.textContent = (nm || '?').trim().charAt(0).toUpperCase(); }
+      idr.appendChild(av);
+      const who = h('div', 'zw-who'); who.appendChild(h('b', '', nm || '—'));
+      if (us.username) who.appendChild(h('small', '', '@' + us.username));
+      idr.appendChild(who);
+      const rk = (document.getElementById('rank-num') || {}).textContent || '';
+      if (/\d/.test(rk)) { const rc2 = h('div', 'zw-rk'); rc2.appendChild(h('small', '', 'الترتيب')); rc2.appendChild(h('b', '', rk)); idr.appendChild(rc2); }
+      hero.appendChild(idr);
+
+      const big = h('div', 'zw-big');
+      big.appendChild(h('small', '', 'رصيدك'));
+      const bn = h('div', 'zw-bn'); bn.appendChild(h('b', '', total.toLocaleString('en-US'))); bn.appendChild(h('span', '', ' كورة')); big.appendChild(bn);
+      big.appendChild(h('small', '', 'يعادل ' + (total / rate).toFixed(2) + '$'));
+      hero.appendChild(big);
+
+      const two = h('div', 'zw-two');
+      [[S.avail, 'قابل للسحب الآن'], [S.held, 'قيد التعليق']].forEach(([v, t]) => {
+        const d = h('div'); d.appendChild(h('b', '', Number(v).toLocaleString('en-US'))); d.appendChild(h('span', '', t)); two.appendChild(d);
       });
-      wrap.appendChild(bal);
+      hero.appendChild(two);
+
+      const pct = Math.min(100, Math.round(total / minW * 100));
+      const pr = h('div', 'zw-prog');
+      const pt = h('div', 'zw-prow'); pt.appendChild(h('span', '', 'الحد الأدنى للسحب: ' + minW.toLocaleString('en-US'))); pt.appendChild(h('span', '', pct + '%')); pr.appendChild(pt);
+      const pb = h('div', 'zw-bar'); const pf = h('i'); pf.style.width = pct + '%'; pb.appendChild(pf); pr.appendChild(pb);
+      hero.appendChild(pr);
+      wrap.appendChild(hero);
+
+      const quick = h('div', 'zw-quick');
+      const bq = h('button', 'zw-q', 'اشترِ كورة');
+      bq.onclick = () => { ov.remove(); if (typeof window.openStorePage === 'function') window.openStorePage(); };
+      const be = h('button', 'zw-q', 'اربح كورة');
+      be.onclick = () => { ov.remove(); if (typeof window.openAdsPage === 'function') window.openAdsPage(); };
+      quick.appendChild(bq); quick.appendChild(be);
+      wrap.appendChild(quick);
 
       // الشروط
       const cl = h('div', 'zw-card');

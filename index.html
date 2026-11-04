@@ -222,6 +222,23 @@
             font-weight: 900; color: #f5c35a; direction: ltr; white-space: nowrap;
             font-variant-numeric: tabular-nums; font-size: 1.45rem;
         }
+        .news-ticker {
+            flex: 1; min-width: 0; height: 40px; overflow: hidden; position: relative;
+            border-radius: 12px; background: rgba(44, 75, 181, 0.22);
+            border: 1px solid rgba(245, 195, 90, 0.25); cursor: pointer;
+            display: flex; align-items: center;
+            -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+            mask-image: linear-gradient(90deg, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+        }
+        .nt-track { display: inline-flex; align-items: center; white-space: nowrap; gap: 26px; will-change: transform; padding: 0 12px; animation: ntmove var(--nt-dur, 30s) linear infinite; }
+        .nt-track.static { animation: none; margin: 0 auto; }
+        .news-ticker:active .nt-track { animation-play-state: paused; }
+        .nt-item { font-size: 0.82rem; font-weight: 800; color: #fff; unicode-bidi: plaintext; }
+        .nt-item b { color: #f5c35a; font-weight: 900; margin-inline-end: 5px; }
+        .nt-item.live b { color: #ff5d7a; }
+        .nt-sep { color: #7f9bff; font-size: 0.7rem; }
+        @keyframes ntmove { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
         .wallet-coin { width: 30px; height: 30px; object-fit: contain; flex-shrink: 0; display: block; }
         .wallet-bal small { font-size: 0.9rem; font-weight: 900; }
         .rank-btn {
@@ -339,11 +356,10 @@
             <div class="menu-btn" id="menu-header-btn" role="button" aria-label="القائمة" title="القائمة" onclick="window.openSideDrawer && window.openSideDrawer()">
                 <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
             </div>
-            <div class="wallet-bal">
-                <img class="wallet-coin" src="zelo-coin.png" alt="" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png';}else{this.style.display='none';}">
-                <span id="top-points">0</span>
-                <small>كورة</small>
+            <div class="news-ticker" id="news-ticker" role="button" aria-label="الأخبار" onclick="window.showPage && window.showPage('matches')">
+                <div class="nt-track" id="nt-track"></div>
             </div>
+            <span id="top-points" style="display:none">0</span>
         </div>
 
         <button class="rank-btn" id="rank-btn" aria-label="لوحة الصدارة" title="لوحة الصدارة" onclick="window.showPage && window.showPage('leaderboard')">
@@ -562,6 +578,7 @@
                 'notifications.js',
                 'ads.js',
                 'push.js',
+                'ticker.js',
                 'google-verify.js',
                 'store.js',
                 'wallet-withdraw.js',
