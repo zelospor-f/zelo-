@@ -1997,4 +1997,13 @@
     };
 
     watchInviteLink();
+
+    // اللسان الجانبي يظهر في كل الصفحات بعد تسجيل الدخول (بدل ظهوره بعد زيارة المباريات فقط)
+    const handleWait = setInterval(() => {
+        const bar = document.getElementById('top-bar');
+        if (bar && bar.style.display !== 'none' && window.userState && window.userState.userId) {
+            clearInterval(handleWait);
+            attachRoomsHandle(document.body);
+        }
+    }, 1500);
 })();
