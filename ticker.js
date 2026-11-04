@@ -13,13 +13,49 @@
         return `in ${h} h`;
     }
 
+
+    // شعارات الأندية: مطابقة اسم الفريق في جدول المباريات مع clubsData.js (إن لم يوجد شعار يُعرض الاسم فقط)
+    const STOP = new Set(['fc','cf','sk','af','fk','sc','ac','as','cd','sd','ud','club','de','the','sv','bv','rb','ca','cs','fa','afc','ssc','us','ss']);
+    const norm = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(w => w && !STOP.has(w)).join(' ');
+    let logoMap = null;
+    function logos() {
+        if (logoMap) return logoMap;
+        const m = {};
+        try {
+            if (typeof allWorldCupCountriesClubs !== 'undefined') {
+                Object.values(allWorldCupCountriesClubs).forEach(list => list.forEach(c => {
+                    if (c.logo && c.nameEn) m[norm(c.nameEn)] = c.logo;
+                }));
+            }
+        } catch (e) {}
+        logoMap = m; return m;
+    }
+    const logoCache = {};
+    function logoFor(name) {
+        const n = norm(name); if (!n) return '';
+        if (n in logoCache) return logoCache[n];
+        const m = logos(); let url = m[n] || '';
+        if (!url) {
+            let best = '';
+            Object.keys(m).forEach(k => { if (k.length >= 6 && n.length >= 6 && (n.includes(k) || k.includes(n)) && k.length > best.length) best = k; });
+            if (best) url = m[best];
+        }
+        return (logoCache[n] = url);
+    }
+    function team(name) {
+        const u = logoFor(name);
+        const img = u ? `<img class="nt-logo" src="${esc(u)}" alt="" onerror="this.style.display='none'">` : '';
+        return img + esc(name);
+    }
+
     function build(rows) {
         const ar = isAr(), now = Date.now();
         const ed = new Date(); ed.setHours(23, 59, 59, 999); const eod = ed.getTime();
         const live = [], soon = [], done = [];
         rows.forEach(m => {
             const t = new Date(m.match_date).getTime();
-            const a = esc(m.team_a), b = esc(m.team_b);
+            const a = team(m.team_a), b = team(m.team_b);
             if (m.status === 'FINISHED' && m.home_score != null && m.away_score != null) {
                 if (now - t < 24 * 3600e3) done.push({ t, html: `<b>${ar ? 'انتهت' : 'FT'}</b>${a} ${m.home_score} - ${m.away_score} ${b}` });
             } else if (m.live_status && m.live_home != null && m.live_away != null) {
