@@ -43,11 +43,22 @@
         }
         return (logoCache[n] = url);
     }
-    function team(name) {
+    function team(name, right) {
         const u = logoFor(name);
-        const img = u ? `<img class="nt-logo" src="${esc(u)}" alt="" width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;object-fit:contain;vertical-align:middle;margin:0 4px" onerror="this.style.display='none'">` : '';
-        return img + esc(name);
+        const img = u ? `<img class="nt-logo" src="${esc(u)}" alt="" width="18" height="18" style="width:18px;height:18px;max-width:18px;max-height:18px;object-fit:contain;flex:none" onerror="this.style.display='none'">` : '';
+        const nm = `<span class="nt-nm" dir="auto">${esc(name)}</span>`;
+        return `<span class="nt-t">${right ? nm + img : img + nm}</span>`;
     }
+    const item = (lab, A, mid, B) => `<b class="nt-lab" dir="auto">${lab}</b>${team(A, false)}<span class="nt-mid" dir="ltr">${mid}</span>${team(B, true)}`;
+    (function css() {
+        if (document.getElementById('nt-css')) return;
+        const s = document.createElement('style'); s.id = 'nt-css';
+        s.textContent = '.news-ticker .nt-item{display:inline-flex;align-items:center;gap:7px;direction:ltr;unicode-bidi:isolate;white-space:nowrap}' +
+            '.news-ticker .nt-t{display:inline-flex;align-items:center;gap:5px;unicode-bidi:isolate}' +
+            '.news-ticker .nt-lab{unicode-bidi:isolate;margin:0;color:#f5c35a;font-weight:900}.news-ticker .nt-item.live .nt-lab{color:#ff5d7a}' +
+            '.news-ticker .nt-mid{color:#fff;font-weight:900;unicode-bidi:isolate}';
+        document.head.appendChild(s);
+    })();
 
     function build(rows) {
         const ar = isAr(), now = Date.now();
@@ -55,14 +66,14 @@
         const live = [], soon = [], done = [];
         rows.forEach(m => {
             const t = new Date(m.match_date).getTime();
-            const a = team(m.team_a), b = team(m.team_b);
+            const a = m.team_a, b = m.team_b;
             if (m.status === 'FINISHED' && m.home_score != null && m.away_score != null) {
-                if (now - t < 24 * 3600e3) done.push({ t, html: `<b>${ar ? 'انتهت' : 'FT'}</b>${a} ${m.home_score} - ${m.away_score} ${b}` });
+                if (now - t < 24 * 3600e3) done.push({ t, html: item(ar ? 'انتهت' : 'FT', a, m.home_score + ' - ' + m.away_score, b) });
             } else if (m.live_status && m.live_home != null && m.live_away != null) {
-                live.push({ t, cls: 'live', html: `<b>${ar ? 'مباشر' : 'LIVE'}</b>${a} ${m.live_home} - ${m.live_away} ${b}` });
+                live.push({ t, cls: 'live', html: item(ar ? 'مباشر' : 'LIVE', a, m.live_home + ' - ' + m.live_away, b) });
             } else if (m.status === 'NOT_STARTED' && t > now && t <= eod) {
                 const hm = new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-                soon.push({ t, html: `<b>${ar ? 'الساعة' : 'at'} ${hm}</b>${a} × ${b}` });
+                soon.push({ t, html: item((ar ? 'الساعة ' : 'at ') + hm, a, '×', b) });
             }
         });
         soon.sort((x, y) => x.t - y.t); done.sort((x, y) => y.t - x.t);
