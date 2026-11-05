@@ -1,0 +1,175 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Install Dependencies & Capacitor
+        run: npm install
+
+      - name: Inject Supabase Secrets to Env
+        run: |
+          echo "window.env = {" > env.js
+          echo "  SUPABASE_URL: '${{ secrets.SUPABASE_URL }}'," >> env.js
+          echo "  SUPABASE_ANON_KEY: '${{ secrets.SUPABASE_ANON_KEY }}'" >> env.js
+          echo "};" >> env.js
+
+      - name: Prepare Web Folder
+        run: |
+          mkdir -p www
+          rsync -a ./ www/ \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude 'android' \
+            --exclude 'native' \
+            --exclude 'www' \
+            --exclude 'package.json' \
+            --exclude 'package-lock.json' \
+            --exclude 'capacitor.config.json' \
+            --exclude 'server.js' \
+            --exclude 'google-services.json'
+          sed -i 's/"webDir": *"\."/"webDir": "www"/' capacitor.config.json
+
+      - name: Add Android Platform
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+
+      - name: Add Firebase config (push notifications)
+        run: |
+          test -f google-services.json || { echo "::error::google-services.json missing from repo root"; exit 1; }
+          cp google-services.json android/app/google-services.json
+          grep -q "google-services" android/build.gradle android/app/build.gradle || { echo "::error::google-services plugin not found in Gradle files"; exit 1; }
+
+      - name: Configure Android Manifest (Google Login)
+        run: |
+          python3 - <<'EOF'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          if 'login-callback' not in s:
+              s = s.replace('</activity>', '''    <intent-filter>
+                  <action android:name="android.intent.action.VIEW" />
+                  <category android:name="android.intent.category.DEFAULT" />
+                  <category android:name="android.intent.category.BROWSABLE" />
+                  <data android:scheme="com.zelosport.app" android:host="login-callback" />
+              </intent-filter>
+          </activity>''', 1)
+          if '<queries>' not in s:
+              s = s.replace('</manifest>', '''    <queries>
+                  <intent>
+                      <action android:name="android.intent.action.VIEW" />
+                      <category android:name="android.intent.category.BROWSABLE" />
+                      <data android:scheme="https" />
+                  </intent>
+              </queries>
+          </manifest>''', 1)
+          if 'POST_NOTIFICATIONS' not in s:
+              s = s.replace('<application', '<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <application', 1)
+          if 'ACCESS_NETWORK_STATE' not in s:
+              s = s.replace('<application', '<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />\n    <application', 1)
+          assert 'ACCESS_NETWORK_STATE' in s, 'network permission was not added'
+          # معرّف تطبيق AdMob (ليس سريًا). بدونه ينهار SDK الإعلانات عند التشغيل.
+          if 'com.google.android.gms.ads.APPLICATION_ID' not in s:
+              s = s.replace('</application>', '''    <meta-data
+                  android:name="com.google.android.gms.ads.APPLICATION_ID"
+                  android:value="ca-app-pub-1758612048958433~9861788893"/>
+          </application>''', 1)
+          assert 'com.google.android.gms.ads.APPLICATION_ID' in s, 'AdMob app id was not added'
+          # إذن الميكروفون للرسائل الصوتية داخل الغرف
+          if 'android.permission.RECORD_AUDIO' not in s:
+              s = s.replace('<application', '<uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <application', 1)
+          assert 'android.permission.RECORD_AUDIO' in s, 'mic permission was not added'
+          open(p, 'w', encoding='utf-8').write(s)
+          EOF
+
+      - name: Allow microphone inside WebView (voice messages)
+        run: |
+          f=$(find android/app/src/main/java -name MainActivity.java | head -1)
+          test -n "$f" || { echo "::error::MainActivity.java not found"; exit 1; }
+          pkg=$(grep -m1 '^package ' "$f" | sed 's/package \(.*\);/\1/')
+          cat > "$f" <<JAVA
+          package $pkg;
+
+          import android.Manifest;
+          import android.content.pm.PackageManager;
+          import android.os.Bundle;
+          import android.webkit.PermissionRequest;
+          import androidx.core.app.ActivityCompat;
+          import androidx.core.content.ContextCompat;
+          import com.getcapacitor.BridgeActivity;
+          import com.getcapacitor.BridgeWebChromeClient;
+
+          public class MainActivity extends BridgeActivity {
+              @Override
+              public void onStart() {
+                  super.onStart();
+                  getBridge().getWebView().setWebChromeClient(new BridgeWebChromeClient(getBridge()) {
+                      @Override
+                      public void onPermissionRequest(final PermissionRequest request) {
+                          runOnUiThread(() -> {
+                              if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                  request.grant(request.getResources());
+                              } else {
+                                  ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.RECORD_AUDIO}, 7001);
+                                  request.deny();
+                              }
+                          });
+                      }
+                  });
+              }
+          }
+          JAVA
+          sed -i 's/^          //' "$f"
+          cat "$f" | head -12
+
+      - name: Install ImageMagick
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick
+
+      - name: Generate App Icon
+        run: |
+          mkdir -p assets
+          test -f king-logo.jpg
+          convert king-logo.jpg \
+            -resize 1024x1024 \
+            -background white \
+            -gravity center \
+            -extent 1024x1024 \
+            assets/icon.png
+          npx -y @capacitor/assets generate --android --iconBackgroundColor '#ffffff'
+
+      - name: Sync Android Platform
+        run: npx cap sync android
+
+      - name: Build Android APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZeloSport-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
