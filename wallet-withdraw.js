@@ -2,7 +2,7 @@
 // الاستخدام: أضف الملف إلى الصفحة ثم استدعِ openWithdrawWallet(supabaseClient) من زر المحفظة.
 (function () {
   const TITLES = {
-    verified: 'توثيق الحساب', account_age: 'عمر الحساب', invites: 'الدعوات الناجحة',
+    verified: 'تأكيد البريد/الهاتف', account_age: 'عمر الحساب', invites: 'الدعوات الناجحة',
     min_balance: 'الحد الأدنى للسحب', hold: 'فترة التعليق', amount: 'المبلغ المطلوب',
     address: 'عنوان السحب', identity: 'تأكيد الهوية', no_open_request: 'الطلبات المعلّقة',
     no_fraud: 'المراجعة الأمنية', subscription: 'الاشتراك'
