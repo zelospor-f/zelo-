@@ -215,6 +215,7 @@
             <div class="zp-dots" id="zp-dots">${PLANS.map((p, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('')}</div>
             <div class="zp-note">${ar ? 'الدفع عبر Google Play. يتجدد الاشتراك تلقائياً ويمكنك إلغاؤه في أي وقت من إعدادات الاشتراكات في Google Play.'
                                       : 'Billed through Google Play. The subscription renews automatically and you can cancel anytime in Google Play subscription settings.'}</div>
+            <div class="zp-note">${ar ? 'ZELO Sport تطبيق مستقل وغير تابع لأي نادٍ أو رابطة. أسماء الأندية وشعاراتها ملك لأصحابها وتُعرض للتعريف بالنادي المفضّل فقط.' : 'ZELO Sport is an independent app and is not affiliated with any club or league. Club names and logos belong to their owners and are shown only to identify a favourite club.'}</div>
             <div class="zp-note" style="color:#ffb4a8">${ar ? 'تحذير: أي تلاعب في الكورة أو المكافآت أو الإعلانات يعرّض الحساب للحذف وخسارة كل شيء، بما في ذلك الاشتراك والرصيد، دون تعويض.' : 'Warning: any manipulation of Kora, rewards or ads may lead to account deletion and loss of everything, including your subscription and balance, with no refund.'}</div>
             <button class="zp-btn ghost" id="zp-restore" style="margin-top:8px">${ar ? 'استعادة مشترياتي' : 'Restore purchases'}</button>`;
         document.body.appendChild(wrap);
