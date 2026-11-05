@@ -249,6 +249,7 @@ window.openSpecificClubFans = async function(clubId) {
                     display: flex; align-items: center; justify-content: center;
                 }
                 .fan-row {
+                    direction: ltr;
                     display: flex; justify-content: space-between; align-items: center; gap: 10px;
                     background: linear-gradient(135deg, rgba(17, 26, 74, 0.95), rgba(10, 16, 51, 0.95));
                     border: 1px solid rgba(44, 75, 181, 0.3);
