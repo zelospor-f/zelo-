@@ -71,8 +71,24 @@
 
     // شارة التوثيق = شعار النادي الذي اختاره المستخدم (badge_club)
     // window.zeloVerifiedBadge(user.badge_club, 16) -> HTML أو '' إن لم يختر شارة
+    // مفتاح إيقاف: إذا كانت القيمة hide_club_logos = true في جدول app_flags تُستبدل الشعارات بعلامة توثيق محايدة
+    window.ZELO_FLAGS = window.ZELO_FLAGS || {};
+    (function loadFlags() {
+        const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
+        if (!c) { setTimeout(loadFlags, 2500); return; }
+        const pull = () => c.from('app_flags').select('key,value').then(r => {
+            (r.data || []).forEach(f => { window.ZELO_FLAGS[f.key] = f.value; });
+        }).catch(() => {});
+        pull();
+        setInterval(pull, 5 * 60 * 1000);
+    })();
+
     window.zeloVerifiedBadge = function (badgeClubId, size) {
         if (!badgeClubId || typeof allWorldCupCountriesClubs === 'undefined') return '';
+        if (window.ZELO_FLAGS && window.ZELO_FLAGS.hide_club_logos === 'true') {
+            const px0 = size || 16;
+            return `<svg viewBox="0 0 24 24" width="${px0}" height="${px0}" style="vertical-align:middle;margin:0 4px;" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#1d9bf0"/><path d="M7 12.5l3.2 3.2L17 9" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+        }
         let club = null;
         for (const key in allWorldCupCountriesClubs) {
             club = (allWorldCupCountriesClubs[key] || []).find(c => String(c.id) === String(badgeClubId));
