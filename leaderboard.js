@@ -176,7 +176,7 @@ window.openSpecificClubFans = async function(clubId) {
         if (typeof supabaseClient !== 'undefined' && supabaseClient !== null) {
             const { data: fansList } = await supabaseClient
                 .from('club_fans_rankings')
-                .select('user_id, total_fan_points, referrals_count, users!inner(username)')
+                .select('user_id, total_fan_points, referrals_count')
                 .eq('club_id', clubId)
                 .order('total_fan_points', { ascending: false })
                 .limit(100);
@@ -196,7 +196,7 @@ window.openSpecificClubFans = async function(clubId) {
                 fansTableRows = fansList.map((fan, idx) => {
                     const isMe = String(fan.user_id) === String(currentUserId);
                     const prof = profiles[String(fan.user_id)] || {};
-                    const uname = fan.users?.username || prof.username || '';
+                    const uname = prof.username || (isMe ? (userState?.username || '') : '');
                     const safeName = window.escapeHTML(uname);
                     const photo = lbSafePhoto(prof.photo_url || (isMe ? userState?.photoUrl : ''));
                     const initial = window.escapeHTML((uname || '?').charAt(0).toUpperCase());
@@ -296,9 +296,7 @@ window.openSpecificClubFans = async function(clubId) {
                 }
             </style>
 
-            <button class="btn-back-compact" onclick="window.showPage('leaderboard')">
-                <span>🔙</span> ${lbTr('btnBack', 'العودة للترتيب العام', 'Back to Leaderboard')}
-            </button>
+            ${window.zeloBackBtn("window.showPage('leaderboard')")}
 
             <div class="club-hero-banner">
                 <div class="club-hero-logo">
