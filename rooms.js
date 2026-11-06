@@ -403,9 +403,10 @@
         });
     }
 
-    function askRoom() {
+    function askRoom(pre) {
+        pre = pre || {};
         return new Promise(resolve => {
-            const st = { icon: ROOM_ICONS[0], pub: true };
+            const st = { icon: pre.icon || ROOM_ICONS[0], pub: true };
             const el = document.createElement('div');
             el.className = 'rm-sheet center';
             el.dir = isAr() ? 'rtl' : 'ltr';
@@ -414,7 +415,7 @@
                 <div class="rm-lbl">${T('rmIconLbl', 'أيقونة الغرفة', 'Room icon')}</div>
                 <div class="rm-pick">${ROOM_ICONS.map(k => `<button type="button" data-icon="${k}" aria-label="${k}">${ic(k, 22)}</button>`).join('')}</div>
                 <input class="rm-search" id="rm-ask" maxlength="40" autocomplete="off"
-                       placeholder="${esc(T('rmCreatePh', 'اسم الغرفة', 'Room name'))}">
+                       placeholder="${esc(T('rmCreatePh', 'اسم الغرفة', 'Room name'))}" value="${esc(pre.name || '')}">
                 <div class="rm-lbl">${T('rmVisLbl', 'نوع الغرفة', 'Room type')}</div>
                 <div class="rm-seg">
                     <button type="button" data-vis="public">${ic('globe', 16)}<span>${T('rmPublicOpen', 'عامة (مفتوحة)', 'Public (open)')}</span></button>
@@ -1200,6 +1201,21 @@
         }
     }
 
+    // إنشاء غرفة مرتبطة بمباراة (من بطاقة المباراة): الاسم جاهز = اسم المباراة
+    async function createMatchLinkedRoom(matchId) {
+        const c = db();
+        if (!c) return;
+        try {
+            const { data: m, error } = await c.from('matches').select('id, team_a, team_b').eq('id', matchId).maybeSingle();
+            if (error || !m) throw error || new Error('match not found');
+            ensureCss();
+            await createRoomFlow({ name: `${m.team_a} 🆚 ${m.team_b}`.slice(0, 40), icon: 'ball' });
+        } catch (err) {
+            console.error('[rooms] createMatchLinkedRoom failed:', err);
+            toast(T('rmError', 'تعذر تنفيذ الإجراء', 'Action failed'));
+        }
+    }
+
     function allClubs() {
         const out = [];
         if (typeof allWorldCupCountriesClubs !== 'undefined') {
@@ -1271,10 +1287,10 @@
         ]);
     }
 
-    async function createRoomFlow() {
+    async function createRoomFlow(pre) {
         const c = db();
         if (!c || !me()) { toast(T('rmNeedLogin', 'سجّل الدخول أولاً', 'Please sign in first')); return; }
-        const res = await askRoom();
+        const res = await askRoom(pre);
         if (!res) return;
         try {
             const { data, error } = await c.rpc('create_room_v2', {
@@ -1493,7 +1509,6 @@
             <div id="rm-rooms-pane" style="display:none">
             <h3 class="rm-mt">${T('rmDrawerTitle', 'غرفي', 'My rooms')}</h3>
             <div id="rm-dr-list"><div class="rm-empty">${T('rmLoading', 'جاري التحميل...', 'Loading...')}</div></div>
-            <button class="rm-dr-create" data-act="create">${ic('plus', 18)} ${T('rmCreateTitle', 'إنشاء غرفة', 'Create a room')}</button>
             <button class="rm-dr-create" data-act="joincode" style="background:rgba(255,255,255,.08);box-shadow:none;border:1px solid rgba(245,195,90,.35);color:#f5c35a">${ic('key', 18)} ${T('rmJoinTitle', 'الانضمام برمز', 'Join with a code')}</button>
             <div class="rm-sub-head">${ic('globe', 16)}<span>${T('rmPublicH', 'الغرف العامة', 'Public rooms')}</span></div>
             <div id="rm-dr-pub"><div class="rm-empty">${T('rmLoading', 'جاري التحميل...', 'Loading...')}</div></div>
@@ -2105,6 +2120,7 @@
     window.joinRoomByCode = joinRoomByCode;
     window.closeRoom = closeRoom;
     window.createRoomForMatch = createRoomForMatch;
+    window.createMatchLinkedRoom = createMatchLinkedRoom;
     window.openRoomsDrawer = openRoomsDrawer;
     window.attachRoomsHandle = attachRoomsHandle;
 
