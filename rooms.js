@@ -330,6 +330,21 @@
         .rm-empty .rm-ico { opacity:.6; }
         .rm-sheet button { display:flex; align-items:center; justify-content:center; gap:8px; }
         .rm-sheet button.primary { box-shadow:var(--shadow-primary, 0 8px 24px rgba(44,75,181,.25)); }
+        .sg-tabs { display:flex; gap:6px; margin-bottom:12px; }
+        .sg-tabs button { flex:1; padding:9px; border-radius:12px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.05); color:#cbd5e1; font-weight:800; font-size:.88rem; font-family:inherit; cursor:pointer; }
+        .sg-tabs button.on { background:rgba(245,195,90,.16); border-color:rgba(245,195,90,.5); color:#f5c35a; }
+        .sg-form textarea { width:100%; box-sizing:border-box; padding:10px; border-radius:12px; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.06); color:#fff; font-family:inherit; font-size:.9rem; resize:none; }
+        .sg-hint { text-align:center; color:#94a3b8; font-size:.72rem; margin:6px 0 12px; font-weight:700; }
+        .sg-card { padding:11px 12px; margin-bottom:10px; border-radius:14px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.09); }
+        .sg-body { color:#fff; font-size:.9rem; line-height:1.5; font-weight:700; word-break:break-word; }
+        .sg-meta { display:flex; align-items:center; gap:8px; margin-top:8px; color:#94a3b8; font-size:.74rem; font-weight:700; }
+        .sg-meta > span:first-child { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .sg-st { padding:2px 8px; border-radius:20px; background:rgba(245,195,90,.15); color:#f5c35a; font-size:.7rem; }
+        .sg-st.done { background:rgba(34,197,94,.18); color:#4ade80; }
+        .sg-st.rejected { background:rgba(255,93,93,.15); color:#ff8a8a; }
+        .sg-vote { padding:5px 12px; border-radius:20px; border:1px solid rgba(255,255,255,.18); background:transparent; color:#e2e8f0; font-weight:800; font-family:inherit; cursor:pointer; }
+        .sg-vote.on { background:rgba(245,195,90,.2); border-color:#f5c35a; color:#f5c35a; }
+        .sg-meta select { max-width:70px; font-size:.7rem; }
         .rm-handle { display:flex; align-items:center; justify-content:center; color:#fff; }
         .rm-section .rm-card { margin-bottom:10px; }
         .rm-section .rm-card:last-child { margin-bottom:12px; }
@@ -718,7 +733,17 @@
         }
         stopAudio();
         try {
-            cur.recStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const tries = [
+                { audio: true },
+                { audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } },
+                { audio: { channelCount: 1 } }
+            ];
+            let lastErr = null;
+            for (let i = 0; i < tries.length && !cur.recStream; i++) {
+                try { cur.recStream = await navigator.mediaDevices.getUserMedia(tries[i]); }
+                catch (er) { lastErr = er; await new Promise(r => setTimeout(r, 400)); }
+            }
+            if (!cur.recStream) throw lastErr || new Error('mic');
         } catch (e) {
             const nm = (e && e.name) ? ' (' + e.name + ')' : '';
             toast(T('rmMicDenied', 'اسمح للتطبيق باستخدام الميكروفون', 'Allow the app to use the microphone') + nm);
@@ -1463,12 +1488,16 @@
         el.className = 'rm-drawer-bg';
         el.dir = ar ? 'rtl' : 'ltr';
         el.innerHTML = `<div class="rm-drawer ${ar ? 'from-right' : 'from-left'}">
+            <div class="sg-tabs"><button data-tab="sg" class="on">💡 ${T('sgTab', 'اقتراحات', 'Ideas')}</button><button data-tab="rooms">${T('rmDrawerTitle', 'غرفي', 'My rooms')}</button></div>
+            <div id="sg-pane"></div>
+            <div id="rm-rooms-pane" style="display:none">
             <h3 class="rm-mt">${T('rmDrawerTitle', 'غرفي', 'My rooms')}</h3>
             <div id="rm-dr-list"><div class="rm-empty">${T('rmLoading', 'جاري التحميل...', 'Loading...')}</div></div>
             <button class="rm-dr-create" data-act="create">${ic('plus', 18)} ${T('rmCreateTitle', 'إنشاء غرفة', 'Create a room')}</button>
             <button class="rm-dr-create" data-act="joincode" style="background:rgba(255,255,255,.08);box-shadow:none;border:1px solid rgba(245,195,90,.35);color:#f5c35a">${ic('key', 18)} ${T('rmJoinTitle', 'الانضمام برمز', 'Join with a code')}</button>
             <div class="rm-sub-head">${ic('globe', 16)}<span>${T('rmPublicH', 'الغرف العامة', 'Public rooms')}</span></div>
             <div id="rm-dr-pub"><div class="rm-empty">${T('rmLoading', 'جاري التحميل...', 'Loading...')}</div></div>
+            </div>
         </div>`;
         document.body.appendChild(el);
         drawerEl = el;
@@ -1478,6 +1507,15 @@
 
         el.addEventListener('click', e => {
             if (e.target === el) { closeDrawer(); return; }
+            const tb = e.target.closest('.sg-tabs button');
+            if (tb) {
+                el.querySelectorAll('.sg-tabs button').forEach(b => b.classList.toggle('on', b === tb));
+                const sg = tb.dataset.tab === 'sg';
+                el.querySelector('#sg-pane').style.display = sg ? '' : 'none';
+                el.querySelector('#rm-rooms-pane').style.display = sg ? 'none' : '';
+                return;
+            }
+            if (sgHandle(e, el)) return;
             if (e.target.closest('[data-act="create"]')) { closeDrawer(); createRoomFlow(); return; }
             if (e.target.closest('[data-act="joincode"]')) { closeDrawer(); joinFlow(); return; }
             const card = e.target.closest('[data-room]');
@@ -1500,6 +1538,7 @@
             if (ar ? dx > 60 : dx < -60) closeDrawer();
         }, { passive: true });
 
+        sgRender(el);
         try {
             const rooms = await fetchMyRooms();   // غرفي = التي أنشأتها + التي انضممت إليها
             if (drawerEl !== el) return;
@@ -1548,6 +1587,95 @@
         }
     }
 
+
+    /* ---------------- لوحة الاقتراحات ---------------- */
+    const SG_STATUS = {
+        open: ['', ''], planned: ['🛠️ ' + 'قيد التنفيذ', '🛠️ Planned'], done: ['✅ تم', '✅ Done'], rejected: ['⛔ غير مناسب', '⛔ Not now']
+    };
+    let sgAdmin = null;
+
+    async function sgRender(el) {
+        const pane = el.querySelector('#sg-pane');
+        const c = db();
+        if (!c) { pane.innerHTML = `<div class="rm-empty">${T('rmLoadFail', 'تعذر التحميل', 'Could not load')}</div>`; return; }
+        pane.innerHTML = `<div class="sg-form">
+            <textarea id="sg-txt" maxlength="280" rows="3" placeholder="${esc(T('sgPh', 'اكتب اقتراحك أو ميزة تريدها...', 'Write an idea or a feature you want...'))}"></textarea>
+            <button class="rm-dr-create" data-sg="add" style="margin-top:6px">${T('sgSend', 'إرسال الاقتراح', 'Send idea')}</button>
+            <div class="sg-hint">${T('sgHint', 'اقتراح واحد كل 24 ساعة', 'One idea every 24 hours')}</div>
+        </div><div id="sg-list"><div class="rm-empty">${T('rmLoading', 'جاري التحميل...', 'Loading...')}</div></div>`;
+        const list = pane.querySelector('#sg-list');
+        try {
+            if (sgAdmin === null) { try { const a = await c.rpc('is_app_admin'); sgAdmin = a.data === true; } catch (e) { sgAdmin = false; } }
+            const { data: rows, error } = await c.from('suggestions').select('id,user_id,body,status,votes,created_at')
+                .order('votes', { ascending: false }).order('created_at', { ascending: false }).limit(60);
+            if (error) throw error;
+            const mine = new Set(((await c.from('suggestion_votes').select('suggestion_id')).data || []).map(v => String(v.suggestion_id)));
+            const names = {};
+            const ids = [...new Set((rows || []).map(r => r.user_id))];
+            if (ids.length) {
+                const pr = await c.from('public_profiles').select('user_id,username').in('user_id', ids);
+                (pr.data || []).forEach(p => { names[p.user_id] = p.username; });
+            }
+            if (!rows.length) { list.innerHTML = `<div class="rm-empty">${T('sgEmpty', 'لا توجد اقتراحات بعد. كن أول من يقترح!', 'No ideas yet. Be the first!')}</div>`; return; }
+            list.innerHTML = rows.map(r => {
+                const st = SG_STATUS[r.status] || SG_STATUS.open;
+                const tag = st[0] ? `<span class="sg-st ${esc(r.status)}">${esc(isAr() ? st[0] : st[1])}</span>` : '';
+                const adm = sgAdmin ? `<select data-sg="status" data-id="${r.id}"><option value="">⚙</option><option value="open">open</option><option value="planned">planned</option><option value="done">done</option><option value="rejected">rejected</option><option value="delete">🗑 delete</option></select>` : '';
+                return `<div class="sg-card"><div class="sg-body">${esc(r.body)}</div>
+                    <div class="sg-meta"><span>${esc(names[r.user_id] || '')}</span>${tag}${adm}
+                    <button class="sg-vote ${mine.has(String(r.id)) ? 'on' : ''}" data-sg="vote" data-id="${r.id}">👍 <b>${r.votes}</b></button></div></div>`;
+            }).join('');
+        } catch (err) {
+            console.error('[suggestions] load failed:', err);
+            list.innerHTML = `<div class="rm-empty">${T('rmLoadFail', 'تعذر التحميل', 'Could not load')}</div>`;
+        }
+    }
+
+    function sgHandle(e, el) {
+        const b = e.target.closest('[data-sg]');
+        if (!b) return false;
+        const c = db(); if (!c) return true;
+        const act = b.dataset.sg;
+        if (act === 'add') {
+            const ta = el.querySelector('#sg-txt');
+            const txt = (ta.value || '').trim();
+            if (txt.length < 5) { toast(T('sgShort', 'اكتب 5 أحرف على الأقل', 'Write at least 5 characters')); return true; }
+            b.disabled = true;
+            c.rpc('add_suggestion', { p_body: txt }).then(({ error }) => {
+                b.disabled = false;
+                if (error) {
+                    toast(String(error.message || '').includes('daily_limit')
+                        ? T('sgLimit', 'يمكنك اقتراح واحد كل 24 ساعة', 'One idea every 24 hours')
+                        : T('rmLoadFail', 'تعذر التحميل', 'Could not load'));
+                    return;
+                }
+                toast(T('sgDone', 'تم إرسال اقتراحك 👍', 'Idea sent 👍'));
+                sgRender(el);
+            });
+            return true;
+        }
+        if (act === 'vote') {
+            c.rpc('toggle_suggestion_vote', { p_id: Number(b.dataset.id) }).then(({ data, error }) => {
+                if (error) { toast(T('rmLoadFail', 'تعذر التحميل', 'Could not load')); return; }
+                const n = b.querySelector('b');
+                n.textContent = Math.max(0, Number(n.textContent) + (data ? 1 : -1));
+                b.classList.toggle('on', !!data);
+            });
+            return true;
+        }
+        return true;
+    }
+
+    document.addEventListener('change', e => {
+        const s = e.target.closest && e.target.closest('select[data-sg="status"]');
+        if (!s || !s.value) return;
+        const c = db(); if (!c) return;
+        c.rpc('admin_set_suggestion_status', { p_id: Number(s.dataset.id), p_status: s.value }).then(({ error }) => {
+            if (error) { toast('error'); return; }
+            if (drawerEl) sgRender(drawerEl);
+        });
+    });
+
     // أيقونة جانبية صغيرة + السحب من الحافة (يمين للعربية، يسار لغيرها)
     function attachRoomsHandle(parent) {
         ensureCss();
@@ -1560,7 +1688,7 @@
         // سهم أنيق: يشير إلى داخل الشاشة (عربي = من اليمين، غير ذلك = من اليسار)
         const chev = ar ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6';
         h.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${chev}"/></svg>`;
-        h.setAttribute('aria-label', T('rmDrawerTitle', 'غرفي', 'My rooms'));
+        h.setAttribute('aria-label', T('sgTab', 'اقتراحات', 'Ideas'));
         h.addEventListener('click', openRoomsDrawer);
         parent.appendChild(h);
 
