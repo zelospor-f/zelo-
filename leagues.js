@@ -192,8 +192,8 @@
                 const fc = (!started && window.fcMatchButton) ? window.fcMatchButton(m.id) : '';
                 const rb = 'flex:1;padding:9px 6px;background:transparent;border-radius:12px;font-size:.82rem;font-weight:800;cursor:pointer;font-family:inherit;';
                 const rooms = `<div style="display:flex;gap:10px;margin-top:8px">
-                    <button onclick="window.openMatchRoom && window.openMatchRoom('${m.id}')" style="${rb}width:100%;color:#f5c35a;border:1px solid rgba(245,195,90,.4)">💬 ${T('غرفة المباراة', 'Match room')}</button>
-</div>`;
+                    <button onclick="window.openMatchRoom && window.openMatchRoom('${m.id}')" style="${rb}color:#f5c35a;border:1px solid rgba(245,195,90,.4)">💬 ${T('غرفة المباراة', 'Match room')}</button>
+                    <button onclick="window.createMatchLinkedRoom && window.createMatchLinkedRoom('${m.id}')" style="${rb}color:#cbd5e1;border:1px dashed rgba(255,255,255,.3)">➕ ${T('إنشاء غرفة', 'Create room')}</button></div>`;
                 act = `<div id="btn-container-${m.id}" style="margin-top:10px"><div style="display:flex;gap:10px">${btn}${fc}</div></div>${rooms}`;
             }
             return `<div class="lg-m">${live ? `<div class="lg-live">● ${T('مباشر', 'LIVE')}</div>` : ''}

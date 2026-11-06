@@ -112,6 +112,7 @@
             ['wrong_code',     T('rmErrWrongCode', 'الرمز غير صحيح', 'Wrong code')],
             ['banned',         T('rmBanned', 'تم حظرك من هذه الغرفة', 'You are banned from this room')],
             ['room_expired',   T('rmErrExpired', 'انتهت مدة هذه الغرفة', 'This room has expired')],
+            ['room_not_yet',       T('rmErrNotYet', 'لم يحن وقت إنشاء الغرفة بعد', 'It is too early to create a room')],
             ['room_limit_public',  T('rmErrLimPub', 'لديك غرفة عامة نشطة بالفعل. انتظر انتهاءها', 'You already have an active public room. Wait until it ends')],
             ['room_limit_private', T('rmErrLimPriv', 'لديك غرفة خاصة نشطة بالفعل. انتظر انتهاءها', 'You already have an active private room. Wait until it ends')],
             ['links_not_allowed',  T('rmErrLinks', 'الروابط ممنوعة داخل الغرف', 'Links are not allowed in rooms')],
@@ -418,7 +419,7 @@
                 <div class="rm-lbl">${T('rmIconLbl', 'أيقونة الغرفة', 'Room icon')}</div>
                 <div class="rm-pick">${ROOM_ICONS.map(k => `<button type="button" data-icon="${k}" aria-label="${k}">${ic(k, 22)}</button>`).join('')}</div>
                 <input class="rm-search" id="rm-ask" maxlength="40" autocomplete="off"
-                       placeholder="${esc(T('rmCreatePh', 'اسم الغرفة', 'Room name'))}" value="${esc(pre.name || '')}">
+                       placeholder="${esc(T('rmCreatePh', 'اسم الغرفة', 'Room name'))}" value="${esc(pre.name || '')}" ${pre.lockName ? 'readonly' : ''}>
                 <div class="rm-lbl">${T('rmVisLbl', 'نوع الغرفة', 'Room type')}</div>
                 <div class="rm-seg">
                     <button type="button" data-vis="public">${ic('globe', 16)}<span>${T('rmPublicOpen', 'عامة (مفتوحة)', 'Public (open)')}</span></button>
@@ -1207,15 +1208,29 @@
     // إنشاء غرفة مرتبطة بمباراة (من بطاقة المباراة): الاسم جاهز = اسم المباراة
     async function createMatchLinkedRoom(matchId) {
         const c = db();
-        if (!c) return;
+        if (!c || !me()) { toast(T('rmNeedLogin', 'سجّل الدخول أولاً', 'Please sign in first')); return; }
         try {
-            const { data: m, error } = await c.from('matches').select('id, team_a, team_b').eq('id', matchId).maybeSingle();
+            const { data: m, error } = await c.from('matches').select('id, team_a, team_b, match_date').eq('id', matchId).maybeSingle();
             if (error || !m) throw error || new Error('match not found');
+            const st = roomState(m.match_date);
+            if (st === 'soon') {
+                const opensAt = new Date(new Date(m.match_date).getTime() - OPEN_BEFORE_MIN * 60000);
+                toast(T('rmCreateOpensAt', 'يمكنك إنشاء غرفة الساعة {time}', 'You can create a room at {time}', { time: fmtTime(opensAt) }));
+                return;
+            }
+            if (st === 'ended') { toast(T('rmEnded', 'انتهت غرفة هذه المباراة', 'This match room has ended')); return; }
             ensureCss();
-            await createRoomFlow({ name: `${m.team_a} 🆚 ${m.team_b}`.slice(0, 40), icon: 'ball' });
+            const res = await askRoom({ name: `${m.team_a} 🆚 ${m.team_b}`.slice(0, 40), icon: 'ball', lockName: true });
+            if (!res) return;
+            const { data, error: e2 } = await c.rpc('create_match_room', { p_match: Number(m.id), p_public: res.pub, p_emoji: res.emoji });
+            if (e2) throw e2;
+            const row = Array.isArray(data) ? data[0] : data;
+            if (!row) throw new Error('no row');
+            toast(T('rmCreated', 'تم إنشاء الغرفة ✅', 'Room created ✅'));
+            openCustomRoom({ id: row.out_id, code: row.out_code, name: `${m.team_a} 🆚 ${m.team_b}`.slice(0, 40), owner_id: me(), emoji: res.emoji, expires_at: row.out_expires, is_public: res.pub, requires_code: !res.pub });
         } catch (err) {
             console.error('[rooms] createMatchLinkedRoom failed:', err);
-            toast(T('rmError', 'تعذر تنفيذ الإجراء', 'Action failed'));
+            toast(errText(err));
         }
     }
 
@@ -1507,7 +1522,7 @@
         el.className = 'rm-drawer-bg';
         el.dir = ar ? 'rtl' : 'ltr';
         el.innerHTML = `<div class="rm-drawer ${ar ? 'from-right' : 'from-left'}">
-            <h3 class="rm-mt">💡 ${T('sgTab', 'اقتراحات', 'Ideas')}</h3>
+            <div class="sg-tabs"><button data-tab="sg" class="on">💡 ${T('sgTab', 'اقتراحات', 'Ideas')}</button><button data-tab="rooms">${T('rmDrawerTitle', 'غرف', 'Rooms')}</button></div>
             <div id="sg-pane"></div>
             <div id="rm-rooms-pane" style="display:none">
             <h3 class="rm-mt">${T('rmDrawerTitle', 'غرفي', 'My rooms')}</h3>
@@ -1557,7 +1572,6 @@
         }, { passive: true });
 
         sgRender(el);
-        return;   // غرف الأصدقاء أُلغيت: الدرج للاقتراحات فقط
         try {
             const rooms = await fetchMyRooms();   // غرفي = التي أنشأتها + التي انضممت إليها
             if (drawerEl !== el) return;
