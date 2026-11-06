@@ -1405,7 +1405,7 @@
             { icon: 'users', label: T('rmInvite', 'دعوة مستخدمين', 'Invite users'), run: inviteDialog },
             { icon: 'copy', label: T('rmCopyCode', 'نسخ الرمز', 'Copy code') + ' (' + room.code + ')',
                 run: () => { copyText(room.code); toast(T('rmCopied', 'تم النسخ ✅', 'Copied ✅')); } }
-        ] : [];
+        ].filter(x => room.requires_code || x.icon !== 'copy') : [];   // الغرفة العامة لا تحتاج رمزاً
         if (isOwner) {
             list.push({ icon: 'trash', label: T('rmDeleteRoom', 'حذف الغرفة', 'Delete room'), danger: true, run: async () => {
                 const ok = await askConfirm(
@@ -1507,7 +1507,7 @@
         el.className = 'rm-drawer-bg';
         el.dir = ar ? 'rtl' : 'ltr';
         el.innerHTML = `<div class="rm-drawer ${ar ? 'from-right' : 'from-left'}">
-            <div class="sg-tabs"><button data-tab="sg" class="on">💡 ${T('sgTab', 'اقتراحات', 'Ideas')}</button><button data-tab="rooms">${T('rmDrawerTitle', 'غرفي', 'My rooms')}</button></div>
+            <h3 class="rm-mt">💡 ${T('sgTab', 'اقتراحات', 'Ideas')}</h3>
             <div id="sg-pane"></div>
             <div id="rm-rooms-pane" style="display:none">
             <h3 class="rm-mt">${T('rmDrawerTitle', 'غرفي', 'My rooms')}</h3>
@@ -1557,6 +1557,7 @@
         }, { passive: true });
 
         sgRender(el);
+        return;   // غرف الأصدقاء أُلغيت: الدرج للاقتراحات فقط
         try {
             const rooms = await fetchMyRooms();   // غرفي = التي أنشأتها + التي انضممت إليها
             if (drawerEl !== el) return;
