@@ -13,8 +13,8 @@
 (function () {
     'use strict';
 
-    const OPEN_BEFORE_MIN = 30;
-    const CLOSE_AFTER_MIN = 180;
+    const OPEN_BEFORE_MIN = 60;
+    const CLOSE_AFTER_MIN = 300;
     const MAX_LEN = 500;
     const SEND_GAP_MS = 2000;
     const PAGE_SIZE = 60;
