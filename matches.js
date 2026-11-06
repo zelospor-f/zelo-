@@ -122,7 +122,10 @@ function renderMatchList(overlay, isAr, asPage) {
                         <div style="text-align:center; flex:1;"><div style="font-weight:bold; font-size: 1.1rem; color:#fff;">${m.team_b}</div></div>
                     </div>
                     
-                    <div id="btn-container-${m.id}" style="padding: 0 15px 15px 15px;">${buttonHtml}</div>
+                    <div id="btn-container-${m.id}" style="padding: 0 15px 10px 15px;">${buttonHtml}</div>
+                    <div style="padding: 0 15px 15px 15px;">
+                        <button onclick="window.openMatchRoom ? window.openMatchRoom('${m.id}') : null" style="width:100%; padding:11px; background:rgba(255,255,255,0.05); color:#f5c35a; border:1px solid rgba(245,195,90,0.35); border-radius:12px; font-size:0.95rem; font-weight:800; cursor:pointer; font-family:inherit;">💬 ${isAr ? 'غرفة المباراة' : 'Match room'}</button>
+                    </div>
                 </div>
             `;
         }).join('');
