@@ -1014,16 +1014,18 @@
         await fetchRope(visible.map(p => postCache[p.id]));
         await fetchPreds(visible.map(p => p.id));
         list.innerHTML = visible.map(p => postHtml(postCache[p.id])).join('');
+        feedHtmlCache = list.innerHTML;
         observeViews();
         observeBoosts();
         observeVideos();
         if (window.zeloFillSupportBars) window.zeloFillSupportBars(visible.map(p => p.id));
     }
+    let feedHtmlCache = '';
 
     // اختيار صورة من الهاتف للمنشور الجديد
     // الصور في المنشورات للمشتركين فقط (والخادم يتحقق أيضاً)
     async function imageGate(onDenied) {
-        const ok = window.ZeloPremium ? await window.ZeloPremium.isPremium() : false;
+        const ok = window.ZeloPremium && window.ZeloPremium.myTier ? (await window.ZeloPremium.myTier()) >= 2 : false;
         if (!ok) { onDenied(); return false; }
         return true;
     }
@@ -1035,7 +1037,7 @@
         input.click();
     }
     window.openPostImagePicker = async function() {
-        const ok = await imageGate(() => window.zeloComposeNotice(isAr() ? '📷 اشترك لكي تستطيع نشر الصور' : '📷 Subscribe to post images', true, 'image'));
+        const ok = await imageGate(() => window.zeloComposeNotice(isAr() ? '📷 نشر الصور في الباقة المميّزة (1.99$) فما فوق' : '📷 Images need the Plus plan or higher', true, 'image'));
         if (ok) chooseImage(window.pickPostImage);
     };
     window.openEditImagePicker = async function(id) {
@@ -2683,11 +2685,11 @@
         pendingImage = '';
         const u = me();
 
+        // نعرض آخر منشورات رأيناها فوراً ثم نحدّثها بصمت، بدل شاشة "جاري التحميل"
         container.innerHTML = `
-            <div id="feed-list">
-                <div class="loading-box">${isAr() ? 'جاري تحميل المنشورات...' : 'Loading posts...'}</div>
-            </div>
+            <div id="feed-list">${feedHtmlCache || `<div class="loading-box">${isAr() ? 'جاري تحميل المنشورات...' : 'Loading posts...'}</div>`}</div>
         `;
+        if (feedHtmlCache) { observeViews(); observeBoosts(); observeVideos(); }
 
         loadFeed();
         setupFab();
