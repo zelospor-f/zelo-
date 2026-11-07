@@ -686,8 +686,20 @@
                 const el = document.getElementById('stat-invited'); if (el) el.textContent = total.toLocaleString('en-US');
             }
         } catch (e) {}
+        try {
+            const [fa, fb] = await Promise.all([
+                c.from('user_follows').select('*', { count: 'exact', head: true }).eq('following_id', String(uid)),
+                c.from('user_follows').select('*', { count: 'exact', head: true }).eq('follower_id', String(uid))
+            ]);
+            if (!fa.error && !fb.error && S.draft && S.mode === 'view' && !S.viewUid) {
+                const nf = fa.count || 0, ng = fb.count || 0;
+                const changed = S.draft.followers !== nf || S.draft.following !== ng;
+                S.draft.followers = nf; S.draft.following = ng;
+                if (typeof userState !== 'undefined') { userState.followers_count = nf; userState.following_count = ng; }
+                if (changed && S.currentTarget && !document.getElementById('follow-page')) P.drawProfile(S.currentTarget);
+            }
+        } catch (e) {}
     }
-
     window.renderProfilePage = function (container) {
         S.viewUid = null; S.other = null; S.otherSnap = null;
         S.currentTarget = container || document.getElementById('main-content') || document.body;
