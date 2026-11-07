@@ -1184,7 +1184,8 @@
             const row = {
                 user_id: targetId, type: 'social',
                 actor_id: u.id,
-                actor_avatar: avatarUrl(u.name, u.avatar),
+                // القاعدة ترفض أي رابط صورة غير (data:image أو تخزين Supabase) فنرسل فارغاً بدل رابط ui-avatars
+                actor_avatar: (u.avatar && /^(data:image\/(png|jpeg|jpg|webp);base64,|https:\/\/mvbolnxjiqhlphxkuogn\.supabase\.co\/storage\/)/.test(String(u.avatar))) ? u.avatar : '',
                 title_ar: T.ar, title_en: T.en,
                 body_ar: body, body_en: body,
                 is_read: false, action: kind === 'follow' ? 'followers' : (extra && extra.postId) ? 'post:' + extra.postId + (extra.commentId ? ':' + extra.commentId : '') : 'user:' + u.id
