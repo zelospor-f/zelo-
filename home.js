@@ -1185,7 +1185,7 @@
                 user_id: targetId, type: 'social',
                 actor_id: u.id,
                 // القاعدة ترفض أي رابط صورة غير (data:image أو تخزين Supabase) فنرسل فارغاً بدل رابط ui-avatars
-                actor_avatar: (u.avatar && /^(data:image\/(png|jpeg|jpg|webp);base64,|https:\/\/mvbolnxjiqhlphxkuogn\.supabase\.co\/storage\/)/.test(String(u.avatar))) ? u.avatar : '',
+                actor_avatar: (u.avatar && String(u.avatar).length <= 30000 && /^(data:image\/(png|jpeg|jpg|webp);base64,|data:image\/svg\+xml;charset=utf-8,%|https:\/\/mvbolnxjiqhlphxkuogn\.supabase\.co\/storage\/)/.test(String(u.avatar))) ? u.avatar : '',
                 title_ar: T.ar, title_en: T.en,
                 body_ar: body, body_en: body,
                 is_read: false, action: kind === 'follow' ? 'followers' : (extra && extra.postId) ? 'post:' + extra.postId + (extra.commentId ? ':' + extra.commentId : '') : 'user:' + u.id
@@ -2118,7 +2118,7 @@
         s.id = 'zelo-pc-css';
         s.textContent = `
         /* شاشة كاملة قابلة للتمرير */
-        .pc-overlay { position: fixed; inset: 0; z-index: 4500; background: #0a1033; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; animation: zhFade 0.18s ease-out; }
+        .pc-overlay { position: fixed; inset: 0; z-index: 4700; background: #0a1033; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; animation: zhFade 0.18s ease-out; }
         .pc-sheet { width: 100%; max-width: 520px; min-height: 100%; margin: 0 auto; background: #0a1033; position: relative; padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px)); }
         .pc-cover { height: 110px; background: linear-gradient(135deg, #14206b, #2c4bb5, #f5c35a); }
         .zelo-back.pc-back { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); inset-inline-start: 12px; z-index: 2; background: rgba(10,16,51,.85); }
