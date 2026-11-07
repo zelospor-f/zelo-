@@ -60,11 +60,11 @@ jobs:
           p = 'capacitor.config.json'
           c = json.load(open(p, encoding='utf-8'))
           srv = c.get('server', {})
-          srv['url'] = 'https://zelosport.net'
+          srv['url'] = 'https://zelospor-f.github.io/zelo-/'
           srv['androidScheme'] = 'https'
           srv['cleartext'] = False
           allow = set(srv.get('allowNavigation', []))
-          allow.update(['zelosport.net', '*.zelosport.net', '*.supabase.co', 'accounts.google.com'])
+          allow.update(['zelospor-f.github.io', 'zelosport.net', '*.supabase.co', 'accounts.google.com'])
           srv['allowNavigation'] = sorted(allow)
           c['server'] = srv
           json.dump(c, open(p, 'w', encoding='utf-8'), indent=2)
