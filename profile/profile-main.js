@@ -545,6 +545,22 @@
         if (S.viewUid) wireOther(); else mountVerifyBtn();
         loadGoals();
     };
+        // الهدايا: العدد فقط (يستبدل خانة المدعوون / المنشورات)
+    const _drawProfile0 = P.drawProfile;
+    P.drawProfile = function (target) { _drawProfile0(target); loadGifts(); };
+    async function loadGifts() {
+        const st = document.querySelectorAll('.pp-stats .pp-stat')[2];
+        if (!st) return;
+        st.innerHTML = '<b><svg viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M12 9v11M3 13h18"/><path d="M12 9c-2.5 0-4-1-4-2.5S9.5 4 11 5c.8.6 1 2 1 4zM12 9c2.5 0 4-1 4-2.5S14.5 4 13 5c-.8.6-1 2-1 4z"/></svg><i id="stat-gifts" style="font-style:normal;">–</i></b><span>' + tr('ui_gifts_received', 'هدايا', 'Gifts') + '</span>';
+        const c = db();
+        const uid = String(S.viewUid || US().userId || '');
+        let n = 0;
+        try {
+            if (c && uid) { const r = await c.rpc('get_gifts_received', { p_uid: uid }); if (!r.error && r.data != null) n = Number(r.data) || 0; }
+        } catch (e) {}
+        const el = document.getElementById('stat-gifts');
+        if (el) el.textContent = n.toLocaleString('en-US');
+    }
 
     // مجموع "الأهداف" التي سجّلها الآخرون على منشورات صاحب الملف
     async function loadGoals() {
