@@ -345,8 +345,10 @@
         const pillCls = fin ? (outcome === r.pick ? 'ok' : 'no') : '';
         const pillTxt = fin ? (outcome === r.pick ? (isAr() ? 'صحّ ✓' : 'Correct ✓') : (isAr() ? 'خطأ ✗' : 'Wrong ✗')) : (isAr() ? 'توقّع' : 'Prediction');
         const w = predWhen(r.match_date);
-        const center = fin ? `<div class="zpred-day">${isAr() ? 'انتهت' : 'Full time'}</div><div class="zpred-score">${r.home_score} - ${r.away_score}</div>`
-            : started ? `<div class="zpred-day">${isAr() ? 'جارية' : 'Live'}</div><div class="zpred-score">${r.home_score != null ? r.home_score + ' - ' + r.away_score : '—'}</div>`
+        // في العربية يظهر الفريق الأول على اليمين، فنعكس ترتيب الرقمين ليطابق موضع كل فريق
+        const scoreTxt = (isAr() ? r.away_score + ' - ' + r.home_score : r.home_score + ' - ' + r.away_score);
+        const center = fin ? `<div class="zpred-day">${isAr() ? 'انتهت' : 'Full time'}</div><div class="zpred-score">${scoreTxt}</div>`
+            : started ? `<div class="zpred-day">${isAr() ? 'جارية' : 'Live'}</div><div class="zpred-score">${r.home_score != null ? scoreTxt : '—'}</div>`
             : `<div class="zpred-day">${esc(w.day)}</div><div class="zpred-time">${esc(w.t)}</div>`;
         const lab = [r.team_a, isAr() ? 'تعادل' : 'Draw', r.team_b];
         const pickTxt = r.pick === 1 ? lab[1] : (isAr() ? 'فوز ' : 'Win ') + lab[r.pick];
