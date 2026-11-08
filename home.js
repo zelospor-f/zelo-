@@ -430,6 +430,35 @@
         });
     }
 
+    // ===== صور المنشورات: تُرفع إلى التخزين ويُحفظ الرابط فقط (أخف على القاعدة وأرخص) =====
+    // إن فشل الرفع لأي سبب نرجع للطريقة القديمة (حفظ الصورة المضغوطة داخل المنشور) فلا يتعطل النشر.
+    const IMG_BUCKET = 'post-images';
+    async function uploadImageData(dataUrl, uid) {
+        if (!dataUrl || !String(dataUrl).startsWith('data:')) return dataUrl || null;
+        try {
+            const c = db();
+            const blob = await (await fetch(dataUrl)).blob();
+            if (!blob || !blob.size || blob.size > 1000000) return dataUrl;
+            const path = `${uid}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`;
+            const { error } = await c.storage.from(IMG_BUCKET)
+                .upload(path, blob, { contentType: 'image/jpeg', upsert: false, cacheControl: '31536000' });
+            if (error) throw error;
+            return c.storage.from(IMG_BUCKET).getPublicUrl(path).data.publicUrl;
+        } catch (e) {
+            console.warn('image upload failed, keeping inline image', e);
+            return dataUrl;
+        }
+    }
+    function imagePathFromUrl(url) {
+        const m = /\/post-images\/([^?#]+)/.exec(String(url || ''));
+        return m ? decodeURIComponent(m[1]) : null;
+    }
+    async function removeStoredImage(url) {
+        const p = imagePathFromUrl(url);
+        if (!p) return;
+        try { await db().storage.from(IMG_BUCKET).remove([p]); } catch (e) { console.warn('image cleanup failed', e); }
+    }
+
     const STYLES = `
         .news-head { text-align: center; margin-bottom: 16px; }
         .news-title {
@@ -1127,12 +1156,14 @@
             }
         }
 
+        const imageToSave = pendingImage ? await uploadImageData(pendingImage, u.id) : null;
+
         const { data: newPost, error } = await c.from('posts').insert([{
             user_id: u.id,
             author_name: u.name,
             author_avatar: u.avatar,
             content: content,
-            image_url: pendingImage || null,
+            image_url: imageToSave,
             video_url: videoUrl,
             video_path: videoPath,
             ...topicFields
@@ -1141,6 +1172,7 @@
             const { error: pe } = await c.rpc('attach_prediction', { p_post: newPost.id, p_match: String(pendingPred.match.id), p_pick: pendingPred.pick });
             if (pe) {
                 try { await c.from('posts').delete().eq('id', newPost.id); } catch (e) {}
+                await removeStoredImage(imageToSave);
                 const pm = String(pe.message || '');
                 alert(pm.includes('match_started') ? (isAr() ? 'هذه المباراة بدأت، اختر مباراة أخرى.' : 'That match already started.')
                     : (isAr() ? 'تعذّر نشر التوقّع: ' : 'Could not publish: ') + pm);
@@ -1150,6 +1182,7 @@
         if (error) {
             // إذا رُفض المنشور بعد رفع الفيديو، نحذف الملف الذي رُفع
             if (videoPath) { try { await c.storage.from('post-videos').remove([videoPath]); } catch (e) {} }
+            await removeStoredImage(imageToSave);
             const msg = String(error.message || '');
             if (msg.includes('video_daily_limit')) { alert(isAr() ? 'وصلت إلى حد 5 فيديوهات اليوم.' : 'You reached the limit of 5 videos today.'); return; }
             if (msg.includes('premium_required')) { if (window.openSubscriptions) window.openSubscriptions(); return; }
@@ -1360,7 +1393,8 @@
         const st = editState[id] || {};
         const p = postCache[id];
 
-        let image = p.image_url || null;
+        const oldImage = p.image_url || null;
+        let image = oldImage;
         if (st.removed) image = null;
         if (st.newImage) image = st.newImage;
 
@@ -1369,12 +1403,21 @@
             return;
         }
 
+        // صورة جديدة: نرفعها إلى التخزين أولاً
+        if (st.newImage) image = await uploadImageData(st.newImage, me().id);
+
         const now = new Date().toISOString();
         const { error } = await db().from('posts')
             .update({ content: content, image_url: image, updated_at: now })
             .eq('id', id)
             .eq('user_id', me().id);
-        if (error) { alert(postErrText(error) || error.message); return; }
+        if (error) {
+            if (st.newImage) await removeStoredImage(image);
+            alert(postErrText(error) || error.message);
+            return;
+        }
+        // نجح الحفظ: نحذف الصورة القديمة من التخزين إن استُبدلت أو أُزيلت
+        if (oldImage && oldImage !== image) await removeStoredImage(oldImage);
 
         Object.assign(p, { content: content, image_url: image, updated_at: now });
         delete editState[id];
@@ -1384,8 +1427,10 @@
     window.deletePost = async function(id) {
         if (!confirm(isAr() ? 'هل تريد حذف هذا المنشور؟' : 'Delete this post?')) return;
         const videoPath = postCache[id] && postCache[id].video_path;
+        const imageUrl = postCache[id] && postCache[id].image_url;
         const { error } = await db().from('posts').delete().eq('id', id).eq('user_id', me().id);
         if (error) { alert(error.message); return; }
+        await removeStoredImage(imageUrl);
         // حذف ملف الفيديو عبر Storage API (القاعدة لا تسمح بحذفه مباشرة)
         if (videoPath) { try { await db().storage.from('post-videos').remove([videoPath]); } catch (e) { console.warn('video cleanup failed', e); } }
 
