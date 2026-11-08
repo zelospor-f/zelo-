@@ -405,6 +405,13 @@
             e.reposted = !!(mineOf[T.reposts] || {})[k];
             if (e.kind === 'reply') e.parent = parents[k] || null;
         });
+        // قالب المنشور الموحّد: نجهّز بيانات الرئيسية (شارات، توقّع، حبل، عدّادات)
+        if (window.zeloPostCardsPrepare && (tab === 'posts' || tab === 'reposts')) {
+            try {
+                await window.zeloPostCardsPrepare(rows.map(e => e.item));
+                rows.forEach(e => { e.unified = true; });
+            } catch (err) { console.error('unified card prepare', err); }
+        }
         // المنشور المثبّت أولاً (الترتيب الباقي يبقى كما هو)
         if (tab === 'posts') rows.sort((a, b) => (b.item.pinned_at ? 1 : 0) - (a.item.pinned_at ? 1 : 0));
         return rows;
@@ -538,7 +545,15 @@
             }).join('') + '</div>';
             return;
         }
-        box.innerHTML = rows.map(e => feedItemHtml(e, P.state.draft, ar)).join('');
+        box.innerHTML = rows.map(e => {
+            if (e.unified && window.zeloPostCardHtml) {
+                const rpBy = e.kind === 'repost' ? (P.state.viewUid ? displayNameOf(P.state.draft, ar) : (ar ? 'أنت' : 'You')) : '';
+                const html = window.zeloPostCardHtml(e.item.id, { rpBy, pin: e.kind === 'post' && !!e.item.pinned_at });
+                if (html) return `<div class="pf-card" data-pid="${esc(String(e.item.id))}">${html}</div>`;
+            }
+            return feedItemHtml(e, P.state.draft, ar);
+        }).join('');
+        if (window.zeloPostCardsAfter) window.zeloPostCardsAfter(rows.filter(e => e.unified).map(e => e.item.id));
     }
 
     window.switchProfileTab = function (tab) {
