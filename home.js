@@ -376,7 +376,7 @@
             ${lower}`;
     }
     function updatePred(id) {
-        document.querySelectorAll(`.zpred[data-pid="${id}"]`).forEach(el => { el.innerHTML = predHtml(postCache[id]); });
+        document.querySelectorAll(`.zpred[data-pid="${id}"]`).forEach(el => { el.innerHTML = predHtml(postCache[id] || { id }); });
     }
     window.predVote = async function (id, pick) {
         const c = db(), r = predCache[id];
@@ -801,7 +801,7 @@
         const handle = handleOf(p.user_id);
         return `
             <div class="post-card${p.topic_type ? ' has-rope' : ''}" id="post-${p.id}" data-uid="${esc(p.user_id)}" data-pid="${p.id}" ${p._boostId ? `data-boost-id="${p._boostId}"` : ''}>
-                ${p._rpBy ? `<div style="font-size:12px;color:#14F195;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:14px;">${ICONS.repost.replace(/(width|height)="19"/g,'$1="14"')}</span>${isAr() ? 'مرّره ' : 'Passed by '}${esc(p._rpBy)}</div>` : ''}
+                ${p._rpBy ? `<div style="font-size:12px;color:#14F195;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:14px;">${ICONS.repost.replace(/(width|height)="19"/g,'$1="14"')}</span>${isAr() ? 'مرّره ' : 'Passed by '}${esc(p._rpBy)}</div>` : (p._pin ? `<div style="font-size:12px;color:#8e98c8;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 3h6l-1 7 3 3H7l3-3z"/></svg>${isAr() ? 'مثبّت' : 'Pinned'}</div>` : '')}
                 <div class="post-head">
                     <img class="post-avatar" style="cursor:pointer" onclick="window.openUserProfile('${esc(p.user_id)}')" src="${esc(avatarUrl(p.author_name, p.author_avatar))}" onerror="this.style.display='none'">
                     <div class="post-meta">
@@ -832,6 +832,7 @@
         const box = el && el.querySelector('.post-actions');
         if (box) box.innerHTML = actionsHtml(p);
         // نسخة المنشور داخل صفحة البروفايل
+        document.querySelectorAll(`.pf-card[data-pid="${id}"] .post-actions`).forEach(b => { b.innerHTML = actionsHtml(p); });
         document.querySelectorAll(`.pc-post[data-pid="${id}"] .post-actions`).forEach(b => { b.innerHTML = actionsHtml(p); });
         document.querySelectorAll(`#pp-overlay[data-pid="${id}"] .post-actions`).forEach(b => { b.innerHTML = actionsHtml(p); });
     }
@@ -986,6 +987,35 @@
 
     window.notifyUser = notifyUser;
     window.zeloMe = me;
+    // قالب المنشور الموحّد: الملف الشخصي يستعمل نفس رسم الرئيسية
+    window.zeloPostCardsPrepare = async function (posts) {
+        posts = (posts || []).filter(Boolean);
+        if (!posts.length) return;
+        await loadPostStats(posts);
+        await fetchBadges(posts.map(p => p.user_id));
+        await fetchRope(posts.map(p => postCache[p.id]));
+        await fetchPreds(posts.map(p => p.id));
+    };
+    window.zeloPostCardHtml = function (id, o) {
+        const p = postCache[id];
+        if (!p) return '';
+        p._rpBy = (o && o.rpBy) || undefined;
+        p._pin = !!(o && o.pin);
+        return postHtml(p);
+    };
+    window.zeloPostCardsAfter = function (ids) {
+        observeViews(); observeVideos();
+        if (window.zeloFillSupportBars) window.zeloFillSupportBars(ids || []);
+    };
+    // يستعمله الملف الشخصي: يجلب بطاقات التوقّع ويعيدها جاهزة { postId: html }
+    window.zeloPredBlocks = async function (ids) {
+        const list = [...new Set((ids || []).map(Number).filter(Boolean))];
+        const out = {};
+        if (!list.length) return out;
+        await fetchPreds(list);
+        list.forEach(id => { if (predCache[id]) out[id] = predHtml({ id }); });
+        return out;
+    };
 
     // تمريرات من أتابعهم (ومني): تظهر في الخلاصة بوقت التمريرة مع عبارة "مرّره فلان"
     async function mergeReposts(c, posts) {
@@ -2140,6 +2170,7 @@
         const p = postCache[id];
         if (!p) return;
         const mine = String(p.user_id) === me().id;
+        if (mine && window.pfOpenPostMenu && document.querySelector(`.pf-card[data-pid="${id}"]`)) { window.pfOpenPostMenu(id); return; }
         const common = [
             { icon: '📊', label: isAr() ? 'عرض التفاعلات مع المنشور' : 'View post engagements', action: () => showEngagements(id) },
             { icon: '🔖', label: postCache[id].saved ? (isAr() ? 'إزالة من المحفوظات' : 'Remove bookmark') : (isAr() ? 'حفظ المنشور' : 'Save post'), action: () => window.toggleBookmark(id) },
