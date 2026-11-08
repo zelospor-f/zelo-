@@ -418,7 +418,12 @@
         if (tab === 'posts') {
             const r = await c.from(T.posts).select('*').eq('user_id', own.user_id).order('created_at', { ascending: false }).limit(40);
             if (r.error) throw r.error;
-            return (r.data || []).map(p => ({ kind: 'post', item: p, author: null }));
+            const mine = (r.data || []).map(p => ({ kind: 'post', item: p, author: null }));
+            // مثل X: تمريرات الشخص تظهر بين منشوراته بوقت التمريرة
+            let rp = [];
+            try { rp = (await fetchFeedRaw('reposts')).filter(e => String(e.item.user_id) !== own.user_id); } catch (_) {}
+            const at = e => new Date(e.repostAt || e.item.created_at).getTime();
+            return mine.concat(rp).sort((a, b) => at(b) - at(a));
         }
         if (tab === 'videos') {
             const r = await c.from(T.posts).select('*').eq('user_id', own.user_id).not('video_url', 'is', null).order('created_at', { ascending: false }).limit(60);
@@ -466,7 +471,7 @@
         const text = p.content ?? p.text ?? p.body ?? '';
         const img = p.image_url || p.media_url || p.image || '';
         const when = timeAgo(e.repostAt || p.created_at, ar);
-        const ctx = e.kind === 'repost' ? `<div class="feed-ctx">🔁 ${P.state.viewUid ? tr('ui_they_reposted', 'مرّر', 'Passed') : tr('ui_you_reposted', 'مرّرتَ', 'You passed')}</div>`
+        const ctx = e.kind === 'repost' ? `<div class="feed-ctx"><span style="display:inline-block;width:14px;height:14px;vertical-align:-2px;margin-inline-end:4px;">${IC.repost.replace(/(width|height)="19"/g,'$1="14"')}</span>${P.state.viewUid ? tr('ui_they_reposted', 'مرّر', 'Passed') : tr('ui_you_reposted', 'مرّرتَ', 'You passed')}</div>`
             : e.kind === 'reply' ? `<div class="feed-ctx">💬 ${P.state.viewUid ? tr('ui_they_replying_to', 'ردّ على', 'Replying to') : tr('ui_replying_to', 'رددتَ على', 'Replying to')} ${esc((e.parent && e.parent.author_name) || (tr('ui_a_post', 'منشور', 'a post')))}</div>` : '';
         const quote = (e.kind === 'reply' && e.parent && e.parent.content)
             ? `<div class="feed-quote">${esc(String(e.parent.content).slice(0, 140))}</div>` : '';
