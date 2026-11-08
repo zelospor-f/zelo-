@@ -70,6 +70,16 @@ window.renderHomeRankingWidget = async function(containerId) {
     const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar'); 
     const anonymousName = isAr ? 'مستخدم' : 'User';
 
+    // عرض آخر نسخة محفوظة فورًا ثم التحديث بصمت
+    const cacheKey = 'zelo_rank_v1_' + containerId + '_' + String(currentUserId || '') + '_' + (isAr ? 'ar' : 'en');
+    try {
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) {
+            const d = JSON.parse(raw);
+            if (d && d.html && Date.now() - d.t < 3 * 86400000) container.innerHTML = d.html;
+        }
+    } catch (e) {}
+
     try {
         let rankings = [];
         let myRank = null;
@@ -359,8 +369,10 @@ window.renderHomeRankingWidget = async function(containerId) {
 
         topHtml += `<div style="display:flex; justify-content:center; margin: 0 0 15px 0;"><button onclick="window.openShareCard && window.openShareCard()" style="width:100%; max-width:420px; padding:12px; background:var(--gradient-primary, linear-gradient(135deg, #14206b, #2c4bb5, #f5c35a)); border:none; color:white; border-radius:12px; font-weight:bold; font-size:1rem; cursor:pointer;">${tr('shareBtn', '📤 شارك إنجازك', '📤 Share your win')}</button></div>`;
         container.innerHTML = htmlStyles + topHtml;
+        try { localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), html: htmlStyles + topHtml })); } catch (e) {}
     } catch (e) {
         console.error('[ZELO] ranking:', e);
+        if (container.querySelector('.podium-container, .legendary-card')) return;   // النسخة المحفوظة تبقى ظاهرة
         const why = String((e && e.message) || e || '').replace(/[<>&]/g, '').slice(0, 120);
         container.innerHTML = `<div style="text-align:center; color: #ff4d4d; padding: 20px;">${isAr ? 'حدث خطأ في تحميل البيانات' : 'Error loading ranking data'}<div style="direction:ltr;color:#9aa3cf;font-size:.75rem;margin-top:8px;">${why}</div></div>`;
     }

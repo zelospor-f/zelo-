@@ -988,6 +988,26 @@
 
     window.notifyUser = notifyUser;
     window.zeloMe = me;
+    // حفظ/استرجاع بيانات المنشورات (يستعملها الملف الشخصي للعرض الفوري)
+    window.zeloPostCacheExport = function (ids) {
+        const posts = {}, preds = {}, rope = {}, prof = {};
+        (ids || []).forEach(id => {
+            if (!postCache[id]) return;
+            posts[id] = postCache[id];
+            if (predCache[id]) preds[id] = predCache[id];
+            if (ropeCache[id]) rope[id] = ropeCache[id];
+            const u = String(postCache[id].user_id);
+            if (profMap[u]) prof[u] = profMap[u];
+        });
+        return { posts, preds, rope, prof };
+    };
+    window.zeloPostCacheImport = function (d) {
+        if (!d) return;
+        Object.assign(postCache, d.posts || {});
+        Object.assign(predCache, d.preds || {});
+        Object.assign(ropeCache, d.rope || {});
+        Object.assign(profMap, d.prof || {});
+    };
     // قالب المنشور الموحّد: الملف الشخصي يستعمل نفس رسم الرئيسية
     window.zeloPostCardsPrepare = async function (posts) {
         posts = (posts || []).filter(Boolean);
