@@ -801,6 +801,7 @@
         const handle = handleOf(p.user_id);
         return `
             <div class="post-card${p.topic_type ? ' has-rope' : ''}" id="post-${p.id}" data-uid="${esc(p.user_id)}" data-pid="${p.id}" ${p._boostId ? `data-boost-id="${p._boostId}"` : ''}>
+                ${p._rpBy ? `<div style="font-size:12px;color:#14F195;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:14px;">${ICONS.repost.replace(/(width|height)="19"/g,'$1="14"')}</span>${isAr() ? 'مرّره ' : 'Passed by '}${esc(p._rpBy)}</div>` : ''}
                 <div class="post-head">
                     <img class="post-avatar" style="cursor:pointer" onclick="window.openUserProfile('${esc(p.user_id)}')" src="${esc(avatarUrl(p.author_name, p.author_avatar))}" onerror="this.style.display='none'">
                     <div class="post-meta">
@@ -986,6 +987,38 @@
     window.notifyUser = notifyUser;
     window.zeloMe = me;
 
+    // تمريرات من أتابعهم (ومني): تظهر في الخلاصة بوقت التمريرة مع عبارة "مرّره فلان"
+    async function mergeReposts(c, posts) {
+        try {
+            const uid = me().id;
+            const who = new Set([...followSet, String(uid)]);
+            if (!who.size) return posts;
+            const since = new Date(Date.now() - 7 * 86400000).toISOString();
+            const { data: reps } = await c.from('post_reposts').select('post_id,user_id,created_at')
+                .in('user_id', [...who]).gte('created_at', since).order('created_at', { ascending: false }).limit(40);
+            if (!reps || !reps.length) return posts;
+            const byId = new Map(posts.map(p => [String(p.id), { ...p }]));
+            const missing = [...new Set(reps.map(r => r.post_id))].filter(id => !byId.has(String(id)));
+            if (missing.length) {
+                const { data: extra } = await c.from('posts').select('*').in('id', missing);
+                (extra || []).forEach(p => byId.set(String(p.id), { ...p }));
+            }
+            const names = {};
+            const rIds = [...new Set(reps.map(r => String(r.user_id)))];
+            const { data: pr } = await c.from('public_profiles').select('user_id,nickname,username').in('user_id', rIds);
+            (pr || []).forEach(r => { names[String(r.user_id)] = r.nickname || r.username || ''; });
+            reps.forEach(r => { // الأحدث أولاً: أول تمريرة تُقرأ هي الأحدث لكل منشور
+                const p = byId.get(String(r.post_id));
+                if (!p || p._rpAt) return;
+                if (new Date(r.created_at) <= new Date(p.created_at)) return;
+                p._rpAt = r.created_at;
+                p._rpBy = String(r.user_id) === String(uid) ? (isAr() ? 'أنت' : 'You') : (names[String(r.user_id)] || (isAr() ? 'أحدهم' : 'Someone'));
+            });
+            return [...byId.values()].sort((x, y) =>
+                new Date(y._rpAt || y.created_at) - new Date(x._rpAt || x.created_at));
+        } catch (e) { console.error('[ZELO] mergeReposts:', e); return posts; }
+    }
+
     async function loadFeed() {
         const list = document.getElementById('feed-list');
         if (!list) return;
@@ -1006,7 +1039,7 @@
         await loadSocial();
         // تعبئة ذاكرة الاشتراك قبل رسم المنشورات، حتى يعرف زر التعزيز حالة المستخدم
         if (window.ZeloPremium && typeof window.ZeloPremium.ensure === 'function') await window.ZeloPremium.ensure([me().id]);
-        let visible = posts.filter(p => !isHiddenUser(p.user_id) && !hiddenPosts.has(String(p.id)));
+        let visible = (await mergeReposts(c, posts)).filter(p => !isHiddenUser(p.user_id) && !hiddenPosts.has(String(p.id)));
         visible = await mixBoosts(visible);
         if (!visible.length) {
             list.innerHTML = emptyBox(isAr() ? 'لا توجد منشورات لعرضها الآن.' : 'No posts to show right now.');
