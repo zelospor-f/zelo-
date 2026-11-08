@@ -51,7 +51,15 @@ window.openLegendaryRankingScreen = function() {
     `;
 
     document.body.appendChild(screen);
-    window.renderHomeRankingWidget('full-ranking-container');
+    const done = window.renderHomeRankingWidget('full-ranking-container');
+    // شبكة أمان: إن بقيت الشاشة على "جاري الجلب" أكثر من 10 ثوانٍ نُظهر السبب وزر إعادة المحاولة
+    setTimeout(() => {
+        const box = document.getElementById('full-ranking-container');
+        if (box && /⏳/.test(box.innerText || '')) {
+            box.innerHTML = `<div style="text-align:center; color:#ff9d9d; padding:30px 16px; font-size:1rem;">${isAr ? 'تأخّر التحميل. تأكد من الإنترنت ثم أعد المحاولة.' : 'Loading took too long. Check your connection and retry.'}<br><button onclick="window.openLegendaryRankingScreen()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:12px;background:#2c4bb5;color:#fff;font-weight:bold;font-size:1rem;">${isAr ? 'إعادة المحاولة' : 'Retry'}</button></div>`;
+        }
+    }, 10000);
+    return done;
 };
 
 window.renderHomeRankingWidget = async function(containerId) {
@@ -357,6 +365,8 @@ window.renderHomeRankingWidget = async function(containerId) {
         topHtml += `<div style="display:flex; justify-content:center; margin: 0 0 15px 0;"><button onclick="window.openShareCard && window.openShareCard()" style="width:100%; max-width:420px; padding:12px; background:var(--gradient-primary, linear-gradient(135deg, #14206b, #2c4bb5, #f5c35a)); border:none; color:white; border-radius:12px; font-weight:bold; font-size:1rem; cursor:pointer;">${tr('shareBtn', '📤 شارك إنجازك', '📤 Share your win')}</button></div>`;
         container.innerHTML = htmlStyles + topHtml;
     } catch (e) {
-        container.innerHTML = `<div style="text-align:center; color: #ff4d4d; padding: 20px;">${isAr ? 'حدث خطأ في تحميل البيانات' : 'Error loading ranking data'}</div>`;
+        console.error('[ZELO] ranking:', e);
+        const why = String((e && e.message) || e || '').replace(/[<>&]/g, '').slice(0, 120);
+        container.innerHTML = `<div style="text-align:center; color: #ff4d4d; padding: 20px;">${isAr ? 'حدث خطأ في تحميل البيانات' : 'Error loading ranking data'}<div style="direction:ltr;color:#9aa3cf;font-size:.75rem;margin-top:8px;">${why}</div></div>`;
     }
 };
