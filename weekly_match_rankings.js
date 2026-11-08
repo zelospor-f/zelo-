@@ -43,6 +43,7 @@ window.openLegendaryRankingScreen = function() {
             ${window.zeloBackBtn("document.getElementById('ranking-full-screen').remove()", isAr)}
             <h2 style="margin:0; flex:1; color:var(--accent-gold, #f5c35a); font-weight: 900; letter-spacing: 0.5px;">🏆 ${title}</h2>
         </div>
+        <div style="flex-shrink: 0; height: max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
         <div id="full-ranking-container" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
             <div id="rank-loading" style="text-align:center; color: #888; padding: 50px; font-size: 1.1rem;">
                 ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
