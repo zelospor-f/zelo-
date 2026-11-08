@@ -26,12 +26,13 @@
         const ids = [...new Set((userIds || []).map(String))].filter(id => id && !(id in profMap));
         if (!c || !ids.length) return;
         try {
-            const { data } = await c.from('public_profiles').select('user_id,badge_club,username').in('user_id', ids);
-            ids.forEach(id => { profMap[id] = { badge: '', username: '' }; });
+            const { data } = await c.from('public_profiles').select('user_id,badge_club,username,photo_url').in('user_id', ids);
+            ids.forEach(id => { profMap[id] = { badge: '', username: '', photo: '' }; });
             (data || []).forEach(r => {
                 profMap[String(r.user_id)] = {
                     badge: r.badge_club ? String(r.badge_club) : '',
-                    username: r.username ? String(r.username) : ''
+                    username: r.username ? String(r.username) : '',
+                    photo: r.photo_url ? String(r.photo_url) : ''
                 };
             });
         } catch (e) { console.error('[ZELO] fetchBadges error:', e); }
@@ -803,7 +804,7 @@
             <div class="post-card${p.topic_type ? ' has-rope' : ''}" id="post-${p.id}" data-uid="${esc(p.user_id)}" data-pid="${p.id}" ${p._boostId ? `data-boost-id="${p._boostId}"` : ''}>
                 ${p._rpBy ? `<div style="font-size:12px;color:#14F195;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:14px;">${ICONS.repost.replace(/(width|height)="19"/g,'$1="14"')}</span>${isAr() ? 'مرّره ' : 'Passed by '}${esc(p._rpBy)}</div>` : (p._pin ? `<div style="font-size:12px;color:#8e98c8;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 3h6l-1 7 3 3H7l3-3z"/></svg>${isAr() ? 'مثبّت' : 'Pinned'}</div>` : '')}
                 <div class="post-head">
-                    <img class="post-avatar" style="cursor:pointer" onclick="window.openUserProfile('${esc(p.user_id)}')" src="${esc(avatarUrl(p.author_name, p.author_avatar))}" onerror="this.style.display='none'">
+                    <img class="post-avatar" style="cursor:pointer" onclick="window.openUserProfile('${esc(p.user_id)}')" src="${esc(avatarUrl(p.author_name, (profMap[String(p.user_id)] && profMap[String(p.user_id)].photo) || p.author_avatar))}" onerror="this.style.display='none'">
                     <div class="post-meta">
                         <div class="post-author">${esc(p.author_name)}${badgeHtml(p.user_id)}</div>
                         <div class="post-sub">
@@ -1899,7 +1900,7 @@
             <div class="pp-scroll">
                 <div class="pp-main">
                     <div class="pp-head">
-                        <img class="post-avatar" style="cursor:pointer" onclick="window.openUserProfile('${esc(p.user_id)}')" src="${esc(avatarUrl(p.author_name, p.author_avatar))}" onerror="this.style.display='none'">
+                        <img class="post-avatar" style="cursor:pointer" onclick="window.openUserProfile('${esc(p.user_id)}')" src="${esc(avatarUrl(p.author_name, (profMap[String(p.user_id)] && profMap[String(p.user_id)].photo) || p.author_avatar))}" onerror="this.style.display='none'">
                         <div class="post-meta">
                             <div class="post-author">${esc(p.author_name)}${badgeHtml(p.user_id)}</div>
                             ${handle ? `<div class="post-handle">@${esc(handle)}</div>` : ''}
