@@ -30,6 +30,8 @@
     let box = null;
     const MAP = {};
     let tab = 'up';
+    let HUB_CACHE = '';
+    const LG_CACHE = {};
 
     function lgName(code, fallback) {
         const n = NAMES[code];
@@ -80,7 +82,7 @@
         if (!box) return;
         css();
         box.style.direction = isAr() ? 'rtl' : 'ltr';
-        box.innerHTML = `<div class="lg-empty">⏳ ${T('جارٍ التحميل...', 'Loading...')}</div>`;
+        box.innerHTML = HUB_CACHE || `<div class="lg-empty">⏳ ${T('جارٍ التحميل...', 'Loading...')}</div>`;
 
         const c = db();
         let rows = [];
@@ -123,6 +125,7 @@
                 <span class="lg-ic"><span style="font-size:20px">🌙</span></span>
                 <span class="lg-nm"><b>${T('الدوري السعودي والمصري وغيرها', 'Saudi, Egyptian & more')}</b><small>${T('قريبًا', 'Coming soon')}</small></span>
             </div>`;
+        HUB_CACHE = box.innerHTML;
         if (window.fcRefreshBadge) window.fcRefreshBadge();
         if (window.mrRefreshRank) window.mrRefreshRank();
     }
@@ -134,7 +137,8 @@
         css();
         if (which) tab = which;
         const c = db();
-        box.innerHTML = `<div class="lg-empty">⏳ ${T('جارٍ التحميل...', 'Loading...')}</div>`;
+        const ckey = code + '|' + tab;
+        box.innerHTML = LG_CACHE[ckey] || `<div class="lg-empty">⏳ ${T('جارٍ التحميل...', 'Loading...')}</div>`;
         let ms = [], preds = {};
         if (c) {
             try {
@@ -217,6 +221,7 @@
                 <button class="lg-tab ${tab === 'fin' ? 'on' : ''}" onclick="window.openLeague('${esc(code)}','fin')">${T('انتهت', 'Finished')} (${fin.length})</button>
             </div>
             ${tab === 'up' ? grouped(up) : grouped(fin)}`;
+        LG_CACHE[ckey] = box.innerHTML;
         box.scrollTop = 0;
         window.scrollTo(0, 0);
     };
