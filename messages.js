@@ -42,6 +42,7 @@
     let convs = [];
     let listEl = null, listTimer = null, filterText = '';
     let chat = null;                // {uid, timer, lastSig}
+    let listCache = { uid: '', html: '' };   // آخر قائمة محادثات معروضة (تظهر فورًا عند العودة)
 
     // ===== أدوات =====
     const pickName = r => r.display_name || r.nickname || r.name || r.full_name ||
@@ -193,6 +194,7 @@
             ((profCache[cv.uid] || {}).username || '').toLowerCase().includes(q));
         if (!rows.length) {
             listEl.innerHTML = `<div class="dm-empty">${T('لا توجد محادثات بعد', 'No conversations yet')}</div>`;
+            if (!q) listCache = { uid: me().id, html: listEl.innerHTML };
             return;
         }
         listEl.innerHTML = rows.map(cv => {
@@ -216,6 +218,7 @@
                 </div>
             </div>`;
         }).join('');
+        if (!q) listCache = { uid: me().id, html: listEl.innerHTML };
     }
 
     // ضغط مطوّل + نقرة (تفويض أحداث)
@@ -380,7 +383,7 @@
         if (!n || !bar) return;
         const b = blockedByMe.has(chat.uid);
         n.style.display = b ? 'block' : 'none';
-        n.textContent = T('لقد حظرت هذا المستخدم. ألغِ الحظر لإرسال الرسائل.', 'You blocked this user. Unblock to send messages.');
+                n.textContent = T('لقد حظرت هذا المستخدم. ألغِ الحظر لإرسال الرسائل.', 'You blocked this user. Unblock to send messages.');
         bar.style.display = b ? 'none' : 'flex';
     }
 
@@ -547,7 +550,7 @@
                     </div>
                     <span class="dm-dot" id="dm-notif-badge" style="display:none;"></span>
                 </div>
-                <div id="dm-list"><div class="dm-empty">${T('جارٍ التحميل...', 'Loading...')}</div></div>
+                <div id="dm-list">${(listCache.uid === me().id && listCache.html) ? listCache.html : `<div class="dm-empty">${T('جارٍ التحميل...', 'Loading...')}</div>`}</div>
             </div>
             <button class="dm-fab" id="dm-fab">✉️</button>`;
         listEl = container.querySelector('#dm-list');
