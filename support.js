@@ -366,16 +366,26 @@
             return;
         }
 
+        // الاسم والصورة الحاليان من الملف الشخصي (المخزَّن في الدعم نسخة قديمة)
+        const pm = {};
+        try {
+            const ids = [...new Set(data.map(x => String(x.from_user_id)))];
+            const { data: pp } = await c.from('public_profiles').select('user_id,photo_url,nickname,username').in('user_id', ids);
+            (pp || []).forEach(x => { pm[String(x.user_id)] = x; });
+        } catch (e) {}
         body.style.cssText = 'padding:0;text-align:start;';
         body.innerHTML = data.map((s, i) => {
-            const name = esc(s.from_name || L('مستخدم', 'User'));
-            const initial = esc((s.from_name || '?').trim().charAt(0).toUpperCase());
+            const prof = pm[String(s.from_user_id)] || {};
+            const shown = prof.nickname || prof.username || s.from_name;
+            const photo = (typeof prof.photo_url === 'string' && /^(https:\/\/|data:image\/)/.test(prof.photo_url) && !/["'<>\s]/.test(prof.photo_url)) ? prof.photo_url : '';
+            const name = esc(shown || L('مستخدم', 'User'));
+            const initial = esc((shown || '?').trim().charAt(0).toUpperCase());
             const rankColor = RANK_COLORS[i] || 'rgba(255,255,255,.12)';
             const rankText = i < 3 ? '#121215' : THEME.muted;
             return `
             <div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.05);">
                 <div style="width:22px;height:22px;border-radius:50%;background:${rankColor};color:${rankText};font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums;">${i + 1}</div>
-                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#2a2a36,#1a1a22);border:1px solid ${THEME.border};display:flex;align-items:center;justify-content:center;font-weight:900;color:${THEME.gold};flex-shrink:0;">${initial}</div>
+                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#2a2a36,#1a1a22);border:1px solid ${THEME.border};display:flex;align-items:center;justify-content:center;font-weight:900;color:${THEME.gold};flex-shrink:0;overflow:hidden;">${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove()" alt="">` : initial}</div>
                 <div style="min-width:0;flex:1;">
                     <div style="font-weight:800;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
                     <div style="color:${THEME.muted};font-size:.76rem;margin-top:2px;">${L(`دعم ${fmt(s.times)} مرة`, `${fmt(s.times)} support(s)`)}</div>
