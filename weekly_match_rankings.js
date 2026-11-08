@@ -44,7 +44,7 @@ window.openLegendaryRankingScreen = function() {
             <h2 style="margin:0; flex:1; color:var(--accent-gold, #f5c35a); font-weight: 900; letter-spacing: 0.5px;">🏆 ${title}</h2>
         </div>
         <div id="full-ranking-container" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
-            <div style="text-align:center; color: #888; padding: 50px; font-size: 1.1rem;">
+            <div id="rank-loading" style="text-align:center; color: #888; padding: 50px; font-size: 1.1rem;">
                 ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
             </div>
         </div>
@@ -55,7 +55,7 @@ window.openLegendaryRankingScreen = function() {
     // شبكة أمان: إن بقيت الشاشة على "جاري الجلب" أكثر من 10 ثوانٍ نُظهر السبب وزر إعادة المحاولة
     setTimeout(() => {
         const box = document.getElementById('full-ranking-container');
-        if (box && /⏳/.test(box.innerText || '')) {
+        if (box && document.getElementById('rank-loading')) {
             box.innerHTML = `<div style="text-align:center; color:#ff9d9d; padding:30px 16px; font-size:1rem;">${isAr ? 'تأخّر التحميل. تأكد من الإنترنت ثم أعد المحاولة.' : 'Loading took too long. Check your connection and retry.'}<br><button onclick="window.openLegendaryRankingScreen()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:12px;background:#2c4bb5;color:#fff;font-weight:bold;font-size:1rem;">${isAr ? 'إعادة المحاولة' : 'Retry'}</button></div>`;
         }
     }, 10000);
