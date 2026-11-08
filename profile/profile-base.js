@@ -637,8 +637,10 @@
         if (!confirm(ar ? 'حذف هذا المنشور نهائياً؟' : 'Delete this post permanently?')) return;
         if (!c || !uid) return;
         const videoPath = (findPost(id) || {}).video_path;
+        const imageUrl = (findPost(id) || {}).image_url;
         const { error } = await c.from(T.posts).delete().eq('id', id).eq('user_id', String(uid));
         if (error) { alert((ar ? 'تعذّر الحذف: ' : 'Delete failed: ') + error.message); return; }
+        { const m = /\/post-images\/([^?#]+)/.exec(String(imageUrl || '')); if (m) { try { await c.storage.from('post-images').remove([decodeURIComponent(m[1])]); } catch (e) { console.warn('image cleanup failed', e); } } }
         if (videoPath) { try { await c.storage.from('post-videos').remove([videoPath]); } catch (e) { console.warn('video cleanup failed', e); } }
         Object.keys(F.cache).forEach(k => delete F.cache[k]);
         P.loadFeed(true);
