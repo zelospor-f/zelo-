@@ -516,14 +516,37 @@
         const ar = isAr();
         const tab = F.tab;
         if (!force && F.cache[tab]) { renderFeed(F.cache[tab], box, ar); return; }
-        if (!silent) box.innerHTML = `<div class="feed-empty">${tr('ui_loading', 'جارٍ التحميل…', 'Loading…')}</div>`;
+        // آخر نسخة محفوظة في الهاتف: تظهر فورًا ثم تتحدث بصمت
+        let shownLocal = false;
+        const lsKey = 'zelo_pf_v1_' + String(US().userId || '') + '_' + String(P.state.viewUid || 'me') + '_' + tab;
+        if (tab === 'posts' || tab === 'reposts') {
+            try {
+                const d = JSON.parse(localStorage.getItem(lsKey) || 'null');
+                if (d && d.rows && d.rows.length && Date.now() - d.t < 3 * 86400000) {
+                    if (window.zeloPostCacheImport) window.zeloPostCacheImport(d.cache);
+                    renderFeed(d.rows, box, ar);
+                    shownLocal = true;
+                }
+            } catch (_) {}
+        }
+        if (!silent && !shownLocal) box.innerHTML = `<div class="feed-empty">${tr('ui_loading', 'جارٍ التحميل…', 'Loading…')}</div>`;
         try {
             const rows = await fetchFeed(tab);
             F.cache[tab] = rows;
+            if (tab === 'posts' || tab === 'reposts') {
+                try {
+                    const keep = rows.filter(e => e.unified).slice(0, 12);
+                    if (keep.length && window.zeloPostCacheExport) {
+                        const str = JSON.stringify({ t: Date.now(), rows: keep, cache: window.zeloPostCacheExport(keep.map(e => e.item.id)) });
+                        if (str.length < 500000) localStorage.setItem(lsKey, str);
+                    }
+                } catch (_) {}
+            }
             if (tab === F.tab) renderFeed(rows, document.getElementById('feed-box'), ar);
         } catch (err) {
             console.error('feed error', err);
             const b = document.getElementById('feed-box');
+            if (b && shownLocal) return;   // نُبقي النسخة المحفوظة ظاهرة بدل رسالة الخطأ
             if (b) b.innerHTML = `<div class="feed-empty">${tr('ui_could_not_load_content', 'تعذّر تحميل المحتوى', 'Could not load content')}<br><small style="direction:ltr;display:block;margin-top:6px;">${esc(err.message || '')}</small></div>`;
         }
     };
