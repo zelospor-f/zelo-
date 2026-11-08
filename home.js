@@ -1110,12 +1110,50 @@
         await fetchPreds(visible.map(p => p.id));
         list.innerHTML = visible.map(p => postHtml(postCache[p.id])).join('');
         feedHtmlCache = list.innerHTML;
+        saveFeedLocal(visible);
         observeViews();
         observeBoosts();
         observeVideos();
         if (window.zeloFillSupportBars) window.zeloFillSupportBars(visible.map(p => p.id));
     }
     let feedHtmlCache = '';
+
+    // حفظ آخر منشورات في الهاتف لعرضها فوراً عند الفتح (ثم التحديث بصمت)
+    const feedKey = () => 'zelo_feed_v1_' + me().id;
+    function saveFeedLocal(list) {
+        try {
+            if (!me().id) return;
+            const ids = list.filter(p => !p._boostId).slice(0, 15).map(p => p.id);
+            if (!ids.length) return;
+            const posts = {}, preds = {}, rope = {}, prof = {};
+            ids.forEach(id => {
+                posts[id] = postCache[id];
+                if (predCache[id]) preds[id] = predCache[id];
+                if (ropeCache[id]) rope[id] = ropeCache[id];
+                const u = String(postCache[id].user_id);
+                if (profMap[u]) prof[u] = profMap[u];
+            });
+            const html = ids.map(id => postHtml(postCache[id])).join('');
+            const str = JSON.stringify({ t: Date.now(), html, posts, preds, rope, prof });
+            if (str.length < 600000) localStorage.setItem(feedKey(), str);
+            else localStorage.removeItem(feedKey());
+        } catch (e) {}
+    }
+    function restoreFeedLocal() {
+        if (feedHtmlCache) return;
+        try {
+            if (!me().id) return;
+            const raw = localStorage.getItem(feedKey());
+            if (!raw) return;
+            const d = JSON.parse(raw);
+            if (!d || !d.html || Date.now() - d.t > 3 * 86400000) return;
+            Object.assign(postCache, d.posts || {});
+            Object.assign(predCache, d.preds || {});
+            Object.assign(ropeCache, d.rope || {});
+            Object.assign(profMap, d.prof || {});
+            feedHtmlCache = d.html;
+        } catch (e) {}
+    }
 
     // اختيار صورة من الهاتف للمنشور الجديد
     // الصور في المنشورات للمشتركين فقط (والخادم يتحقق أيضاً)
@@ -2798,6 +2836,7 @@
         pendingImage = '';
         const u = me();
 
+        restoreFeedLocal();
         // نعرض آخر منشورات رأيناها فوراً ثم نحدّثها بصمت، بدل شاشة "جاري التحميل"
         container.innerHTML = `
             <div id="feed-list">${feedHtmlCache || `<div class="loading-box">${isAr() ? 'جاري تحميل المنشورات...' : 'Loading posts...'}</div>`}</div>
