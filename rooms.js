@@ -343,6 +343,8 @@
         .sg-body { color:#fff; font-size:.9rem; line-height:1.5; font-weight:700; word-break:break-word; }
         .sg-meta { display:flex; align-items:center; gap:8px; margin-top:8px; color:#94a3b8; font-size:.74rem; font-weight:700; }
         .sg-meta > span:first-child { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .sg-meta select { background:rgba(255,255,255,.08); color:#f5c35a; border:1px solid rgba(245,195,90,.35); border-radius:10px; padding:4px 6px; font-size:.74rem; font-family:inherit; max-width:84px; outline:none; }
+        .sg-meta select option { background:#1a1a20; color:#f8fafc; }
         .sg-st { padding:2px 8px; border-radius:20px; background:rgba(245,195,90,.15); color:#f5c35a; font-size:.7rem; }
         .sg-st.done { background:rgba(34,197,94,.18); color:#4ade80; }
         .sg-st.rejected { background:rgba(255,93,93,.15); color:#ff8a8a; }

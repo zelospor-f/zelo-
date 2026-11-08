@@ -283,11 +283,20 @@
             }
             return false;
         };
+        let lastHide = 0;
         const apply = async () => {
             if (!bannerShown) return;
             const need = drawerOpen || !!document.querySelector(sel) || coversBottom();
-            if (need === bannerHidden) return;
+            if (need === bannerHidden) {
+                // نعيد طلب الإخفاء كل بضع ثوانٍ: قد يعود الإعلان للظهور عند تحديثه تلقائياً
+                if (need && Date.now() - lastHide > 2500) {
+                    lastHide = Date.now();
+                    try { await AdMob.hideBanner(); } catch (e) {}
+                }
+                return;
+            }
             bannerHidden = need;
+            lastHide = Date.now();
             try {
                 { const sl = document.getElementById('bottom-ad-slot'); if (sl) sl.style.visibility = need ? 'hidden' : 'visible'; } // نُبقي المساحة كي لا تقفز الصفحة
                 if (need) await AdMob.hideBanner();
