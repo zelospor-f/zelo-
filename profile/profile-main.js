@@ -738,5 +738,41 @@
             }).catch(() => {});
         }
     };
+    
+    // ===== تذكّر آخر أرقام الملف الشخصي وعرضها فورًا (بدل "–" ثم تغيّر الأرقام) =====
+    const _statKey = () => 'zelo_pstat_' + String(S.viewUid || (US() && US().userId) || '');
+    const _statGet = () => { try { return JSON.parse(localStorage.getItem(_statKey()) || 'null'); } catch (e) { return null; } };
+    const _statSet = patch => { try { localStorage.setItem(_statKey(), JSON.stringify(Object.assign(_statGet() || {}, patch))); } catch (e) {} };
+    let _firstDraw = false;
+    const _render0 = window.renderProfilePage;
+    window.renderProfilePage = function () { _firstDraw = true; return _render0.apply(this, arguments); };
+    const _draw1 = P.drawProfile;
+    P.drawProfile = function (target) {
+        const own = S.mode === 'view' && !S.viewUid;
+        const st = _statGet();
+        if (_firstDraw && own && st && S.draft) {
+            if (st.followers != null) S.draft.followers = st.followers;
+            if (st.following != null) S.draft.following = st.following;
+        }
+        _firstDraw = false;
+        _draw1(target);
+        if (S.mode !== 'view') return;
+        const g = document.getElementById('stat-gifts'), a = document.getElementById('pp-goals');
+        if (st && g && g.textContent.trim() === '–' && st.gifts != null) g.textContent = Number(st.gifts).toLocaleString('en-US');
+        if (st && a && a.textContent.trim() === '–' && st.goals != null) a.textContent = Number(st.goals).toLocaleString('en-US');
+        const key = _statKey();
+        [['stat-gifts', 'gifts'], ['pp-goals', 'goals']].forEach(([id, k]) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            new MutationObserver(() => {
+                const v = Number(String(el.textContent).replace(/,/g, ''));
+                if (isFinite(v) && el.textContent.trim() !== '–') { try { const o = JSON.parse(localStorage.getItem(key) || '{}'); o[k] = v; localStorage.setItem(key, JSON.stringify(o)); } catch (e) {} }
+            }).observe(el, { childList: true, characterData: true, subtree: true });
+        });
+        if (own && S.draft && S.draft.followers != null) {
+            try { const o = JSON.parse(localStorage.getItem(key) || '{}'); o.followers = S.draft.followers; o.following = S.draft.following; localStorage.setItem(key, JSON.stringify(o)); } catch (e) {}
+        }
+    };
+                    
 })();
 
