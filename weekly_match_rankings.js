@@ -88,40 +88,35 @@ window.renderHomeRankingWidget = async function(containerId) {
 
             if (!topError) rankings = topData || [];
 
+            // الصورة من الملف الشخصي الحالي (الجدول يحفظ نسخة قديمة)، بالتوازي مع باقي الطلبات
+            const photoJob = (async () => {
+                try {
+                    const ids = [...new Set(rankings.map(r => String(r.user_id)))];
+                    if (!ids.length) return;
+                    const { data: pp } = await supabaseClient.from('public_profiles').select('user_id,photo_url').in('user_id', ids);
+                    const m = {};
+                    (pp || []).forEach(x => { if (x.photo_url) m[String(x.user_id)] = x.photo_url; });
+                    rankings = rankings.map(r => ({ ...r, photo_url: m[String(r.user_id)] || r.photo_url }));
+                } catch (e) {}
+            })();
+
             if (currentUserId) {
-                const { data: balRes } = await supabaseClient
-                    .from('users')
-                    .select('points')
-                    .eq('user_id', String(currentUserId))
-                    .maybeSingle();
+                const uid = String(currentUserId);
+                const balJob = supabaseClient.from('users').select('points').eq('user_id', uid).maybeSingle();
+                const rankJob = supabaseClient.rpc('get_user_rank', { p_user_id: currentUserId, p_category: 'weekly' }).then(r => r, () => ({}));
+                const mineJob = supabaseClient.from('weekly_match_rankings').select('points_earned').eq('user_id', currentUserId).eq('category', 'weekly').maybeSingle();
+                const predJob = supabaseClient.from('match_predictions').select('*').eq('user_id', currentUserId).order('created_at', { ascending: false });
+                const [balRes2, rankRes2, mineRes2, predRes2] = await Promise.all([balJob, rankJob, mineJob, predJob]);
+                const balRes = balRes2 && balRes2.data;
                 if (balRes) {
                     myBalance = Number(balRes.points) || 0;
                     if (typeof userState !== 'undefined') userState.points = myBalance;
                 }
-
-                try {
-                    const { data: rankRes } = await supabaseClient.rpc('get_user_rank', {
-                        p_user_id: currentUserId,
-                        p_category: 'weekly'
-                    });
-                    myRank = rankRes;
-                } catch (e) {}
-
-                const { data: mineRes } = await supabaseClient
-                    .from('weekly_match_rankings')
-                    .select('points_earned')
-                    .eq('user_id', currentUserId)
-                    .eq('category', 'weekly')
-                    .maybeSingle();
-                myData = mineRes;
-
-                const { data: predData } = await supabaseClient
-                    .from('match_predictions')
-                    .select('*')
-                    .eq('user_id', currentUserId)
-                    .order('created_at', { ascending: false });
-                predictions = predData || [];
+                myRank = rankRes2 && rankRes2.data;
+                myData = mineRes2 && mineRes2.data;
+                predictions = (predRes2 && predRes2.data) || [];
             }
+            await photoJob;
         }
 
         let matches = [];
