@@ -352,17 +352,31 @@
         ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
         $('zsup-list-x').onclick = () => ov.remove();
 
+        // آخر قائمة محفوظة تظهر فورًا ثم تتحدث بصمت
+        const cacheKey = 'zelo_sup_v1_' + String(postId) + '_' + (isAr() ? 'ar' : 'en');
+        let shownCached = false;
+        try {
+            const raw = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+            const b0 = $('zsup-list-body');
+            if (raw && raw.html && b0 && Date.now() - raw.t < 3 * 86400000) {
+                b0.style.cssText = 'padding:0;text-align:start;';
+                b0.innerHTML = raw.html;
+                shownCached = true;
+            }
+        } catch (e) {}
+
         const c = db();
         if (!c) return;
         const { data, error } = await c.rpc('support_supporters', { p_post_id: Number(postId), p_limit: CONFIG.SUPPORTERS_LIMIT });
         const body = $('zsup-list-body');
         if (!body) return;
-        if (error) { body.textContent = L('تعذّر التحميل', 'Could not load'); return; }
+        if (error) { if (!shownCached) body.textContent = L('تعذّر التحميل', 'Could not load'); return; }
         if (!data || !data.length) {
             body.innerHTML = `
                 <div style="font-size:2.2rem;margin-bottom:8px;">💎</div>
                 <div style="font-weight:800;color:${THEME.text};margin-bottom:4px;">${L('لا يوجد داعمون بعد', 'No supporters yet')}</div>
                 <div style="font-size:.84rem;">${L('كن أول من يدعم هذا المنشور', 'Be the first to support this post')}</div>`;
+            try { localStorage.removeItem(cacheKey); } catch (e) {}
             return;
         }
 
@@ -393,6 +407,7 @@
                 <div style="display:inline-flex;align-items:center;gap:5px;color:${THEME.gold};font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums;">${fmt(s.total_amount)} ${coin('1em')}</div>
             </div>`;
         }).join('');
+        try { localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), html: body.innerHTML })); } catch (e) {}
     };
 
     // ===================== شريط الدعم داخل كل بطاقة منشور =====================
