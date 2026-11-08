@@ -30,6 +30,7 @@
     let box = null;
     const MAP = {};
     let tab = 'up';
+    const SCORER_CODES = ['PL', 'PD', 'SA', 'BL1', 'FL1', 'PPL', 'DED', 'ELC', 'BSA', 'CL'];
     let HUB_CACHE = '';
     const LG_CACHE = {};
 
@@ -147,9 +148,13 @@
         const c = db();
         const ckey = code + '|' + tab;
         box.innerHTML = LG_CACHE[ckey] || `<div class="lg-empty">⏳ ${T('جارٍ التحميل...', 'Loading...')}</div>`;
-        let ms = [], preds = {}, tbl = [];
+        let ms = [], preds = {}, tbl = [], sc = [];
         if (c) {
             try {
+                if (tab === 'sc') {
+                    const t = await c.from('scorers').select('*').eq('competition_code', code).order('rank', { ascending: true });
+                    sc = t.data || [];
+                }
                 if (tab === 'tbl') {
                     const t = await c.from('standings').select('*').eq('competition_code', code).order('position', { ascending: true });
                     tbl = t.data || [];
@@ -215,6 +220,13 @@
             return `<div class="lg-m">${live ? `<div class="lg-live">● ${T('مباشر', 'LIVE')}</div>` : ''}
                 <div class="lg-mr"><div class="lg-t">${esc(m.team_a)}</div>${mid}<div class="lg-t">${esc(m.team_b)}</div></div>${pr}${act}</div>`;
         };
+        const scorersHtml = rows => {
+            if (!rows.length) return `<div class="lg-empty">${T('الهدّافون غير متوفرين بعد', 'Top scorers not available yet')}</div>`;
+            const tr = r => `<tr><td class="ps">${r.rank}</td>
+                <td class="tm">${r.team_crest ? `<img src="${esc(r.team_crest)}" alt="" loading="lazy" style="width:20px;height:20px;object-fit:contain;flex:none" onerror="this.style.visibility='hidden'">` : ''}<span>${esc(r.player_name)}<small style="display:block;color:#8d99cf;font-weight:700;font-size:.68rem">${esc(r.team_name || '')}</small></span></td>
+                <td class="pt">${r.goals}</td></tr>`;
+            return `<div class="lg-m" style="padding:6px 8px"><table class="lg-tb"><thead><tr><th>#</th><th style="text-align:start">${T('اللاعب', 'Player')}</th><th>${T('أهداف', 'Goals')}</th></tr></thead><tbody>${rows.map(tr).join('')}</tbody></table></div>`;
+        };
         const tableHtml = (rows, topN) => {
             if (!rows.length) return `<div class="lg-empty">${T('الترتيب غير متوفر بعد', 'Table not available yet')}</div>`;
             const tr = r => `<tr class="${r.position <= topN ? 'top' : ''}"><td class="ps">${r.position}</td>
@@ -239,8 +251,9 @@
                 <button class="lg-tab ${tab === 'up' ? 'on' : ''}" onclick="window.openLeague('${esc(code)}','up')">${T('قادمة', 'Upcoming')} (${up.length})</button>
                 <button class="lg-tab ${tab === 'fin' ? 'on' : ''}" onclick="window.openLeague('${esc(code)}','fin')">${T('انتهت', 'Finished')} (${fin.length})</button>
                 <button class="lg-tab ${tab === 'tbl' ? 'on' : ''}" onclick="window.openLeague('${esc(code)}','tbl')">${T('الترتيب', 'Table')}</button>
+                ${SCORER_CODES.includes(code) ? `<button class="lg-tab ${tab === 'sc' ? 'on' : ''}" onclick="window.openLeague('${esc(code)}','sc')">${T('الهدّافون', 'Scorers')}</button>` : ''}
             </div>
-            ${tab === 'up' ? grouped(up) : tab === 'fin' ? grouped(fin) : tableHtml(tbl, code === 'CL' ? 8 : 4)}`;
+            ${tab === 'up' ? grouped(up) : tab === 'fin' ? grouped(fin) : tab === 'sc' ? scorersHtml(sc) : tableHtml(tbl, code === 'CL' ? 8 : 4)}`;
         LG_CACHE[ckey] = box.innerHTML;
         box.scrollTop = 0;
         window.scrollTo(0, 0);
