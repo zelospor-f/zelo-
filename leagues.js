@@ -215,9 +215,9 @@
             return `<div class="lg-m">${live ? `<div class="lg-live">● ${T('مباشر', 'LIVE')}</div>` : ''}
                 <div class="lg-mr"><div class="lg-t">${esc(m.team_a)}</div>${mid}<div class="lg-t">${esc(m.team_b)}</div></div>${pr}${act}</div>`;
         };
-        const tableHtml = rows => {
+        const tableHtml = (rows, topN) => {
             if (!rows.length) return `<div class="lg-empty">${T('الترتيب غير متوفر بعد', 'Table not available yet')}</div>`;
-            const tr = r => `<tr class="${r.position <= 4 ? 'top' : ''}"><td class="ps">${r.position}</td>
+            const tr = r => `<tr class="${r.position <= topN ? 'top' : ''}"><td class="ps">${r.position}</td>
                 <td class="tm">${r.crest ? `<img src="${esc(r.crest)}" alt="" loading="lazy" style="width:20px;height:20px;object-fit:contain;flex:none" onerror="this.style.visibility='hidden'">` : ''}<span>${esc(r.team_name)}</span></td>
                 <td>${r.played}</td><td style="direction:ltr">${r.gd > 0 ? '+' + r.gd : r.gd}</td><td class="pt">${r.points}</td></tr>`;
             return `<div class="lg-m" style="padding:6px 8px"><table class="lg-tb"><thead><tr><th>#</th><th style="text-align:start">${T('الفريق', 'Team')}</th><th>${T('لعب', 'P')}</th><th>${T('فرق', 'GD')}</th><th>${T('نقاط', 'Pts')}</th></tr></thead><tbody>${rows.map(tr).join('')}</tbody></table></div>`;
@@ -240,7 +240,7 @@
                 <button class="lg-tab ${tab === 'fin' ? 'on' : ''}" onclick="window.openLeague('${esc(code)}','fin')">${T('انتهت', 'Finished')} (${fin.length})</button>
                 <button class="lg-tab ${tab === 'tbl' ? 'on' : ''}" onclick="window.openLeague('${esc(code)}','tbl')">${T('الترتيب', 'Table')}</button>
             </div>
-            ${tab === 'up' ? grouped(up) : tab === 'fin' ? grouped(fin) : tableHtml(tbl)}`;
+            ${tab === 'up' ? grouped(up) : tab === 'fin' ? grouped(fin) : tableHtml(tbl, code === 'CL' ? 8 : 4)}`;
         LG_CACHE[ckey] = box.innerHTML;
         box.scrollTop = 0;
         window.scrollTo(0, 0);
