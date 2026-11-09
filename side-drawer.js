@@ -269,6 +269,7 @@
         champions: svg('<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H4v1a4 4 0 0 0 4 4M16 6h4v1a4 4 0 0 1-4 4"/><path d="M12 13v4M8 21h8M10 17h4"/>'),
         website:   svg('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>'),
         rooms:     svg('<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/>'),
+        radar: svg('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.8"/><circle cx="12" cy="12" r="1.4"/><path d="M12 12l5.5-5.5"/>'),
         community: svg('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5"/><path d="M16 5a3.5 3.5 0 0 1 0 7M18 15c2 .8 3.5 2.4 3.5 5"/>'),
         settings:  svg('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M19.1 4.9 17 7M7 17l-2.1 2.1"/>'),
         invite:    svg('<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 10.6 15.4 6.4M8.6 13.4l6.8 4.2"/>'),
@@ -407,6 +408,8 @@
         // ترتيب الأندية (انتقل من الشريط السفلي إلى هنا)
         leaderboard: () => showPage('leaderboard'),
         community:  () => showPage('community'),
+        // الرادار (انتقل من الشريط السفلي إلى هنا)
+        radar:       () => (typeof window.openFanRadar === 'function' ? window.openFanRadar() : toast(L('ملف الرادار غير محمّل', 'Radar file not loaded'))),
         // محفظتي: رصيد الألماس وسحب USDT (ملف wallet-withdraw.js)
         wallet:      () => {
             const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
@@ -468,6 +471,7 @@
                         { key: 'champions', ar: 'أبطال اليوم', en: "Today's Champions", highlight: true },
                         { key: 'ads',       ar: 'اربح كورة',   en: 'Earn Kora', highlight: true },
                         { key: 'nft',       ar: 'سوق NFT',     en: 'NFT Market' },
+                        { key: 'radar',     ar: 'الرادار',     en: 'Radar' },
                         { key: 'community', ar: 'المجتمعات',   en: 'Community' }
                     ]
                 },
