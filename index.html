@@ -326,9 +326,13 @@
             font-size: 0.62rem; font-weight: 900; line-height: 14px; text-align: center;
         }
 
-        /* النشط: أبيض ومملوء */
-        .nav-item.active { color: #fff; }
-        .nav-item.active .icon-wrapper svg { stroke-width: 2.2; }
+        /* النشط: ذهبي ومملوء مع توهج وخط صغير فوق الأيقونة */
+        .nav-item.active { color: #f5c35a; position: relative; }
+        .nav-item.active::after {
+            content: ""; position: absolute; top: 0; left: 30%; right: 30%;
+            height: 3px; border-radius: 3px; background: #f5c35a;
+        }
+        .nav-item.active .icon-wrapper svg { stroke-width: 2.1; filter: drop-shadow(0 0 5px rgba(245, 195, 90, 0.45)); }
         .nav-item.active .icon-wrapper svg .f { fill: currentColor; }
         .nav-item.active .icon-wrapper svg .d { stroke: #0a1033; }
         .nav-item.active .icon-wrapper svg .dp { fill: #0a1033; stroke: #0a1033; }
@@ -395,8 +399,8 @@
             <span class="nav-text" data-i18n="navMatches">المباريات</span>
         </button>
         <button class="nav-item" id="nav-points" aria-label="My Points" onclick="showPage('points')">
-            <span class="icon icon-wrapper"><svg viewBox="0 0 24 24"><circle class="f" cx="12" cy="12" r="9"/><path class="dp" d="M12 8.2l3.2 2.3-1.2 3.7h-4l-1.2-3.7z"/><path class="d" d="M12 8.2V3.2M15.2 10.5l4.6-1.5M14 14.2l2.8 3.9M10 14.2l-2.8 3.9M8.8 10.5 4.2 9"/></svg></span>
-            <span class="nav-text" >نقاطي</span>
+            <span class="icon icon-wrapper"><svg viewBox="0 0 24 24"><path class="f" d="M7 4h10l4.5 5.2L12 20.5 2.5 9.2z"/><path class="d" d="M2.5 9.2h19M7 4l2.6 5.2L12 20.5M17 4l-2.6 5.2L12 20.5M9.6 9.2L12 4l2.4 5.2"/></svg></span>
+            <span class="nav-text">نقاطي</span>
         </button>
         <button class="nav-item" id="nav-messages" aria-label="Messages" onclick="showPage('messages')">
             <span class="icon icon-wrapper"><svg viewBox="0 0 24 24"><rect class="f" x="3" y="5" width="18" height="14" rx="2.5"/><path class="d" d="m3.8 7.2 8.2 6.3 8.2-6.3"/></svg></span>
@@ -573,7 +577,6 @@
                 'nft-market.js',
                 'leaderboard.js',
                 'radar.js',
-                'points.js',
                 'premium.js',
                 'rooms.js',
                 'messages.js',
