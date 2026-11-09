@@ -468,8 +468,6 @@
                 {
                     title: { ar: 'اكتشف', en: 'DISCOVER' },
                     items: [
-                        { key: 'champions', ar: 'أبطال اليوم', en: "Today's Champions", highlight: true },
-                        { key: 'ads',       ar: 'اربح كورة',   en: 'Earn Kora', highlight: true },
                         { key: 'nft',       ar: 'سوق NFT',     en: 'NFT Market' },
                         { key: 'radar',     ar: 'الرادار',     en: 'Radar' },
                         { key: 'community', ar: 'المجتمعات',   en: 'Community' }
