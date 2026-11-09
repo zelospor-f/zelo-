@@ -29,6 +29,7 @@ window.openChallengesRanking = function() {
             <h2 style="margin:0;flex:1;color:#f5c35a;font-weight:900;">🏆 ${isAr ? 'ترتيب التحديات' : 'Challenges Ranking'}</h2>
         </div>
         <style>#sub-ranking-container .legendary-stats-grid{display:none !important}</style>
+        <div style="flex-shrink:0;height:max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
         <div id="sub-ranking-container" style="flex:1;overflow-y:auto;padding-bottom:16px;"><div id="rank-loading" style="text-align:center;color:#8fa0b8;padding:40px;">${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}</div></div>`;
     document.body.appendChild(sub);
     window.renderHomeRankingWidget('sub-ranking-container');

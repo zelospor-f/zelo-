@@ -460,7 +460,6 @@
                     title: { ar: 'حسابي', en: 'MY ACCOUNT' },
                     items: [
                         { key: 'rooms',         ar: 'الغرف',        en: 'Rooms', highlight: true },
-                        { key: 'wallet',        ar: 'محفظتي',       en: 'My Wallet', highlight: true, framed: true },
                         { key: 'subscriptions', ar: 'الاشتراكات',   en: 'Subscriptions', highlight: true },
                         { key: 'store',         ar: 'المتجر',       en: 'Store', highlight: true }
                     ]
@@ -528,10 +527,6 @@
                 <div class="zdrawer-avatar-ring"><div class="zdrawer-avatar">${avatarHtml(name)}</div></div>
                 <div class="zdrawer-name">${esc(name)}</div>
                 <div class="zdrawer-handle">@${esc(handle)}</div>
-                <div class="zdrawer-stats">
-                    <span class="zdrawer-bal">🪙 ${Number(window.userState?.points || 0).toLocaleString('en-US')} ${esc(L('كورة', 'Kora'))}</span>
-                    ${/\d/.test((document.getElementById('rank-num') || {}).textContent || '') ? `<span class="zdrawer-rank">🏆 ${esc(L('الترتيب', 'Rank'))} ${esc((document.getElementById('rank-num') || {}).textContent)}</span>` : ''}
-                </div>
             </div>
 
             <div class="zdrawer-search">
