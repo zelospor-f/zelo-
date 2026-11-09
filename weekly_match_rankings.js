@@ -22,12 +22,13 @@ window.openChallengesRanking = function() {
     const navH = (navEl && navEl.getBoundingClientRect().height > 0) ? Math.max(0, Math.round(window.innerHeight - navEl.getBoundingClientRect().top)) : 0;
     const sub = document.createElement('div');
     sub.id = 'ranking-sub-screen';
-    sub.style.cssText = `position:fixed !important;top:0;left:0;right:0;bottom:${navH}px !important;z-index:100000;background:#021325;color:#fff;display:flex;flex-direction:column;padding:20px 20px 0;box-sizing:border-box;direction:${isAr ? 'rtl' : 'ltr'};text-align:${isAr ? 'right' : 'left'};`;
+    sub.style.cssText = `position:fixed !important;top:0;left:0;right:0;bottom:${navH}px !important;z-index:100000;background:var(--bg-dark, #0a1033);color:#fff;display:flex;flex-direction:column;padding:20px 20px 0;box-sizing:border-box;direction:${isAr ? 'rtl' : 'ltr'};text-align:${isAr ? 'right' : 'left'};`;
     sub.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0;">
             ${window.zeloBackBtn("document.getElementById('ranking-sub-screen').remove()", isAr)}
-            <h2 style="margin:0;flex:1;color:#f0bb4a;font-weight:900;">🏆 ${isAr ? 'ترتيب التحديات' : 'Challenges Ranking'}</h2>
+            <h2 style="margin:0;flex:1;color:#f5c35a;font-weight:900;">🏆 ${isAr ? 'ترتيب التحديات' : 'Challenges Ranking'}</h2>
         </div>
+        <style>#sub-ranking-container .legendary-stats-grid{display:none !important}</style>
         <div id="sub-ranking-container" style="flex:1;overflow-y:auto;padding-bottom:16px;"><div id="rank-loading" style="text-align:center;color:#8fa0b8;padding:40px;">${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}</div></div>`;
     document.body.appendChild(sub);
     window.renderHomeRankingWidget('sub-ranking-container');
@@ -50,14 +51,14 @@ window.openLegendaryRankingScreen = function() {
     screen.style.cssText = `
         position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
         bottom: ${navH}px !important; width: 100vw !important; height: auto !important;
-        background: #021325 !important; z-index: 99999 !important;
+        background: var(--bg-dark, #0a1033) !important; z-index: 99999 !important;
         padding: 0; box-sizing: border-box; display: flex; flex-direction: column;
         overflow: hidden; color: white;
         direction: ${isAr ? 'rtl' : 'ltr'}; text-align: ${isAr ? 'right' : 'left'};
     `;
 
     screen.innerHTML = `
-        <div style="flex-shrink:0;padding:16px 20px 12px;text-align:center;border-bottom:1px solid #12233c;">
+        <div style="flex-shrink:0;padding:16px 20px 12px;text-align:center;border-bottom:1px solid rgba(245,195,90,.15);">
             <h2 style="margin:0;color:#fff;font-weight:900;font-size:1.5rem;">${isAr ? 'نقاطي' : 'My Points'}</h2>
         </div>
         <div style="flex-shrink: 0; height: max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
@@ -98,7 +99,7 @@ window.openLegendaryRankingScreen = function() {
     setTimeout(() => {
         const box = document.getElementById('full-ranking-container');
         if (box && document.getElementById('rank-loading')) {
-            box.innerHTML = `<div style="text-align:center; color:#ff9d9d; padding:30px 16px; font-size:1rem;">${isAr ? 'تأخّر التحميل. تأكد من الإنترنت ثم أعد المحاولة.' : 'Loading took too long. Check your connection and retry.'}<br><button onclick="window.openLegendaryRankingScreen()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:12px;background:#e5b64e;color:#0a1033;font-weight:bold;font-size:1rem;">${isAr ? 'إعادة المحاولة' : 'Retry'}</button></div>`;
+            box.innerHTML = `<div style="text-align:center; color:#ff9d9d; padding:30px 16px; font-size:1rem;">${isAr ? 'تأخّر التحميل. تأكد من الإنترنت ثم أعد المحاولة.' : 'Loading took too long. Check your connection and retry.'}<br><button onclick="window.openLegendaryRankingScreen()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:12px;background:#f5c35a;color:#0a1033;font-weight:bold;font-size:1rem;">${isAr ? 'إعادة المحاولة' : 'Retry'}</button></div>`;
         }
     }, 10000);
     return done;
@@ -142,12 +143,12 @@ window.renderPointsScreen = async function(containerId) {
         const names = isAr ? ['برونزية', 'فضية', 'ذهبية', 'بلاتينية', 'الماسة'] : ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
         const tierName = level >= 10 ? names[4] : level >= 7 ? names[3] : level >= 5 ? names[2] : level >= 3 ? names[1] : names[0];
 
-        const G = '#e5b64e', G2 = '#f0bb4a', GREY = '#8fa0b8';
-        const card = 'background:linear-gradient(160deg,#0f2441,#061c34);border:1px solid #1b3150;border-radius:18px;';
+        const G = '#f5c35a', G2 = '#f5c35a', GREY = 'rgba(255,255,255,0.62)';
+        const card = 'background:linear-gradient(160deg,rgba(26,38,104,.85),rgba(17,26,74,.85));border:1px solid rgba(245,195,90,.22);border-radius:18px;';
         const chev = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${G}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${isAr ? '' : 'transform:scaleX(-1);'}"><path d="M15 5l-7 7 7 7"/></svg>`;
         const ico = (p) => `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="${G}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${p}</svg>`;
         const ball = `<svg width="38" height="38" viewBox="0 0 24 24" fill="#0a1033" stroke="${G}" stroke-width="1.6" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5" fill="${G}" stroke="none"/><path d="M12 7.5l3.6 2.6-1.4 4.2H9.8L8.4 10.1z" fill="#0a1033" stroke="none"/><path d="M12 7.5V3M15.6 10.1l4.2-1.4M14.2 14.3l2.6 3.6M9.8 14.3l-2.6 3.6M8.4 10.1L4.2 8.7" stroke="#0a1033"/></svg>`;
-        const diamond = `<svg width="92" height="92" viewBox="0 0 100 100"><defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8f1ff"/><stop offset=".5" stop-color="#8aa6d6"/><stop offset="1" stop-color="#3b5a99"/></linearGradient></defs>
+        const diamond = `<svg width="78" height="78" viewBox="0 0 100 100" style="flex-shrink:0;"><defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8f1ff"/><stop offset=".5" stop-color="#8aa6d6"/><stop offset="1" stop-color="#3b5a99"/></linearGradient></defs>
             <path d="M20 78C8 66 6 44 16 28" fill="none" stroke="${G}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/><path d="M80 78C92 66 94 44 84 28" fill="none" stroke="${G}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/>
             <path d="M18 80C9 68 8 46 17 31M82 80C91 68 92 46 83 31" fill="none" stroke="${G}" stroke-width="2.4" stroke-linecap="round"/>
             <path d="M32 34h36l14 16-32 30L18 50z" fill="url(#dg)" stroke="${G}" stroke-width="2.4" stroke-linejoin="round"/><path d="M18 50h64M32 34l10 16 8 30M68 34L58 50l-8 30M42 50l8-16 8 16" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
@@ -162,7 +163,7 @@ window.renderPointsScreen = async function(containerId) {
         const waI = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${GREY}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/></svg>`;
 
         const row = (icon, title, sub, onclick, last) => `
-            <div onclick="${onclick}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;${last ? '' : 'border-bottom:1px solid #1b3150;'}">
+            <div onclick="${onclick}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;${last ? '' : 'border-bottom:1px solid rgba(245,195,90,.14);'}">
                 ${icon}
                 <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:1rem;color:#fff;">${title}</div><div style="font-size:.78rem;color:${GREY};margin-top:2px;">${sub}</div></div>
                 ${chev}
@@ -173,7 +174,7 @@ window.renderPointsScreen = async function(containerId) {
                 <div style="font-size:2.6rem;line-height:1.1;height:50px;">${emoji}</div>
                 <div style="font-weight:800;font-size:.92rem;margin-top:4px;color:#fff;">${title}</div>
                 <div style="font-size:.7rem;color:${GREY};margin:2px 0 8px;min-height:1em;">${sub}</div>
-                <button onclick="${onclick}" style="background:linear-gradient(180deg,#f3c764,#d9a437);color:#0a1033;border:0;border-radius:999px;font-weight:900;font-size:.9rem;padding:6px 0;width:88%;cursor:pointer;font-family:inherit;">${T('افتح', 'Open')}</button>
+                <button onclick="${onclick}" style="background:linear-gradient(135deg,#f5c35a,#ffd98a);color:#0a1033;border:0;border-radius:999px;font-weight:900;font-size:.9rem;padding:6px 0;width:88%;cursor:pointer;font-family:inherit;">${T('افتح', 'Open')}</button>
             </div>`;
 
         const html = `
@@ -185,17 +186,17 @@ window.renderPointsScreen = async function(containerId) {
                     </div>
                     <div style="color:${GREY};font-size:.9rem;font-weight:700;margin-top:2px;">${T('نقاطك الحالية', 'Your current points')}</div>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;flex:1;">
+                <div style="display:flex;align-items:center;gap:4px;flex:0 0 auto;">
                     ${diamond}
-                    <div style="flex:1;text-align:center;min-width:0;">
-                        <span style="display:inline-block;border:1px solid #2a4163;border-radius:999px;padding:1px 12px;font-size:.75rem;color:#cfd8e6;">${T('المستوى', 'Level')}</span>
+                    <div style="text-align:center;min-width:58px;">
+                        <span style="display:inline-block;border:1px solid rgba(245,195,90,.35);border-radius:999px;padding:1px 8px;font-size:.72rem;color:#cfd8e6;">${T('المستوى', 'Level')}</span>
                         <div style="font-size:2.2rem;font-weight:900;color:${G2};line-height:1.1;">${level}</div>
                         <div style="font-size:.85rem;font-weight:800;color:${G};">${tierName}</div>
                     </div>
                 </div>
             </div>
             <div style="padding:10px 4px 0;">
-                <div style="height:8px;background:#12233c;border-radius:99px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#e5b64e,#f5d27a);border-radius:99px;"></div></div>
+                <div style="height:8px;background:rgba(255,255,255,.1);border-radius:99px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#f5c35a,#ffd98a);border-radius:99px;"></div></div>
                 <div style="display:flex;justify-content:space-between;font-size:.75rem;color:${GREY};margin-top:5px;"><span>${T('النقاط التالية', 'Next level')}</span><span style="direction:ltr;">${fmt(into)} / ${fmt(STEP)}</span></div>
             </div>
 
