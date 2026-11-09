@@ -271,6 +271,11 @@ function showPage(pageId) {
         case 'friends':     run('renderFriendsPage'); break;
         case 'leaderboard': run('renderLeaderboardPage'); break;
         case 'wallet':      run('renderWalletPage'); break;
+        // «نقاطي»: نعرض الرئيسية خلفها ثم نفتح شاشة نقاطي (شاشة الترتيب الموجودة)
+        case 'points':
+            run('renderHomePage');
+            if (typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();
+            break;
         case 'notifications': run('renderNotificationsPage'); break;
         case 'messages':
             if (typeof window.renderMessagesPage === 'function') {
