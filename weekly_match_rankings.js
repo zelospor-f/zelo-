@@ -8,59 +8,228 @@ const generateLegendaryAvatar = (name, photoUrl, size = '50px') => {
     return `<div style="width:${size}; height:${size}; border-radius:50%; background: linear-gradient(135deg, #14206b, #2c4bb5, #f5c35a); color:white; display:flex; align-items:center; justify-content:center; font-size:calc(${size} / 2.2); font-weight:bold; margin: 0 auto; border:2px solid var(--accent-gold, #f5c35a); box-shadow: 0 4px 15px rgba(0,0,0,0.4);">${initial}</div>`;
 };
 
+/* ===== شاشة «نقاطي» ===== */
+window.zeloPtsGo = function(fn) {
+    const s = document.getElementById('ranking-full-screen'); if (s) s.remove();
+    const sub = document.getElementById('ranking-sub-screen'); if (sub) sub.remove();
+    try { fn && fn(); } catch (e) { console.error('[ZELO] pts-go', e); }
+};
+
+window.openChallengesRanking = function() {
+    const old = document.getElementById('ranking-sub-screen'); if (old) old.remove();
+    const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
+    const navEl = document.getElementById('bottom-nav');
+    const navH = (navEl && navEl.getBoundingClientRect().height > 0) ? Math.max(0, Math.round(window.innerHeight - navEl.getBoundingClientRect().top)) : 0;
+    const sub = document.createElement('div');
+    sub.id = 'ranking-sub-screen';
+    sub.style.cssText = `position:fixed !important;top:0;left:0;right:0;bottom:${navH}px !important;z-index:100000;background:#021325;color:#fff;display:flex;flex-direction:column;padding:20px 20px 0;box-sizing:border-box;direction:${isAr ? 'rtl' : 'ltr'};text-align:${isAr ? 'right' : 'left'};`;
+    sub.innerHTML = `
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0;">
+            ${window.zeloBackBtn("document.getElementById('ranking-sub-screen').remove()", isAr)}
+            <h2 style="margin:0;flex:1;color:#f0bb4a;font-weight:900;">🏆 ${isAr ? 'ترتيب التحديات' : 'Challenges Ranking'}</h2>
+        </div>
+        <div id="sub-ranking-container" style="flex:1;overflow-y:auto;padding-bottom:16px;"><div id="rank-loading" style="text-align:center;color:#8fa0b8;padding:40px;">${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}</div></div>`;
+    document.body.appendChild(sub);
+    window.renderHomeRankingWidget('sub-ranking-container');
+};
+
 window.openLegendaryRankingScreen = function() {
     const existingScreen = document.getElementById('ranking-full-screen');
     if (existingScreen) existingScreen.remove();
 
     const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
-    const title = isAr ? 'ترتيب التحديات' : 'Challenges Ranking';
 
     const screen = document.createElement('div');
     screen.id = 'ranking-full-screen';
-    
+
+    // نترك مكان الشريط السفلي ظاهرًا (أزرار الصفحات)
+    const navEl = document.getElementById('bottom-nav');
+    const navShown = !!(navEl && getComputedStyle(navEl).display !== 'none' && navEl.getBoundingClientRect().height > 0);
+    const navH = navShown ? Math.max(0, Math.round(window.innerHeight - navEl.getBoundingClientRect().top)) : 0;
+
     screen.style.cssText = `
-        position: fixed !important; 
-        top: 0 !important; 
-        left: 0 !important; 
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100vw !important; 
-        height: 100vh !important; 
-        background: var(--bg-dark, #0a1033) !important; 
-        z-index: 99999 !important; 
-        padding: 20px 20px 0 20px; 
-        box-sizing: border-box; 
-        display: flex;
-        flex-direction: column;
-        overflow: hidden; 
-        color: white;
-        direction: ${isAr ? 'rtl' : 'ltr'}; 
-        text-align: ${isAr ? 'right' : 'left'};
+        position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+        bottom: ${navH}px !important; width: 100vw !important; height: auto !important;
+        background: #021325 !important; z-index: 99999 !important;
+        padding: 0; box-sizing: border-box; display: flex; flex-direction: column;
+        overflow: hidden; color: white;
+        direction: ${isAr ? 'rtl' : 'ltr'}; text-align: ${isAr ? 'right' : 'left'};
     `;
 
     screen.innerHTML = `
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom: 15px; flex-shrink: 0;">
-            ${window.zeloBackBtn("document.getElementById('ranking-full-screen').remove()", isAr)}
-            <h2 style="margin:0; flex:1; color:var(--accent-gold, #f5c35a); font-weight: 900; letter-spacing: 0.5px;">🏆 ${title}</h2>
+        <div style="flex-shrink:0;padding:16px 20px 12px;text-align:center;border-bottom:1px solid #12233c;">
+            <h2 style="margin:0;color:#fff;font-weight:900;font-size:1.5rem;">${isAr ? 'نقاطي' : 'My Points'}</h2>
         </div>
         <div style="flex-shrink: 0; height: max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
-        <div id="full-ranking-container" style="flex-grow: 1; display: flex; flex-direction: column; overflow: hidden;">
-            <div id="rank-loading" style="text-align:center; color: #888; padding: 50px; font-size: 1.1rem;">
+        <div id="full-ranking-container" style="flex:1;overflow-y:auto;padding:14px 16px 20px;">
+            <div id="rank-loading" style="text-align:center; color:#8fa0b8; padding: 50px; font-size: 1.1rem;">
                 ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
             </div>
         </div>
     `;
 
     document.body.appendChild(screen);
-    const done = window.renderHomeRankingWidget('full-ranking-container');
+
+    // زر «نقاطي» يصبح مضاءً ما دامت الشاشة مفتوحة، وأي زر آخر في الشريط يغلقها
+    const ptsBtn = document.getElementById('nav-points');
+    if (navEl && ptsBtn) {
+        navEl.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        ptsBtn.classList.add('active');
+        const onNav = (e) => {
+            const b = e.target && e.target.closest && e.target.closest('.nav-item');
+            if (b && b.id !== 'nav-points') { screen.remove(); const s = document.getElementById('ranking-sub-screen'); if (s) s.remove(); }
+        };
+        navEl.addEventListener('click', onNav, true);
+        new MutationObserver((m, ob) => {
+            if (document.body.contains(screen)) return;
+            ob.disconnect();
+            navEl.removeEventListener('click', onNav, true);
+            if (document.getElementById('ranking-full-screen')) return;   // فُتحت نسخة جديدة
+            ptsBtn.classList.remove('active');
+            if (!navEl.querySelector('.nav-item.active')) {
+                const home = Array.from(navEl.querySelectorAll('.nav-item')).find(b => (b.getAttribute('onclick') || '').includes("'home'"));
+                if (home) home.classList.add('active');
+            }
+        }).observe(document.body, { childList: true });
+    }
+
+    const done = window.renderPointsScreen('full-ranking-container');
     // شبكة أمان: إن بقيت الشاشة على "جاري الجلب" أكثر من 10 ثوانٍ نُظهر السبب وزر إعادة المحاولة
     setTimeout(() => {
         const box = document.getElementById('full-ranking-container');
         if (box && document.getElementById('rank-loading')) {
-            box.innerHTML = `<div style="text-align:center; color:#ff9d9d; padding:30px 16px; font-size:1rem;">${isAr ? 'تأخّر التحميل. تأكد من الإنترنت ثم أعد المحاولة.' : 'Loading took too long. Check your connection and retry.'}<br><button onclick="window.openLegendaryRankingScreen()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:12px;background:#2c4bb5;color:#fff;font-weight:bold;font-size:1rem;">${isAr ? 'إعادة المحاولة' : 'Retry'}</button></div>`;
+            box.innerHTML = `<div style="text-align:center; color:#ff9d9d; padding:30px 16px; font-size:1rem;">${isAr ? 'تأخّر التحميل. تأكد من الإنترنت ثم أعد المحاولة.' : 'Loading took too long. Check your connection and retry.'}<br><button onclick="window.openLegendaryRankingScreen()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:12px;background:#e5b64e;color:#0a1033;font-weight:bold;font-size:1rem;">${isAr ? 'إعادة المحاولة' : 'Retry'}</button></div>`;
         }
     }, 10000);
     return done;
+};
+
+window.renderPointsScreen = async function(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const uid = (typeof userState !== 'undefined' && userState?.userId) ? userState.userId : null;
+    const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
+    const T = (a, e) => isAr ? a : e;
+    const fmt = n => Number(n || 0).toLocaleString('en-US');
+    const cacheKey = 'zelo_pts_v1_' + String(uid || '') + '_' + (isAr ? 'ar' : 'en');
+    try {
+        const raw = localStorage.getItem(cacheKey);
+        if (raw) { const d = JSON.parse(raw); if (d && d.html && Date.now() - d.t < 3 * 86400000) container.innerHTML = d.html; }
+    } catch (e) {}
+
+    try {
+        let balance = 0, rank = null, correct = 0, wrong = 0, pending = 0;
+        if (typeof supabaseClient !== 'undefined' && supabaseClient && uid) {
+            const [balRes, rankRes, predRes] = await Promise.all([
+                supabaseClient.from('users').select('points').eq('user_id', String(uid)).maybeSingle(),
+                supabaseClient.rpc('get_user_rank', { p_user_id: uid, p_category: 'weekly' }).then(r => r, () => ({})),
+                supabaseClient.from('match_predictions').select('prediction_status').eq('user_id', uid)
+            ]);
+            if (balRes && balRes.data) { balance = Number(balRes.data.points) || 0; if (typeof userState !== 'undefined') userState.points = balance; }
+            rank = rankRes && rankRes.data;
+            ((predRes && predRes.data) || []).forEach(p => {
+                if (p.prediction_status === 'correct') correct++;
+                else if (p.prediction_status === 'wrong') wrong++;
+                else pending++;
+            });
+        }
+
+        // المستوى (حاليًا من الرصيد: كل 1000 كورة = مستوى)
+        const STEP = 1000;
+        const level = Math.floor(balance / STEP) + 1;
+        const into = balance % STEP;
+        const pct = Math.round(into / STEP * 100);
+        const names = isAr ? ['برونزية', 'فضية', 'ذهبية', 'بلاتينية', 'الماسة'] : ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
+        const tierName = level >= 10 ? names[4] : level >= 7 ? names[3] : level >= 5 ? names[2] : level >= 3 ? names[1] : names[0];
+
+        const G = '#e5b64e', G2 = '#f0bb4a', GREY = '#8fa0b8';
+        const card = 'background:linear-gradient(160deg,#0f2441,#061c34);border:1px solid #1b3150;border-radius:18px;';
+        const chev = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${G}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${isAr ? '' : 'transform:scaleX(-1);'}"><path d="M15 5l-7 7 7 7"/></svg>`;
+        const ico = (p) => `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="${G}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${p}</svg>`;
+        const ball = `<svg width="38" height="38" viewBox="0 0 24 24" fill="#0a1033" stroke="${G}" stroke-width="1.6" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5" fill="${G}" stroke="none"/><path d="M12 7.5l3.6 2.6-1.4 4.2H9.8L8.4 10.1z" fill="#0a1033" stroke="none"/><path d="M12 7.5V3M15.6 10.1l4.2-1.4M14.2 14.3l2.6 3.6M9.8 14.3l-2.6 3.6M8.4 10.1L4.2 8.7" stroke="#0a1033"/></svg>`;
+        const diamond = `<svg width="92" height="92" viewBox="0 0 100 100"><defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8f1ff"/><stop offset=".5" stop-color="#8aa6d6"/><stop offset="1" stop-color="#3b5a99"/></linearGradient></defs>
+            <path d="M20 78C8 66 6 44 16 28" fill="none" stroke="${G}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/><path d="M80 78C92 66 94 44 84 28" fill="none" stroke="${G}" stroke-width="3" stroke-linecap="round" stroke-dasharray="1 6"/>
+            <path d="M18 80C9 68 8 46 17 31M82 80C91 68 92 46 83 31" fill="none" stroke="${G}" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M32 34h36l14 16-32 30L18 50z" fill="url(#dg)" stroke="${G}" stroke-width="2.4" stroke-linejoin="round"/><path d="M18 50h64M32 34l10 16 8 30M68 34L58 50l-8 30M42 50l8-16 8 16" fill="none" stroke="#fff" stroke-opacity=".7" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+
+        const stat = (n, label, color, iconSvg) => `
+            <div style="${card}border-radius:14px;padding:12px 8px 10px;">
+                <div style="display:flex;align-items:center;gap:7px;color:${GREY};font-size:.85rem;font-weight:700;">${iconSvg}<span>${label}</span></div>
+                <div style="font-size:2.3rem;font-weight:900;color:#fff;line-height:1.1;margin-top:4px;text-align:center;">${n}</div>
+            </div>`;
+        const okI = `<span style="width:24px;height:24px;border-radius:50%;background:#22b455;display:inline-flex;align-items:center;justify-content:center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg></span>`;
+        const noI = `<span style="width:24px;height:24px;border-radius:50%;background:#e03535;display:inline-flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>`;
+        const waI = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${GREY}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/></svg>`;
+
+        const row = (icon, title, sub, onclick, last) => `
+            <div onclick="${onclick}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;${last ? '' : 'border-bottom:1px solid #1b3150;'}">
+                ${icon}
+                <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:1rem;color:#fff;">${title}</div><div style="font-size:.78rem;color:${GREY};margin-top:2px;">${sub}</div></div>
+                ${chev}
+            </div>`;
+
+        const useCard = (emoji, title, sub, onclick) => `
+            <div style="${card}padding:12px 6px 12px;text-align:center;display:flex;flex-direction:column;align-items:center;">
+                <div style="font-size:2.6rem;line-height:1.1;height:50px;">${emoji}</div>
+                <div style="font-weight:800;font-size:.92rem;margin-top:4px;color:#fff;">${title}</div>
+                <div style="font-size:.7rem;color:${GREY};margin:2px 0 8px;min-height:1em;">${sub}</div>
+                <button onclick="${onclick}" style="background:linear-gradient(180deg,#f3c764,#d9a437);color:#0a1033;border:0;border-radius:999px;font-weight:900;font-size:.9rem;padding:6px 0;width:88%;cursor:pointer;font-family:inherit;">${T('افتح', 'Open')}</button>
+            </div>`;
+
+        const html = `
+            <div style="${card}padding:16px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <div style="text-align:center;flex:1;">
+                    <div style="color:${G};font-weight:800;font-size:1.05rem;">${T('كورة', 'Kora')}</div>
+                    <div style="display:flex;align-items:center;justify-content:center;gap:8px;direction:ltr;">
+                        <span style="font-size:${String(fmt(balance)).length > 6 ? '2.3rem' : '3rem'};font-weight:900;color:${G2};line-height:1.15;">${fmt(balance)}</span>${ball}
+                    </div>
+                    <div style="color:${GREY};font-size:.9rem;font-weight:700;margin-top:2px;">${T('نقاطك الحالية', 'Your current points')}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex:1;">
+                    ${diamond}
+                    <div style="flex:1;text-align:center;min-width:0;">
+                        <span style="display:inline-block;border:1px solid #2a4163;border-radius:999px;padding:1px 12px;font-size:.75rem;color:#cfd8e6;">${T('المستوى', 'Level')}</span>
+                        <div style="font-size:2.2rem;font-weight:900;color:${G2};line-height:1.1;">${level}</div>
+                        <div style="font-size:.85rem;font-weight:800;color:${G};">${tierName}</div>
+                    </div>
+                </div>
+            </div>
+            <div style="padding:10px 4px 0;">
+                <div style="height:8px;background:#12233c;border-radius:99px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#e5b64e,#f5d27a);border-radius:99px;"></div></div>
+                <div style="display:flex;justify-content:space-between;font-size:.75rem;color:${GREY};margin-top:5px;"><span>${T('النقاط التالية', 'Next level')}</span><span style="direction:ltr;">${fmt(into)} / ${fmt(STEP)}</span></div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 4px;">
+                ${stat(correct, T('صحيح', 'Correct'), '#22b455', okI)}
+                ${stat(wrong, T('أخطاء', 'Wrong'), '#e03535', noI)}
+                ${stat(pending, T('انتظار', 'Pending'), GREY, waI)}
+            </div>
+
+            <div style="${card}margin-top:10px;overflow:hidden;">
+                ${row(ico('<path d="M9 6h6M5 21h14M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/>'), T('ترتيب التحديات', 'Challenges ranking'), rank ? T('ترتيبك الحالي: المركز ', 'Your rank: ') + rank : T('شاهد أبطال هذا الأسبوع', "See this week's champions"), 'window.openChallengesRanking()')}
+                ${row(ico('<path d="M3 20h18M5 20V10l7-6 7 6v10M9 20v-6h6v6"/>'), T('ترتيب الأندية', 'Clubs ranking'), T('أي نادٍ جمهوره الأقوى؟', 'Which club has the strongest fans?'), "window.zeloPtsGo(function(){showPage('leaderboard')})", true)}
+            </div>
+
+            <div style="font-weight:900;font-size:1.25rem;margin:16px 4px 8px;color:#fff;">${T('كيف تكسب المزيد؟', 'How to earn more?')}</div>
+            <div style="${card}overflow:hidden;">
+                ${row(ico('<circle cx="12" cy="12" r="9.5"/><path d="M12 7.5l3.6 2.6-1.4 4.2H9.8L8.4 10.1z"/>'), T('تنبّأ بنتائج المباريات', 'Predict match results'), T('احصل على نقاط لكل توقع صحيح', 'Earn points for each correct pick'), "window.zeloPtsGo(function(){showPage('matches')})")}
+                ${row(ico('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>'), T('شاهد إعلانًا', 'Watch an ad'), T('نقاط مكافأة بعد كل إعلان', 'Bonus points after each ad'), "window.zeloPtsGo(function(){window.openAdsPage&&window.openAdsPage()})")}
+                ${row(ico('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.6.2 4.5 2.1 4.5 5"/>'), T('ادعُ أصدقاءك', 'Invite friends'), T('لكل صديق ينضم ويتنبأ، احصل على نقاط', 'Earn points for each friend who joins'), "window.zeloPtsGo(function(){window.openShareSheet&&window.openShareSheet()})", true)}
+            </div>
+
+            <div style="margin:16px 4px 8px;"><div style="font-weight:900;font-size:1.25rem;color:#fff;">${T('استخدم نقاطك', 'Use your points')}</div><div style="font-size:.8rem;color:${GREY};">${T('استبدل نقاطك بمكافآت رائعة', 'Spend your points on great rewards')}</div></div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-bottom:10px;">
+                ${useCard('🃏', T('سوق NFT', 'NFT market'), T('بطاقات اللاعبين', 'Player cards'), "window.zeloPtsGo(function(){window.renderNftMarketPage&&window.renderNftMarketPage()})")}
+                ${useCard('🎁', T('المتجر', 'Store'), T('عناصر ومزايا', 'Items & perks'), "window.zeloPtsGo(function(){window.openStorePage&&window.openStorePage()})")}
+                ${useCard('🏆', T('المحفظة', 'Wallet'), T('الرصيد والسحب', 'Balance & cashout'), "window.zeloPtsGo(function(){if(window.openWithdrawWallet&&typeof supabaseClient!=='undefined')window.openWithdrawWallet(supabaseClient)})")}
+            </div>`;
+        container.innerHTML = html;
+        try { localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), html })); } catch (e) {}
+    } catch (e) {
+        console.error('[ZELO] points:', e);
+        if (container.querySelector('.zelo-pts-ok') || !document.getElementById('rank-loading')) return;
+        container.innerHTML = `<div style="text-align:center;color:#ff4d4d;padding:20px;">${T('حدث خطأ في تحميل البيانات', 'Error loading data')}</div>`;
+    }
 };
 
 window.renderHomeRankingWidget = async function(containerId) {
