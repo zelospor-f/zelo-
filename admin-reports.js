@@ -85,6 +85,36 @@
         }));
     }
 
+    async function loadRoomReports(body) {
+        body.innerHTML = '<div class="zadm-empty">' + L('جارٍ التحميل…', 'Loading…') + '</div>';
+        const c = db();
+        const { data, error } = c ? await c.rpc('admin_list_room_reports') : { error: { message: 'no client' } };
+        if (error) { body.innerHTML = '<div class="zadm-empty">' + esc(error.message) + '</div>'; return; }
+        if (!data || !data.length) { body.innerHTML = '<div class="zadm-empty">✅ ' + L('لا توجد بلاغات على رسائل الغرف', 'No open room reports') + '</div>'; return; }
+        body.innerHTML = data.map(r => `
+            <div class="zadm-card" data-rid="${r.report_id}">
+                <div class="zadm-head"><span>${L('رسالة غرفة', 'Room message')} #${r.message_id}</span>
+                    <span>${r.report_count > 1 ? `<span class="zadm-badge">${r.report_count} ${L('بلاغات', 'reports')}</span>` : ''}</span></div>
+                <div class="zadm-reason">🚩 ${esc(reasonText(r.reason))}</div>
+                <div class="zadm-content">${r.content ? esc(r.content) : '<i>' + L('(الرسالة محذوفة أو منتهية)', '(message deleted or expired)') + '</i>'}</div>
+                <div class="zadm-meta">${L('الكاتب', 'Author')}: <b>${esc(r.author_name)}</b> · ${L('المبلِّغ', 'Reporter')}: ${esc(r.reporter_name)}</div>
+                <div class="zadm-btns">
+                    <button class="zadm-btn del" data-act="delete">${L('حذف', 'Delete')}</button>
+                    <button class="zadm-btn ban" data-act="ban" data-uid="${esc(r.author_id || '')}" data-name="${esc(r.author_name)}">${L('حظر الكاتب', 'Ban author')}</button>
+                    <button class="zadm-btn" data-act="dismiss">${L('تجاهل', 'Dismiss')}</button>
+                </div>
+            </div>`).join('');
+        body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
+            const card = b.closest('.zadm-card'); const id = Number(card.dataset.rid); const act = b.dataset.act;
+            if (act === 'ban') { pickBan(b.dataset.uid, b.dataset.name, () => loadRoomReports(body)); return; }
+            if (act === 'delete' && !confirm(L('حذف هذه الرسالة نهائيًا؟', 'Delete this message permanently?'))) return;
+            card.querySelectorAll('button').forEach(x => x.disabled = true);
+            const r = await c.rpc('admin_resolve_room_report', { p_report_id: id, p_action: act });
+            if (r.error) { alert(r.error.message); card.querySelectorAll('button').forEach(x => x.disabled = false); return; }
+            loadRoomReports(body);
+        }));
+    }
+
     function pickBan(uid, name, done) {
         if (!uid) { alert(L('لا يوجد كاتب لهذا المحتوى (ربما حُذف)', 'No author found (content may be deleted)')); return; }
         document.getElementById('zadm-sheet')?.remove();
@@ -170,12 +200,12 @@
         document.getElementById('zadm')?.remove();
         const ov = document.createElement('div'); ov.id = 'zadm'; ov.dir = isAr() ? 'rtl' : 'ltr';
         ov.innerHTML = `<div class="zadm-bar">${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn("document.getElementById('zadm').remove()", isAr()) : ''}<div class="zadm-title">🚩 ${L('الإدارة', 'Moderation')}</div></div>
-            <div class="zadm-body"><div class="zadm-tabs"><button class="zadm-tab on" data-t="r">${L('البلاغات', 'Reports')}</button><button class="zadm-tab" data-t="b">${L('المحظورون', 'Banned')}</button><button class="zadm-tab" data-t="a">${L('الطعون', 'Appeals')}</button></div><div id="zadm-body"></div></div>`;
+            <div class="zadm-body"><div class="zadm-tabs"><button class="zadm-tab on" data-t="r">${L('البلاغات', 'Reports')}</button><button class="zadm-tab" data-t="m">${L('الغرف', 'Rooms')}</button><button class="zadm-tab" data-t="b">${L('المحظورون', 'Banned')}</button><button class="zadm-tab" data-t="a">${L('الطعون', 'Appeals')}</button></div><div id="zadm-body"></div></div>`;
         document.body.appendChild(ov);
         const bodyEl = document.getElementById('zadm-body');
         ov.querySelectorAll('.zadm-tab').forEach(t => t.addEventListener('click', () => {
             ov.querySelectorAll('.zadm-tab').forEach(x => x.classList.toggle('on', x === t));
-            (t.dataset.t === 'b' ? loadBans : t.dataset.t === 'a' ? loadAppeals : load)(bodyEl);
+            (t.dataset.t === 'b' ? loadBans : t.dataset.t === 'a' ? loadAppeals : t.dataset.t === 'm' ? loadRoomReports : load)(bodyEl);
         }));
         load(bodyEl);
     };

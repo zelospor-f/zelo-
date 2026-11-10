@@ -367,6 +367,7 @@
         else if (kind === 'post' && window.openPostPage) { const [pid, cid] = arg.split(':'); window.openPostPage(pid, cid); }
         else if (kind === 'challenge' && window.openFriendChallenges) window.openFriendChallenges(arg);
         else if (kind === 'followers' && window.openFollowers) window.openFollowers();
+        else if (kind === 'admin_reports' && window.openReportsPanel) window.openReportsPanel();
     }
 
     /* ---------- إشعار لحظي منبثق (مثل: بدأت المباراة الآن) ---------- */
