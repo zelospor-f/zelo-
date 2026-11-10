@@ -2134,6 +2134,7 @@
 
     window.renderRoomsSection = renderRoomsSection;
     window.renderRoomsHub = renderMessagesPage;   // لا نربطها بتبويب الرسائل: الغرف تُدار من الشريط الجانبي في صفحة المباريات
+    window.createRoomFlow = createRoomFlow;
     window.openMatchRoom = openMatchRoom;
     window.openClubRoom = openClubRoom;
     window.openCustomRoom = openCustomRoom;
