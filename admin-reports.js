@@ -55,25 +55,56 @@
         document.head.appendChild(s);
     }
 
+    // صورة الكاتب واسمه: الضغط عليهما يفتح ملفه الشخصي
+    async function fetchPhotos(rows) {
+        const m = {};
+        try {
+            const ids = [...new Set(rows.map(r => r.author_id).filter(Boolean).map(String))];
+            if (!ids.length || !db()) return m;
+            const { data } = await db().from('public_profiles').select('user_id,photo_url').in('user_id', ids);
+            (data || []).forEach(x => { if (x.photo_url) m[String(x.user_id)] = x.photo_url; });
+        } catch (e) {}
+        return m;
+    }
+    function authorHtml(r, photos) {
+        const url = photos[String(r.author_id)];
+        const ok = typeof url === 'string' && /^(https:\/\/|data:image\/)/.test(url);
+        const init = esc(String(r.author_name || '?').trim().charAt(0).toUpperCase());
+        const av = ok ? `<img src="${esc(url)}" alt="" style="width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none">`
+                      : `<span style="width:34px;height:34px;border-radius:50%;background:#2c4bb5;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex:none">${init}</span>`;
+        return `<div class="zadm-author" data-uid="${esc(r.author_id || '')}" style="display:flex;align-items:center;gap:10px;margin:8px 0;cursor:${r.author_id ? 'pointer' : 'default'}">${av}<div><div style="font-weight:900;color:#fff">${esc(r.author_name)}</div><div style="font-size:.72rem;color:#9aa6d6">${L('الكاتب', 'Author')}${r.author_id ? ' · ' + L('اضغط لفتح الملف الشخصي', 'tap to open profile') : ''}</div></div></div>`;
+    }
+    function bindAuthors(body) {
+        body.querySelectorAll('.zadm-author').forEach(a => a.addEventListener('click', () => {
+            const uid = a.dataset.uid;
+            if (!uid || typeof window.openUserProfile !== 'function') return;
+            document.getElementById('zadm')?.remove();
+            window.openUserProfile(uid);
+        }));
+    }
+
     async function load(body) {
         body.innerHTML = '<div class="zadm-empty">' + L('جارٍ التحميل…', 'Loading…') + '</div>';
         const c = db();
         const { data, error } = c ? await c.rpc('admin_list_reports') : { error: { message: 'no client' } };
         if (error) { body.innerHTML = '<div class="zadm-empty">' + esc(error.message) + '</div>'; return; }
         if (!data || !data.length) { body.innerHTML = '<div class="zadm-empty">✅ ' + L('لا توجد بلاغات جديدة', 'No open reports') + '</div>'; return; }
+        const photos = await fetchPhotos(data);
         body.innerHTML = data.map(r => `
             <div class="zadm-card" data-rid="${r.report_id}">
                 <div class="zadm-head"><span>${r.target_type === 'comment' ? L('رد', 'Reply') : L('منشور', 'Post')} #${r.target_id}</span>
                     <span>${r.report_count > 1 ? `<span class="zadm-badge">${r.report_count} ${L('بلاغات', 'reports')}</span>` : ''}</span></div>
                 <div class="zadm-reason">🚩 ${esc(reasonText(r.reason))}</div>
                 <div class="zadm-content">${r.content ? esc(r.content) : '<i>' + L('(بلا نص)', '(no text)') + '</i>'}${r.image_url ? `<img src="${esc(r.image_url)}" alt="">` : ''}</div>
-                <div class="zadm-meta">${L('الكاتب', 'Author')}: <b>${esc(r.author_name)}</b> · ${L('المبلِّغ', 'Reporter')}: ${esc(r.reporter_name)}</div>
+                ${authorHtml(r, photos)}
+                <div class="zadm-meta">${L('المبلِّغ', 'Reporter')}: ${esc(r.reporter_name)}</div>
                 <div class="zadm-btns">
                     <button class="zadm-btn del" data-act="delete">${L('حذف', 'Delete')}</button>
                     <button class="zadm-btn ban" data-act="ban" data-uid="${esc(r.author_id || '')}" data-name="${esc(r.author_name)}">${L('حظر الكاتب', 'Ban author')}</button>
                     <button class="zadm-btn" data-act="dismiss">${L('تجاهل', 'Dismiss')}</button>
                 </div>
             </div>`).join('');
+        bindAuthors(body);
         body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
             const card = b.closest('.zadm-card'); const id = Number(card.dataset.rid); const act = b.dataset.act;
             if (act === 'ban') { pickBan(b.dataset.uid, b.dataset.name, () => load(body)); return; }
@@ -91,19 +122,22 @@
         const { data, error } = c ? await c.rpc('admin_list_room_reports') : { error: { message: 'no client' } };
         if (error) { body.innerHTML = '<div class="zadm-empty">' + esc(error.message) + '</div>'; return; }
         if (!data || !data.length) { body.innerHTML = '<div class="zadm-empty">✅ ' + L('لا توجد بلاغات على رسائل الغرف', 'No open room reports') + '</div>'; return; }
+        const photos = await fetchPhotos(data);
         body.innerHTML = data.map(r => `
             <div class="zadm-card" data-rid="${r.report_id}">
                 <div class="zadm-head"><span>${L('رسالة غرفة', 'Room message')} #${r.message_id}</span>
                     <span>${r.report_count > 1 ? `<span class="zadm-badge">${r.report_count} ${L('بلاغات', 'reports')}</span>` : ''}</span></div>
                 <div class="zadm-reason">🚩 ${esc(reasonText(r.reason))}</div>
                 <div class="zadm-content">${r.content ? esc(r.content) : '<i>' + L('(الرسالة محذوفة أو منتهية)', '(message deleted or expired)') + '</i>'}</div>
-                <div class="zadm-meta">${L('الكاتب', 'Author')}: <b>${esc(r.author_name)}</b> · ${L('المبلِّغ', 'Reporter')}: ${esc(r.reporter_name)}</div>
+                ${authorHtml(r, photos)}
+                <div class="zadm-meta">${L('المبلِّغ', 'Reporter')}: ${esc(r.reporter_name)}</div>
                 <div class="zadm-btns">
                     <button class="zadm-btn del" data-act="delete">${L('حذف', 'Delete')}</button>
                     <button class="zadm-btn ban" data-act="ban" data-uid="${esc(r.author_id || '')}" data-name="${esc(r.author_name)}">${L('حظر الكاتب', 'Ban author')}</button>
                     <button class="zadm-btn" data-act="dismiss">${L('تجاهل', 'Dismiss')}</button>
                 </div>
             </div>`).join('');
+        bindAuthors(body);
         body.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', async () => {
             const card = b.closest('.zadm-card'); const id = Number(card.dataset.rid); const act = b.dataset.act;
             if (act === 'ban') { pickBan(b.dataset.uid, b.dataset.name, () => loadRoomReports(body)); return; }
