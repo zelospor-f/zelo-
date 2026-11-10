@@ -22,7 +22,7 @@
     const MAX_VOICE_SEC = 60;
     const MIN_VOICE_MS = 700;
     const AUDIO_BUCKET = 'room-audio';
-    const ROOM_COLS = 'id, name, code, owner_id, emoji, expires_at, is_public, requires_code';
+    const ROOM_COLS = 'id, name, code, owner_id, emoji, expires_at, is_public, requires_code, match_id';
     const EMOJIS = ['🎙️', '⚽', '🔥', '🏆', '🎧', '💬', '🦁', '🐐', '👑', '🎉', '🥅', '🧤'];
     const QUICK_EMOJIS = ['😀', '😂', '🤣', '😍', '😎', '🤔', '😮', '😢', '😡', '👏', '🙏', '👍', '🔥', '❤️', '⚽', '🥅', '🏆', '🎉', '💪', '🐐'];
     const MSG_COLS = 'id, user_id, username, body, created_at, kind, audio_path, audio_ms, expires_at';
@@ -958,7 +958,7 @@
             </div>
             <div class="rm-compose" id="rm-compose">
                 ${isCustom ? '<button class="rm-mic" id="rm-mic">' + ic('mic', 20) + '</button>' : ''}
-                <button class="rm-mic" id="rm-ai">${ic('spark', 20)}</button>
+                ${(!isCustom || cur.custom.match_id) ? '<button class="rm-mic" id="rm-ai">' + ic('spark', 20) + '</button>' : ''}
                 <button class="rm-mic" id="rm-emo">${ic('smile', 20)}</button>
                 <input class="rm-input" id="rm-input" maxlength="${MAX_LEN}" autocomplete="off"
                        placeholder="${esc(T('rmPlaceholder', 'اكتب رسالة...', 'Write a message...'))}">
@@ -1042,7 +1042,7 @@
                 aiInput.value = '';
                 askAi('ask', q);
             };
-            ov.querySelector('#rm-ai').addEventListener('click', async () => {
+            ov.querySelector('#rm-ai')?.addEventListener('click', async () => {
                 // مساعد المباراة: الباقة المميّزة (درجة 2) فأعلى
                 const ok = window.ZeloPremium && window.ZeloPremium.myTier ? (await window.ZeloPremium.myTier()) >= 2 : false;
                 if (!ok) {
@@ -1229,7 +1229,7 @@
             const row = Array.isArray(data) ? data[0] : data;
             if (!row) throw new Error('no row');
             toast(T('rmCreated', 'تم إنشاء الغرفة ✅', 'Room created ✅'));
-            openCustomRoom({ id: row.out_id, code: row.out_code, name: `${m.team_a} 🆚 ${m.team_b}`.slice(0, 40), owner_id: me(), emoji: res.emoji, expires_at: row.out_expires, is_public: res.pub, requires_code: !res.pub });
+            openCustomRoom({ id: row.out_id, code: row.out_code, name: `${m.team_a} 🆚 ${m.team_b}`.slice(0, 40), owner_id: me(), emoji: res.emoji, expires_at: row.out_expires, is_public: res.pub, requires_code: !res.pub, match_id: m.id });
         } catch (err) {
             console.error('[rooms] createMatchLinkedRoom failed:', err);
             toast(errText(err));
@@ -1262,7 +1262,7 @@
             sub: String(room.owner_id) === me()
                 ? T('rmYourRoom', 'غرفتك', 'Your room')
                 : T('rmMemberRoom', 'عضو في الغرفة', 'Member'),
-            custom: { id: room.id, code: room.code, name: room.name, owner_id: room.owner_id, emoji: room.emoji, expires_at: room.expires_at, requires_code: !!room.requires_code }
+            custom: { id: room.id, code: room.code, name: room.name, owner_id: room.owner_id, emoji: room.emoji, expires_at: room.expires_at, requires_code: !!room.requires_code, match_id: room.match_id || null }
         });
     }
 
@@ -2135,6 +2135,17 @@
     window.renderRoomsSection = renderRoomsSection;
     window.renderRoomsHub = renderMessagesPage;   // لا نربطها بتبويب الرسائل: الغرف تُدار من الشريط الجانبي في صفحة المباريات
     window.createRoomFlow = createRoomFlow;
+    // زر «غرفتي» في الملف الشخصي: يفتح غرفتك النشطة إن وُجدت، وإلا يبدأ إنشاء غرفة جديدة
+    window.openMyRoomOrCreate = async function () {
+        const c = db();
+        if (!c || !me()) { toast(T('rmNeedLogin', 'سجّل الدخول أولاً', 'Please sign in first')); return; }
+        ensureCss();
+        try {
+            const mine = (await fetchMyRooms()).filter(r => String(r.owner_id) === me());
+            if (mine.length) { openCustomRoom(mine[0]); return; }
+        } catch (e) { console.warn('[rooms] my room lookup failed', e); }
+        createRoomFlow();
+    };
     window.openMatchRoom = openMatchRoom;
     window.openClubRoom = openClubRoom;
     window.openCustomRoom = openCustomRoom;
