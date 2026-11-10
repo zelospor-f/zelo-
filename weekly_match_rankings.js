@@ -120,13 +120,15 @@ window.renderPointsScreen = async function(containerId) {
     } catch (e) {}
 
     try {
-        let balance = 0, rank = null, correct = 0, wrong = 0, pending = 0;
+        let balance = 0, lifetime = null, rank = null, correct = 0, wrong = 0, pending = 0;
         if (typeof supabaseClient !== 'undefined' && supabaseClient && uid) {
-            const [balRes, rankRes, predRes] = await Promise.all([
+            const [balRes, rankRes, predRes, sumRes] = await Promise.all([
                 supabaseClient.from('users').select('points').eq('user_id', String(uid)).maybeSingle(),
                 supabaseClient.rpc('get_user_rank', { p_user_id: uid, p_category: 'weekly' }).then(r => r, () => ({})),
-                supabaseClient.from('match_predictions').select('prediction_status').eq('user_id', uid)
+                supabaseClient.from('match_predictions').select('prediction_status').eq('user_id', uid),
+                supabaseClient.rpc('my_points_summary').then(r => r, () => ({}))
             ]);
+            if (sumRes && sumRes.data && Number.isFinite(Number(sumRes.data.lifetime))) lifetime = Number(sumRes.data.lifetime);
             if (balRes && balRes.data) { balance = Number(balRes.data.points) || 0; if (typeof userState !== 'undefined') userState.points = balance; }
             rank = rankRes && rankRes.data;
             ((predRes && predRes.data) || []).forEach(p => {
@@ -136,10 +138,11 @@ window.renderPointsScreen = async function(containerId) {
             });
         }
 
-        // المستوى (حاليًا من الرصيد: كل 1000 كورة = مستوى)
+        // المستوى من مجموع ما كسبه المستخدم (لا ينزل عند الإنفاق): كل 1000 كورة = مستوى
         const STEP = 1000;
-        const level = Math.floor(balance / STEP) + 1;
-        const into = balance % STEP;
+        const base = Math.max(balance, lifetime == null ? 0 : lifetime);
+        const level = Math.floor(base / STEP) + 1;
+        const into = base % STEP;
         const pct = Math.round(into / STEP * 100);
         const names = isAr ? ['برونزية', 'فضية', 'ذهبية', 'بلاتينية', 'الماسة'] : ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
         const tierName = level >= 10 ? names[4] : level >= 7 ? names[3] : level >= 5 ? names[2] : level >= 3 ? names[1] : names[0];
