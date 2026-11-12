@@ -59,8 +59,13 @@ window.openLegendaryRankingScreen = function() {
     const navShown = !!(navEl && getComputedStyle(navEl).display !== 'none' && navEl.getBoundingClientRect().height > 0);
     const navH = navShown ? Math.max(0, Math.round(window.innerHeight - navEl.getBoundingClientRect().top)) : 0;
 
+    // نترك الشريط العلوي (الاسم والصورة) ظاهرًا أيضًا
+    const barEl = document.getElementById('top-bar');
+    const barShown = !!(barEl && getComputedStyle(barEl).display !== 'none' && barEl.getBoundingClientRect().height > 0);
+    const topH = barShown ? Math.max(0, Math.round(barEl.getBoundingClientRect().bottom)) : 0;
+
     screen.style.cssText = `
-        position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+        position: fixed !important; top: ${topH}px !important; left: 0 !important; right: 0 !important;
         bottom: ${navH}px !important; width: 100vw !important; height: auto !important;
         background: var(--bg-dark, #0a1033) !important; z-index: 99999 !important;
         padding: 0; box-sizing: border-box; display: flex; flex-direction: column;
@@ -69,10 +74,10 @@ window.openLegendaryRankingScreen = function() {
     `;
 
     screen.innerHTML = `
+        <div style="flex-shrink: 0; height: max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
         <div style="flex-shrink:0;padding:16px 20px 12px;text-align:center;border-bottom:1px solid rgba(245,195,90,.15);">
             <h2 style="margin:0;color:#fff;font-weight:900;font-size:1.5rem;">${isAr ? 'نقاطي' : 'My Points'}</h2>
         </div>
-        <div style="flex-shrink: 0; height: max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
         <div id="full-ranking-container" style="flex:1;overflow-y:auto;padding:14px 16px 20px;">
             <div id="rank-loading" style="text-align:center; color:#8fa0b8; padding: 50px; font-size: 1.1rem;">
                 ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
