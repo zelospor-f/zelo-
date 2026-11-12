@@ -470,8 +470,26 @@
                 }
             } else if (hasPlugin()) {
                 setupPlugin();
-                await window.CdvPurchase.store.restorePurchases();
-                return toast(ar ? 'جارٍ البحث عن مشترياتك…' : 'Looking for your purchases…');
+                toast(ar ? 'جارٍ البحث عن مشترياتك…' : 'Looking for your purchases…');
+                const st = window.CdvPurchase.store;
+                try { await st.restorePurchases(); } catch (e) { console.warn('[premium] restorePurchases', e); }
+                await new Promise(r => setTimeout(r, 2000));
+                // نتحقق مباشرة من كل عملية شراء غير منتهية (اشتراكات أو عملات)
+                const txs = (st.localTransactions || []).filter(t => t.state !== 'finished' && t.state !== 'cancelled');
+                const owned = [];
+                txs.forEach(t => {
+                    const n = t.nativePurchase || {};
+                    const pid = (t.products && t.products[0] && t.products[0].id) || n.productId;
+                    if (n.purchaseToken && pid) owned.push({ t, pid, token: n.purchaseToken });
+                });
+                if (!owned.length) return toast(ar ? 'لا توجد مشتريات غير مفعّلة' : 'No pending purchases found');
+                let ok = 0, lastErr = '';
+                for (const o of owned) {
+                    const v = await verifyOnServer(o.pid, o.token);
+                    if (v.ok) { ok++; try { await o.t.finish(); } catch (e) {} } else lastErr = v.msg;
+                }
+                if (ok) { await isPremium(true); return toast(ar ? '✅ تمت استعادة ' + ok + ' عملية' : '✅ Restored ' + ok); }
+                return toast((ar ? 'تعذّر التحقق: ' : 'Verify failed: ') + lastErr);
             } else {
                 return toast(ar ? 'الشراء متاح داخل تطبيق Google Play فقط' : 'Purchases are available in the Google Play app only');
             }
