@@ -15,6 +15,16 @@ window.zeloPtsGo = function(fn) {
     try { fn && fn(); } catch (e) { console.error('[ZELO] pts-go', e); }
 };
 
+// لعبة «خمّن اللاعب»: يُحمَّل ملفها عند أول فتح فقط
+window.zeloOpenGuess = function() {
+    if (typeof window.openGuessPlayer === 'function') return window.openGuessPlayer();
+    const s = document.createElement('script');
+    s.src = 'guess-player.js?v=1';
+    s.onload = () => { try { window.openGuessPlayer && window.openGuessPlayer(); } catch (e) { console.error('[ZELO] guess', e); } };
+    s.onerror = () => { try { window.showToast && window.showToast('تعذّر تحميل اللعبة'); } catch (e) {} };
+    document.head.appendChild(s);
+};
+
 window.openChallengesRanking = function() {
     const old = document.getElementById('ranking-sub-screen'); if (old) old.remove();
     const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
@@ -216,6 +226,7 @@ window.renderPointsScreen = async function(containerId) {
             <div style="${card}overflow:hidden;">
                 ${row(ico('<circle cx="12" cy="12" r="9.5"/><path d="M12 7.5l3.6 2.6-1.4 4.2H9.8L8.4 10.1z"/>'), T('تنبّأ بنتائج المباريات', 'Predict match results'), T('احصل على نقاط لكل توقع صحيح', 'Earn points for each correct pick'), "window.zeloPtsGo(function(){showPage('matches')})")}
                 ${row(ico('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>'), T('شاهد إعلانًا', 'Watch an ad'), T('نقاط مكافأة بعد كل إعلان', 'Bonus points after each ad'), "window.zeloPtsGo(function(){window.openAdsPage&&window.openAdsPage()})")}
+                ${row(ico('<circle cx="12" cy="12" r="9"/><path d="M9.2 9.5a2.8 2.8 0 1 1 4 2.5c-.8.5-1.2 1-1.2 1.9"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>'), T('خمّن اللاعب', 'Guess the player'), T('لغز جديد كل يوم واكسب نقاطاً', 'A new puzzle every day'), "window.zeloPtsGo(function(){window.zeloOpenGuess()})")}
                 ${row(ico('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.6.2 4.5 2.1 4.5 5"/>'), T('ادعُ أصدقاءك', 'Invite friends'), T('لكل صديق ينضم ويتنبأ، احصل على نقاط', 'Earn points for each friend who joins'), "window.zeloPtsGo(function(){window.openShareSheet&&window.openShareSheet()})", true)}
             </div>
 
