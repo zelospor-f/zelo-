@@ -9,6 +9,7 @@
 
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : (window.supabaseClient || null);
     const isAr = () => ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
+    const lang = () => isAr() ? 'ar' : 'en';
     const L = (a, e) => isAr() ? a : e;
     const esc = v => String(v == null ? '' : v).replace(/[&<>"']/g,
         c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -124,7 +125,7 @@
 
     async function hint() {
         if (busy) return; busy = true;
-        try { st = await call('guess_hint'); render(); }
+        try { st = await call('guess_hint', { p_lang: lang() }); render(); }
         catch (e) { toast(L('تعذّر جلب التلميح', 'Could not get hint')); }
         busy = false;
     }
@@ -135,7 +136,7 @@
         if (v.length < 2) return toast(L('اكتب اسم اللاعب', 'Type a name'));
         if (busy) return; busy = true;
         try {
-            const r = await call('guess_answer', { p_text: v });
+            const r = await call('guess_answer', { p_text: v, p_lang: lang() });
             st = r;
             render();
             if (r.result === 'correct') toast('✅ +1 ' + L('كورة', 'Kora'));
@@ -169,12 +170,13 @@
         ov.innerHTML = `
             ${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn('window.closeGuessPlayer()', ar)
                 : '<button onclick="window.closeGuessPlayer()" style="width:40px;height:40px;border-radius:12px;border:1px solid rgba(245,195,90,.35);background:rgba(44,75,181,.2);color:#f5c35a;font-size:20px;cursor:pointer">' + (ar ? '›' : '‹') + '</button>'}
+            <div style="height:max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
             <h2>🕵️ ${L('خمّن اللاعب', 'Guess the Player')}</h2>
             <div class="sub">${L('لغز جديد كل يوم · كلما قلّت التلميحات زادت نقاطك', 'New puzzle every day · fewer hints, more points')}</div>
             <div id="zgp-body"><div class="sub" style="text-align:center;padding:30px">⏳</div></div>`;
         document.body.appendChild(ov);
         try {
-            st = await call('guess_today');
+            st = await call('guess_today', { p_lang: lang() });
             render();
         } catch (e) {
             const b = document.getElementById('zgp-body');
