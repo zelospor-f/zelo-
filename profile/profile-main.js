@@ -485,22 +485,36 @@
         const matched = P.getMatchedClubs(d);
         const displayName = displayNameOf(d, ar);
         const avatarSrc = avatarOf(d, displayName);
+        const ic = (p, w) => `<svg viewBox="0 0 24 24" width="${w || 20}" height="${w || 20}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+        const shield = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f5c35a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/></svg>';
+        const m0 = matched[0];
+        const markSrc = m0 ? (m0.logo || m0.flag || '') : '';
+        const watermark = markSrc
+            ? `<img class="zp-mark" src="${esc(markSrc)}" onerror="this.style.display='none'" alt="">`
+            : `<svg class="zp-mark" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="0.8" aria-hidden="true"><path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><circle cx="12" cy="11" r="2.2"/></svg>`;
+        const chips = matched.slice(0, 2).map(c => `<span class="zp-chip">${c.logo ? `<img src="${esc(c.logo)}" onerror="this.style.display='none'" alt="">` : shield}${esc(clubLabel(c))}</span>`).join('');
+        const cbarStart = V
+            ? window.zeloBackBtn("window.closeUserProfile()")
+            : `<button class="zp-cbtn" aria-label="Menu" onclick="window.openSideDrawer && window.openSideDrawer()">${ic('<path d="M4 7h16M4 12h16M4 17h16"/>', 22)}</button>`;
+        const cbarEnd = V ? '<span></span>'
+            : `<button class="zp-cbtn" aria-label="Share" onclick="window.openShareSheet()">${ic('<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.6M8.2 13.2l7.6 4.6"/>')}</button>`;
+        const tile = (fn, svgInner, dot, label) => `<button class="pp-sc" onclick="${fn}"><svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${svgInner}</g>${dot}</svg>${label}</button>`;
 
         target.innerHTML = P.styles(ar) + `
-            <div class="profile-wrap">
-                <div class="profile-top">
-                    ${window.zeloBackBtn(V ? "window.closeUserProfile()" : "if(typeof window.showPage === 'function') window.showPage('home');")}
+            <div class="profile-wrap zp">
+                ${(!V && window.zeloBanNoteHtml) ? `<div style="padding:0 15px;">${window.zeloBanNoteHtml()}</div>` : ''}
+                <div class="zp-cover">
+                    <div class="zp-glow"></div>
+                    ${watermark}
+                    <div class="zp-cbar">${cbarStart}${cbarEnd}</div>
                 </div>
-
-                ${V ? '' : `<button class="zelo-back" aria-label="Menu" onclick="window.openSideDrawer && window.openSideDrawer()" style="position:absolute;top:10px;inset-inline-end:10px;z-index:5;"><svg viewBox="0 0 24 24" width="22" height="22" style="stroke:#f5c35a;stroke-width:2.2;fill:none;stroke-linecap:round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>`}
-                ${(!V && window.zeloBanNoteHtml) ? window.zeloBanNoteHtml() : ''}
                 <div class="pp">
-                    <div class="wall pp-wall">${P.wallHtml(matched)}</div>
-                    <div class="pp-head">
+                    <div class="zp-idrow">
                         <div class="pp-av"><div><img src="${esc(avatarSrc)}" alt=""></div></div>
                         <div class="pp-id">
                             <h4 class="pp-name"><span>${esc(displayName)}</span>${window.zeloVerifiedBadge(d.badgeClub, 20)}</h4>
-                            <div class="pp-user">${d.username && (d.nickname || V) ? '\u200E@' + esc(d.username) : ''}</div>
+                            <div class="pp-user">${d.username && (d.nickname || V) ? '‎@' + esc(d.username) : ''}</div>
+                            ${chips ? `<div class="zp-chips">${chips}</div>` : ''}
                         </div>
                     </div>
 
@@ -518,22 +532,21 @@
                         <button class="pp-btn" id="pc-msg"><svg viewBox="0 0 24 24"><path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/></svg>${tr('ui_message', 'رسالة', 'Message')}</button>
                         <button class="pp-btn" id="pc-follow"></button>
                         <button class="pp-btn" id="pc-bell" style="flex:0 0 48px;padding:10px 0;font-size:1.05rem;" aria-label="Notifications">🔕</button>
-                    </div>` : `<div class="pp-btns">
-                        <button class="pp-btn" onclick="window.openEditProfile()"><svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>${tr('ui_edit_profile', 'تعديل الملف الشخصي', 'Edit profile')}</button>
-                        <button class="pp-btn" onclick="window.openShareSheet()"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>${tr('ui_share', 'مشاركة', 'Share')}</button>
-                        <button class="pp-btn" onclick="window.openMyRoomOrCreate && window.openMyRoomOrCreate()"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></svg>${tr('ui_my_room', 'غرفتي', 'My room')}</button>
+                    </div>` : `<div class="zp-btns">
+                        <button class="zp-edit" onclick="window.openEditProfile()">${ic('<path d="M4 20l4-1 11-11-3-3L5 16z"/>', 18)}${tr('ui_edit_profile_short', 'تعديل الملف', 'Edit profile')}</button>
+                        <button class="zp-ib" aria-label="${tr('ui_my_room', 'غرفتي', 'My room')}" onclick="window.openMyRoomOrCreate && window.openMyRoomOrCreate()">${ic('<path d="M4 5h16v11H9l-5 4z"/>', 22)}</button>
+                        <button class="zp-ib" aria-label="${tr('ui_share', 'مشاركة', 'Share')}" onclick="window.openShareSheet()">${ic('<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v7h14v-7"/>', 22)}</button>
                     </div>
 
                     <div class="pp-short">
-                        <button class="pp-sc" onclick="window.openStorePage && window.openStorePage()"><svg viewBox="0 0 24 24"><path d="M4 9l1.5-5h13L20 9"/><path d="M5 9v11h14V9"/><path d="M4 9a3 3 0 006 0 3 3 0 006 0 3 3 0 004 0"/></svg>${tr('pp_store', 'المتجر', 'Store')}</button>
-                        <button class="pp-sc" onclick="(function(){var c=typeof supabaseClient!=='undefined'?supabaseClient:null;if(window.openWithdrawWallet&&c)window.openWithdrawWallet(c);})()"><svg viewBox="0 0 24 24"><path d="M4 7h14a2 2 0 012 2v9a2 2 0 01-2 2H6a2 2 0 01-2-2V7z"/><path d="M4 7l11-3v3"/><circle cx="16" cy="13.5" r="1.2"/></svg>${tr('pp_wallet', 'محفظتي', 'Wallet')}</button>
-                        <button class="pp-sc" onclick="window.openSubscriptions && window.openSubscriptions()"><svg viewBox="0 0 24 24"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.2 6.4 20.2l1.1-6.2L3 9.6l6.2-.9L12 3z"/></svg>${tr('pp_sub', 'الاشتراك', 'Premium')}</button>
-                        <button class="pp-sc" onclick="window.openNftStore()"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M9 14l3-5 3 5-3 3-3-3z"/></svg>${tr('pp_nft', 'بطاقات NFT', 'NFT cards')}</button>
+                        ${tile("window.openStorePage && window.openStorePage()", '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V7a3 3 0 0 1 6 0v1"/>', '<circle cx="12" cy="13.5" r="1.4" fill="#f5c35a"/>', tr('pp_store', 'المتجر', 'Store'))}
+                        ${tile("(function(){var c=typeof supabaseClient!=='undefined'?supabaseClient:null;if(window.openWithdrawWallet&&c)window.openWithdrawWallet(c);})()", '<rect x="3" y="7" width="18" height="12" rx="3"/><path d="M3 10V8a2 2 0 0 1 2-2h11"/>', '<circle cx="16.5" cy="13" r="1.4" fill="#f5c35a"/>', tr('pp_wallet', 'محفظتي', 'Wallet'))}
+                        ${tile("window.openSubscriptions && window.openSubscriptions()", '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.4 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/>', '<circle cx="12" cy="11.5" r="1.3" fill="#f5c35a"/>', tr('pp_sub', 'الاشتراك', 'Premium'))}
+                        ${tile("window.openNftStore()", '<rect x="5" y="3" width="14" height="18" rx="3"/>', '<circle cx="12" cy="12" r="2.4" fill="#f5c35a"/>', tr('pp_nft', 'بطاقات NFT', 'NFT cards'))}
                     </div>
 
                     <div id="pp-verify-slot"></div>`}
                 </div>
-
             </div>`;
     }
 

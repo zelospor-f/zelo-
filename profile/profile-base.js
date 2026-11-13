@@ -303,6 +303,44 @@
             .vid-tile video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
             .vid-play { position: absolute; inset-inline-end: 6px; bottom: 6px; width: 24px; height: 24px; border-radius: 50%; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; }
             .vid-play svg { width: 13px; height: 13px; fill: #fff; }
+
+            /* ===== ZELO profile v2 (غلاف + أزرار + تبويبات سفلية) ===== */
+            .profile-wrap.zp { margin: 0 -15px; width: auto; max-width: none; padding: 0 0 20px 0; }
+            .zp-cover { position: relative; height: 170px; margin-top: -14px; overflow: hidden; border-radius: 0 0 28px 28px; background: linear-gradient(135deg, #2c4bb5 0%, #14206b 55%, #0a1033 100%); }
+            .zp-glow { position: absolute; top: -80px; inset-inline-start: -40px; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(245,195,90,0.45), rgba(245,195,90,0) 68%); }
+            .zp-mark { position: absolute; top: -20px; inset-inline-end: -26px; width: 210px; height: 210px; object-fit: contain; opacity: 0.14; }
+            .zp-cbar { position: absolute; top: 16px; inset-inline: 16px; display: flex; justify-content: space-between; z-index: 2; }
+            .zp-cbtn { width: 42px; height: 42px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.3); background: rgba(10,16,51,0.45); color: #fff; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+            .zp-idrow { margin-top: -46px; display: flex; align-items: flex-end; gap: 14px; position: relative; z-index: 2; }
+            .zp .pp { padding: 0 15px; }
+            .zp .pp-av { width: 96px; height: 96px; min-width: 96px; padding: 4px; background: linear-gradient(135deg, #ffe7ad, #f5c35a); box-shadow: 0 0 0 4px #0a1033, 0 8px 24px rgba(245,195,90,0.3); }
+            .zp .pp-id { padding-bottom: 4px; }
+            .zp .pp-name { font-size: 1.35rem; }
+            .zp .pp-user { font-size: 0.86rem; }
+            .zp-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+            .zp-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 8px; border-radius: 999px; background: rgba(255,255,255,0.07); border: 1px solid rgba(245,195,90,0.3); font-size: 0.74rem; color: #cfd8ff; font-weight: 700; max-width: 100%; }
+            .zp-chip img { width: 16px; height: 16px; object-fit: contain; flex: none; }
+            .zp .pp-stats { margin-top: 16px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 22px; padding: 12px 4px; }
+            .zp .pp-stat b svg { display: none; }
+            .zp .pp-stat b { font-size: 1.4rem; }
+            .zp .pp-stat span { font-size: 0.74rem; }
+            .zp-btns { display: flex; gap: 10px; margin-top: 12px; }
+            .zp-edit { flex: 1; height: 48px; border: 0; border-radius: 16px; background: linear-gradient(135deg, #ffe7ad, #f5c35a); color: #0a1033; font-family: inherit; font-weight: 900; font-size: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; box-shadow: 0 10px 24px rgba(245,195,90,0.28); }
+            .zp-edit:active { transform: scale(0.98); }
+            .zp-ib { width: 48px; height: 48px; flex: none; border-radius: 16px; border: 1.5px solid rgba(245,195,90,0.5); background: rgba(44,75,181,0.25); color: #f5c35a; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; }
+            .zp-ib:active { background: rgba(245,195,90,0.18); }
+            .zp .pp-btn { height: 48px; border-radius: 16px; }
+            .zp .pp-short { gap: 10px; padding: 0; background: none; border: none; border-radius: 0; margin-top: 12px; }
+            .zp .pp-sc { border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.06); border-radius: 18px; padding: 12px 4px 10px; color: #eef1ff; }
+            .zp .pp-sc svg { width: 28px; height: 28px; stroke: none; fill: none; }
+            .zp .pp-sc:active { background: rgba(245,195,90,0.14); }
+            .zp > #verify-promo { padding: 0 15px; }
+            .zp > .feed-tabs { background: none; border: none; border-bottom: 1px solid rgba(255,255,255,0.12); border-radius: 0; padding: 0; gap: 0; margin: 14px 15px 8px; }
+            .zp .feed-tab { border-radius: 0; padding: 10px 0; font-size: 0.9rem; color: #8f9bd0; }
+            .zp .feed-tab.active { background: none; color: #f5c35a; font-weight: 900; }
+            .zp .feed-tab.active::after { display: block; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 0; background: #f5c35a; }
+            .zp .feed-tab[data-tab="videos"] { flex: 1; }
+            .zp > #feed-box { padding: 0 15px; }
         </style>`;
     };
 })();
