@@ -2,17 +2,17 @@
 // الاستخدام: أضف الملف إلى الصفحة ثم استدعِ openWithdrawWallet(supabaseClient) من زر المحفظة.
 (function () {
   const TITLES = {
-    verified: 'تأكيد البريد/الهاتف', account_age: 'عمر الحساب', invites: 'الدعوات الناجحة',
-    min_balance: 'الحد الأدنى للسحب', hold: 'فترة التعليق', amount: 'المبلغ المطلوب',
-    address: 'عنوان السحب', identity: 'تأكيد الهوية', no_open_request: 'الطلبات المعلّقة',
-    no_fraud: 'المراجعة الأمنية', subscription: 'الاشتراك'
+    verified: ['تأكيد البريد/الهاتف','Email/phone verification'], account_age: ['عمر الحساب','Account age'], invites: ['الدعوات الناجحة','Successful invites'],
+    min_balance: ['الحد الأدنى للسحب','Minimum withdrawal'], hold: ['فترة التعليق','Holding period'], amount: ['المبلغ المطلوب','Requested amount'],
+    address: ['عنوان السحب','Withdrawal address'], identity: ['تأكيد الهوية','Identity verification'], no_open_request: ['الطلبات المعلّقة','Pending requests'],
+    no_fraud: ['المراجعة الأمنية','Security review'], subscription: ['الاشتراك','Subscription']
   };
   const STATUS = {
-    pending: 'قيد الإرسال', review: 'قيد المراجعة', sent: 'تم الإرسال',
-    failed: 'فشل', rejected: 'مرفوض'
+    pending: ['قيد الإرسال','Sending'], review: ['قيد المراجعة','Under review'], sent: ['تم الإرسال','Sent'],
+    failed: ['فشل','Failed'], rejected: ['مرفوض','Rejected']
   };
   const CSS = `
-  .zw-ov{position:fixed;inset:0;z-index:9999;background:#0a1033;color:#f8fafc;overflow:auto;direction:rtl;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
+  .zw-ov{position:fixed;inset:0;z-index:9999;background:#0a1033;color:#f8fafc;overflow:auto;font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif}
   .zw-wrap{max-width:520px;margin:0 auto;padding:16px 16px 40px}
   .zw-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   .zw-top h2{margin:0;font-size:20px;color:#f5c35a}
@@ -102,7 +102,7 @@
     if (!document.getElementById('zw-css')) {
       const st = h('style'); st.id = 'zw-css'; st.textContent = CSS; document.head.appendChild(st);
     }
-    const ov = h('div', 'zw-ov');
+    const ov = h('div', 'zw-ov'); ov.dir = window.zA('rtl', 'ltr');
     const wrap = h('div', 'zw-wrap');
     ov.appendChild(wrap);
     document.body.appendChild(ov);
@@ -135,8 +135,8 @@
       const keepFocus = document.activeElement && document.activeElement.id;
       wrap.textContent = '';
       const top = h('div', 'zw-top');
-      top.appendChild(h('h2', '', 'محفظتي'));
-      const x = h('button', 'zw-x', ((window.userState&&window.userState.lang)||'ar').startsWith('ar') ? '›' : '‹'); x.onclick = () => ov.remove();
+      top.appendChild(h('h2', '', window.zT('محفظتي', 'My wallet')));
+      const x = h('button', 'zw-x', window.zA('›', '‹')); x.onclick = () => ov.remove();
       top.insertBefore(x, top.firstChild); wrap.appendChild(top);
       // مساحة لبانر الإعلان كي لا يغطي الرصيد
       const adGap = h('div', ''); adGap.style.cssText = 'flex-shrink:0;height:max(0px,calc(var(--zelo-ad-h,0px) - 10px));';
@@ -146,7 +146,7 @@
       const rate = S.cfg ? S.cfg.diamonds_per_usdt : 200;
       const minW = S.cfg ? S.cfg.min_diamonds : 1000;
       const us = window.userState || {};
-      const ar0 = String(us.lang || 'ar').startsWith('ar');
+      const ar0 = window.zA(true, false);
       const nm = (ar0 ? (us.nickname_ar || us.nickname_en) : (us.nickname_en || us.nickname_ar)) || us.username || '';
       const total = S.avail + S.held;
 
@@ -161,32 +161,32 @@
       if (us.username) who.appendChild(h('small', '', '@' + us.username));
       idr.appendChild(who);
       const rk = (document.getElementById('rank-num') || {}).textContent || '';
-      if (/\d/.test(rk)) { const rc2 = h('div', 'zw-rk'); rc2.appendChild(h('small', '', 'الترتيب')); rc2.appendChild(h('b', '', rk)); idr.appendChild(rc2); }
+      if (/\d/.test(rk)) { const rc2 = h('div', 'zw-rk'); rc2.appendChild(h('small', '', window.zT('الترتيب', 'Rank'))); rc2.appendChild(h('b', '', rk)); idr.appendChild(rc2); }
       hero.appendChild(idr);
 
       const big = h('div', 'zw-big');
-      big.appendChild(h('small', '', 'رصيدك'));
-      const bn = h('div', 'zw-bn'); bn.appendChild(h('b', '', total.toLocaleString('en-US'))); bn.appendChild(h('span', '', ' كورة')); big.appendChild(bn);
-      big.appendChild(h('small', '', 'يعادل ' + (total / rate).toFixed(2) + '$'));
+      big.appendChild(h('small', '', window.zT('رصيدك', 'Your balance')));
+      const bn = h('div', 'zw-bn'); bn.appendChild(h('b', '', total.toLocaleString('en-US'))); bn.appendChild(h('span', '', window.zT(' كورة', ' Kora'))); big.appendChild(bn);
+      big.appendChild(h('small', '', window.zT('يعادل ', 'Equals ') + (total / rate).toFixed(2) + '$'));
       hero.appendChild(big);
 
       const two = h('div', 'zw-two');
-      [[S.avail, 'قابل للسحب الآن'], [S.held, 'قيد التعليق']].forEach(([v, t]) => {
+      [[S.avail, window.zT('قابل للسحب الآن', 'Available to withdraw now')], [S.held, window.zT('قيد التعليق', 'On hold')]].forEach(([v, t]) => {
         const d = h('div'); d.appendChild(h('b', '', Number(v).toLocaleString('en-US'))); d.appendChild(h('span', '', t)); two.appendChild(d);
       });
       hero.appendChild(two);
 
       const pct = Math.min(100, Math.round(total / minW * 100));
       const pr = h('div', 'zw-prog');
-      const pt = h('div', 'zw-prow'); pt.appendChild(h('span', '', 'الحد الأدنى للسحب: ' + minW.toLocaleString('en-US'))); pt.appendChild(h('span', '', pct + '%')); pr.appendChild(pt);
+      const pt = h('div', 'zw-prow'); pt.appendChild(h('span', '', window.zT('الحد الأدنى للسحب: ', 'Minimum withdrawal: ') + minW.toLocaleString('en-US'))); pt.appendChild(h('span', '', pct + '%')); pr.appendChild(pt);
       const pb = h('div', 'zw-bar'); const pf = h('i'); pf.style.width = pct + '%'; pb.appendChild(pf); pr.appendChild(pb);
       hero.appendChild(pr);
       wrap.appendChild(hero);
 
       const quick = h('div', 'zw-quick');
-      const bq = h('button', 'zw-q', 'اشترِ كورة');
+      const bq = h('button', 'zw-q', window.zT('اشترِ كورة', 'Buy Kora'));
       bq.onclick = () => { ov.remove(); if (typeof window.openStorePage === 'function') window.openStorePage(); };
-      const be = h('button', 'zw-q', 'اربح كورة');
+      const be = h('button', 'zw-q', window.zT('اربح كورة', 'Earn Kora'));
       be.onclick = () => { ov.remove(); if (typeof window.openAdsPage === 'function') window.openAdsPage(); };
       quick.appendChild(bq); quick.appendChild(be);
       wrap.appendChild(quick);
@@ -194,7 +194,7 @@
       // الشروط
       const cl = h('div', 'zw-card');
       const sum = h('div', 'zw-sum');
-      sum.appendChild(h('p', 'zw-h', 'شروط السحب'));
+      sum.appendChild(h('p', 'zw-h', window.zT('شروط السحب', 'Withdrawal conditions')));
       if (S.elig) {
         const total = S.elig.checks.length;
         const done = S.elig.checks.filter(c => c.ok).length;
@@ -207,64 +207,64 @@
           const row = h('div', 'zw-chk ' + (c.ok ? 'ok' : 'no'));
           const mk = h('span', 'zw-mark'); mk.innerHTML = c.ok ? SVG_OK : SVG_NO;
           row.appendChild(mk);
-          const t = h('div'); t.appendChild(h('div', 'zw-t', TITLES[c.key] || c.key)); t.appendChild(h('small', '', c.msg));
+          const t = h('div'); t.appendChild(h('div', 'zw-t', (TITLES[c.key] ? window.zT(TITLES[c.key][0], TITLES[c.key][1]) : c.key))); t.appendChild(h('small', '', c.msg));
           row.appendChild(t); cl.appendChild(row);
         });
-      } else { cl.appendChild(sum); cl.appendChild(h('small', '', 'تعذّر تحميل الشروط')); }
+      } else { cl.appendChild(sum); cl.appendChild(h('small', '', window.zT('تعذّر تحميل الشروط', 'Could not load the conditions'))); }
       wrap.appendChild(cl);
 
       // العنوان
       const ac = h('div', 'zw-card');
-      ac.appendChild(h('p', 'zw-h', 'عنوان محفظتك (شبكة BEP20 فقط)'));
-      ac.appendChild(h('div', 'zw-warn', 'أرسل إلى عنوان BNB Smart Chain (BEP20) فقط. أي شبكة أخرى تضيّع المبلغ. تغيير العنوان يؤجّل السحب 48 ساعة.'));
-      ac.appendChild(h('label', 'zw-lbl', 'عنوان المحفظة'));
+      ac.appendChild(h('p', 'zw-h', window.zT('عنوان محفظتك (شبكة BEP20 فقط)', 'Your wallet address (BEP20 network only)')));
+      ac.appendChild(h('div', 'zw-warn', window.zT('أرسل إلى عنوان BNB Smart Chain (BEP20) فقط. أي شبكة أخرى تضيّع المبلغ. تغيير العنوان يؤجّل السحب 48 ساعة.', 'Send to a BNB Smart Chain (BEP20) address only. Any other network loses the funds. Changing the address delays withdrawal by 48 hours.')));
+      ac.appendChild(h('label', 'zw-lbl', window.zT('عنوان المحفظة', 'Wallet address')));
       const ai = h('input', 'zw-in'); ai.id = 'zw-addr'; ai.placeholder = '0x...';
       ai.value = S.addr ? S.addr.address : '';
       ac.appendChild(ai);
-      const sv = h('button', 'zw-btn sec', 'حفظ العنوان');
+      const sv = h('button', 'zw-btn sec', window.zT('حفظ العنوان', 'Save address'));
       sv.onclick = async () => {
         const v = ai.value.trim();
-        if (!/^0x[a-fA-F0-9]{40}$/.test(v)) { S.msg = 'العنوان غير صالح: يبدأ بـ 0x ويتكوّن من 42 حرفاً'; return render(); }
+        if (!/^0x[a-fA-F0-9]{40}$/.test(v)) { S.msg = window.zT('العنوان غير صالح: يبدأ بـ 0x ويتكوّن من 42 حرفاً', 'Invalid address: it starts with 0x and has 42 characters'); return render(); }
         const r = await sb.rpc('set_withdraw_address', { p_address: v });
-        S.msg = r.error || r.data.status !== 'ok' ? 'تعذّر حفظ العنوان' : 'تم حفظ العنوان';
+        S.msg = r.error || r.data.status !== 'ok' ? window.zT('تعذّر حفظ العنوان', 'Could not save the address') : window.zT('تم حفظ العنوان', 'Address saved');
         await load(); render();
       };
       ac.appendChild(sv); wrap.appendChild(ac);
 
       // الطلب
       const rc = h('div', 'zw-card');
-      rc.appendChild(h('p', 'zw-h', 'طلب سحب'));
-      rc.appendChild(h('label', 'zw-lbl', 'عدد الكورة المراد سحبه'));
+      rc.appendChild(h('p', 'zw-h', window.zT('طلب سحب', 'Withdrawal request')));
+      rc.appendChild(h('label', 'zw-lbl', window.zT('عدد الكورة المراد سحبه', 'Amount of Kora to withdraw')));
       const line = h('div', 'zw-line');
       const ni = h('input', 'zw-in'); ni.id = 'zw-amt'; ni.type = 'number'; ni.inputMode = 'numeric';
-      ni.placeholder = 'عدد الكورة'; ni.value = S.amount > 0 ? S.amount : '';
+      ni.placeholder = window.zT('عدد الكورة', 'Kora amount'); ni.value = S.amount > 0 ? S.amount : '';
       ni.oninput = () => {
         S.amount = Math.floor(Number(ni.value)) || 0;
         clearTimeout(timer);
         timer = setTimeout(async () => { await checkElig(); render(); }, 400);
       };
-      const all = h('button', 'zw-btn sec', 'الكل');
+      const all = h('button', 'zw-btn sec', window.zT('الكل', 'All'));
       all.onclick = async () => { S.amount = S.avail; await checkElig(); render(); };
       line.appendChild(ni); line.appendChild(all); rc.appendChild(line);
-      if (S.amount > 0) rc.appendChild(h('div', 'zw-est', 'ستستلم: ' + (S.amount / rate).toFixed(2) + ' USDT'));
-      const go = h('button', 'zw-btn', 'اطلب السحب');
+      if (S.amount > 0) rc.appendChild(h('div', 'zw-est', window.zT('ستستلم: ', 'You will receive: ') + (S.amount / rate).toFixed(2) + ' USDT'));
+      const go = h('button', 'zw-btn', window.zT('اطلب السحب', 'Request withdrawal'));
       go.disabled = S.busy || S.amount <= 0 || (S.pro && (!S.elig || S.elig.decision === 'rejected'));
       go.onclick = async () => {
         if (!S.pro) {
-          S.msg = 'وثّق حسابك بالاشتراك لتتمكن من السحب';
+          S.msg = window.zT('وثّق حسابك بالاشتراك لتتمكن من السحب', 'Verify your account by subscribing to be able to withdraw');
           render();
           ov.remove();
           if (window.openSubscriptions) window.openSubscriptions();
           return;
         }
-        if (!confirm('سحب ' + S.amount + ' كورة (' + (S.amount / rate).toFixed(2) + ' USDT) إلى:\n' + S.addr.address + '\nشبكة BEP20')) return;
+        if (!confirm(window.zT('سحب ' + S.amount + ' كورة (' + (S.amount / rate).toFixed(2) + ' USDT) إلى:\n' + S.addr.address + '\nشبكة BEP20', 'Withdraw ' + S.amount + ' Kora (' + (S.amount / rate).toFixed(2) + ' USDT) to:\n' + S.addr.address + '\nBEP20 network'))) return;
         S.busy = true; render();
         const r = await sb.rpc('request_usdt_withdrawal', { p_diamonds: S.amount });
         S.busy = false;
-        if (r.error) S.msg = 'حدث خطأ، حاول مجدداً';
+        if (r.error) S.msg = window.zT('حدث خطأ، حاول مجدداً', 'An error occurred, try again');
         else if (r.data.status === 'rejected') S.msg = (r.data.reasons || []).join(' • ');
-        else if (r.data.status === 'review') S.msg = 'استلمنا طلبك وسيُراجَع يدوياً';
-        else if (r.data.status === 'pending') S.msg = 'تمت الموافقة، سيُرسل المبلغ قريباً';
+        else if (r.data.status === 'review') S.msg = window.zT('استلمنا طلبك وسيُراجَع يدوياً', 'We received your request and it will be reviewed manually');
+        else if (r.data.status === 'pending') S.msg = window.zT('تمت الموافقة، سيُرسل المبلغ قريباً', 'Approved, the amount will be sent soon');
         S.amount = 0; await load(); render();
       };
       rc.appendChild(go);
@@ -274,11 +274,11 @@
       // السجل
       if (S.hist.length) {
         const hc = h('div', 'zw-card');
-        hc.appendChild(h('p', 'zw-h', 'آخر الطلبات'));
+        hc.appendChild(h('p', 'zw-h', window.zT('آخر الطلبات', 'Latest requests')));
         S.hist.forEach(w => {
           const row = h('div', 'zw-h-row');
           row.appendChild(h('span', '', Number(w.amount_usdt).toFixed(2) + ' USDT'));
-          row.appendChild(h('span', 'zw-pill ' + w.status, STATUS[w.status] || w.status));
+          row.appendChild(h('span', 'zw-pill ' + w.status, (STATUS[w.status] ? window.zT(STATUS[w.status][0], STATUS[w.status][1]) : w.status)));
           hc.appendChild(row);
         });
         wrap.appendChild(hc);
@@ -286,7 +286,7 @@
       if (keepFocus) { const f = document.getElementById(keepFocus); if (f) f.focus(); }
     }
 
-    wrap.appendChild(h('p', '', 'جارٍ التحميل...'));
+    wrap.appendChild(h('p', '', window.zT('جارٍ التحميل...', 'Loading...')));
     await load();
     render();
   }
