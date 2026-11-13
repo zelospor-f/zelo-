@@ -24,7 +24,7 @@ function lbSafePhoto(url) {
     const isAr = () => (typeof userState !== 'undefined' && userState?.lang === 'ar');
     const L = (ar, en) => isAr() ? ar : en;
     const esc = s => window.escapeHTML(s);
-    const COIN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5c35a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9 9h6l-6 6h6"/></svg>';
+    const COIN = LB_COIN_IMG;   // شعار الكورة (zelo-coin.png) بدل حرف Z
     const MED = [
         { c: '#c9d3e6', m: '🥈', size: 46, h: 70 },   // الثاني (يسار)
         { c: '#f5c35a', m: '👑', size: 56, h: 104 },  // الأول (وسط)
@@ -63,6 +63,7 @@ function lbSafePhoto(url) {
         .ldr-pt{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;background:rgba(245,195,90,.1);border:1px solid rgba(245,195,90,.4);font-weight:900;font-size:.85rem;color:#f5c35a;direction:ltr;flex:none}
         .ldr-wk{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-radius:14px;background:rgba(44,75,181,.25);border:1px solid rgba(245,195,90,.35);margin-bottom:12px;font-size:.8rem}
         .ldr-bar{position:fixed;left:12px;right:12px;bottom:var(--ldr-bot,80px);z-index:60;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:18px;background:linear-gradient(135deg,rgba(245,195,90,.22),rgba(44,75,181,.3)),#0a1033;border:1px solid #f5c35a;box-shadow:0 -8px 24px rgba(0,0,0,.35)}
+        .ldr-pt .coin{width:18px;height:18px;object-fit:contain;display:block;flex-shrink:0}
         .ldr-empty{text-align:center;color:#9aa6d6;padding:40px 10px;font-weight:800}
         `;
         document.head.appendChild(st);

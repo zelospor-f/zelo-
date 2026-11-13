@@ -3123,7 +3123,7 @@
             <div class="zh-top">
                 <div class="zh-l">
                     <button class="zh-av" aria-label="profile" onclick="showPage('profile')">${av}</button>
-                    <button class="zh-bal" onclick="showPage('points')">${zhIc('<circle cx="12" cy="12" r="9.5"/><path d="M9 9h6l-6 6h6"/>')}<span id="zh-bal">${(Number(US().points) || 0).toLocaleString('en-US')}</span></button>
+                    <button class="zh-bal" onclick="showPage('points')"><img src="zelo-coin.png" alt="" style="width:22px;height:22px;object-fit:contain;flex:none" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png';}else{this.style.display='none';}"><span id="zh-bal">${(Number(US().points) || 0).toLocaleString('en-US')}</span></button>
                 </div>
                 <div class="zh-r">
                     <button class="zh-ib" aria-label="${window.zT('بحث', 'Search')}" onclick="window.zhOpenSearch()">${zhIc('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>')}</button>
