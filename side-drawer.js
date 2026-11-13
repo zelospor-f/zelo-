@@ -225,19 +225,11 @@
         .zhelp-link span { flex: 1; }
         .zhelp-foot { text-align: center; font-size: 0.75rem; color: #5b6697; margin-top: 18px; }
 
-        /* ===== قائمة اختيار اللغة ===== */
-        .zlang-overlay { position: fixed; inset: 0; z-index: 3100; background: rgba(3,6,24,0.7); display: flex; align-items: flex-end; justify-content: center; }
-        .zlang-sheet { width: 100%; max-width: 480px; background: #0f1a5c; border-radius: 22px 22px 0 0; border-top: 1px solid rgba(245,195,90,0.3); padding: 18px 16px calc(env(safe-area-inset-bottom, 0px) + 20px); }
-        .zlang-title { font-size: 1.05rem; font-weight: 900; color: #fff; margin: 2px 4px 12px; }
-        .zlang-opt { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px; margin-bottom: 8px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; font-family: inherit; font-size: 1rem; font-weight: 800; cursor: pointer; text-align: start; }
-        .zlang-opt.on { border-color: #f5c35a; background: rgba(245,195,90,0.14); }
-        .zlang-flag { font-size: 1.4rem; }
-        .zlang-name { flex: 1; }
-        .zlang-check { color: #f5c35a; font-weight: 900; }
     `;
 
     const isAr = () => (window.userState?.lang || 'ar').startsWith('ar');
-    const L = (ar, en) => (isAr() ? ar : en);
+    const L = (ar, en) => (window.zT ? window.zT(ar, en) : (isAr() ? ar : en));
+    const isRtl = () => ['ar', 'fa'].includes(String(window.userState?.lang || 'ar').slice(0, 2));
 
     function esc(str) {
         return String(str ?? '').replace(/[&<>"']/g, c => ({
@@ -311,7 +303,7 @@
     }
 
     function legalUrl(page) {
-        return SITE + page + (isAr() ? '.html' : '-en.html');
+        return SITE + page + (window.zA('.html', '-en.html'));
     }
 
     function faqItems() {
@@ -340,7 +332,7 @@
         sheet = document.createElement('div');
         sheet.id = 'zhelp';
         sheet.className = 'zhelp';
-        sheet.dir = isAr() ? 'rtl' : 'ltr';
+        sheet.dir = isRtl() ? 'rtl' : 'ltr';
 
         const faq = faqItems().map(([q, a]) =>
             `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('');
@@ -409,63 +401,6 @@
         toast(SUPPORT_EMAIL);
     }
 
-    // ===== اختيار اللغة: قائمة بدل التبديل المباشر =====
-    const LANGS = [
-        ['ar', '🇸🇦', 'العربية'],
-        ['en', '🇬🇧', 'English'],
-        ['tr', '🇹🇷', 'Türkçe']
-    ];
-
-    function currentLangCode() {
-        return String(window.userState?.lang || localStorage.getItem('app_lang') || 'ar').slice(0, 2);
-    }
-
-    async function applyLang(next) {
-        if (next === currentLangCode()) { closeLangPicker(); return; }
-        localStorage.setItem('app_lang', next);
-        if (window.userState) window.userState.lang = next;
-        // حفظ اللغة في قاعدة البيانات حتى لا تُستبدل بالقيمة القديمة عند إعادة التحميل
-        try {
-            const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
-            const uid = window.userState?.userId;
-            if (c && uid) {
-                await c.from('users').update({ lang: next }).eq('user_id', String(uid));
-            }
-        } catch (e) {
-            console.warn('[ZELO] فشل حفظ اللغة في قاعدة البيانات:', e);
-        }
-        location.reload();
-    }
-
-    function closeLangPicker() {
-        const el = document.getElementById('zlang-picker');
-        if (el) el.remove();
-    }
-
-    function openLangPicker() {
-        closeLangPicker();
-        const cur = currentLangCode();
-        const box = document.createElement('div');
-        box.id = 'zlang-picker';
-        box.className = 'zlang-overlay';
-        box.innerHTML = `
-            <div class="zlang-sheet" dir="${isAr() ? 'rtl' : 'ltr'}">
-                <div class="zlang-title">${esc(L('اختر اللغة', 'Choose language'))}</div>
-                ${LANGS.map(([code, flag, name]) => `
-                    <button class="zlang-opt ${code === cur ? 'on' : ''}" data-lang="${code}">
-                        <span class="zlang-flag">${flag}</span>
-                        <span class="zlang-name">${esc(name)}</span>
-                        <span class="zlang-check">${code === cur ? '✓' : ''}</span>
-                    </button>`).join('')}
-            </div>`;
-        box.addEventListener('click', e => {
-            const opt = e.target.closest('[data-lang]');
-            if (opt) { applyLang(opt.dataset.lang); return; }
-            if (e.target === box) closeLangPicker();
-        });
-        document.body.appendChild(box);
-    }
-
     const ACTIONS = {
         rooms:       () => (typeof window.openRoomsDrawer === 'function' ? window.openRoomsDrawer() : toast(L('ملف الغرف غير محمّل', 'Rooms file not loaded'))),
         // صفحة الاشتراكات والأسعار صارت في premium.js
@@ -501,7 +436,7 @@
         reports:     () => (typeof window.openReportsPanel === 'function' ? window.openReportsPanel() : toast(L('ملف البلاغات غير محمّل', 'Reports file not loaded'))),
         // مركز المساعدة: بريد الدعم + الأسئلة الشائعة + الروابط القانونية
         help:        () => openHelpCenter(),
-        lang: () => openLangPicker()
+        lang: () => window.zeloOpenLangPicker()
     };
 
     // الأقسام: حسابي / اكتشف / المزيد
@@ -659,7 +594,7 @@
     function applySide() {
         const drawer = document.getElementById('zdrawer');
         if (!drawer) return;
-        const ar = isAr();
+        const ar = isRtl();
         drawer.classList.toggle('from-right', ar);
         drawer.classList.toggle('from-left', !ar);
         drawer.dir = ar ? 'rtl' : 'ltr';
