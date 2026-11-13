@@ -566,7 +566,7 @@
 
         /* زر النشر العائم (مثل X) */
         .fab-compose {
-            position: fixed; bottom: calc(var(--zelo-nav-h, 64px) + 16px + env(safe-area-inset-bottom, 0px)); inset-inline-end: 16px;
+            position: fixed; bottom: calc(var(--zelo-nav-h, 64px) + 16px + var(--zelo-ad-b, 0px) + env(safe-area-inset-bottom, 0px)); inset-inline-end: 16px;
             width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer;
             background: #2c4bb5; color: #fff; line-height: 1;
             display: flex; align-items: center; justify-content: center; padding: 0;
@@ -2842,6 +2842,74 @@
         if (typeof observeVideos === 'function') observeVideos();
     };
 
+    function ensureHomeHeaderCss() {
+        if (document.getElementById('zhome-css')) return;
+        const st = document.createElement('style');
+        st.id = 'zhome-css';
+        st.textContent = `
+            .zh-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 12px;}
+            .zh-l{display:flex;align-items:center;gap:10px;min-width:0;}
+            .zh-av{width:40px;height:40px;flex:none;border-radius:50%;background:#14206b;border:2px solid #f5c35a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1rem;color:#fff;overflow:hidden;padding:0;cursor:pointer;}
+            .zh-av img{width:100%;height:100%;object-fit:cover;display:block;}
+            .zh-bal{display:flex;align-items:center;gap:6px;padding:6px 12px 6px 9px;border-radius:999px;background:rgba(0,0,0,.35);border:1px solid rgba(245,195,90,.4);color:#ffd98a;font-weight:900;font-size:.95rem;cursor:pointer;font-family:inherit;direction:ltr;font-variant-numeric:tabular-nums;}
+            .zh-r{display:flex;gap:8px;}
+            .zh-ib{position:relative;width:40px;height:40px;border-radius:13px;border:1px solid rgba(245,195,90,.3);background:rgba(44,75,181,.22);color:#e8ecff;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;}
+            .zh-ib:active{transform:scale(.94);}
+            .zh-dot{position:absolute;top:8px;inset-inline-end:9px;width:8px;height:8px;border-radius:50%;background:#f5c35a;border:2px solid #0a1033;display:none;}
+            .zh-row{display:flex;gap:10px;overflow-x:auto;padding:2px 0 12px;margin:0 -15px;padding-inline:15px;scrollbar-width:none;}
+            .zh-row::-webkit-scrollbar{display:none;}
+            .zh-q{flex:none;width:74px;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;padding:0;cursor:pointer;font-family:inherit;color:#cfd8ff;}
+            .zh-q i{display:flex;align-items:center;justify-content:center;width:62px;height:62px;border-radius:50%;padding:3px;box-sizing:border-box;background:rgba(255,255,255,.18);font-style:normal;}
+            .zh-q i b{display:flex;align-items:center;justify-content:center;width:100%;height:100%;border-radius:50%;background:#0a1033;color:#f5c35a;font-size:.85rem;font-weight:900;}
+            .zh-q.gold i{background:conic-gradient(#ffe7ad,#f5c35a,#2c4bb5,#ffe7ad);}
+            .zh-q.live i{background:linear-gradient(135deg,#14f195,#2c4bb5);}
+            .zh-q.live i b{color:#14f195;}
+            .zh-q span{font-size:.72rem;font-weight:700;white-space:nowrap;}
+        `;
+        document.head.appendChild(st);
+    }
+    const zhIc = (p, w) => `<svg width="${w || 20}" height="${w || 20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+    function homeHeaderHtml() {
+        const u = me();
+        const ini = esc(String(u.name || '?').trim().charAt(0).toUpperCase());
+        const av = u.avatar ? `<img src="${esc(u.avatar)}" alt="">` : ini;
+        const q = (cls, fn, inner, label) => `<button class="zh-q ${cls}" onclick="${fn}"><i><b>${inner}</b></i><span>${esc(label)}</span></button>`;
+        return `
+            <div class="zh-top">
+                <div class="zh-l">
+                    <button class="zh-av" aria-label="profile" onclick="showPage('profile')">${av}</button>
+                    <button class="zh-bal" onclick="window.zhOpenWallet()">${zhIc('<circle cx="12" cy="12" r="9.5"/><path d="M9 9h6l-6 6h6"/>')}<span id="zh-bal">${(Number(US().points) || 0).toLocaleString('en-US')}</span></button>
+                </div>
+                <div class="zh-r">
+                    <button class="zh-ib" aria-label="${window.zT('بحث', 'Search')}" onclick="window.zhOpenSearch()">${zhIc('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>')}</button>
+                    <button class="zh-ib" aria-label="${window.zT('الإشعارات', 'Notifications')}" onclick="showPage('notifications')">${zhIc('<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/>')}<span class="zh-dot" id="zh-dot"></span></button>
+                </div>
+            </div>
+            <div class="zh-row">
+                ${q('gold', "showPage('matches')", zhIc('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 26), window.zT('الليلة', 'Tonight'))}
+                ${q('live', "showPage('matches')", 'LIVE', window.zT('مباشر', 'Live'))}
+                ${q('', "window.openGuessPlayer && window.openGuessPlayer()", zhIc('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2.9-1.2 1.8"/>', 26), window.zT('خمّن اللاعب', 'Guess player'))}
+                ${q('', "window.openLegendaryRankingScreen && window.openLegendaryRankingScreen()", zhIc('<path d="M8 5h8v5a4 4 0 0 1-8 0z"/><path d="M12 14v4M8 20h8"/>', 26), window.zT('الترتيب', 'Ranking'))}
+                ${q('', "window.openShareSheet && window.openShareSheet()", zhIc('<circle cx="9" cy="9" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M17 8v6M14 11h6"/>', 26), window.zT('ادعُ صديقًا', 'Invite'))}
+            </div>`;
+    }
+    let zhTimer = null;
+    function paintHomeHeader() {
+        const b = document.getElementById('zh-bal');
+        if (!b) { clearInterval(zhTimer); zhTimer = null; return; }
+        b.textContent = (Number(US().points) || 0).toLocaleString('en-US');
+        const d = document.getElementById('zh-dot');
+        if (d) d.style.display = (window.__zNotifUnread || 0) > 0 ? 'block' : 'none';
+    }
+    window.zhOpenSearch = function () {
+        if (typeof window.openSideDrawer !== 'function') return;
+        window.openSideDrawer();
+        setTimeout(() => { const i = document.getElementById('zdrawer-q'); if (i) i.focus(); }, 380);
+    };
+    window.zhOpenWallet = function () {
+        if (typeof window.openWithdrawWallet === 'function' && db()) window.openWithdrawWallet(db());
+    };
+
     // ===================== رسم الصفحة =====================
     window.renderHomePage = function(container) {
         if (!container) return;
@@ -2858,11 +2926,15 @@
 
         restoreFeedLocal();
         // نعرض آخر منشورات رأيناها فوراً ثم نحدّثها بصمت، بدل شاشة "جاري التحميل"
-        container.innerHTML = `
+        ensureHomeHeaderCss();
+        container.innerHTML = homeHeaderHtml() + `
             <div id="feed-list">${feedHtmlCache || `<div class="loading-box">${window.zT('جاري تحميل المنشورات...', 'Loading posts...')}</div>`}</div>
         `;
         if (feedHtmlCache) { observeViews(); observeBoosts(); observeVideos(); }
 
+        if (zhTimer) clearInterval(zhTimer);
+        zhTimer = setInterval(paintHomeHeader, 2000);
+        paintHomeHeader();
         loadFeed();
         setupFab();
         if (timeTimer) clearInterval(timeTimer);

@@ -24,9 +24,9 @@
     const IS_TESTING = AD_MODE !== 'real';
 
     const COOLDOWN_MS = 30 * 1000;
-    const AD_SLOT_H = 80;       // 8 مسافة + 50 للبانر + 22 لرابط الاشتراك
-    // البانر أعلى الشاشة تحت الشريط العلوي الرفيع مباشرة
-    const bannerTop = () => { const b = document.getElementById('top-bar'); const h = b ? b.getBoundingClientRect().bottom : 0; return Math.round((h > 0 ? h : 6) + 8); };
+    const AD_SLOT_H = 72;       // 50 للبانر + 22 لرابط الاشتراك
+    // البانر أسفل الشاشة فوق الشريط السفلي مباشرة
+    const bannerBottom = () => { const n = document.getElementById('bottom-nav'); const h = n ? window.innerHeight - n.getBoundingClientRect().top : 0; return Math.round(h > 0 ? h : 64); };
     function setAdSlot(on) {
         const el = document.getElementById('bottom-ad-slot');
         if (el) {
@@ -34,7 +34,8 @@
             const t = document.getElementById('ad-sub-link');
             if (t) t.textContent = window.zT('اشترك لإزالة الإعلانات', 'Subscribe to remove ads');
         }
-        document.documentElement.style.setProperty('--zelo-ad-h', on ? AD_SLOT_H + 'px' : '0px');
+        document.documentElement.style.setProperty('--zelo-ad-b', on ? AD_SLOT_H + 'px' : '0px');
+        document.documentElement.style.setProperty('--zelo-ad-h', '0px'); // الإعلان لم يعد في الأعلى
     }
 
     const isAr = () => (window.userState?.lang || 'ar').startsWith('ar');
@@ -253,8 +254,8 @@
             await AdMob.showBanner({
                 adId: ADS.banner,
                 adSize: 'BANNER',
-                position: 'TOP_CENTER',
-                margin: bannerTop(),
+                position: 'BOTTOM_CENTER',
+                margin: bannerBottom(),
                 isTesting: IS_TESTING
             });
             bannerShown = true;
