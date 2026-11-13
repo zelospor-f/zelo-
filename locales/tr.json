@@ -1209,6 +1209,8 @@
   "supporters": "destekçi",
   "No support yet": "Henüz destek yok",
   "Be the first to support": "İlk destekleyen ol",
-  "Profile": "Profil"
+  "Profile": "Profil",
+  "Save {n}%": "%{n} tasarruf et",
+  "✅ Restored {n}": "✅ {n} işlem geri yüklendi"
  }
 }

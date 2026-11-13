@@ -1209,6 +1209,8 @@
   "supporters": "soutiens",
   "No support yet": "Aucun soutien pour l'instant",
   "Be the first to support": "Soyez le premier à soutenir",
-  "Profile": "Profil"
+  "Profile": "Profil",
+  "Save {n}%": "Économisez {n} %",
+  "✅ Restored {n}": "✅ {n} restauré(s)"
  }
 }
