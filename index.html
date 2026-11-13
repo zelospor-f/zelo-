@@ -83,36 +83,22 @@
         ::-webkit-scrollbar { display: none; }
 
         .container {
-            margin-top: calc(64px + var(--zelo-ad-h, 0px) + env(safe-area-inset-top, 0px));
+            margin-top: calc(10px + var(--zelo-ad-h, 0px) + env(safe-area-inset-top, 0px));
             margin-bottom: calc(var(--zelo-nav-h, 64px) + 16px + env(safe-area-inset-bottom, 0px));
             padding: 15px;
             min-height: calc(100vh - 200px);
             animation: fadeUp 0.6s ease-out forwards;
         }
 
+        /* الشريط العلوي: شريط رفيع فقط؛ الإعلان (البانر) يظهر تحته مباشرة */
         .top-bar {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            height: calc(60px + env(safe-area-inset-top, 0px));
+            height: calc(env(safe-area-inset-top, 0px) + 6px);
             box-sizing: border-box;
-            display: flex;
-            flex-wrap: nowrap;
-            align-content: center;
-            justify-content: space-between;
-            align-items: center;
-            column-gap: 10px;
-            row-gap: 6px;
-            direction: ltr; /* ثبات الترتيب: بطاقة سولانا يسار، الأيقونة الشخصية يمين */
-            background: rgba(10, 16, 51, 0.92);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            padding: env(safe-area-inset-top, 0px) 14px 0;
-            border-radius: 0 0 18px 18px;
-            border: 1px solid rgba(245, 195, 90, 0.3);
-            border-top: none;
-            box-shadow: 0 5px 25px rgba(44, 75, 181, 0.25);
+            background: #0a1033;
             z-index: 1000;
         }
 
@@ -141,7 +127,7 @@
         /* شريط الإعلان السفلي (البانر الفعلي يظهر فوقه من ads.js) */
         .bottom-ad-slot {
             position: fixed; left: 0; right: 0;
-            top: calc(60px + env(safe-area-inset-top, 0px) + 8px);
+            top: calc(env(safe-area-inset-top, 0px) + 6px + 8px);
             height: 72px; box-sizing: border-box; display: none;
             flex-direction: column-reverse; align-items: center; justify-content: flex-end;
             background: #0a1033; border-bottom: 1px solid rgba(255,255,255,0.06); z-index: 999;
@@ -356,24 +342,10 @@
 <body>
 
     <!-- الهيدر العلوي: رصيد ZELO + زر القائمة + دائرة الترتيب (تفتح لوحة الصدارة) -->
+    <!-- الشريط العلوي: رفيع فقط، والإعلان يظهر تحته (القائمة الجانبية انتقلت إلى الملف الشخصي) -->
     <header class="top-bar" id="top-bar" style="display: none;">
-        <div class="wallet-card" id="top-wallet-card">
-            <div class="menu-btn" id="menu-header-btn" role="button" aria-label="القائمة" title="القائمة" onclick="window.openSideDrawer && window.openSideDrawer()">
-                <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-            </div>
-            <div class="news-ticker" id="news-ticker" role="button" aria-label="الأخبار" onclick="window.showPage && window.showPage('matches')">
-                <div class="nt-track" id="nt-track"></div>
-            </div>
-            <span id="top-points" style="display:none">0</span>
-        </div>
-
-        <button class="rank-btn" id="rank-btn" aria-label="لوحة الصدارة" title="لوحة الصدارة" onclick="window.showPage && window.showPage('leaderboard')">
-            <img id="rank-club-logo" alt="" style="display:none" onerror="this.style.display='none'">
-            <span class="rank-num" id="rank-num">🏆</span>
-        </button>
-
-
         <!-- عناصر مخفية يستخدمها باقي الكود (حتى لا تحدث أخطاء) -->
+        <span id="top-points" style="display:none">0</span>
         <div id="club" style="display:none;"></div>
         <div id="points" style="display:none;"></div>
     </header>
@@ -435,48 +407,7 @@
     <!-- تم حذف سعر سولانا؛ الدالة تبقى فارغة حتى لا تتعطل ملفات تستدعيها -->
     <script>window.updateTopSolPrice = function() {};</script>
 
-    <!-- دائرة الترتيب: رقم مركز ناديك + شعاره، والنقر يفتح لوحة الصدارة -->
-    <script>
-        (function() {
-            function allClubs() {
-                var a = [];
-                if (typeof allWorldCupCountriesClubs !== 'undefined') {
-                    Object.values(allWorldCupCountriesClubs).forEach(function(c) { a.push.apply(a, c); });
-                }
-                return a;
-            }
-            async function updateRankBadge() {
-                var numEl = document.getElementById('rank-num');
-                var logoEl = document.getElementById('rank-club-logo');
-                var c = (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
-                var uid = window.userState && window.userState.userId ? String(window.userState.userId) : '';
-                if (!numEl || !c || !uid) return;
-                try {
-                    var r = await c.from('club_fans_rankings').select('user_id, club_id, total_fan_points');
-                    var rows = (r && r.data) || [];
-                    var pts = {}, cnt = {}, myClub = null;
-                    rows.forEach(function(f) {
-                        pts[f.club_id] = (pts[f.club_id] || 0) + (f.total_fan_points || 0);
-                        cnt[f.club_id] = (cnt[f.club_id] || 0) + 1;
-                        if (String(f.user_id) === uid) myClub = f.club_id;
-                    });
-                    if (!myClub) return;
-                    // نفس ترتيب لوحة الصدارة: الأندية التي لها مشجعون فقط
-                    var list = allClubs().filter(function(cl) { return (cnt[cl.id] || 0) > 0; })
-                        .map(function(cl) { return { cl: cl, p: pts[cl.id] || 0, n: cnt[cl.id] || 0 }; })
-                        .sort(function(a, b) { return (b.p - a.p) || (b.n - a.n); });
-                    var idx = list.findIndex(function(x) { return x.cl.id === myClub; });
-                    if (idx < 0) return;
-                    numEl.textContent = String(idx + 1);
-                    numEl.classList.toggle('small', idx + 1 > 99);
-                    if (list[idx].cl.logo) { logoEl.src = list[idx].cl.logo; logoEl.style.display = ''; }
-                } catch (e) {}
-            }
-            window.updateRankBadge = updateRankBadge;
-            setTimeout(updateRankBadge, 3500);
-            setInterval(updateRankBadge, 90000);
-        })();
-    </script>
+    <script>window.updateRankBadge = function () {};</script>
 
     <!-- تحميل رصيد ZELO من جدول المستخدمين إلى الشريط العلوي -->
     <script>
@@ -583,7 +514,6 @@
                 'notifications.js',
                 'ads.js',
                 'push.js',
-                'ticker.js',
                 'google-verify.js',
                 'store.js',
                 'wallet-withdraw.js',

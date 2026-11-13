@@ -25,8 +25,8 @@
 
     const COOLDOWN_MS = 30 * 1000;
     const AD_SLOT_H = 80;       // 8 مسافة + 50 للبانر + 22 لرابط الاشتراك
-    // البانر أعلى الشاشة تحت الشريط العلوي مباشرة (مع مسافة 8 عن أزرار الشريط لتفادي النقر بالخطأ)
-    const bannerTop = () => { const b = document.getElementById('top-bar'); const h = b ? b.getBoundingClientRect().bottom : 0; return Math.round((h > 40 ? h : 60) + 8); };
+    // البانر أعلى الشاشة تحت الشريط العلوي الرفيع مباشرة
+    const bannerTop = () => { const b = document.getElementById('top-bar'); const h = b ? b.getBoundingClientRect().bottom : 0; return Math.round((h > 0 ? h : 6) + 8); };
     function setAdSlot(on) {
         const el = document.getElementById('bottom-ad-slot');
         if (el) {
