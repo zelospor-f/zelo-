@@ -300,12 +300,23 @@
             try {
                 { const sl = document.getElementById('bottom-ad-slot'); if (sl) sl.style.visibility = need ? 'hidden' : 'visible'; } // نُبقي المساحة كي لا تقفز الصفحة
                 if (need) await AdMob.hideBanner();
-                else await AdMob.resumeBanner();
+                else {
+                    // إعادة تحميل البانر من الصفر (resumeBanner قد لا يُظهره بعد الإخفاء)
+                    try { await AdMob.removeBanner(); } catch (e) {}
+                    bannerShown = false;
+                    await showBanner();
+                }
             } catch (e) {}
         };
         new MutationObserver(apply).observe(document.body, { childList: true, attributes: true, attributeFilter: ['class', 'style'], subtree: false });
         setInterval(apply, 350); // شبكة أمان: أي نافذة تُفتح أو تُغلق تُلتقط خلال أقل من ثانية
         // القائمة الجانبية تبقى في الصفحة وتُفتح بتغيير class، لذلك تُبلغنا بحدث
+        document.addEventListener('visibilitychange', async () => {
+            if (document.hidden || !bannerShown || bannerHidden) return;
+            try { await AdMob.removeBanner(); } catch (e) {}
+            bannerShown = false;
+            await showBanner();
+        });
         window.addEventListener('zdrawer:open', () => { drawerOpen = true; apply(); });
         window.addEventListener('zdrawer:close', () => { drawerOpen = false; apply(); });
     }
