@@ -319,3 +319,167 @@ window.openSpecificClubFans = async function(clubId) {
         console.error("Club details error:", error);
     }
 };
+
+
+/* ===========================================================
+   شاشة الترتيب: جدول الدوري + الهدّافون (تفتح من دائرة "الترتيب")
+   البيانات من جدولي standings و scorers في Supabase
+   =========================================================== */
+(function () {
+    const LEAGUES = [
+        { code: 'PD',  ar: 'الدوري الإسباني',     en: 'La Liga',          top: 4, mid: 1, bot: 3 },
+        { code: 'PL',  ar: 'الدوري الإنجليزي',    en: 'Premier League',   top: 4, mid: 1, bot: 3 },
+        { code: 'SA',  ar: 'الدوري الإيطالي',     en: 'Serie A',          top: 4, mid: 1, bot: 3 },
+        { code: 'BL1', ar: 'الدوري الألماني',     en: 'Bundesliga',       top: 4, mid: 1, bot: 2 },
+        { code: 'FL1', ar: 'الدوري الفرنسي',      en: 'Ligue 1',          top: 3, mid: 1, bot: 2 },
+        { code: 'CL',  ar: 'دوري أبطال أوروبا',   en: 'Champions League', top: 8, mid: 16, bot: 12, cl: true },
+        { code: 'PPL', ar: 'الدوري البرتغالي',    en: 'Primeira Liga',    top: 2, mid: 1, bot: 2 },
+        { code: 'DED', ar: 'الدوري الهولندي',     en: 'Eredivisie',       top: 2, mid: 1, bot: 2 },
+        { code: 'ELC', ar: 'تشامبيونشيب إنجلترا', en: 'Championship',     top: 2, mid: 4, bot: 3 },
+        { code: 'BSA', ar: 'الدوري البرازيلي',    en: 'Brasileirão',      top: 4, mid: 2, bot: 4 }
+    ];
+    const KEY = 'zelo_league_last';
+    let cur = 'PD', tab = 0;
+
+    const isAr = () => (typeof userState !== 'undefined' && userState?.lang === 'ar');
+    const L = (ar, en) => isAr() ? ar : en;
+    const esc = s => window.escapeHTML(s);
+    const lg = () => LEAGUES.find(l => l.code === cur) || LEAGUES[0];
+    const safeImg = u => lbSafePhoto(u);
+
+    function crest(url, size) {
+        const u = safeImg(url);
+        return `<span style="width:${size}px;height:${size}px;flex:none;display:inline-flex;align-items:center;justify-content:center">${u ? `<img src="${esc(u)}" alt="" onerror="this.style.visibility='hidden'" style="width:100%;height:100%;object-fit:contain">` : ''}</span>`;
+    }
+
+    function css() {
+        return `<style>
+        .lgp{direction:${isAr() ? 'rtl' : 'ltr'};padding-bottom:20px;color:#f4f6ff}
+        .lgp-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+        .lgp-back{width:42px;height:42px;border-radius:14px;border:1px solid rgba(245,195,90,.35);background:rgba(44,75,181,.22);color:#e8ecff;display:flex;align-items:center;justify-content:center;padding:0;flex:none;font-size:22px;cursor:pointer}
+        .lgp-title{flex:1;font-weight:900;font-size:1.3rem}
+        .lgp-pick{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:16px;background:rgba(44,75,181,.25);border:1px solid rgba(245,195,90,.35);cursor:pointer;margin-bottom:12px}
+        .lgp-pick b{flex:1;font-weight:900;font-size:1rem}
+        .lgp-pick small{font-size:.72rem;color:#cfd8ff}
+        .lgp-tabs{display:flex;padding:4px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);margin-bottom:12px}
+        .lgp-tabs div{flex:1;text-align:center;padding:9px 0;border-radius:999px;color:#9aa6d6;font-weight:800;font-size:.9rem;cursor:pointer}
+        .lgp-tabs div.on{background:linear-gradient(135deg,#ffe7ad,#f5c35a);color:#0a1033;font-weight:900}
+        .lgp-box{padding:0 8px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+        .lgp-th,.lgp-tr{display:flex;align-items:center;box-sizing:border-box}
+        .lgp-th{height:34px;font-size:.72rem;color:#9aa6d6;font-weight:800}
+        .lgp-tr{height:46px;border-top:1px solid rgba(255,255,255,.06);position:relative}
+        .lgp-z{position:absolute;inset-inline-start:0;top:6px;bottom:6px;width:4px;border-radius:4px}
+        .lgp .c1{width:34px;text-align:center;flex:none}
+        .lgp .c2{flex:1;display:flex;align-items:center;gap:9px;min-width:0}
+        .lgp .c2 span.n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:800;font-size:.85rem}
+        .lgp .c3{width:34px;text-align:center;flex:none}
+        .lgp .c4{width:40px;text-align:center;flex:none;direction:ltr}
+        .lgp .c5{width:40px;text-align:center;flex:none}
+        .lgp .num{font-variant-numeric:tabular-nums;font-size:.82rem;color:#cfd8ff}
+        .lgp .pts{font-weight:900;font-size:.95rem;color:#ffd98a}
+        .lgp-leg{display:flex;flex-wrap:wrap;gap:8px 16px;padding:12px 4px}
+        .lgp-leg div{display:flex;align-items:center;gap:6px;font-size:.7rem;color:#cfd8ff}
+        .lgp-leg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+        .lgp-sc{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:16px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);margin-bottom:8px}
+        .lgp-sc.first{background:linear-gradient(135deg,rgba(245,195,90,.22),rgba(44,75,181,.28));border-color:#f5c35a}
+        .lgp-sc .rk{width:24px;text-align:center;font-weight:900;font-size:.95rem}
+        .lgp-sc .nm{font-weight:900;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .lgp-sc .tm{display:flex;align-items:center;gap:6px;font-size:.72rem;color:#9aa6d6;margin-top:3px}
+        .lgp-sc .g{text-align:center;min-width:44px}
+        .lgp-sc .g b{display:block;font-size:1.35rem;color:#f5c35a;line-height:1;font-weight:900}
+        .lgp-sc .g small{font-size:.65rem;color:#9aa6d6}
+        .lgp-sheet{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,.6);display:flex;align-items:flex-end}
+        .lgp-sheet>div{width:100%;max-height:70vh;overflow:auto;background:#0a1033;border-radius:22px 22px 0 0;border:1px solid rgba(245,195,90,.35);padding:14px 16px 24px;direction:${isAr() ? 'rtl' : 'ltr'}}
+        .lgp-sheet .it{padding:13px 10px;border-radius:12px;font-weight:800;color:#f4f6ff;cursor:pointer}
+        .lgp-sheet .it.on{background:rgba(245,195,90,.15);color:#ffd98a}
+        .lgp-empty{text-align:center;padding:30px;color:#94a3b8;font-weight:800}
+        </style>`;
+    }
+
+    function zoneColor(pos, total, l) {
+        if (l.cl) {
+            if (pos <= 8) return '#14f195';
+            if (pos <= 24) return '#6aa8ff';
+            return '#ff5a6e';
+        }
+        if (pos <= l.top) return '#14f195';
+        if (pos <= l.top + l.mid && !(l.code === 'ELC' && false)) return '#6aa8ff';
+        if (pos > total - l.bot) return '#ff5a6e';
+        return 'transparent';
+    }
+
+    function legend(l) {
+        const it = (c, t) => `<div><i style="background:${c}"></i>${t}</div>`;
+        if (l.cl) return it('#14f195', L('مباشرة لدور الـ16', 'Last 16')) + it('#6aa8ff', L('الملحق', 'Play-offs')) + it('#ff5a6e', L('خروج', 'Out'));
+        if (l.code === 'ELC') return it('#14f195', L('صعود مباشر', 'Promotion')) + it('#6aa8ff', L('ملحق الصعود', 'Play-offs')) + it('#ff5a6e', L('الهبوط', 'Relegation'));
+        return it('#14f195', L('دوري الأبطال', 'Champions League')) + it('#6aa8ff', L('أوروبا', 'Europe')) + it('#ff5a6e', L('الهبوط', 'Relegation'));
+    }
+
+    async function load() {
+        const root = document.getElementById('lgp-body');
+        if (!root) return;
+        root.innerHTML = `<div class="lgp-empty">${L('⏳ جاري التحميل...', '⏳ Loading...')}</div>`;
+        const l = lg();
+        try {
+            if (tab === 0) {
+                const { data } = await supabaseClient.from('standings').select('*').eq('competition_code', cur).order('position', { ascending: true });
+                if (!data || !data.length) { root.innerHTML = `<div class="lgp-empty">${L('لا توجد بيانات لهذا الدوري بعد', 'No data for this league yet')}</div>`; return; }
+                const rows = data.map(t => {
+                    const gd = t.gd > 0 ? '+' + t.gd : String(t.gd ?? 0);
+                    return `<div class="lgp-tr"><div class="lgp-z" style="background:${zoneColor(t.position, data.length, l)}"></div>
+                        <div class="c1 num">${t.position}</div>
+                        <div class="c2">${crest(t.crest, 26)}<span class="n">${esc(t.team_name)}</span></div>
+                        <div class="c3 num">${t.played ?? 0}</div><div class="c4 num">${gd}</div><div class="c5 pts">${t.points ?? 0}</div></div>`;
+                }).join('');
+                root.innerHTML = `<div class="lgp-box"><div class="lgp-th"><div class="c1">#</div><div class="c2">${L('الفريق', 'Team')}</div><div class="c3">${L('لعب', 'P')}</div><div class="c4">${L('فرق', 'GD')}</div><div class="c5">${L('نقاط', 'Pts')}</div></div>${rows}</div><div class="lgp-leg">${legend(l)}</div>`;
+            } else {
+                const { data } = await supabaseClient.from('scorers').select('*').eq('competition_code', cur).order('goals', { ascending: false }).limit(20);
+                if (!data || !data.length) { root.innerHTML = `<div class="lgp-empty">${L('لا توجد بيانات لهذا الدوري بعد', 'No data for this league yet')}</div>`; return; }
+                const medal = ['#ffd98a', '#c9d3e6', '#d9965b'];
+                root.innerHTML = data.map((p, i) => {
+                    const col = medal[i] || '#9aa6d6';
+                    const ast = (p.assists != null) ? ` · ${p.assists} ${L('تمريرة حاسمة', 'assists')}` : '';
+                    return `<div class="lgp-sc ${i === 0 ? 'first' : ''}"><div class="rk" style="color:${col}">${i + 1}</div>
+                        <div style="flex:1;min-width:0"><div class="nm">${esc(p.player_name)}</div><div class="tm">${crest(p.team_crest, 16)}<span>${esc(p.team_name)}${ast}</span></div></div>
+                        <div class="g"><b>${p.goals ?? 0}</b><small>${L('هدف', 'goals')}</small></div></div>`;
+                }).join('');
+            }
+        } catch (e) {
+            console.error('League screen error:', e);
+            root.innerHTML = `<div class="lgp-empty">${L('تعذّر تحميل البيانات', 'Could not load data')}</div>`;
+        }
+    }
+
+    function draw() {
+        const c = document.getElementById('main-content');
+        if (!c) return;
+        const l = lg();
+        c.innerHTML = css() + `<div class="lgp">
+            <div class="lgp-head"><button class="lgp-back" onclick="window.showPage('home')" aria-label="back">${isAr() ? '›' : '‹'}</button><div class="lgp-title">${L('الترتيب', 'Ranking')}</div></div>
+            <div class="lgp-pick" onclick="window.lgpPick()"><b>${esc(L(l.ar, l.en))}</b><small>${L('تغيير الدوري', 'Change league')}</small><span style="color:#f5c35a">▾</span></div>
+            <div class="lgp-tabs"><div class="${tab === 0 ? 'on' : ''}" onclick="window.lgpTab(0)">${L('الترتيب', 'Table')}</div><div class="${tab === 1 ? 'on' : ''}" onclick="window.lgpTab(1)">${L('الهدّافون', 'Top scorers')}</div></div>
+            <div id="lgp-body"></div></div>`;
+        load();
+    }
+
+    window.openLeagueTable = function () {
+        try { const s = localStorage.getItem(KEY); if (s && LEAGUES.some(x => x.code === s)) cur = s; } catch (e) {}
+        tab = 0;
+        draw();
+    };
+    window.lgpTab = function (i) { tab = i; draw(); };
+    window.lgpPick = function () {
+        const old = document.getElementById('lgp-sheet'); if (old) old.remove();
+        const d = document.createElement('div');
+        d.id = 'lgp-sheet'; d.className = 'lgp-sheet';
+        d.onclick = e => { if (e.target === d) d.remove(); };
+        d.innerHTML = `<div>${LEAGUES.map(x => `<div class="it ${x.code === cur ? 'on' : ''}" data-c="${x.code}">${esc(L(x.ar, x.en))}</div>`).join('')}</div>`;
+        d.querySelectorAll('.it').forEach(el => el.onclick = () => {
+            cur = el.dataset.c;
+            try { localStorage.setItem(KEY, cur); } catch (e) {}
+            d.remove(); draw();
+        });
+        document.body.appendChild(d);
+        if (!document.getElementById('lgp-sheet-css')) { /* الأنماط تأتي من css() */ }
+    };
+})();

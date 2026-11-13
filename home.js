@@ -3134,7 +3134,7 @@
                 ${q('gold', "window.openTodayMatches('tonight')", zhIc('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 26), window.zT('الليلة', 'Tonight'))}
                 ${q('live', "window.openTodayMatches('live')", 'LIVE', window.zT('مباشر', 'Live'))}
                 ${q('gold', "window.openLegendaryRankingScreen && window.openLegendaryRankingScreen()", zhIc('<circle cx="12" cy="12" r="9"/><path d="M12 16.5V8M8.5 11.5L12 8l3.5 3.5"/>', 26), window.zT('كيف تكسب', 'How to earn'))}
-                ${q('', "window.openGeneralRanking && window.openGeneralRanking()", zhIc('<path d="M8 5h8v5a4 4 0 0 1-8 0z"/><path d="M12 14v4M8 20h8"/>', 26), window.zT('الترتيب', 'Ranking'))}
+                ${q('', "window.openLeagueTable && window.openLeagueTable()", zhIc('<path d="M8 5h8v5a4 4 0 0 1-8 0z"/><path d="M12 14v4M8 20h8"/>', 26), window.zT('الترتيب', 'Ranking'))}
                 ${q('', "window.openShareSheet && window.openShareSheet()", zhIc('<circle cx="9" cy="9" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M17 8v6M14 11h6"/>', 26), window.zT('ادعُ صديقًا', 'Invite'))}
             </div>`;
     }
