@@ -2806,7 +2806,14 @@
             #zvv .zvv-pp { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 64px; color: #fff; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 3; }
             #zvv .zvv-pp.show { opacity: .85; }
             #zvv .zvv-rail { position: absolute; left: 10px; bottom: 215px; display: flex; flex-direction: column; align-items: center; gap: 11px; z-index: 5; }
-            #zvv.zvv-page .zvv-rail { bottom: 175px; }
+            #zvv.zvv-page .zvv-rail { bottom: 120px; gap: 8px; }
+            #zvv.zvv-page video { object-fit: cover; }
+            #zvv.zvv-page { box-shadow: 0 -60px 0 0 #000; }
+            #zvv.zvv-page .zvv-r { width: 40px; height: 40px; }
+            #zvv.zvv-page .zvv-r svg { width: 20px; height: 20px; }
+            #zvv.zvv-page .zvv-r.gold { width: 46px; height: 46px; }
+            #zvv.zvv-page .zvv-rn { font-size: 11px; min-height: 0; }
+            #zvv.zvv-page .zvv-rn:empty { display: none; }
             #zvv .zvv-rb { display: flex; flex-direction: column; align-items: center; gap: 3px; }
             #zvv .zvv-r { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(10,16,51,.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
             #zvv .zvv-r svg { width: 22px; height: 22px; }
