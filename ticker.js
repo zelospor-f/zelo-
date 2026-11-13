@@ -8,7 +8,7 @@
 
     function inText(mins) {
         const ar = isAr();
-        if (mins < 60) return ar ? `بعد ${Math.max(mins, 1)} دقيقة` : `in ${Math.max(mins, 1)} min`;
+        if (mins < 60) return window.zT(`بعد ${Math.max(mins, 1)} دقيقة`, `in ${Math.max(mins, 1)} min`);
         const h = Math.round(mins / 60);
         if (ar) return h === 1 ? 'بعد ساعة' : (h === 2 ? 'بعد ساعتين' : `بعد ${h} ساعات`);
         return `in ${h} h`;
@@ -69,12 +69,12 @@
             const t = new Date(m.match_date).getTime();
             const a = m.team_a, b = m.team_b;
             if (m.status === 'FINISHED' && m.home_score != null && m.away_score != null) {
-                if (now - t < 24 * 3600e3) done.push({ t, html: item(ar ? 'انتهت' : 'FT', a, m.home_score + ' - ' + m.away_score, b) });
+                if (now - t < 24 * 3600e3) done.push({ t, html: item(window.zT('انتهت', 'FT'), a, m.home_score + ' - ' + m.away_score, b) });
             } else if (m.live_status && m.live_home != null && m.live_away != null) {
-                live.push({ t, cls: 'live', html: item(ar ? 'مباشر' : 'LIVE', a, m.live_home + ' - ' + m.live_away, b) });
+                live.push({ t, cls: 'live', html: item(window.zT('مباشر', 'LIVE'), a, m.live_home + ' - ' + m.live_away, b) });
             } else if (m.status === 'NOT_STARTED' && t > now && t <= eod) {
                 const hm = new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
-                soon.push({ t, html: item((ar ? 'الساعة ' : 'at ') + hm, a, '×', b) });
+                soon.push({ t, html: item((window.zT('الساعة ', 'at ')) + hm, a, '×', b) });
             }
         });
         soon.sort((x, y) => x.t - y.t); done.sort((x, y) => y.t - x.t);
@@ -87,7 +87,7 @@
         tr.dir = 'ltr';
         if (!items.length) {
             tr.className = 'nt-track static';
-            tr.innerHTML = `<span class="nt-item"><b>ZELO SPORT</b>${isAr() ? 'أهلًا بك في عالم الكرة' : 'Welcome to the world of football'}</span>`;
+            tr.innerHTML = `<span class="nt-item"><b>ZELO SPORT</b>${window.zT('أهلًا بك في عالم الكرة', 'Welcome to the world of football')}</span>`;
             return;
         }
         tr.className = 'nt-track';

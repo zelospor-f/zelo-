@@ -1,6 +1,5 @@
 function getT(key) {
-    const lang = userState?.lang || 'ar';
-    return (typeof i18n !== 'undefined' && i18n[lang] && i18n[lang][key]) ? i18n[lang][key] : key;
+    return (typeof window.t === 'function') ? window.t(key) : key;
 }
 
 const zrEsc = v => String(v ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
@@ -149,7 +148,7 @@ window.renderRankingScreen = async function(container) {
                 <div style="display: flex; justify-content: center; align-items: center; gap: 15px;">
                     <div style="font-size: ${rankFontSize}; font-weight: bold; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">${displayRank}</div>
                     ${generateAvatar(userState?.username, userState?.photoUrl, '60px')}
-                    <div style="text-align: ${isAr ? 'right' : 'left'};">
+                    <div style="text-align: ${window.zA('right', 'left')};">
                         <div style="font-weight: bold; font-size: 1.2rem;">${zrEsc(userState?.username || 'User')}</div>
                         <div style="color: #fff; font-weight: bold; font-size: 1.1rem; margin-top: 3px; background: rgba(0,0,0,0.2); padding: 4px 10px; border-radius: 8px; display: inline-block;">
                             ${myExactPoints} ${getT('pts')}

@@ -21,7 +21,7 @@ window.zeloOpenGuess = function() {
     const s = document.createElement('script');
     s.src = 'guess-player.js?v=1';
     s.onload = () => { try { window.openGuessPlayer && window.openGuessPlayer(); } catch (e) { console.error('[ZELO] guess', e); } };
-    s.onerror = () => { try { window.showToast && window.showToast('تعذّر تحميل اللعبة'); } catch (e) {} };
+    s.onerror = () => { try { window.showToast && window.showToast(window.zT('تعذّر تحميل اللعبة', 'Could not load the game')); } catch (e) {} };
     document.head.appendChild(s);
 };
 
@@ -32,15 +32,15 @@ window.openChallengesRanking = function() {
     const navH = (navEl && navEl.getBoundingClientRect().height > 0) ? Math.max(0, Math.round(window.innerHeight - navEl.getBoundingClientRect().top)) : 0;
     const sub = document.createElement('div');
     sub.id = 'ranking-sub-screen';
-    sub.style.cssText = `position:fixed !important;top:0;left:0;right:0;bottom:${navH}px !important;z-index:100000;background:var(--bg-dark, #0a1033);color:#fff;display:flex;flex-direction:column;padding:20px 20px 0;box-sizing:border-box;direction:${isAr ? 'rtl' : 'ltr'};text-align:${isAr ? 'right' : 'left'};`;
+    sub.style.cssText = `position:fixed !important;top:0;left:0;right:0;bottom:${navH}px !important;z-index:100000;background:var(--bg-dark, #0a1033);color:#fff;display:flex;flex-direction:column;padding:20px 20px 0;box-sizing:border-box;direction:${window.zA('rtl', 'ltr')};text-align:${window.zA('right', 'left')};`;
     sub.innerHTML = `
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-shrink:0;">
             ${window.zeloBackBtn("document.getElementById('ranking-sub-screen').remove()", isAr)}
-            <h2 style="margin:0;flex:1;color:#f5c35a;font-weight:900;">🏆 ${isAr ? 'ترتيب التحديات' : 'Challenges Ranking'}</h2>
+            <h2 style="margin:0;flex:1;color:#f5c35a;font-weight:900;">🏆 ${window.zT('ترتيب التحديات', 'Challenges Ranking')}</h2>
         </div>
         <style>#sub-ranking-container .legendary-stats-grid{display:none !important}</style>
         <div style="flex-shrink:0;height:max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
-        <div id="sub-ranking-container" style="flex:1;overflow-y:auto;padding-bottom:16px;"><div id="rank-loading" style="text-align:center;color:#8fa0b8;padding:40px;">${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}</div></div>`;
+        <div id="sub-ranking-container" style="flex:1;overflow-y:auto;padding-bottom:16px;"><div id="rank-loading" style="text-align:center;color:#8fa0b8;padding:40px;">${window.zT('⏳ جاري جلب البيانات...', '⏳ Fetching data...')}</div></div>`;
     document.body.appendChild(sub);
     window.renderHomeRankingWidget('sub-ranking-container');
 };
@@ -70,17 +70,17 @@ window.openLegendaryRankingScreen = function() {
         background: var(--bg-dark, #0a1033) !important; z-index: 99999 !important;
         padding: 0; box-sizing: border-box; display: flex; flex-direction: column;
         overflow: hidden; color: white;
-        direction: ${isAr ? 'rtl' : 'ltr'}; text-align: ${isAr ? 'right' : 'left'};
+        direction: ${window.zA('rtl', 'ltr')}; text-align: ${window.zA('right', 'left')};
     `;
 
     screen.innerHTML = `
         <div style="flex-shrink: 0; height: max(0px, calc(var(--zelo-ad-h, 0px) - 10px));"></div>
         <div style="flex-shrink:0;padding:16px 20px 12px;text-align:center;border-bottom:1px solid rgba(245,195,90,.15);">
-            <h2 style="margin:0;color:#fff;font-weight:900;font-size:1.5rem;">${isAr ? 'نقاطي' : 'My Points'}</h2>
+            <h2 style="margin:0;color:#fff;font-weight:900;font-size:1.5rem;">${window.zT('نقاطي', 'My Points')}</h2>
         </div>
         <div id="full-ranking-container" style="flex:1;overflow-y:auto;padding:14px 16px 20px;">
             <div id="rank-loading" style="text-align:center; color:#8fa0b8; padding: 50px; font-size: 1.1rem;">
-                ${isAr ? '⏳ جاري جلب البيانات...' : '⏳ Fetching data...'}
+                ${window.zT('⏳ جاري جلب البيانات...', '⏳ Fetching data...')}
             </div>
         </div>
     `;
@@ -115,7 +115,7 @@ window.openLegendaryRankingScreen = function() {
     setTimeout(() => {
         const box = document.getElementById('full-ranking-container');
         if (box && document.getElementById('rank-loading')) {
-            box.innerHTML = `<div style="text-align:center; color:#ff9d9d; padding:30px 16px; font-size:1rem;">${isAr ? 'تأخّر التحميل. تأكد من الإنترنت ثم أعد المحاولة.' : 'Loading took too long. Check your connection and retry.'}<br><button onclick="window.openLegendaryRankingScreen()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:12px;background:#f5c35a;color:#0a1033;font-weight:bold;font-size:1rem;">${isAr ? 'إعادة المحاولة' : 'Retry'}</button></div>`;
+            box.innerHTML = `<div style="text-align:center; color:#ff9d9d; padding:30px 16px; font-size:1rem;">${window.zT('تأخّر التحميل. تأكد من الإنترنت ثم أعد المحاولة.', 'Loading took too long. Check your connection and retry.')}<br><button onclick="window.openLegendaryRankingScreen()" style="margin-top:14px;padding:10px 22px;border:none;border-radius:12px;background:#f5c35a;color:#0a1033;font-weight:bold;font-size:1rem;">${window.zT('إعادة المحاولة', 'Retry')}</button></div>`;
         }
     }, 10000);
     return done;
@@ -126,9 +126,9 @@ window.renderPointsScreen = async function(containerId) {
     if (!container) return;
     const uid = (typeof userState !== 'undefined' && userState?.userId) ? userState.userId : null;
     const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
-    const T = (a, e) => isAr ? a : e;
+    const T = (ar, en) => window.zT(ar, en);
     const fmt = n => Number(n || 0).toLocaleString('en-US');
-    const cacheKey = 'zelo_pts_v1_' + String(uid || '') + '_' + (isAr ? 'ar' : 'en');
+    const cacheKey = 'zelo_pts_v1_' + String(uid || '') + '_' + ((localStorage.getItem('app_lang') || 'ar'));
     try {
         const raw = localStorage.getItem(cacheKey);
         if (raw) { const d = JSON.parse(raw); if (d && d.html && Date.now() - d.t < 3 * 86400000) container.innerHTML = d.html; }
@@ -159,12 +159,12 @@ window.renderPointsScreen = async function(containerId) {
         const level = Math.floor(base / STEP) + 1;
         const into = base % STEP;
         const pct = Math.round(into / STEP * 100);
-        const names = isAr ? ['برونزية', 'فضية', 'ذهبية', 'بلاتينية', 'الماسة'] : ['Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond'];
+        const names = [window.zT('برونزية', 'Bronze'), window.zT('فضية', 'Silver'), window.zT('ذهبية', 'Gold'), window.zT('بلاتينية', 'Platinum'), window.zT('الماسة', 'Diamond')];
         const tierName = level >= 10 ? names[4] : level >= 7 ? names[3] : level >= 5 ? names[2] : level >= 3 ? names[1] : names[0];
 
         const G = '#f5c35a', G2 = '#f5c35a', GREY = 'rgba(255,255,255,0.62)';
         const card = 'background:linear-gradient(160deg,rgba(26,38,104,.85),rgba(17,26,74,.85));border:1px solid rgba(245,195,90,.22);border-radius:18px;';
-        const chev = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${G}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${isAr ? '' : 'transform:scaleX(-1);'}"><path d="M15 5l-7 7 7 7"/></svg>`;
+        const chev = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${G}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;${window.zA('', 'transform:scaleX(-1);')}"><path d="M15 5l-7 7 7 7"/></svg>`;
         const ico = (p) => `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="${G}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">${p}</svg>`;
         const ball = `<svg width="38" height="38" viewBox="0 0 24 24" fill="#0a1033" stroke="${G}" stroke-width="1.6" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5" fill="${G}" stroke="none"/><path d="M12 7.5l3.6 2.6-1.4 4.2H9.8L8.4 10.1z" fill="#0a1033" stroke="none"/><path d="M12 7.5V3M15.6 10.1l4.2-1.4M14.2 14.3l2.6 3.6M9.8 14.3l-2.6 3.6M8.4 10.1L4.2 8.7" stroke="#0a1033"/></svg>`;
         const diamond = `<img src="zelo-coin.png" alt="" style="width:78px;height:78px;flex-shrink:0;object-fit:contain;filter:drop-shadow(0 4px 10px rgba(0,0,0,.45));" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png';}else{this.style.display='none';}">`;
@@ -256,10 +256,10 @@ window.renderHomeRankingWidget = async function(containerId) {
 
     const currentUserId = (typeof userState !== 'undefined' && userState?.userId) ? userState.userId : null;
     const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar'); 
-    const anonymousName = isAr ? 'مستخدم' : 'User';
+    const anonymousName = window.zT('مستخدم', 'User');
 
     // عرض آخر نسخة محفوظة فورًا ثم التحديث بصمت
-    const cacheKey = 'zelo_rank_v1_' + containerId + '_' + String(currentUserId || '') + '_' + (isAr ? 'ar' : 'en');
+    const cacheKey = 'zelo_rank_v1_' + containerId + '_' + String(currentUserId || '') + '_' + ((localStorage.getItem('app_lang') || 'ar'));
     try {
         const raw = localStorage.getItem(cacheKey);
         if (raw) {
@@ -374,14 +374,14 @@ window.renderHomeRankingWidget = async function(containerId) {
                 .legendary-rank-badge {
                     position: absolute;
                     top: -10px;
-                    ${isAr ? 'left: -5px;' : 'right: -5px;'}
+                    ${window.zA('left: -5px;', 'right: -5px;')}
                     color: white;
                     font-weight: 900;
                     font-size: 1rem;
                     padding: 5px 12px;
                     border-radius: 12px;
                     border: 3px solid rgba(255,255,255,0.9);
-                    transform: rotate(${isAr ? '-8deg' : '8deg'});
+                    transform: rotate(${window.zA('-8deg', '8deg')});
                     z-index: 10;
                     letter-spacing: 1px;
                     box-shadow: 0 8px 25px rgba(0,0,0,0.5);
@@ -456,11 +456,11 @@ window.renderHomeRankingWidget = async function(containerId) {
                         </div>
                         <div class="podium-right-box">
                             <div class="podium-col">
-                                <span class="podium-sub-label">${isAr ? 'النقاط' : 'Pts'}</span>
+                                <span class="podium-sub-label">${window.zT('النقاط', 'Pts')}</span>
                                 <div class="podium-pts-pill" style="color: #f5c35a;">${firstPlace.points_earned}</div>
                             </div>
                             <div class="podium-col">
-                                <span class="podium-sub-label">${isAr ? 'الترتيب' : 'Rank'}</span>
+                                <span class="podium-sub-label">${window.zT('الترتيب', 'Rank')}</span>
                                 <span style="font-size: 1.3rem; line-height: 1;">👑</span>
                             </div>
                         </div>
@@ -477,11 +477,11 @@ window.renderHomeRankingWidget = async function(containerId) {
                         </div>
                         <div class="podium-right-box">
                             <div class="podium-col">
-                                <span class="podium-sub-label">${isAr ? 'النقاط' : 'Pts'}</span>
+                                <span class="podium-sub-label">${window.zT('النقاط', 'Pts')}</span>
                                 <div class="podium-pts-pill" style="color: #c0c0c0;">${secondPlace.points_earned}</div>
                             </div>
                             <div class="podium-col">
-                                <span class="podium-sub-label">${isAr ? 'الترتيب' : 'Rank'}</span>
+                                <span class="podium-sub-label">${window.zT('الترتيب', 'Rank')}</span>
                                 <span style="font-size: 1.2rem; line-height: 1;">🥈</span>
                             </div>
                         </div>
@@ -498,11 +498,11 @@ window.renderHomeRankingWidget = async function(containerId) {
                         </div>
                         <div class="podium-right-box">
                             <div class="podium-col">
-                                <span class="podium-sub-label">${isAr ? 'النقاط' : 'Pts'}</span>
+                                <span class="podium-sub-label">${window.zT('النقاط', 'Pts')}</span>
                                 <div class="podium-pts-pill" style="color: #cd7f32;">${thirdPlace.points_earned}</div>
                             </div>
                             <div class="podium-col">
-                                <span class="podium-sub-label">${isAr ? 'الترتيب' : 'Rank'}</span>
+                                <span class="podium-sub-label">${window.zT('الترتيب', 'Rank')}</span>
                                 <span style="font-size: 1.2rem; line-height: 1;">🥉</span>
                             </div>
                         </div>
@@ -510,7 +510,7 @@ window.renderHomeRankingWidget = async function(containerId) {
             }
             topHtml += `</div>`;
         } else {
-            topHtml += `<div style="text-align:center; color:#888; padding: 5px 0; margin-bottom: 10px; font-size: 0.95rem;">${isAr ? 'لا توجد بيانات ترتيب حالياً' : 'No ranking data available'}</div>`;
+            topHtml += `<div style="text-align:center; color:#888; padding: 5px 0; margin-bottom: 10px; font-size: 0.95rem;">${window.zT('لا توجد بيانات ترتيب حالياً', 'No ranking data available')}</div>`;
         }
 
         const displayRank = myRank || '-';
@@ -531,7 +531,7 @@ window.renderHomeRankingWidget = async function(containerId) {
                     <div class="legendary-points" style="padding: 3px 8px; margin: 0;">
                         <span style="font-size: 0.85rem;">🪙</span>
                         <span style="color: var(--accent-gold, #f5c35a); font-weight: 900; font-size: 0.95rem;">${myBalance.toLocaleString('en-US')}</span>
-                        <span style="color: rgba(255,255,255,0.7); font-size: 0.7rem; font-weight: bold;">${isAr ? 'كورة' : 'Kora'}</span>
+                        <span style="color: rgba(255,255,255,0.7); font-size: 0.7rem; font-weight: bold;">${window.zT('كورة', 'Kora')}</span>
                     </div>
                 </div>
                 
@@ -539,17 +539,17 @@ window.renderHomeRankingWidget = async function(containerId) {
                     <div class="legendary-stat-box stat-correct" style="padding: 4px 2px;">
                         <div style="font-size: 0.9rem; margin-bottom: 1px;">✅</div>
                         <div style="color: #14F195; font-size: 0.95rem; font-weight: 900; line-height: 1;">${correctCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${isAr ? 'صحيح' : 'Correct'}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${window.zT('صحيح', 'Correct')}</div>
                     </div>
                     <div class="legendary-stat-box stat-pending" style="padding: 4px 2px;">
                         <div style="font-size: 0.9rem; margin-bottom: 1px;">⏳</div>
                         <div style="color: #f5c35a; font-size: 0.95rem; font-weight: 900; line-height: 1;">${pendingCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${isAr ? 'انتظار' : 'Pending'}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${window.zT('انتظار', 'Pending')}</div>
                     </div>
                     <div class="legendary-stat-box stat-wrong" style="padding: 4px 2px;">
                         <div style="font-size: 0.9rem; margin-bottom: 1px;">❌</div>
                         <div style="color: #fff; font-size: 0.95rem; font-weight: 900; line-height: 1;">${wrongCount}</div>
-                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${isAr ? 'أخطاء' : 'Wrong'}</div>
+                        <div style="color: rgba(255,255,255,0.6); font-size: 0.6rem; font-weight: bold; margin-top: 1px;">${window.zT('أخطاء', 'Wrong')}</div>
                     </div>
                 </div>
             </div>
@@ -562,6 +562,6 @@ window.renderHomeRankingWidget = async function(containerId) {
         console.error('[ZELO] ranking:', e);
         if (container.querySelector('.podium-container, .legendary-card')) return;   // النسخة المحفوظة تبقى ظاهرة
         const why = String((e && e.message) || e || '').replace(/[<>&]/g, '').slice(0, 120);
-        container.innerHTML = `<div style="text-align:center; color: #ff4d4d; padding: 20px;">${isAr ? 'حدث خطأ في تحميل البيانات' : 'Error loading ranking data'}<div style="direction:ltr;color:#9aa3cf;font-size:.75rem;margin-top:8px;">${why}</div></div>`;
+        container.innerHTML = `<div style="text-align:center; color: #ff4d4d; padding: 20px;">${window.zT('حدث خطأ في تحميل البيانات', 'Error loading ranking data')}<div style="direction:ltr;color:#9aa3cf;font-size:.75rem;margin-top:8px;">${why}</div></div>`;
     }
 };
