@@ -356,7 +356,7 @@ window.openPredictionHistoryScreen = function() {};
             const f = await c.from('user_follows').select('following_id').eq('follower_id', uid()).limit(200);
             const ids = (f.data || []).map(x => x.following_id);
             if (ids.length) {
-                const r = await c.from('users').select('user_id,nickname_ar,nickname_en,username,photo_url').in('user_id', ids);
+                const r = await c.from('public_profiles').select('user_id,nickname_ar,nickname_en,username,photo_url').in('user_id', ids.map(String));
                 users = r.data || [];
             }
         } catch (e) { console.warn(e); }
