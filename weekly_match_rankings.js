@@ -9,10 +9,53 @@ const generateLegendaryAvatar = (name, photoUrl, size = '50px') => {
 };
 
 /* ===== شاشة «نقاطي» ===== */
-window.zeloPtsGo = function(fn) {
+window.zeloPtsGo = function(fn, noReturn) {
     const s = document.getElementById('ranking-full-screen'); if (s) s.remove();
     const sub = document.getElementById('ranking-sub-screen'); if (sub) sub.remove();
+
+    // لف showPage مرة واحدة: زر الرجوع إلى «الرئيسية» من صفحة فتحتها شاشة نقاطي يعيدك إلى نقاطي
+    if (!window.__zeloPtsWrapped && typeof window.showPage === 'function') {
+        window.__zeloPtsWrapped = true;
+        const orig = window.showPage;
+        window.showPage = function (p) {
+            const hold = window.__zeloPtsHold;
+            window.__zeloPtsHold = false;
+            if (hold && p === 'home') return orig.call(this, 'points');
+            return orig.apply(this, arguments);
+        };
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.closest && e.target.closest('#bottom-nav')) window.__zeloPtsHold = false;
+        }, true);
+    }
+
+    const before = new Set(Array.from(document.body.children));
     try { fn && fn(); } catch (e) { console.error('[ZELO] pts-go', e); }
+    if (noReturn) { window.__zeloPtsHold = false; return; }
+    window.__zeloPtsHold = true;
+
+    // شاشات تُفتح فوق الصفحة (لعبة، مشاركة...): عند إغلاقها نعيد شاشة نقاطي
+    let tries = 0;
+    const iv = setInterval(function () {
+        tries++;
+        const added = Array.from(document.body.children).filter(function (n) {
+            if (before.has(n) || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return false;
+            const r = n.getBoundingClientRect();
+            return r.height > window.innerHeight * 0.4;
+        });
+        if (added.length) {
+            clearInterval(iv);
+            window.__zeloPtsHold = false;
+            const mo = new MutationObserver(function () {
+                if (added.every(function (n) { return !n.isConnected; })) {
+                    mo.disconnect();
+                    if (typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();
+                }
+            });
+            mo.observe(document.body, { childList: true });
+        } else if (tries > 10 || !window.__zeloPtsHold) {
+            clearInterval(iv);
+        }
+    }, 300);
 };
 
 // لعبة «خمّن اللاعب»: يُحمَّل ملفها عند أول فتح فقط
@@ -228,7 +271,7 @@ window.renderPointsScreen = async function(containerId) {
                 ${row(ico('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>'), T('شاهد إعلانًا', 'Watch an ad'), T('نقاط مكافأة بعد كل إعلان', 'Bonus points after each ad'), "window.zeloPtsGo(function(){window.openAdsPage&&window.openAdsPage()})", false, T('مكافأة', 'Bonus'))}
                 ${row(ico('<circle cx="12" cy="12" r="9"/><path d="M9.2 9.5a2.8 2.8 0 1 1 4 2.5c-.8.5-1.2 1-1.2 1.9"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>'), T('خمّن اللاعب', 'Guess the player'), T('لغز جديد كل يوم واكسب نقاطاً', 'A new puzzle every day'), "window.zeloPtsGo(function(){window.zeloOpenGuess()})", false, T('كل يوم', 'Daily'))}
                 ${row(ico('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.6.2 4.5 2.1 4.5 5"/>'), T('ادعُ أصدقاءك', 'Invite friends'), T('لكل صديق ينضم ويتنبأ، احصل على نقاط', 'Earn points for each friend who joins'), "window.zeloPtsGo(function(){window.openShareSheet&&window.openShareSheet()})", false, T('لكل صديق', 'Per friend'))}
-                ${row(ico('<path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z"/>'), T('انشر واستقبل الدعم', 'Post and receive support'), T('فيديوهاتك ومنشوراتك يدعمها المتابعون بالنقاط', 'Followers support your posts with points'), "window.zeloPtsGo(function(){showPage('videos')})", true, T('من المتابعين', 'From followers'))}
+                ${row(ico('<path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z"/>'), T('انشر واستقبل الدعم', 'Post and receive support'), T('فيديوهاتك ومنشوراتك يدعمها المتابعون بالنقاط', 'Followers support your posts with points'), "window.zeloPtsGo(function(){showPage('home')},true)", true, T('من المتابعين', 'From followers'))}
             </div>
 
             <div style="margin:16px 4px 8px;"><div style="font-weight:900;font-size:1.25rem;color:#fff;">${T('استخدم نقاطك', 'Use your points')}</div><div style="font-size:.8rem;color:${GREY};">${T('استبدل نقاطك بمكافآت رائعة', 'Spend your points on great rewards')}</div></div>
