@@ -435,7 +435,8 @@
         // مركز المساعدة: بريد الدعم + الأسئلة الشائعة + الروابط القانونية
         help:        () => openHelpCenter(),
         lang: async () => {
-            const next = isAr() ? 'en' : 'ar';
+            const curL = String(window.userState?.lang || localStorage.getItem('app_lang') || 'ar').slice(0, 2);
+            const next = curL === 'ar' ? 'en' : (curL === 'en' ? 'tr' : 'ar'); // ar → en → tr → ar
             localStorage.setItem('app_lang', next);
             if (window.userState) window.userState.lang = next;
             // حفظ اللغة في قاعدة البيانات حتى لا تُستبدل بالقيمة القديمة عند إعادة التحميل
@@ -481,7 +482,7 @@
                 }
             ],
             footer: [
-                { key: 'lang', ar: 'تغيير اللغة',   en: 'Change language', muted: true },
+                { key: 'lang', ar: 'تغيير اللغة (AR / EN / TR)',   en: 'Change language (AR / EN / TR)', muted: true },
                 { key: 'help', ar: 'مركز المساعدة', en: 'Help center',     muted: true }
             ]
         };

@@ -142,8 +142,8 @@
     }
 
     function langBar() {
-        const ar = isAr();
-        return `<div class="au-lang"><span class="${ar ? 'on' : ''}" onclick="window.authSetLang('ar')">🇸🇦 العربية</span><span class="${!ar ? 'on' : ''}" onclick="window.authSetLang('en')">🇬🇧 English</span></div>`;
+        const cur = String(US().lang || LS.get('app_lang') || 'ar').slice(0, 2);
+        return `<div class="au-lang"><span class="${cur === 'ar' ? 'on' : ''}" onclick="window.authSetLang('ar')">🇸🇦 العربية</span><span class="${cur !== 'ar' && cur !== 'tr' ? 'on' : ''}" onclick="window.authSetLang('en')">🇬🇧 English</span><span class="${cur === 'tr' ? 'on' : ''}" onclick="window.authSetLang('tr')">🇹🇷 Türkçe</span></div>`;
     }
     window.authSetLang = function(l) {
         if (typeof userState !== 'undefined') userState.lang = l;

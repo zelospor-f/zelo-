@@ -99,11 +99,12 @@ function getDefaultLanguage() {
 }
 
 function getLanguageSelector() {
-    const isAr = (userState?.lang === 'ar');
+    const cur = userState?.lang || 'ar';
     return `
         <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 12px;">
-            <div class="lang-btn ${isAr ? 'lang-btn-active' : ''}" onclick="setLanguage('ar')">🇸🇦 العربية</div>
-            <div class="lang-btn ${!isAr ? 'lang-btn-active' : ''}" onclick="setLanguage('en')">🇬🇧 English</div>
+            <div class="lang-btn ${cur === 'ar' ? 'lang-btn-active' : ''}" onclick="setLanguage('ar')">🇸🇦 العربية</div>
+            <div class="lang-btn ${cur === 'en' ? 'lang-btn-active' : ''}" onclick="setLanguage('en')">🇬🇧 English</div>
+            <div class="lang-btn ${cur === 'tr' ? 'lang-btn-active' : ''}" onclick="setLanguage('tr')">🇹🇷 Türkçe</div>
         </div>
     `;
 }
