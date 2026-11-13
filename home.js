@@ -3149,7 +3149,6 @@
     window.zhOpenSearch = function () {
         if (typeof window.openSideDrawer !== 'function') return;
         window.openSideDrawer();
-        setTimeout(() => { const i = document.getElementById('zdrawer-q'); if (i) i.focus(); }, 380);
     };
     window.zhOpenWallet = function () {
         if (typeof window.openWithdrawWallet === 'function' && db()) window.openWithdrawWallet(db());
