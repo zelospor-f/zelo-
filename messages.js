@@ -29,7 +29,7 @@
 (function () {
     const US = () => (typeof userState !== 'undefined' && userState) ? userState : {};
     const isAr = () => US().lang === 'ar';
-    const T = (ar, en) => isAr() ? ar : en;
+    const T = (ar, en) => window.zT(ar, en);
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
     const me = () => ({ id: String(US().userId || '') });
@@ -319,7 +319,7 @@
         ov.className = 'dm-chat';
         ov.innerHTML = `
             <div class="dm-head">
-                <button class="dm-hbtn" id="dm-back">${isAr() ? '→' : '←'}</button>
+                <button class="dm-hbtn" id="dm-back">${window.zA('→', '←')}</button>
                 <img class="dm-hav" id="dm-hav" src="${esc(avatarUrl(p.name, p.avatar))}" onerror="this.style.display='none'">
                 <div class="dm-hname" id="dm-hname">${esc(nameOf(uid))}${badgeHtml(uid, 16)}</div>
                 <button class="dm-hbtn" id="dm-more">⋮</button>

@@ -123,7 +123,7 @@
         if (h < 24) return T('notifHourAgo', 'منذ {n} س', '{n}h ago', { n: h });
         const d = Math.floor(h / 24);
         if (d < 7) return T('notifDayAgo', 'منذ {n} يوم', '{n}d ago', { n: d });
-        return new Date(t).toLocaleDateString(isAr() ? 'ar' : 'en-US');
+        return new Date(t).toLocaleDateString(window.zA('ar', 'en-US'));
     }
 
     /* ---------- الشارة ---------- */
@@ -379,7 +379,7 @@
         el.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:100030;width:92%;max-width:420px;'
             + 'box-sizing:border-box;padding:12px 14px;border-radius:16px;cursor:pointer;color:#fff;'
             + 'background:linear-gradient(135deg,rgba(17,26,74,.98),rgba(10,16,51,.98));border:1px solid ' + ti.color + ';'
-            + 'box-shadow:0 8px 30px rgba(0,0,0,.6);text-align:start;direction:' + (isAr() ? 'rtl' : 'ltr');
+            + 'box-shadow:0 8px 30px rgba(0,0,0,.6);text-align:start;direction:' + (window.zA('rtl', 'ltr'));
         el.innerHTML = '<div style="font-weight:900;font-size:.95rem">' + esc(title) + '</div>'
             + (body ? '<div style="color:#9aa6d6;font-size:.8rem;margin-top:3px">' + esc(body) + '</div>' : '');
         el.addEventListener('click', () => { el.remove(); runAction(n.action); });

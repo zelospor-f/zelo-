@@ -218,7 +218,7 @@
     `;
 
     const isAr = () => (window.userState?.lang || 'ar').startsWith('ar');
-    const L = (ar, en) => (isAr() ? ar : en);
+    const L = (ar, en) => window.zT(ar, en);
     const fmt = n => Number(n || 0).toLocaleString('en-US');
 
     function esc(str) {
@@ -266,10 +266,10 @@
     function render() {
         const root = document.getElementById('zs');
         if (!root) return;
-        root.dir = isAr() ? 'rtl' : 'ltr';
+        root.dir = window.zA('rtl', 'ltr');
         root.innerHTML = `
             <header class="zs-top">
-                <button class="zs-back" data-act="close" aria-label="${esc(L('رجوع', 'Back'))}">${isAr() ? '›' : '‹'}</button>
+                <button class="zs-back" data-act="close" aria-label="${esc(L('رجوع', 'Back'))}">${window.zA('›', '‹')}</button>
                 <h1 class="zs-title">${esc(L('المتجر', 'Store'))}</h1>
                 <span></span>
             </header>

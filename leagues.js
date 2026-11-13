@@ -24,8 +24,8 @@
     const isAr = () => ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
     const db = () => (typeof supabaseClient !== 'undefined' ? supabaseClient : window.supabaseClient);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const locale = () => (isAr() ? 'ar-EG' : 'en-US');
-    const T = (ar, en) => (isAr() ? ar : en);
+    const locale = () => (window.zA('ar-EG', 'en-US'));
+    const T = (ar, en) => window.zT(ar, en);
 
     let box = null;
     const MAP = {};
@@ -90,7 +90,7 @@
         box = container || box || document.getElementById('main-content');
         if (!box) return;
         css();
-        box.style.direction = isAr() ? 'rtl' : 'ltr';
+        box.style.direction = window.zA('rtl', 'ltr');
         box.innerHTML = HUB_CACHE || `<div class="lg-empty">⏳ ${T('جارٍ التحميل...', 'Loading...')}</div>`;
 
         const c = db();
@@ -120,7 +120,7 @@
                 <span class="lg-ic">${logo(o.code, o.emblem)}</span>
                 <span class="lg-nm"><b>${esc(lgName(o.code, o.name))}</b><small>${esc(o.name || '')}</small></span>
                 ${o.up ? `<span class="lg-n">${o.up}</span>` : ''}
-                <span style="color:#8d99cf">${isAr() ? '‹' : '›'}</span>
+                <span style="color:#8d99cf">${window.zA('‹', '›')}</span>
             </button>`;
 
         box.innerHTML = `

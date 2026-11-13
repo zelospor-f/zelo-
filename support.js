@@ -50,7 +50,7 @@
     // ===================== أدوات مساعدة =====================
     const US = () => (typeof userState !== 'undefined' && userState) ? userState : (window.userState || {});
     const isAr = () => (US().lang || 'ar').startsWith('ar');
-    const L = (ar, en) => (isAr() ? ar : en);
+    const L = (ar, en) => window.zT(ar, en);
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const fmt = n => Math.round(Number(n) || 0).toLocaleString('en-US');
     const $ = id => document.getElementById(id);
@@ -180,7 +180,7 @@
         $('zsup-overlay')?.remove();
         const ov = document.createElement('div');
         ov.id = 'zsup-overlay';
-        ov.dir = isAr() ? 'rtl' : 'ltr';
+        ov.dir = window.zA('rtl', 'ltr');
         ov.style.cssText = sheetBase(4500);
 
         const tabBtn = (id, label) =>
@@ -340,7 +340,7 @@
         $('zsup-list-overlay')?.remove();
         const ov = document.createElement('div');
         ov.id = 'zsup-list-overlay';
-        ov.dir = isAr() ? 'rtl' : 'ltr';
+        ov.dir = window.zA('rtl', 'ltr');
         ov.style.cssText = sheetBase(4600);
         ov.innerHTML = `
             <div style="${sheetPanel('78vh')}">
@@ -353,7 +353,7 @@
         $('zsup-list-x').onclick = () => ov.remove();
 
         // آخر قائمة محفوظة تظهر فورًا ثم تتحدث بصمت
-        const cacheKey = 'zelo_sup_v1_' + String(postId) + '_' + (isAr() ? 'ar' : 'en');
+        const cacheKey = 'zelo_sup_v1_' + String(postId) + '_' + ((localStorage.getItem('app_lang') || 'ar'));
         let shownCached = false;
         try {
             const raw = JSON.parse(localStorage.getItem(cacheKey) || 'null');
