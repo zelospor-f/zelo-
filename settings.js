@@ -125,6 +125,37 @@
         .zset-note { font-size: 0.78rem; font-weight: 700; min-height: 1.2em; margin: 4px 2px 0; color: var(--text-muted, #9aa6d6); }
         .zset-note.ok { color: var(--accent-green, #14F195); }
         .zset-note.bad { color: #ff6b6b; }
+
+        /* ===== الشاشة الرئيسية (تصميم جديد) ===== */
+        .zs2-prof { display:flex; align-items:center; gap:14px; padding:14px; border-radius:20px; margin-bottom:6px;
+            background: linear-gradient(135deg, rgba(44,75,181,.45), rgba(245,195,90,.14)); border:1px solid rgba(245,195,90,.3); }
+        .zs2-av { width:58px; height:58px; border-radius:50%; padding:3px; box-sizing:border-box; flex:none;
+            background: conic-gradient(#ffe7ad,#f5c35a,#2c4bb5,#ffe7ad); }
+        .zs2-av > div { width:100%; height:100%; border-radius:50%; background:#0a1033; color:#f5c35a; overflow:hidden;
+            display:flex; align-items:center; justify-content:center; font-weight:900; font-size:22px; }
+        .zs2-av img { width:100%; height:100%; object-fit:cover; }
+        .zs2-pn { font-weight:900; font-size:1rem; }
+        .zs2-pu { font-size:.78rem; color:#cfd8ff; }
+        .zs2-pu span { direction:ltr; unicode-bidi:isolate; display:inline-block; }
+        .zs2-sec { margin:18px 4px 8px; font-size:.75rem; font-weight:900; color:var(--text-muted,#9aa6d6); }
+        .zs2-card { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.09); border-radius:20px; overflow:hidden; }
+        .zs2-row { width:100%; display:flex; align-items:center; gap:12px; padding:13px 14px; background:transparent; border:none;
+            border-bottom:1px solid rgba(255,255,255,.07); color:inherit; font-family:inherit; text-align:start; cursor:pointer; }
+        .zs2-row:last-child { border-bottom:none; }
+        .zs2-row:active { background:rgba(245,195,90,.08); }
+        .zs2-ic { width:38px; height:38px; border-radius:12px; flex:none; display:flex; align-items:center; justify-content:center;
+            background:rgba(245,195,90,.10); border:1px solid rgba(245,195,90,.25); color:#f5c35a; }
+        .zs2-tx { flex:1; min-width:0; }
+        .zs2-tx b { display:block; font-size:.9rem; font-weight:900; }
+        .zs2-tx small { display:block; font-size:.72rem; color:var(--text-muted,#9aa6d6); margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .zs2-out { width:100%; height:50px; margin-top:22px; border-radius:16px; border:1.5px solid rgba(245,195,90,.5);
+            background:rgba(245,195,90,.08); color:#f5c35a; display:flex; align-items:center; justify-content:center; gap:10px;
+            font-family:inherit; font-weight:900; font-size:.95rem; cursor:pointer; }
+        .zs2-out:active { transform:scale(.97); }
+        .zs2-del { width:100%; margin-top:26px; padding:12px 14px; border-radius:18px; border:1px solid rgba(255,107,107,.3);
+            background:rgba(255,77,94,.06); display:flex; align-items:center; gap:12px; color:inherit; font-family:inherit; text-align:start; cursor:pointer; }
+        .zs2-del .zs2-ic { background:rgba(255,77,94,.12); border-color:transparent; color:#ff7b86; }
+        .zs2-del b { color:#ff9b9b; }
     `;
 
     const isAr = () => (window.userState?.lang || 'ar').startsWith('ar');
@@ -203,25 +234,41 @@
     // ---------- الشاشة الرئيسية ----------
     function screenMain() {
         clearTimers();
-        const row = (id, ico, label, val) => `
-            <button class="zs-row" id="${id}">
-                <span class="zs-row-ico">${ico}</span>
-                <span class="zs-row-txt"><b>${label}</b><small dir="auto">${esc(val)}</small></span>
-                <span class="zs-chev">${window.zA('‹', '›')}</span>
+        const ic = p => `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+        const chev = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6f7bb8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="transform:${window.zA('none', 'scaleX(-1)')}"><path d="M15 6l-6 6 6 6"/></svg>`;
+        const row = (id, icon, label, val) => `
+            <button class="zs2-row" id="${id}">
+                <span class="zs2-ic">${ic(icon)}</span>
+                <span class="zs2-tx"><b>${label}</b><small dir="auto">${esc(val)}</small></span>
+                ${chev}
             </button>`;
+        const nick = currentNick();
+        const photo = US().photo_url || US().avatar_url || '';
+        const av = photo ? `<img src="${esc(photo)}" alt="" onerror="this.style.display='none'">` : esc((nick || 'Z').charAt(0).toUpperCase());
         mount(`
-            <div class="zs-head line">${backBtn()}<div class="zs-title">⚙️ ${tr('set_settings', 'الإعدادات', 'Settings')}</div></div>
+            <div class="zs-head line">${backBtn()}<div class="zs-title">${tr('set_settings', 'الإعدادات', 'Settings')}</div></div>
             <div class="zs-body">
-                ${row('zs-r-nick', '👤', tr('set_nickname', 'الاسم المستعار', 'Nickname'), currentNick())}
-                ${row('zs-r-user', '@', tr('set_username', 'اسم المستخدم', 'Username'), US().username ? '@' + US().username : '—')}
-                ${row('zs-r-email', '✉️', tr('set_email', 'البريد الإلكتروني', 'Email'), currentEmail() || '—')}
-                ${row('zs-r-pass', '🔑', tr('set_password', 'كلمة المرور', 'Password'), '••••••••')}
-                ${row('zs-r-blocked', '🚫', tr('set_blocked', 'المحظورون', 'Blocked users'), tr('set_blocked_sub', 'إدارة من حظرتهم', 'Manage people you blocked'))}
-                <button class="zs-logout" id="zs-logout">🚪 ${tr('set_log_out', 'تسجيل الخروج', 'Log out')}</button>
-                <div style="margin-top:56px;padding-top:14px;border-top:1px solid rgba(255,107,107,.25);">
-                    <div style="font-size:.75rem;color:#ff9b9b;font-weight:700;margin:0 4px 10px;">⚠️ ${tr('set_danger_zone', 'منطقة الخطر', 'Danger zone')}</div>
-                    <button class="zs-logout" id="zs-del-open">🗑️ ${tr('set_delete_account', 'حذف الحساب', 'Delete account')}</button>
+                <div class="zs2-prof">
+                    <div class="zs2-av"><div>${av}</div></div>
+                    <div style="flex:1;min-width:0"><div class="zs2-pn">${esc(nick)}</div><div class="zs2-pu"><span>${US().username ? '@' + esc(US().username) : ''}</span></div></div>
                 </div>
+                <div class="zs2-sec">${tr('set_sec_account', 'الحساب', 'Account')}</div>
+                <div class="zs2-card">
+                    ${row('zs-r-nick', '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/>', tr('set_nickname', 'الاسم المستعار', 'Nickname'), nick)}
+                    ${row('zs-r-user', '<circle cx="12" cy="12" r="4"/><path d="M16 12v1.5a2.5 2.5 0 005 0V12a9 9 0 10-3.5 7.1"/>', tr('set_username', 'اسم المستخدم', 'Username'), US().username ? '@' + US().username : '—')}
+                    ${row('zs-r-email', '<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 8l9 6 9-6"/>', tr('set_email', 'البريد الإلكتروني', 'Email'), currentEmail() || '—')}
+                    ${row('zs-r-pass', '<rect x="5" y="11" width="14" height="10" rx="3"/><path d="M8 11V8a4 4 0 018 0v3"/>', tr('set_password', 'كلمة المرور', 'Password'), '••••••••')}
+                </div>
+                <div class="zs2-sec">${tr('set_sec_privacy', 'الخصوصية', 'Privacy')}</div>
+                <div class="zs2-card">
+                    ${row('zs-r-blocked', '<circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/>', tr('set_blocked', 'المحظورون', 'Blocked users'), tr('set_blocked_sub', 'إدارة من حظرتهم', 'Manage people you blocked'))}
+                </div>
+                <button class="zs2-out" id="zs-logout">${ic('<path d="M10 4H6a2 2 0 00-2 2v12a2 2 0 002 2h4"/><path d="M16 8l4 4-4 4M20 12H9"/>')}${tr('set_log_out', 'تسجيل الخروج', 'Log out')}</button>
+                <button class="zs2-del" id="zs-del-open">
+                    <span class="zs2-ic">${ic('<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>')}</span>
+                    <span class="zs2-tx"><b>${tr('set_delete_account', 'حذف الحساب', 'Delete account')}</b><small>${tr('set_danger_zone', 'منطقة الخطر', 'Danger zone')} · ${tr('set_irreversible', 'لا يمكن التراجع', 'Cannot be undone')}</small></span>
+                    ${chev}
+                </button>
             </div>`);
         $('zs-back').addEventListener('click', closeSettings);
         $('zs-r-nick').addEventListener('click', screenNick);
