@@ -2917,7 +2917,7 @@
         zvvPageTab = tab;
         const list = tab === 'fol' ? zvvPageList.filter(p => followSet.has(String(p.user_id))) : zvvPageList;
         const ids = list.map(p => String(p.id));
-        window.openVideoViewer(ids[0], { page: true, ids, tab, mount: zvvPageBox });
+        window.openVideoViewer(ids[0], { page: true, ids, tab });
     }
     window.zvvTab = function (tab) { if (tab !== zvvPageTab) zvvShowTab(tab); };
 
