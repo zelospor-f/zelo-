@@ -439,26 +439,10 @@
         lang: () => window.zeloOpenLangPicker()
     };
 
-    // الأقسام: حسابي / اكتشف / المزيد
+    // الأقسام: المزيد فقط
     function getItems() {
         return {
             sections: [
-                {
-                    title: { ar: 'حسابي', en: 'MY ACCOUNT' },
-                    items: [
-                        { key: 'rooms',         ar: 'الغرف',        en: 'Rooms', highlight: true },
-                        { key: 'subscriptions', ar: 'الاشتراكات',   en: 'Subscriptions', highlight: true },
-                        { key: 'store',         ar: 'المتجر',       en: 'Store', highlight: true }
-                    ]
-                },
-                {
-                    title: { ar: 'اكتشف', en: 'DISCOVER' },
-                    items: [
-                        { key: 'nft',       ar: 'سوق NFT',     en: 'NFT Market' },
-                        { key: 'radar',     ar: 'الرادار',     en: 'Radar' },
-                        { key: 'community', ar: 'المجتمعات',   en: 'Community' }
-                    ]
-                },
                 {
                     title: { ar: 'المزيد', en: 'MORE' },
                     items: [
@@ -510,16 +494,7 @@
             </div>`).join('');
 
         drawer.innerHTML = `
-            <div class="zdrawer-header">
-                <div class="zdrawer-avatar-ring"><div class="zdrawer-avatar">${avatarHtml(name)}</div></div>
-                <div class="zdrawer-name">${esc(name)}</div>
-                <div class="zdrawer-handle"><bdi dir="ltr">@${esc(handle)}</bdi></div>
-            </div>
-
-            <div class="zdrawer-search">
-                <input id="zdrawer-q" type="search" enterkeyhint="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="${esc(L('🔍 ابحث عن مستخدم', '🔍 Search users'))}">
-                <div id="zdrawer-results"></div>
-            </div>
+            <div style="height:calc(env(safe-area-inset-top, 0px) + 22px)"></div>
 
             ${sections}
 
@@ -531,7 +506,6 @@
                 <div class="zdrawer-version">ZELO Sport v${esc(APP_VERSION)}</div>
             </div>
         `;
-        wireSearch(drawer);
     }
 
     // ===== بحث المستخدمين داخل الدرج (النتائج تظهر عند الكتابة فقط) =====
