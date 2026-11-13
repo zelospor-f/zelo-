@@ -128,7 +128,7 @@ window.renderPointsScreen = async function(containerId) {
     const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
     const T = (ar, en) => window.zT(ar, en);
     const fmt = n => Number(n || 0).toLocaleString('en-US');
-    const cacheKey = 'zelo_pts_v1_' + String(uid || '') + '_' + ((localStorage.getItem('app_lang') || 'ar'));
+    const cacheKey = 'zelo_pts_v2_' + String(uid || '') + '_' + ((localStorage.getItem('app_lang') || 'ar'));
     try {
         const raw = localStorage.getItem(cacheKey);
         if (raw) { const d = JSON.parse(raw); if (d && d.html && Date.now() - d.t < 3 * 86400000) container.innerHTML = d.html; }
@@ -178,11 +178,11 @@ window.renderPointsScreen = async function(containerId) {
         const noI = `<span style="width:24px;height:24px;border-radius:50%;background:#e03535;display:inline-flex;align-items:center;justify-content:center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></span>`;
         const waI = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${GREY}" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3 2"/></svg>`;
 
-        const row = (icon, title, sub, onclick, last) => `
+        const row = (icon, title, sub, onclick, last, chip) => `
             <div onclick="${onclick}" style="display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;${last ? '' : 'border-bottom:1px solid rgba(245,195,90,.14);'}">
-                ${icon}
-                <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:1rem;color:#fff;">${title}</div><div style="font-size:.78rem;color:${GREY};margin-top:2px;">${sub}</div></div>
-                ${chev}
+                <div style="width:46px;height:46px;border-radius:50%;background:rgba(245,195,90,.1);border:1px solid rgba(245,195,90,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icon}</div>
+                <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:1rem;color:#fff;">${title}</div><div style="font-size:.78rem;color:${GREY};margin-top:2px;line-height:1.4;">${sub}</div></div>
+                <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;">${chip ? `<span style="padding:3px 10px;border-radius:999px;font-size:.7rem;font-weight:900;color:#0a1033;background:linear-gradient(135deg,#ffe7ad,#f5c35a);white-space:nowrap;">${chip}</span>` : ''}${chev}</div>
             </div>`;
 
         const useCard = (emoji, title, sub, onclick) => `
@@ -222,17 +222,13 @@ window.renderPointsScreen = async function(containerId) {
                 ${stat(pending, T('انتظار', 'Pending'), GREY, waI)}
             </div>
 
-            <div style="${card}margin-top:10px;overflow:hidden;">
-                ${row(ico('<path d="M9 6h6M5 21h14M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4v2a3 3 0 0 0 3 3M17 6h3v2a3 3 0 0 1-3 3"/>'), T('ترتيب التحديات', 'Challenges ranking'), rank ? T('ترتيبك الحالي: المركز ', 'Your rank: ') + rank : T('شاهد أبطال هذا الأسبوع', "See this week's champions"), 'window.openChallengesRanking()')}
-                ${row(ico('<path d="M3 20h18M5 20V10l7-6 7 6v10M9 20v-6h6v6"/>'), T('ترتيب الأندية', 'Clubs ranking'), T('أي نادٍ جمهوره الأقوى؟', 'Which club has the strongest fans?'), "window.zeloPtsGo(function(){showPage('leaderboard')})", true)}
-            </div>
-
             <div style="font-weight:900;font-size:1.25rem;margin:16px 4px 8px;color:#fff;">${T('كيف تكسب المزيد؟', 'How to earn more?')}</div>
             <div style="${card}overflow:hidden;">
-                ${row(ico('<circle cx="12" cy="12" r="9.5"/><path d="M12 7.5l3.6 2.6-1.4 4.2H9.8L8.4 10.1z"/>'), T('تنبّأ بنتائج المباريات', 'Predict match results'), T('احصل على نقاط لكل توقع صحيح', 'Earn points for each correct pick'), "window.zeloPtsGo(function(){showPage('matches')})")}
-                ${row(ico('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>'), T('شاهد إعلانًا', 'Watch an ad'), T('نقاط مكافأة بعد كل إعلان', 'Bonus points after each ad'), "window.zeloPtsGo(function(){window.openAdsPage&&window.openAdsPage()})")}
-                ${row(ico('<circle cx="12" cy="12" r="9"/><path d="M9.2 9.5a2.8 2.8 0 1 1 4 2.5c-.8.5-1.2 1-1.2 1.9"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>'), T('خمّن اللاعب', 'Guess the player'), T('لغز جديد كل يوم واكسب نقاطاً', 'A new puzzle every day'), "window.zeloPtsGo(function(){window.zeloOpenGuess()})")}
-                ${row(ico('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.6.2 4.5 2.1 4.5 5"/>'), T('ادعُ أصدقاءك', 'Invite friends'), T('لكل صديق ينضم ويتنبأ، احصل على نقاط', 'Earn points for each friend who joins'), "window.zeloPtsGo(function(){window.openShareSheet&&window.openShareSheet()})", true)}
+                ${row(ico('<circle cx="12" cy="12" r="9.5"/><path d="M12 7.5l3.6 2.6-1.4 4.2H9.8L8.4 10.1z"/>'), T('تنبّأ بنتائج المباريات', 'Predict match results'), T('احصل على نقاط لكل توقع صحيح', 'Earn points for each correct pick'), "window.zeloPtsGo(function(){showPage('matches')})", false, T('حتى 3 كورة', 'Up to 3 Kora'))}
+                ${row(ico('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>'), T('شاهد إعلانًا', 'Watch an ad'), T('نقاط مكافأة بعد كل إعلان', 'Bonus points after each ad'), "window.zeloPtsGo(function(){window.openAdsPage&&window.openAdsPage()})", false, T('مكافأة', 'Bonus'))}
+                ${row(ico('<circle cx="12" cy="12" r="9"/><path d="M9.2 9.5a2.8 2.8 0 1 1 4 2.5c-.8.5-1.2 1-1.2 1.9"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>'), T('خمّن اللاعب', 'Guess the player'), T('لغز جديد كل يوم واكسب نقاطاً', 'A new puzzle every day'), "window.zeloPtsGo(function(){window.zeloOpenGuess()})", false, T('كل يوم', 'Daily'))}
+                ${row(ico('<circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.5 2.7-6 6-6s6 2.5 6 6"/><circle cx="17" cy="9" r="2.4"/><path d="M16.5 14.2c2.6.2 4.5 2.1 4.5 5"/>'), T('ادعُ أصدقاءك', 'Invite friends'), T('لكل صديق ينضم ويتنبأ، احصل على نقاط', 'Earn points for each friend who joins'), "window.zeloPtsGo(function(){window.openShareSheet&&window.openShareSheet()})", false, T('لكل صديق', 'Per friend'))}
+                ${row(ico('<path d="M12 3l2.4 5 5.6.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.6-.8z"/>'), T('انشر واستقبل الدعم', 'Post and receive support'), T('فيديوهاتك ومنشوراتك يدعمها المتابعون بالنقاط', 'Followers support your posts with points'), "window.zeloPtsGo(function(){showPage('videos')})", true, T('من المتابعين', 'From followers'))}
             </div>
 
             <div style="margin:16px 4px 8px;"><div style="font-weight:900;font-size:1.25rem;color:#fff;">${T('استخدم نقاطك', 'Use your points')}</div><div style="font-size:.8rem;color:${GREY};">${T('استبدل نقاطك بمكافآت رائعة', 'Spend your points on great rewards')}</div></div>

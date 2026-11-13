@@ -3133,8 +3133,8 @@
             <div class="zh-row">
                 ${q('gold', "window.openTodayMatches('tonight')", zhIc('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', 26), window.zT('الليلة', 'Tonight'))}
                 ${q('live', "window.openTodayMatches('live')", 'LIVE', window.zT('مباشر', 'Live'))}
-                ${q('', "window.openGuessPlayer && window.openGuessPlayer()", zhIc('<circle cx="12" cy="12" r="9"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.6 2.2c-.8.4-1.2.9-1.2 1.8"/>', 26), window.zT('خمّن اللاعب', 'Guess player'))}
-                ${q('', "window.openLegendaryRankingScreen && window.openLegendaryRankingScreen()", zhIc('<path d="M8 5h8v5a4 4 0 0 1-8 0z"/><path d="M12 14v4M8 20h8"/>', 26), window.zT('الترتيب', 'Ranking'))}
+                ${q('gold', "window.openLegendaryRankingScreen && window.openLegendaryRankingScreen()", zhIc('<circle cx="12" cy="12" r="9"/><path d="M12 16.5V8M8.5 11.5L12 8l3.5 3.5"/>', 26), window.zT('كيف تكسب', 'How to earn'))}
+                ${q('', "window.openGeneralRanking && window.openGeneralRanking()", zhIc('<path d="M8 5h8v5a4 4 0 0 1-8 0z"/><path d="M12 14v4M8 20h8"/>', 26), window.zT('الترتيب', 'Ranking'))}
                 ${q('', "window.openShareSheet && window.openShareSheet()", zhIc('<circle cx="9" cy="9" r="3"/><path d="M3.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M17 8v6M14 11h6"/>', 26), window.zT('ادعُ صديقًا', 'Invite'))}
             </div>`;
     }
