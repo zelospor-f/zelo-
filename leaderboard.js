@@ -16,141 +16,220 @@ function lbSafePhoto(url) {
     return /^(https?:\/\/|data:image\/)/i.test(url) ? url : '';
 }
 
-window.renderLeaderboardPage = async function(container) {
-    const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
+/* ===========================================================
+   شاشة «المتصدرون»: تبويبان — الأندية | التحديات
+   تفتح من دائرة المتصدرين في صفحة المباريات
+   =========================================================== */
+(function () {
+    const isAr = () => (typeof userState !== 'undefined' && userState?.lang === 'ar');
+    const L = (ar, en) => isAr() ? ar : en;
+    const esc = s => window.escapeHTML(s);
+    const COIN = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f5c35a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9 9h6l-6 6h6"/></svg>';
+    const MED = [
+        { c: '#c9d3e6', m: '🥈', size: 46, h: 70 },   // الثاني (يسار)
+        { c: '#f5c35a', m: '👑', size: 56, h: 104 },  // الأول (وسط)
+        { c: '#cd7f32', m: '🥉', size: 44, h: 54 }    // الثالث
+    ];
+    let box = null, tab = 'clubs';
+    const num = n => Number(n || 0).toLocaleString('en-US');
 
-    container.innerHTML = `<style>@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }</style>
-    <div style="text-align:center; padding:40px; color:#f5c35a; font-weight:800; font-size:1rem; animation: pulse 1.5s infinite;">
-        ${lbTr('loadingRankings', '⏳ جاري جلب الترتيب المباشر...', '⏳ Fetching Live Rankings...')}
-    </div>`;
+    function css() {
+        if (document.getElementById('ldr-css')) return;
+        const st = document.createElement('style');
+        st.id = 'ldr-css';
+        st.textContent = `
+        .ldr{padding-bottom:110px;color:#f4f6ff}
+        .ldr-head{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+        .ldr-title{flex:1;font-weight:900;font-size:1.3rem}
+        .ldr-tabs{display:flex;padding:4px;border-radius:999px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);margin-bottom:14px}
+        .ldr-tabs div{flex:1;text-align:center;padding:9px 0;border-radius:999px;color:#9aa6d6;font-weight:800;font-size:.9rem;cursor:pointer}
+        .ldr-tabs div.on{background:linear-gradient(135deg,#ffe7ad,#f5c35a);color:#0a1033;font-weight:900}
+        .ldr-pod{display:flex;align-items:flex-end;gap:8px;margin-bottom:12px;min-height:196px}
+        .ldr-p{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;justify-content:flex-end;cursor:pointer}
+        .ldr-av{border-radius:50%;background:#0a1033;display:flex;align-items:center;justify-content:center;flex:none;overflow:hidden;position:relative;font-weight:900;color:#fff}
+        .ldr-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+        .ldr-av.logo img{object-fit:contain;inset:6px;width:calc(100% - 12px);height:calc(100% - 12px)}
+        .ldr-pn{font-weight:900;font-size:.8rem;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+        .ldr-pb{width:100%;border-radius:16px 16px 0 0;border-bottom:0!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+        .ldr-pb b{font-weight:900;font-size:.95rem;direction:ltr}
+        .ldr-pb small{font-size:.65rem;color:#9aa6d6}
+        .ldr-r{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:18px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);margin-bottom:8px;cursor:pointer}
+        .ldr-r.me{background:linear-gradient(135deg,rgba(245,195,90,.16),rgba(44,75,181,.2));border-color:#f5c35a}
+        .ldr-rk{width:30px;text-align:center;font-weight:900;font-size:.95rem;color:#9aa6d6;flex:none}
+        .ldr-nm{flex:1;min-width:0}
+        .ldr-nm b{display:block;font-weight:900;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .ldr-chip{display:inline-block;margin-top:3px;padding:1px 8px;border-radius:7px;font-size:.68rem;font-weight:700;color:#ffd98a;background:rgba(245,195,90,.1);border:1px solid rgba(245,195,90,.25)}
+        .ldr-me{margin-top:3px;font-size:.68rem;font-weight:900;color:#f5c35a}
+        .ldr-pt{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:12px;background:rgba(245,195,90,.1);border:1px solid rgba(245,195,90,.4);font-weight:900;font-size:.85rem;color:#f5c35a;direction:ltr;flex:none}
+        .ldr-wk{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;border-radius:14px;background:rgba(44,75,181,.25);border:1px solid rgba(245,195,90,.35);margin-bottom:12px;font-size:.8rem}
+        .ldr-bar{position:fixed;left:12px;right:12px;bottom:var(--ldr-bot,80px);z-index:60;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:18px;background:linear-gradient(135deg,rgba(245,195,90,.22),rgba(44,75,181,.3)),#0a1033;border:1px solid #f5c35a;box-shadow:0 -8px 24px rgba(0,0,0,.35)}
+        .ldr-empty{text-align:center;color:#9aa6d6;padding:40px 10px;font-weight:800}
+        `;
+        document.head.appendChild(st);
+    }
 
-    try {
-        let clubPointsMap = {}, clubMembersMap = {}, myClubId = null, myPts = 0;
+    function avatar(url, ini, size, col, logo) {
+        const u = lbSafePhoto(url);
+        return `<span class="ldr-av ${logo ? 'logo' : ''}" style="width:${size}px;height:${size}px;border:2px solid ${col};font-size:${Math.round(size * .4)}px">${esc(ini)}${u ? `<img src="${esc(u)}" alt="" onerror="this.remove()">` : ''}</span>`;
+    }
 
-        if (typeof supabaseClient !== 'undefined' && supabaseClient !== null) {
-            const { data } = await supabaseClient.from('club_fans_rankings').select('user_id, club_id, total_fan_points');
-            data?.forEach(fan => {
-                if (typeof userState !== 'undefined' && userState?.userId && String(fan.user_id) === String(userState.userId)) { myClubId = fan.club_id; myPts = fan.total_fan_points || 0; }
-                clubPointsMap[fan.club_id] = (clubPointsMap[fan.club_id] || 0) + (fan.total_fan_points || 0);
-                clubMembersMap[fan.club_id] = (clubMembersMap[fan.club_id] || 0) + 1;
+    // items: [{key,name,sub,pts,photo,logo,me,click}]
+    function podiumHtml(items) {
+        if (!items.length) return '';
+        const order = [items[1], items[0], items[2]];   // 2 - 1 - 3
+        return `<div class="ldr-pod">${order.map((it, k) => {
+            if (!it) return '<div class="ldr-p"></div>';
+            const md = MED[k];
+            return `<div class="ldr-p" ${it.click ? `onclick="${it.click}"` : ''}>
+                <div style="font-size:${k === 1 ? 22 : 18}px">${md.m}</div>
+                ${avatar(it.photo, String(it.name || '?').trim().charAt(0).toUpperCase(), md.size, md.c, it.logo)}
+                <div class="ldr-pn">${esc(it.name)}</div>
+                <div class="ldr-pb" style="height:${md.h}px;background:linear-gradient(180deg,${md.c}33,${md.c}0d);border:1px solid ${md.c}66"><b style="color:${md.c}">${num(it.pts)}</b><small>${esc(it.unit)}</small></div></div>`;
+        }).join('')}</div>`;
+    }
+    function rowsHtml(items, from) {
+        return items.map((it, i) => `<div class="ldr-r ${it.me ? 'me' : ''}" ${it.click ? `onclick="${it.click}"` : ''}>
+            <div class="ldr-rk">#${from + i}</div>
+            ${avatar(it.photo, String(it.name || '?').trim().charAt(0).toUpperCase(), 40, '#9fb2ff', it.logo)}
+            <div class="ldr-nm"><b>${esc(it.name)}</b>${it.me ? `<div class="ldr-me">⭐ ${esc(it.meText)}</div>` : (it.sub ? `<span class="ldr-chip">${esc(it.sub)}</span>` : '')}</div>
+            <div class="ldr-pt">${num(it.pts)}${COIN}</div></div>`).join('');
+    }
+
+    async function clubsData() {
+        let clubPts = {}, clubMem = {}, myClub = null, myPts = 0;
+        const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
+        if (c) {
+            const { data } = await c.from('club_fans_rankings').select('user_id, club_id, total_fan_points');
+            (data || []).forEach(f => {
+                if (typeof userState !== 'undefined' && userState?.userId && String(f.user_id) === String(userState.userId)) { myClub = f.club_id; myPts = f.total_fan_points || 0; }
+                clubPts[f.club_id] = (clubPts[f.club_id] || 0) + (f.total_fan_points || 0);
+                clubMem[f.club_id] = (clubMem[f.club_id] || 0) + 1;
             });
         }
-
-        let allClubsFlat = [];
-        if (typeof allWorldCupCountriesClubs !== 'undefined') {
-            Object.values(allWorldCupCountriesClubs).forEach(c => allClubsFlat.push(...c));
-        }
-
-        allClubsFlat.forEach(c => {
-            c.points = clubPointsMap[c.id] || 0;
-            c.members = clubMembersMap[c.id] || 0;
-        });
-
-        const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
-        const rankBadges = ['👑', '🥈', '🥉'];
-        const fansWord = lbTr('fansLabel', 'مشجع', 'Fans');
-        const viewWord = lbTr('viewFansLabel', 'عرض المشجعين', 'View fans');
-
-        // نعرض فقط الأندية التي اختارها مشجعون (لا فائدة من عرض 240 نادياً فارغاً)
-        const activeClubs = allClubsFlat
-            .filter(c => c.members > 0)
-            .sort((a, b) => (b.points - a.points) || (b.members - a.members));
-
-        const leaderboardHtml = activeClubs
-            .slice(0, 100)
-            .map((club, idx) => {
-                const clubName = typeof getClubName === 'function' ? getClubName(club) : club.name;
-
-                return `
-                <div class="lb-row ${rankClasses[idx] || ''} ${club.id === myClubId ? 'my-club' : ''}" onclick="window.openSpecificClubFans('${club.id}')">
-                    <div class="lb-main">
-                        <div class="rank-number">${rankBadges[idx] || `#${idx + 1}`}</div>
-                        <div class="club-logo-box">
-                            <img src="${club.logo}" onerror="this.style.display='none'" style="width: 40px; height: 40px; object-fit: contain;">
-                        </div>
-                        <div class="lb-name-box">
-                            <div class="lb-club-name">${clubName}</div>
-                            <div class="lb-fans-chip">👥 ${club.members.toLocaleString('en-US')} ${fansWord}</div>
-                            ${club.id === myClubId ? `<div class="my-chip">⭐ ${lbTr('yourClub', 'ناديك', 'Your club')} · ${lbTr('yourPts', 'نقاطك', 'Your points')}: ${myPts.toLocaleString('en-US')}</div>` : ''}
-                        </div>
-                    </div>
-                    <div class="lb-side">
-                        <div class="pts-pill"><span>${club.points.toLocaleString('en-US')}</span>${LB_COIN_IMG}</div>
-                        <div class="view-link">${viewWord}</div>
-                    </div>
-                </div>`;
-            }).join('');
-
-        const emptyHtml = `<div style="text-align:center;padding:40px 16px;color:#94a3b8;font-weight:800;">${lbTr('noClubsYet', 'لا توجد أندية بعد. كن أول من يختار ناديه!', 'No clubs yet. Be the first to pick yours!')}</div>`;
-        container.innerHTML = `
-            <style>
-                .lb-row {
-                    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-                    background: linear-gradient(135deg, rgba(17, 26, 74, 0.95), rgba(10, 16, 51, 0.95));
-                    border: 1px solid rgba(44, 75, 181, 0.35);
-                    border-radius: 22px;
-                    padding: 12px 14px;
-                    margin-bottom: 12px;
-                    cursor: pointer;
-                    box-shadow: 0 0 12px rgba(80, 100, 255, 0.12), inset 0 0 10px rgba(0,0,0,0.3);
-                    transition: transform 0.2s, box-shadow 0.2s;
-                }
-                .lb-row.my-club { border-color: #f5c35a; box-shadow: 0 0 18px rgba(245, 195, 90, 0.4); }
-                .my-chip { margin-top: 4px; color: #f5c35a; font-size: 0.72rem; font-weight: 900; }
-                .lb-row:hover { transform: translateY(-2px); box-shadow: 0 0 18px rgba(74, 108, 255, 0.25); }
-                .lb-row:active { transform: scale(0.985); }
-                .lb-row.rank-gold   { border-color: rgba(255, 215, 0, 0.45);  border-inline-start: 4px solid #ffd700; box-shadow: 0 0 14px rgba(255, 215, 0, 0.18); }
-                .lb-row.rank-silver { border-color: rgba(192, 192, 192, 0.4); border-inline-start: 4px solid #c0c0c0; box-shadow: 0 0 12px rgba(192, 192, 192, 0.15); }
-                .lb-row.rank-bronze { border-color: rgba(205, 127, 50, 0.4);  border-inline-start: 4px solid #cd7f32; box-shadow: 0 0 12px rgba(205, 127, 50, 0.15); }
-
-                .lb-main { display: flex; align-items: center; gap: 10px; min-width: 0; flex: 1; }
-                .rank-number {
-                    font-size: 1.1rem; font-weight: 900; color: #94a3b8;
-                    width: 30px; text-align: center; font-family: monospace; flex-shrink: 0;
-                }
-                .rank-gold .rank-number, .rank-silver .rank-number, .rank-bronze .rank-number { font-size: 1.5rem; }
-                .rank-gold .rank-number { text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-                .club-logo-box {
-                    width: 46px; height: 46px; min-width: 46px;
-                    display: flex; align-items: center; justify-content: center;
-                }
-                .lb-name-box { min-width: 0; text-align: start; }
-                .lb-club-name { color: #fff; font-weight: 800; font-size: 0.95rem; line-height: 1.3; }
-                .lb-fans-chip {
-                    display: inline-block; margin-top: 4px;
-                    color: #ffd98a; font-size: 0.72rem; font-weight: 700;
-                    background: rgba(245, 195, 90, 0.1);
-                    border: 1px solid rgba(245, 195, 90, 0.25);
-                    padding: 2px 8px; border-radius: 7px;
-                }
-                .lb-side { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
-                .pts-pill {
-                    display: inline-flex; align-items: center; gap: 6px; direction: ltr;
-                    background: rgba(245, 195, 90, 0.10);
-                    border: 1px solid rgba(245, 195, 90, 0.45);
-                    color: #f5c35a; font-size: 1.05rem; font-weight: 900; letter-spacing: 1px;
-                    padding: 6px 12px; border-radius: 14px;
-                    font-variant-numeric: tabular-nums;
-                }
-                .pts-pill .coin { width: 20px; height: 20px; object-fit: contain; display: block; flex-shrink: 0; }
-                .view-link { margin-top: 6px; color: #94a3b8; font-size: 0.72rem; font-weight: 700; }
-            </style>
-
-            <div style="margin-bottom: 18px; text-align: center;">
-                <h2 style="background: linear-gradient(135deg, #4a6cff, #2c4bb5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 0 6px 0; font-size: 1.4rem; font-weight: 900;">
-                    🌍 ${lbTr('leaderTitle', 'ترتيب الأندية', 'Club Rankings')}
-                </h2>
-                <p style="color: #94a3b8; font-size: 0.82rem; margin: 0; font-weight: bold;">${lbTr('leaderSub', 'الأندية الأكثر جمعاً للنقاط عبر مشجعيها', 'Top clubs ranked by total fan points')}</p>
-            </div>
-
-            <div class="leaderboard-list">${leaderboardHtml || emptyHtml}</div>
-            <div style="height: 20px;"></div>`;
-        const meRow = container.querySelector('.my-club');
-        if (meRow) setTimeout(() => meRow.scrollIntoView({ block: 'center', behavior: 'smooth' }), 200);
-    } catch (error) {
-        console.error("Leaderboard error:", error);
+        let flat = [];
+        if (typeof allWorldCupCountriesClubs !== 'undefined') Object.values(allWorldCupCountriesClubs).forEach(a => flat.push(...a));
+        const list = flat.filter(x => clubMem[x.id] > 0)
+            .map(x => ({ club: x, pts: clubPts[x.id] || 0, mem: clubMem[x.id] || 0 }))
+            .sort((a, b) => (b.pts - a.pts) || (b.mem - a.mem)).slice(0, 100);
+        const items = list.map((o, i) => ({
+            name: typeof getClubName === 'function' ? getClubName(o.club) : o.club.name,
+            sub: `👥 ${num(o.mem)} ${lbTr('fansLabel', 'مشجع', 'Fans')}`,
+            pts: o.pts, photo: o.club.logo, logo: true, unit: L('نقطة', 'pts'),
+            me: o.club.id === myClub, meText: `${lbTr('yourClub', 'ناديك', 'Your club')} · ${lbTr('yourPts', 'نقاطك', 'Your points')}: ${num(myPts)}`,
+            click: `window.openSpecificClubFans('${String(o.club.id).replace(/'/g, '')}')`
+        }));
+        const mine = items.findIndex(x => x.me);
+        return { items, barRank: mine >= 0 ? mine + 1 : null, bar: mine >= 0 ? `${lbTr('yourClub', 'ناديك', 'Your club')}: ${items[mine].name}` : '', barSub: mine >= 0 ? `${lbTr('yourPts', 'نقاطك', 'Your points')}: ${num(myPts)}` : '', barPts: mine >= 0 ? items[mine].pts : 0 };
     }
-};
+
+    async function challengesData() {
+        const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
+        let rows = [];
+        const uid = (typeof userState !== 'undefined' && userState?.userId) ? String(userState.userId) : '';
+        if (c) {
+            const r = await c.from('weekly_match_rankings').select('user_id,username,photo_url,points_earned')
+                .eq('is_eliminated', false).eq('category', 'weekly').order('points_earned', { ascending: false }).limit(50);
+            rows = r.data || [];
+            try {
+                const ids = [...new Set(rows.map(x => String(x.user_id)))];
+                if (ids.length) {
+                    const pp = await c.from('public_profiles').select('user_id,photo_url').in('user_id', ids);
+                    const m = {}; (pp.data || []).forEach(x => { if (x.photo_url) m[String(x.user_id)] = x.photo_url; });
+                    rows = rows.map(x => ({ ...x, photo_url: m[String(x.user_id)] || x.photo_url }));
+                }
+            } catch (e) {}
+        }
+        const anon = L('مستخدم', 'User');
+        const items = rows.map(x => ({
+            name: x.username || anon, sub: '', pts: x.points_earned || 0, photo: x.photo_url, unit: L('نقطة', 'pts'),
+            me: uid && String(x.user_id) === uid, meText: L('أنت', 'You')
+        }));
+        const mine = items.findIndex(x => x.me);
+        return { items, barRank: mine >= 0 ? mine + 1 : null, bar: L('مركزك في التحدّي', 'Your rank'), barSub: '', barPts: mine >= 0 ? items[mine].pts : 0 };
+    }
+
+    async function draw() {
+        if (!box) return;
+        css();
+        const holder = document.getElementById('ldr-body');
+        if (holder) holder.innerHTML = `<div class="ldr-empty">⏳ ${L('جاري التحميل...', 'Loading...')}</div>`;
+        let d;
+        try { d = tab === 'clubs' ? await clubsData() : await challengesData(); }
+        catch (e) { console.error('Leaders error:', e); if (holder) holder.innerHTML = `<div class="ldr-empty">${L('تعذّر تحميل البيانات', 'Could not load data')}</div>`; return; }
+        const h = document.getElementById('ldr-body');
+        if (!h) return;
+        const wk = tab === 'challenges' ? `<div class="ldr-wk"><b>${L('تحدّي هذا الأسبوع', "This week's challenge")}</b></div>` : '';
+        h.innerHTML = d.items.length
+            ? wk + podiumHtml(d.items.slice(0, 3)) + rowsHtml(d.items.slice(3), 4)
+            : `<div class="ldr-empty">${tab === 'clubs' ? lbTr('noClubsYet', 'لا توجد أندية بعد. كن أول من يختار ناديه!', 'No clubs yet. Be the first to pick yours!') : L('لا توجد نتائج هذا الأسبوع بعد', 'No results this week yet')}</div>`;
+        document.getElementById('ldr-bar')?.remove();
+        if (d.barRank) {
+            const nav = document.getElementById('bottom-nav');
+            const navH = (nav && nav.getBoundingClientRect().height > 0) ? Math.round(window.innerHeight - nav.getBoundingClientRect().top) : 0;
+            const bar = document.createElement('div');
+            bar.id = 'ldr-bar'; bar.className = 'ldr-bar'; bar.style.setProperty('--ldr-bot', (navH + 8) + 'px');
+            bar.style.direction = isAr() ? 'rtl' : 'ltr';
+            bar.innerHTML = `<div style="font-weight:900;font-size:1rem;color:#ffe7ad;width:34px;text-align:center">#${d.barRank}</div>
+                <div style="flex:1;min-width:0"><div style="font-weight:900;font-size:.9rem">${esc(d.bar)}</div>${d.barSub ? `<div style="font-size:.72rem;color:#cfd8ff">${esc(d.barSub)}</div>` : ''}</div>
+                <div class="ldr-pt" style="background:none;border:0;padding:0">${num(d.barPts)}${COIN}</div>`;
+            document.body.appendChild(bar);
+        }
+    }
+
+    function shell() {
+        box.innerHTML = `<div class="ldr">
+            <div class="ldr-head">${window.zeloBackBtn ? window.zeloBackBtn("window.closeLeaders()", isAr()) : ''}<div class="ldr-title">${L('المتصدرون', 'Leaders')}</div></div>
+            <div class="ldr-tabs"><div class="${tab === 'clubs' ? 'on' : ''}" onclick="window.ldrTab('clubs')">${L('الأندية', 'Clubs')}</div><div class="${tab === 'challenges' ? 'on' : ''}" onclick="window.ldrTab('challenges')">${L('التحديات', 'Challenges')}</div></div>
+            <div id="ldr-body"></div></div>`;
+    }
+
+    window.renderLeaders = function (container, which) {
+        box = container || document.getElementById('main-content');
+        if (!box) return;
+        if (which) tab = which;
+        css();
+        box.style.direction = isAr() ? 'rtl' : 'ltr';
+        shell();
+        draw();
+    };
+    window.ldrTab = function (t) { tab = t; shell(); draw(); };
+    window.openLeaders = function (which) { window.renderLeaders(document.getElementById('main-content'), which || 'clubs'); };
+    window.closeLeaders = function () {
+        document.getElementById('ldr-bar')?.remove();
+        if (typeof window.showPage === 'function') window.showPage('matches');
+    };
+    // الصفحة القديمة (showPage('leaderboard')) تفتح الشاشة الجديدة
+    window.renderLeaderboardPage = function (container) { window.renderLeaders(container, 'clubs'); };
+
+    // إزالة الشريط السفلي عند مغادرة الشاشة
+    document.addEventListener('click', function (e) {
+        if (e.target && e.target.closest && e.target.closest('#bottom-nav')) document.getElementById('ldr-bar')?.remove();
+    }, true);
+
+    /* دائرة المتصدرين في صفحة المباريات (رقم ترتيبك الأسبوعي) */
+    let cachedRank = null;
+    const fmt = n => { n = Number(n); return (isFinite(n) && n > 0) ? (n > 999 ? '999+' : String(n)) : '—'; };
+    window.mrRankChip = function () {
+        const t = L('المتصدرون', 'Leaders');
+        return `<button onclick="window.openLeaders('clubs')" aria-label="${t}" style="background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit">
+            <span style="width:46px;height:46px;border-radius:50%;box-sizing:border-box;padding:2px;background:linear-gradient(135deg,#2c4bb5,#f5c35a,#14206b);box-shadow:0 0 14px rgba(245,195,90,.35);display:block">
+                <span id="mr-rank-num" style="width:100%;height:100%;border-radius:50%;background:#0a1033;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:${cachedRank && fmt(cachedRank).length > 3 ? '.8rem' : '1.05rem'}">${fmt(cachedRank)}</span>
+            </span>
+            <span style="font-size:.68rem;font-weight:800;color:#f5c35a;white-space:nowrap">${t}</span></button>`;
+    };
+    window.mrRefreshRank = async function () {
+        const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
+        const uid = (typeof userState !== 'undefined' && userState?.userId) ? String(userState.userId) : '';
+        if (!c || !uid) return;
+        try {
+            const { data, error } = await c.rpc('get_user_rank', { p_user_id: uid, p_category: 'weekly' });
+            if (error) return;
+            cachedRank = data;
+            const el = document.getElementById('mr-rank-num');
+            if (el) { el.textContent = fmt(cachedRank); el.style.fontSize = fmt(cachedRank).length > 3 ? '.8rem' : '1.05rem'; }
+        } catch (e) {}
+    };
+})();
 
 window.openSpecificClubFans = async function(clubId) {
     const isAr = (typeof userState !== 'undefined' && userState?.lang === 'ar');
@@ -297,7 +376,7 @@ window.openSpecificClubFans = async function(clubId) {
                 }
             </style>
 
-            ${window.zeloBackBtn("window.showPage('leaderboard')")}
+            ${window.zeloBackBtn("window.openLeaders('clubs')")}
 
             <div class="club-hero-banner">
                 <div class="club-hero-logo">
