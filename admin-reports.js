@@ -2,7 +2,7 @@
     'use strict';
     const ADMIN_IDS = ['eb880283-f32e-4fb5-a84a-e6007b633352'];
     const isAr = () => ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
-    const L = (a, e) => (isAr() ? a : e);
+    const L = (ar, en) => window.zT(ar, en);
     const db = () => (typeof supabaseClient !== 'undefined' ? supabaseClient : null);
     const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     // رسالة مفهومة بدل account_banned عند محاولة تفاعل وأنت محظور
@@ -10,9 +10,8 @@
         const origAlert = window.alert ? window.alert.bind(window) : null;
         window.alert = function (m) {
             if (typeof m === 'string' && m.indexOf('account_banned') !== -1) {
-                m = ((window.userState && window.userState.lang) || 'ar').startsWith('ar')
-                    ? 'حسابك موقوف حاليًا عن النشر والتفاعل، يمكنك التصفح فقط. تفاصيل الإيقاف في ملفك الشخصي.'
-                    : 'Your account is currently suspended from posting and interacting. See your profile for details.';
+                m = window.zT('حسابك موقوف حاليًا عن النشر والتفاعل، يمكنك التصفح فقط. تفاصيل الإيقاف في ملفك الشخصي.',
+                    'Your account is currently suspended from posting and interacting. See your profile for details.');
             }
             return origAlert ? origAlert(m) : undefined;
         };
@@ -153,7 +152,7 @@
         if (!uid) { alert(L('لا يوجد كاتب لهذا المحتوى (ربما حُذف)', 'No author found (content may be deleted)')); return; }
         document.getElementById('zadm-sheet')?.remove();
         const sh = document.createElement('div'); sh.id = 'zadm-sheet'; sh.className = 'zadm-sheet';
-        sh.innerHTML = `<div dir="${isAr() ? 'rtl' : 'ltr'}"><b>${esc(name)}</b>
+        sh.innerHTML = `<div dir="${window.zA('rtl', 'ltr')}"><b>${esc(name)}</b>
             <div style="color:#9aa6d6;font-size:.82rem;margin:8px 0 2px">${L('حظر من النشر (يتصفح فقط)', 'Posting ban (browse only)')}</div>
             <button data-k="post" data-d="7">${L('7 أيام', '7 days')}</button><button data-k="post" data-d="30">${L('30 يومًا', '30 days')}</button>
             <div style="color:#ff9b9b;font-size:.82rem;margin:12px 0 2px">${L('حظر الحساب بالكامل (دائم)', 'Full account ban (permanent)')}</div>
@@ -193,7 +192,7 @@
     function askReply(act) {
         return new Promise(res => {
             const d = document.createElement('div');
-            d.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(3,6,24,.8);display:flex;align-items:flex-end;justify-content:center;direction:' + (isAr() ? 'rtl' : 'ltr');
+            d.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(3,6,24,.8);display:flex;align-items:flex-end;justify-content:center;direction:' + (window.zA('rtl', 'ltr'));
             const def = act === 'unban' ? L('تمت مراجعة طعنك وتم رفع الحظر. التزم بشروط الاستخدام.', 'Your appeal was accepted and the ban lifted.') : L('تمت مراجعة طعنك وتم رفضه. الحظر باقٍ.', 'Your appeal was reviewed and rejected.');
             d.innerHTML = `<div style="width:100%;max-width:520px;background:#0f1a5c;border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));color:#fff">
                 <div style="font-weight:900;margin-bottom:8px">${act === 'unban' ? L('قبول الطعن — رسالة للمستخدم', 'Accept — message to user') : L('رفض الطعن — رسالة للمستخدم', 'Reject — message to user')}</div>
@@ -232,7 +231,7 @@
         if (!isAdmin()) return;
         css();
         document.getElementById('zadm')?.remove();
-        const ov = document.createElement('div'); ov.id = 'zadm'; ov.dir = isAr() ? 'rtl' : 'ltr';
+        const ov = document.createElement('div'); ov.id = 'zadm'; ov.dir = window.zA('rtl', 'ltr');
         ov.innerHTML = `<div class="zadm-bar">${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn("document.getElementById('zadm').remove()", isAr()) : ''}<div class="zadm-title">🚩 ${L('الإدارة', 'Moderation')}</div></div>
             <div class="zadm-body"><div class="zadm-tabs"><button class="zadm-tab on" data-t="r">${L('البلاغات', 'Reports')}</button><button class="zadm-tab" data-t="m">${L('الغرف', 'Rooms')}</button><button class="zadm-tab" data-t="b">${L('المحظورون', 'Banned')}</button><button class="zadm-tab" data-t="a">${L('الطعون', 'Appeals')}</button></div><div id="zadm-body"></div></div>`;
         document.body.appendChild(ov);
@@ -250,7 +249,7 @@
     function appealSheet(c) {
         document.getElementById('zban-appeal')?.remove();
         const sh = document.createElement('div'); sh.id = 'zban-appeal';
-        sh.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(3,6,24,.8);display:flex;align-items:flex-end;justify-content:center;direction:' + (isAr() ? 'rtl' : 'ltr');
+        sh.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(3,6,24,.8);display:flex;align-items:flex-end;justify-content:center;direction:' + (window.zA('rtl', 'ltr'));
         sh.innerHTML = `<div style="width:100%;max-width:520px;background:#0f1a5c;border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));color:#fff">
             <div style="font-weight:900;margin-bottom:8px">${L('اكتب رسالة الطعن', 'Write your appeal')}</div>
             <textarea id="zban-txt" maxlength="1000" rows="5" placeholder="${L('اشرح لماذا تعتقد أن الحظر خاطئ…', 'Explain why you think the ban is wrong…')}" style="width:100%;box-sizing:border-box;background:#0a1033;color:#fff;border:1px solid rgba(245,195,90,.35);border-radius:14px;padding:12px;font-family:inherit;font-size:1rem;resize:none"></textarea>
@@ -297,7 +296,7 @@
             if (b.kind === 'full') {
                 if (banShown) return; banShown = true;
                 const ov = document.createElement('div');
-                ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0a1033;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;font-family:inherit;direction:' + (isAr() ? 'rtl' : 'ltr');
+                ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0a1033;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px;font-family:inherit;direction:' + (window.zA('rtl', 'ltr'));
                 ov.innerHTML = `<div style="font-size:64px">🚫</div><h2 style="margin:14px 0 8px;font-weight:900;color:#f5c35a">${L('تم إيقاف حسابك', 'Your account is suspended')}</h2>
                     <p style="color:#c9d1f5;line-height:1.8;max-width:340px">${L('لمخالفة شروط الاستخدام.', 'For violating the terms.')}<br>${L('للاستفسار راسلنا على', 'Contact')} <span dir="ltr">support@zelosport.net</span></p>
                     <div id="zban-status" style="max-width:340px">${appealStatusHtml()}</div>

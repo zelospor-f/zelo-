@@ -13,7 +13,7 @@
 (function () {
     'use strict';
     const isAr = () => ((window.userState && window.userState.lang) || 'ar').startsWith('ar');
-    const T = (ar, en) => (isAr() ? ar : en);
+    const T = (ar, en) => window.zT(ar, en);
     const COL = { joy: '#ffc83d', hype: '#25e3c6', rage: '#ff4d5e' };
     const W = 760, H = 300;
 
@@ -69,7 +69,7 @@
     }
 
     const S = { pulses: [], feed: [], sel: null, filt: 'all', sm: { joy: 33, hype: 34, rage: 33 }, timers: [], raf: 0 };
-    const fmt = n => Number(n).toLocaleString(isAr() ? 'ar-EG' : 'en-US');
+    const fmt = n => Number(n).toLocaleString(window.zA('ar-EG', 'en-US'));
 
     function stop() {
         S.timers.forEach(clearInterval); S.timers = [];
@@ -403,7 +403,7 @@
         const ar = isAr();
         box.innerHTML = `
         <style>
-            .fp-wrap{direction:${ar ? 'rtl' : 'ltr'};color:#fff}
+            .fp-wrap{direction:${window.zA('rtl', 'ltr')};color:#fff}
             .fp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
             .fp-head h2{font-size:1.25rem;font-weight:900;margin:0}
             .fp-live{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:#ff4d5e;margin-top:3px}

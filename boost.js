@@ -19,7 +19,7 @@
 
     const US = () => (typeof userState !== 'undefined' && userState) ? userState : (window.userState || {});
     const isAr = () => (US().lang || 'ar').startsWith('ar');
-    const L = (ar, en) => (isAr() ? ar : en);
+    const L = (ar, en) => window.zT(ar, en);
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const fmt = n => Math.round(Number(n) || 0).toLocaleString('en-US');
     const $ = id => document.getElementById(id);
@@ -92,7 +92,7 @@
         const maxSlider = CONFIG.MAX_DAILY_POINTS / CONFIG.STEP_POINTS;
         const ov = document.createElement('div');
         ov.id = 'zboost-overlay';
-        ov.dir = isAr() ? 'rtl' : 'ltr';
+        ov.dir = window.zA('rtl', 'ltr');
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:4500;';
         ov.innerHTML = `
             <div style="background:#121215;border:1px solid rgba(245,195,90,.25);border-radius:24px 24px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));width:100%;max-width:520px;max-height:92vh;overflow-y:auto;color:#f8fafc;box-sizing:border-box;">

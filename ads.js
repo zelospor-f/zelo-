@@ -32,13 +32,13 @@
         if (el) {
             el.style.display = on ? 'flex' : 'none';
             const t = document.getElementById('ad-sub-link');
-            if (t) t.textContent = isAr() ? 'اشترك لإزالة الإعلانات' : 'Subscribe to remove ads';
+            if (t) t.textContent = window.zT('اشترك لإزالة الإعلانات', 'Subscribe to remove ads');
         }
         document.documentElement.style.setProperty('--zelo-ad-h', on ? AD_SLOT_H + 'px' : '0px');
     }
 
     const isAr = () => (window.userState?.lang || 'ar').startsWith('ar');
-    const L = (ar, en) => (isAr() ? ar : en);
+    const L = (ar, en) => window.zT(ar, en);
 
     const getAdMob = () => window.Capacitor?.Plugins?.AdMob || null;
 
@@ -331,8 +331,8 @@
         if (!el) return;
 
         el.innerHTML = `
-            <div dir="${isAr() ? 'rtl' : 'ltr'}" style="padding:24px 18px; color:#f8fafc; text-align:center;">
-                <div style="text-align:start; margin:-8px 0 8px;">${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn("showPage('home')", isAr()) : '<button onclick="showPage(\'home\')" style="background:transparent;color:#f8fafc;border:1px solid rgba(255,255,255,.2);border-radius:12px;width:40px;height:40px;font-size:20px">' + (isAr() ? '›' : '‹') + '</button>'}</div>
+            <div dir="${window.zA('rtl', 'ltr')}" style="padding:24px 18px; color:#f8fafc; text-align:center;">
+                <div style="text-align:start; margin:-8px 0 8px;">${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn("showPage('home')", isAr()) : '<button onclick="showPage(\'home\')" style="background:transparent;color:#f8fafc;border:1px solid rgba(255,255,255,.2);border-radius:12px;width:40px;height:40px;font-size:20px">' + (window.zA('›', '‹')) + '</button>'}</div>
                 <img src="zelo-coin.png" alt="" style="width:84px;height:84px;object-fit:contain;margin-bottom:10px;" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png';}else{this.style.display='none';}">
                 <h2 style="font-size:1.4rem; font-weight:900; margin:0 0 8px;">
                     ${L('اربح كورة مجانية', 'Earn free Kora')}

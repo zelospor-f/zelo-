@@ -19,8 +19,8 @@
         row.style.cssText = 'display:flex;gap:8px;justify-content:center;margin:10px 0 2px;';
         const btn = 'flex:1;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#cbd5e1;font-weight:700;font-family:inherit;';
         row.innerHTML =
-            '<button data-follow="x" style="' + btn + '">𝕏 ' + (isAr() ? 'تابعنا' : 'Follow') + '</button>' +
-            '<button data-follow="tg" style="' + btn + '">✈️ ' + (isAr() ? 'تيليجرام' : 'Telegram') + '</button>';
+            '<button data-follow="x" style="' + btn + '">𝕏 ' + (window.zT('تابعنا', 'Follow')) + '</button>' +
+            '<button data-follow="tg" style="' + btn + '">✈️ ' + (window.zT('تيليجرام', 'Telegram')) + '</button>';
         const ver = foot.querySelector('.zdrawer-version');
         if (ver) foot.insertBefore(row, ver); else foot.appendChild(row);
     }
