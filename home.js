@@ -2669,6 +2669,25 @@
             #zvv .zvv-bar i { display: block; height: 100%; width: 0; background: #fff; }
             #zvv .zvv-pp { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); font-size: 64px; color: #fff; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 3; }
             #zvv .zvv-pp.show { opacity: .85; }
+            #zvv .zvv-rail { position: absolute; left: 10px; bottom: 215px; display: flex; flex-direction: column; align-items: center; gap: 11px; z-index: 5; }
+            #zvv.zvv-page .zvv-rail { bottom: 175px; }
+            #zvv .zvv-rb { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+            #zvv .zvv-r { width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(10,16,51,.55); color: #fff; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+            #zvv .zvv-r svg { width: 22px; height: 22px; }
+            #zvv .zvv-r.liked { color: #ff3b6b; }
+            #zvv .zvv-r.saved { color: #f5c35a; }
+            #zvv .zvv-r.gold { width: 52px; height: 52px; background: linear-gradient(135deg,#ffd978,#f5a623); color: #0a1033; box-shadow: 0 6px 18px rgba(245,166,35,.4); }
+            #zvv .zvv-r.gold svg { width: 26px; height: 26px; }
+            #zvv .zvv-rn { background: none; border: 0; color: #fff; font-size: 12px; font-weight: 800; padding: 0; min-height: 14px; cursor: pointer; font-variant-numeric: tabular-nums; }
+            #zvv .zvv-r.gold + .zvv-rn { color: #f5c35a; }
+            #zvv .zvv-tabs { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; gap: 22px; z-index: 6; direction: rtl; }
+            #zvv .zvv-tabs button { background: none; border: 0; color: rgba(255,255,255,.65); font-size: 16px; font-weight: 800; padding: 8px 2px; border-bottom: 2px solid transparent; cursor: pointer; font-family: inherit; }
+            #zvv .zvv-tabs button.on { color: #fff; border-bottom-color: #f5c35a; }
+            #zvv .zvv-empty { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-weight: 700; text-align: center; padding: 30px; }
+            #zvv.zvv-page { top: 0; left: 0; right: 0; bottom: calc(var(--zelo-nav-h, 64px) + var(--zelo-ad-b, 0px) + env(safe-area-inset-bottom, 0px)); z-index: 400; }
+            #zvv.zvv-page .zvv-feed { height: 100%; }
+            #zvv.zvv-page .zvv-item { height: 100%; }
+            #zvv.zvv-page .zvv-info { padding-bottom: 14px; }
         `;
         document.head.appendChild(s);
     }
@@ -2697,6 +2716,7 @@
             <div class="zvv-item" data-pid="${p.id}" data-uid="${esc(p.user_id)}">
                 <video src="${esc(p.video_url)}" playsinline loop preload="auto"></video>
                 <div class="zvv-pp">▶</div>
+                <div class="zvv-rail">${zvvActionsHtml(p)}</div>
                 <button class="zvv-more" onclick="window.openPostMenu(${p.id})" aria-label="more">⋮</button>
                 <div class="zvv-info">
                     <div class="zvv-user">
@@ -2708,7 +2728,6 @@
                         ${mine ? '' : `<button class="zvv-follow ${followed ? 'on' : ''}" data-follow="${esc(p.user_id)}" onclick="window.zvvFollow('${esc(p.user_id)}')">${followed ? (window.zT('متابَع', 'Following')) : (window.zT('متابعة', 'Follow'))}</button>`}
                     </div>
                     ${p.content ? `<div class="zvv-text">${esc(p.content).replace(/\n/g, '<br>')}</div>` : ''}
-                    <div class="zvv-acts">${zvvActionsHtml(p)}</div>
                     <div class="zvv-ctl">
                         <button class="zvv-pbtn" aria-label="play">⏸</button>
                         <button class="zvv-mbtn" aria-label="sound">${zvvMuted ? '🔇' : '🔊'}</button>
@@ -2719,19 +2738,54 @@
             </div>`;
     }
 
+    const zvvSup = {};
+    const zvvK = n => { n = Number(n) || 0; if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K'; return String(n); };
+
     function zvvActionsHtml(p) {
+        const n = Number((zvvSup[String(p.id)] || {}).supporters) || 0;
+        const rb = (btn, num, onNum) => `<div class="zvv-rb">${btn}<button class="zvv-rn" ${onNum || 'tabindex="-1"'}>${num}</button></div>`;
         return `
-            <button class="zvv-act" onclick="window.openReply(${p.id})">${ICONS.reply}<span>${p.comments || 0}</span></button>
-            <button class="zvv-act ${p.reposted ? 'liked' : ''}" onclick="window.zvvRepost(${p.id})">${ICONS.repost}<span>${p.reposts || 0}</span></button>
-            <button class="zvv-act ${p.liked ? 'liked' : ''}" onclick="window.zvvLike(${p.id})">${ICONS.heart(p.liked)}<span>${p.likes || 0}</span></button>
-            <span class="zvv-act" style="cursor:default;">${ICONS.views}<span>${p.views || 0}</span></span>
-            <button class="zvv-act ${p.saved ? 'saved' : ''}" onclick="window.zvvSave(${p.id})">${ICONS.save(p.saved)}</button>
-            <button class="zvv-act" onclick="window.sharePost(${p.id})">${ICONS.share}</button>`;
+            <div class="zvv-rb"><button class="zvv-r gold" onclick="window.zvvSupport(${p.id})" aria-label="support"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 4h10l4.5 5.2L12 20.5 2.5 9.2z"/></svg></button><button class="zvv-rn" onclick="window.zvvSupporters(${p.id})">${zvvK(n)}</button></div>
+            ${rb(`<button class="zvv-r ${p.liked ? 'liked' : ''}" onclick="window.zvvLike(${p.id})">${ICONS.heart(p.liked)}</button>`, p.likes || 0)}
+            ${rb(`<button class="zvv-r" onclick="window.openReply(${p.id})">${ICONS.reply}</button>`, p.comments || 0)}
+            ${rb(`<button class="zvv-r ${p.reposted ? 'liked' : ''}" onclick="window.zvvRepost(${p.id})">${ICONS.repost}</button>`, p.reposts || 0)}
+            ${rb(`<button class="zvv-r ${p.saved ? 'saved' : ''}" onclick="window.zvvSave(${p.id})">${ICONS.save(p.saved)}</button>`, '')}
+            ${rb(`<button class="zvv-r" onclick="window.sharePost(${p.id})">${ICONS.share}</button>`, '')}`;
     }
+
+    // عدد الداعمين لكل فيديو (من support_stats)
+    async function zvvLoadSupport(ids) {
+        const c = db();
+        const nums = (ids || []).map(Number).filter(Boolean);
+        if (!c || !nums.length) return;
+        try {
+            const { data } = await c.rpc('support_stats', { p_post_ids: nums });
+            (data || []).forEach(r => { zvvSup[String(r.post_id)] = r; });
+            ids.forEach(id => zvvRefreshActions(id));
+        } catch (e) { console.error('[ZELO] support_stats:', e); }
+    }
+    document.addEventListener('zelo-support-stats', e => {
+        const m = (e && e.detail) || {};
+        Object.keys(m).forEach(k => { zvvSup[k] = m[k]; zvvRefreshActions(k); });
+    });
+    window.zvvSupport = function (id) {
+        const p = postCache[id];
+        if (!p) return;
+        if (String(p.user_id) === me().id) return window.zvvSupporters(id);
+        if (typeof window.zeloOpenSupport === 'function') window.zeloOpenSupport(String(id), p.user_id);
+    };
+    window.zvvSupporters = function (id) {
+        if (typeof window.zeloOpenSupporters === 'function') window.zeloOpenSupporters(String(id));
+    };
+    // يستخدمها support.js في قائمة الداعمين
+    window.zeloPostInfo = id => postCache[id] || null;
+    window.zeloIsFollowing = uid => followSet.has(String(uid));
+    window.zeloToggleFollow = async uid => { await toggleFollow(uid); return followSet.has(String(uid)); };
+    window.zeloBadgeHtml = (uid, size) => badgeHtml(uid, size);
 
     function zvvRefreshActions(id) {
         const p = postCache[id];
-        const box = document.querySelector(`#zvv .zvv-item[data-pid="${id}"] .zvv-acts`);
+        const box = document.querySelector(`#zvv .zvv-item[data-pid="${id}"] .zvv-rail`);
         if (p && box) box.innerHTML = zvvActionsHtml(p);
     }
 
@@ -2753,9 +2807,11 @@
         if (typeof window.openUserProfile === 'function') window.openUserProfile(uid);
     };
 
-    window.openVideoViewer = function (startId) {
-        const ids = zvvCollectIds(startId);
-        if (!ids.length) return;
+    window.openVideoViewer = function (startId, opts) {
+        opts = opts || {};
+        const page = !!opts.page;
+        const ids = opts.ids ? opts.ids.map(String) : zvvCollectIds(startId);
+        if (!ids.length && !page) return;
         ensureVideoViewerStyles();
         if (document.getElementById('zvv')) window.closeVideoViewer();
 
@@ -2765,10 +2821,19 @@
         const root = document.createElement('div');
         root.id = 'zvv';
         root.dir = window.zA('rtl', 'ltr');
+        if (page) root.className = 'zvv-page';
         root.innerHTML = `
-            ${window.zeloBackBtn('window.closeVideoViewer()', isAr(), 'zvv-back')}
+            ${page ? '' : window.zeloBackBtn('window.closeVideoViewer()', isAr(), 'zvv-back')}
+            ${page ? `<div class="zvv-tabs"><button class="${opts.tab === 'fol' ? '' : 'on'}" onclick="window.zvvTab('for')">${window.zT('لك', 'For you')}</button><button class="${opts.tab === 'fol' ? 'on' : ''}" onclick="window.zvvTab('fol')">${window.zT('أتابعهم', 'Following')}</button></div>` : ''}
+            ${ids.length ? '' : `<div class="zvv-empty">${opts.tab === 'fol' ? window.zT('لا توجد فيديوهات ممن تتابعهم بعد', 'No videos from people you follow yet') : window.zT('لا توجد فيديوهات بعد', 'No videos yet')}</div>`}
             <div class="zvv-feed">${ids.map(id => zvvItemHtml(postCache[id])).join('')}</div>`;
-        document.body.appendChild(root);
+        (opts.mount || document.body).appendChild(root);
+        if (page) {
+            const nav = document.getElementById('bottom-nav');
+            const adB = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--zelo-ad-b')) || 0;
+            if (nav && nav.getBoundingClientRect().height > 0) root.style.bottom = Math.round(window.innerHeight - nav.getBoundingClientRect().top + adB) + 'px';
+        }
+        zvvLoadSupport(ids);
 
         const feed = root.querySelector('.zvv-feed');
         const items = [...feed.querySelectorAll('.zvv-item')];
@@ -2842,6 +2907,43 @@
         if (typeof observeVideos === 'function') observeVideos();
     };
 
+    // ===================== صفحة الفيديوهات (زر «فيديو» في الشريط السفلي) =====================
+    let zvvPageList = [];
+    let zvvPageTab = 'for';
+    let zvvPageBox = null;
+
+    function zvvShowTab(tab) {
+        if (!zvvPageBox || !zvvPageBox.isConnected) return;
+        zvvPageTab = tab;
+        const list = tab === 'fol' ? zvvPageList.filter(p => followSet.has(String(p.user_id))) : zvvPageList;
+        const ids = list.map(p => String(p.id));
+        window.openVideoViewer(ids[0], { page: true, ids, tab, mount: zvvPageBox });
+    }
+    window.zvvTab = function (tab) { if (tab !== zvvPageTab) zvvShowTab(tab); };
+
+    window.renderVideosPage = async function (container) {
+        if (!container) return;
+        ensureVideoViewerStyles();
+        zvvPageBox = container;
+        container.innerHTML = `<div id="zvp-wait" style="text-align:center;padding:80px 20px;color:#94a3b8;font-weight:700;">${window.zT('جارٍ تحميل الفيديوهات...', 'Loading videos...')}</div>`;
+        const c = db();
+        if (!c) return;
+        try {
+            await loadSocial();
+            const { data, error } = await c.from('posts').select('*').not('video_url', 'is', null).order('created_at', { ascending: false }).limit(40);
+            if (error) throw error;
+            const list = (data || []).filter(p => p.video_url && !blockSet.has(String(p.user_id)) && !muteSet.has(String(p.user_id)));
+            await loadPostStats(list);
+            if (!document.getElementById('zvp-wait')) return;   // غادر المستخدم الصفحة أثناء التحميل
+            zvvPageList = list;
+            container.innerHTML = '';
+            zvvShowTab(zvvPageTab);
+        } catch (e) {
+            console.error('[ZELO] videos page:', e);
+            if (document.getElementById('zvp-wait')) container.innerHTML = `<div style="text-align:center;padding:80px 20px;color:#ff6b6b;font-weight:700;">${window.zT('تعذّر تحميل الفيديوهات', 'Could not load videos')}</div>`;
+        }
+    };
+
     function ensureHomeHeaderCss() {
         if (document.getElementById('zhome-css')) return;
         const st = document.createElement('style');
@@ -2878,7 +2980,7 @@
             <div class="zh-top">
                 <div class="zh-l">
                     <button class="zh-av" aria-label="profile" onclick="showPage('profile')">${av}</button>
-                    <button class="zh-bal" onclick="window.zhOpenWallet()">${zhIc('<circle cx="12" cy="12" r="9.5"/><path d="M9 9h6l-6 6h6"/>')}<span id="zh-bal">${(Number(US().points) || 0).toLocaleString('en-US')}</span></button>
+                    <button class="zh-bal" onclick="showPage('points')">${zhIc('<circle cx="12" cy="12" r="9.5"/><path d="M9 9h6l-6 6h6"/>')}<span id="zh-bal">${(Number(US().points) || 0).toLocaleString('en-US')}</span></button>
                 </div>
                 <div class="zh-r">
                     <button class="zh-ib" aria-label="${window.zT('بحث', 'Search')}" onclick="window.zhOpenSearch()">${zhIc('<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>')}</button>

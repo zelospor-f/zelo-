@@ -336,49 +336,67 @@
     // ===================== قائمة الداعمين =====================
     const RANK_COLORS = ['#ffd978', '#d9dee7', '#d9975b'];
 
-    window.zeloOpenSupporters = async function (postId) {
+    window.zeloOpenSupporters = async function (postId, ownerId) {
         $('zsup-list-overlay')?.remove();
+        const info = (typeof window.zeloPostInfo === 'function') ? window.zeloPostInfo(postId) : null;
+        const owner = String(ownerId || (info && info.user_id) || '');
+        const myId = String(US().userId || me().id || '');
+        const canSupport = owner && owner !== myId;
+        const isVideo = !!(info && info.video_url);
+
         const ov = document.createElement('div');
         ov.id = 'zsup-list-overlay';
         ov.dir = window.zA('rtl', 'ltr');
         ov.style.cssText = sheetBase(4600);
         ov.innerHTML = `
-            <div style="${sheetPanel('78vh')}">
+            <div style="${sheetPanel('82vh')}display:flex;flex-direction:column;">
                 ${grabber}
-                ${headerRow(`<span>${L('الداعمون', 'Supporters')}</span>`, 'zsup-list-x')}
-                <div id="zsup-list-body" style="color:${THEME.muted};text-align:center;padding:30px 0;font-size:.9rem;">${L('جارٍ التحميل...', 'Loading...')}</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-shrink:0;">
+                    <div style="min-width:0;">
+                        <div style="font-size:1.15rem;font-weight:900;">${L('الداعمون', 'Supporters')}</div>
+                        <div id="zsup-count" style="font-size:.78rem;color:${THEME.muted};margin-top:2px;">&nbsp;</div>
+                    </div>
+                    <button id="zsup-list-x" type="button" aria-label="close" style="width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:${THEME.text};font-size:1rem;cursor:pointer;flex-shrink:0;">✕</button>
+                </div>
+                <div id="zsup-total" style="display:none;align-items:center;justify-content:space-between;padding:12px 16px;margin-bottom:6px;border-radius:16px;background:linear-gradient(135deg,rgba(245,195,90,.14),rgba(245,195,90,.04));border:1px solid ${THEME.border};flex-shrink:0;"></div>
+                <div id="zsup-list-body" style="color:${THEME.muted};text-align:center;padding:30px 0;font-size:.9rem;overflow-y:auto;flex:1;min-height:80px;">${L('جارٍ التحميل...', 'Loading...')}</div>
+                ${canSupport ? `<button id="zsup-list-go" type="button" style="margin-top:12px;width:100%;padding:15px;border:none;border-radius:16px;background:linear-gradient(135deg,#ffd978 0%,${THEME.goldDeep} 100%);color:#121215;font-size:1rem;font-weight:900;cursor:pointer;box-shadow:0 10px 28px rgba(245,166,35,.35);font-family:inherit;flex-shrink:0;">${coin('1.1em')} ${isVideo ? L('ادعم هذا الفيديو', 'Support this video') : L('ادعم هذا المنشور', 'Support this post')}</button>` : ''}
             </div>`;
         document.body.appendChild(ov);
         ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
         $('zsup-list-x').onclick = () => ov.remove();
-
-        // آخر قائمة محفوظة تظهر فورًا ثم تتحدث بصمت
-        const cacheKey = 'zelo_sup_v1_' + String(postId) + '_' + ((localStorage.getItem('app_lang') || 'ar'));
-        let shownCached = false;
-        try {
-            const raw = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-            const b0 = $('zsup-list-body');
-            if (raw && raw.html && b0 && Date.now() - raw.t < 3 * 86400000) {
-                b0.style.cssText = 'padding:0;text-align:start;';
-                b0.innerHTML = raw.html;
-                shownCached = true;
-            }
-        } catch (e) {}
+        const go = $('zsup-list-go');
+        if (go) go.onclick = () => { ov.remove(); window.zeloOpenSupport(postId, owner); };
 
         const c = db();
         if (!c) return;
-        const { data, error } = await c.rpc('support_supporters', { p_post_id: Number(postId), p_limit: CONFIG.SUPPORTERS_LIMIT });
+        const [res, st] = await Promise.all([
+            c.rpc('support_supporters', { p_post_id: Number(postId), p_limit: CONFIG.SUPPORTERS_LIMIT }),
+            c.rpc('support_stats', { p_post_ids: [Number(postId)] }).then(r => r, () => ({ data: null }))
+        ]);
+        const { data, error } = res;
         const body = $('zsup-list-body');
         if (!body) return;
-        if (error) { if (!shownCached) body.textContent = L('تعذّر التحميل', 'Could not load'); return; }
+        if (error) { body.textContent = L('تعذّر التحميل', 'Could not load'); return; }
         if (!data || !data.length) {
+            $('zsup-count').textContent = L('عدد الدعم 0', 'Supports 0');
             body.innerHTML = `
                 <div style="font-size:2.2rem;margin-bottom:8px;">💎</div>
                 <div style="font-weight:800;color:${THEME.text};margin-bottom:4px;">${L('لا يوجد داعمون بعد', 'No supporters yet')}</div>
-                <div style="font-size:.84rem;">${L('كن أول من يدعم هذا المنشور', 'Be the first to support this post')}</div>`;
-            try { localStorage.removeItem(cacheKey); } catch (e) {}
+                <div style="font-size:.84rem;">${L('كن أول من يدعم', 'Be the first to support')}</div>`;
             return;
         }
+
+        const row0 = (st && st.data && st.data[0]) || {};
+        const sumAmount = data.reduce((a, x) => a + (Number(x.total_amount) || 0), 0);
+        const count = Number(row0.supporters) || data.length;
+        const total = Number(row0.total_net) || sumAmount;
+        const kfmt = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e3 ? (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K' : String(n);
+        $('zsup-count').textContent = L(`عدد الدعم ${kfmt(count)}`, `Supports ${kfmt(count)}`);
+        const tot = $('zsup-total');
+        tot.style.display = 'flex';
+        tot.innerHTML = `<span style="color:${THEME.muted};font-size:.84rem;font-weight:700;">${L('إجمالي الدعم', 'Total support')}</span>
+            <span dir="ltr" style="display:inline-flex;align-items:center;gap:6px;color:${THEME.gold};font-weight:900;font-size:1.05rem;font-variant-numeric:tabular-nums;">${coin('1.1em')} ${fmt(total)} ZELO</span>`;
 
         // الاسم والصورة الحاليان من الملف الشخصي (المخزَّن في الدعم نسخة قديمة)
         const pm = {};
@@ -387,27 +405,44 @@
             const { data: pp } = await c.from('public_profiles').select('user_id,photo_url,nickname,username').in('user_id', ids);
             (pp || []).forEach(x => { pm[String(x.user_id)] = x; });
         } catch (e) {}
-        body.style.cssText = 'padding:0;text-align:start;';
+
+        const canFollow = typeof window.zeloToggleFollow === 'function' && typeof window.zeloIsFollowing === 'function';
+        const flBtn = (uid, on) => `<button type="button" class="zsup-fl" data-uid="${esc(uid)}" style="padding:7px 14px;border-radius:999px;font-size:.78rem;font-weight:800;cursor:pointer;font-family:inherit;white-space:nowrap;${on ? `background:transparent;color:${THEME.text};border:1px solid rgba(255,255,255,.28);` : `background:${THEME.gold};color:#121215;border:1px solid ${THEME.gold};`}">${on ? L('متابَع', 'Following') : L('متابعة', 'Follow')}</button>`;
+
+        body.style.cssText = 'padding:0;text-align:start;overflow-y:auto;flex:1;min-height:80px;';
         body.innerHTML = data.map((s, i) => {
-            const prof = pm[String(s.from_user_id)] || {};
+            const uid = String(s.from_user_id);
+            const prof = pm[uid] || {};
             const shown = prof.nickname || prof.username || s.from_name;
             const photo = (typeof prof.photo_url === 'string' && /^(https:\/\/|data:image\/)/.test(prof.photo_url) && !/["'<>\s]/.test(prof.photo_url)) ? prof.photo_url : '';
             const name = esc(shown || L('مستخدم', 'User'));
             const initial = esc((shown || '?').trim().charAt(0).toUpperCase());
             const rankColor = RANK_COLORS[i] || 'rgba(255,255,255,.12)';
             const rankText = i < 3 ? '#121215' : THEME.muted;
+            const badge = (typeof window.zeloBadgeHtml === 'function') ? window.zeloBadgeHtml(uid, 14) : '';
+            const handle = prof.username ? `<span dir="ltr" style="color:${THEME.muted};">@${esc(prof.username)}</span> · ` : '';
             return `
-            <div style="display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.05);">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px 2px;border-bottom:1px solid rgba(255,255,255,.05);">
                 <div style="width:22px;height:22px;border-radius:50%;background:${rankColor};color:${rankText};font-size:.72rem;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-variant-numeric:tabular-nums;">${i + 1}</div>
-                <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#2a2a36,#1a1a22);border:1px solid ${THEME.border};display:flex;align-items:center;justify-content:center;font-weight:900;color:${THEME.gold};flex-shrink:0;overflow:hidden;">${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove()" alt="">` : initial}</div>
+                <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#2a2a36,#1a1a22);border:1px solid ${THEME.border};display:flex;align-items:center;justify-content:center;font-weight:900;color:${THEME.gold};flex-shrink:0;overflow:hidden;">${photo ? `<img src="${photo}" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove()" alt="">` : initial}</div>
                 <div style="min-width:0;flex:1;">
-                    <div style="font-weight:800;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-                    <div style="color:${THEME.muted};font-size:.76rem;margin-top:2px;">${L(`دعم ${fmt(s.times)} مرة`, `${fmt(s.times)} support(s)`)}</div>
+                    <div style="display:flex;align-items:center;gap:4px;font-weight:800;font-size:.95rem;"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</span>${badge}</div>
+                    <div style="font-size:.74rem;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${handle}<span style="color:${THEME.gold};font-weight:900;font-variant-numeric:tabular-nums;">${fmt(s.total_amount)}</span> <span style="color:${THEME.muted};">· ${L(`${fmt(s.times)} مرة`, `${fmt(s.times)}x`)}</span></div>
                 </div>
-                <div style="display:inline-flex;align-items:center;gap:5px;color:${THEME.gold};font-weight:900;white-space:nowrap;font-variant-numeric:tabular-nums;">${fmt(s.total_amount)} ${coin('1em')}</div>
+                ${(canFollow && uid !== myId) ? flBtn(uid, window.zeloIsFollowing(uid)) : ''}
             </div>`;
         }).join('');
-        try { localStorage.setItem(cacheKey, JSON.stringify({ t: Date.now(), html: body.innerHTML })); } catch (e) {}
+
+        body.onclick = async e => {
+            const b = e.target.closest && e.target.closest('.zsup-fl');
+            if (!b || b.disabled) return;
+            b.disabled = true;
+            try {
+                const uid = b.dataset.uid;
+                const on = await window.zeloToggleFollow(uid);
+                body.querySelectorAll('.zsup-fl').forEach(x => { if (x.dataset.uid === uid) x.outerHTML = flBtn(uid, on); });
+            } catch (err) { b.disabled = false; }
+        };
     };
 
     // ===================== شريط الدعم داخل كل بطاقة منشور =====================
@@ -461,6 +496,7 @@
         if (error) { console.error('[ZELO] support_stats:', error); return; }
 
         const byPost = new Map((data || []).map(r => [String(r.post_id), r]));
+        try { document.dispatchEvent(new CustomEvent('zelo-support-stats', { detail: Object.fromEntries(byPost) })); } catch (e) {}
         document.querySelectorAll('.zsup[data-pid]').forEach(el => {
             if (!ids.map(String).includes(el.dataset.pid)) return;
             renderBar(el, byPost.get(el.dataset.pid), uid);

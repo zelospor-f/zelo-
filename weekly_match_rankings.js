@@ -89,12 +89,12 @@ window.openLegendaryRankingScreen = function() {
 
     // زر «نقاطي» يصبح مضاءً ما دامت الشاشة مفتوحة، وأي زر آخر في الشريط يغلقها
     const ptsBtn = document.getElementById('nav-points');
-    if (navEl && ptsBtn) {
+    if (navEl) {
         navEl.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-        ptsBtn.classList.add('active');
+        if (ptsBtn) ptsBtn.classList.add('active');
         const onNav = (e) => {
             const b = e.target && e.target.closest && e.target.closest('.nav-item');
-            if (b && b.id !== 'nav-points') { screen.remove(); const s = document.getElementById('ranking-sub-screen'); if (s) s.remove(); }
+            if (b && (!ptsBtn || b.id !== 'nav-points')) { screen.remove(); const s = document.getElementById('ranking-sub-screen'); if (s) s.remove(); }
         };
         navEl.addEventListener('click', onNav, true);
         new MutationObserver((m, ob) => {
@@ -102,7 +102,7 @@ window.openLegendaryRankingScreen = function() {
             ob.disconnect();
             navEl.removeEventListener('click', onNav, true);
             if (document.getElementById('ranking-full-screen')) return;   // فُتحت نسخة جديدة
-            ptsBtn.classList.remove('active');
+            if (ptsBtn) ptsBtn.classList.remove('active');
             if (!navEl.querySelector('.nav-item.active')) {
                 const home = Array.from(navEl.querySelectorAll('.nav-item')).find(b => (b.getAttribute('onclick') || '').includes("'home'"));
                 if (home) home.classList.add('active');

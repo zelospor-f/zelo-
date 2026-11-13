@@ -246,6 +246,8 @@ function showPage(pageId) {
 
     const contentDiv = document.getElementById("main-content");
     if (!contentDiv) return;
+    // أوقف صفحة الفيديوهات (وأي عارض فيديو) قبل تبديل الصفحة حتى لا يستمر الصوت
+    if (document.getElementById('zvv') && typeof window.closeVideoViewer === 'function') window.closeVideoViewer();
     contentDiv.innerHTML = "";
 
     // يستدعي أول دالة موجودة من القائمة، وإلا يعرض رسالة خطأ بدل صفحة فارغة
@@ -277,6 +279,7 @@ function showPage(pageId) {
             run('renderHomePage');
             if (typeof window.openLegendaryRankingScreen === 'function') window.openLegendaryRankingScreen();
             break;
+        case 'videos':      run('renderVideosPage'); break;
         case 'notifications': run('renderNotificationsPage'); break;
         case 'messages':
             if (typeof window.renderMessagesPage === 'function') {
