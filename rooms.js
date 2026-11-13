@@ -33,7 +33,7 @@
         : String(isAr() ? ar : en).replace(/\{(\w+)\}/g, (m, k) => (params && params[k] !== undefined) ? params[k] : m));
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const me = () => String((window.userState && window.userState.userId) || '');
-    const locale = () => (isAr() ? 'ar-EG' : 'en-US');
+    const locale = () => (window.zA('ar-EG', 'en-US'));
 
     /* ---------------- أيقونات خطية حديثة (SVG) بدل الإيموجي ---------------- */
     const ICONS = {
@@ -388,7 +388,7 @@
         return new Promise(resolve => {
             const el = document.createElement('div');
             el.className = 'rm-sheet center';
-            el.dir = isAr() ? 'rtl' : 'ltr';
+            el.dir = window.zA('rtl', 'ltr');
             el.innerHTML = `<div>
                 <h3 class="rm-mt">${esc(title)}</h3>
                 <input class="rm-search" id="rm-ask" maxlength="${opts.max || 60}" placeholder="${esc(placeholder)}"
@@ -415,7 +415,7 @@
             const st = { icon: pre.icon || ROOM_ICONS[0], pub: true };
             const el = document.createElement('div');
             el.className = 'rm-sheet center';
-            el.dir = isAr() ? 'rtl' : 'ltr';
+            el.dir = window.zA('rtl', 'ltr');
             el.innerHTML = `<div>
                 <h3 class="rm-mt">${ic('plus', 18)} ${T('rmCreateTitle', 'إنشاء غرفة', 'Create a room')}</h3>
                 <div class="rm-lbl">${T('rmIconLbl', 'أيقونة الغرفة', 'Room icon')}</div>
@@ -470,7 +470,7 @@
         return new Promise(resolve => {
             const el = document.createElement('div');
             el.className = 'rm-sheet center';
-            el.dir = isAr() ? 'rtl' : 'ltr';
+            el.dir = window.zA('rtl', 'ltr');
             el.innerHTML = `<div>
                 <p class="rm-mp">${esc(text)}</p>
                 <button class="${danger ? 'danger' : 'primary'}" data-do="ok">${esc(okLabel)}</button>
@@ -489,7 +489,7 @@
     function actionSheet(buttons) {
         const sheet = document.createElement('div');
         sheet.className = 'rm-sheet';
-        sheet.dir = isAr() ? 'rtl' : 'ltr';
+        sheet.dir = window.zA('rtl', 'ltr');
         sheet.innerHTML = `<div>
             ${buttons.map((b, i) => `<button class="${b.danger ? 'danger' : ''}" data-i="${i}">${b.icon ? ic(b.icon, 18) : ''}<span>${esc(b.label)}</span></button>`).join('')}
             <button data-i="-1">${T('rmCancel', 'إلغاء', 'Cancel')}</button>
@@ -558,7 +558,7 @@
         const tot = Math.ceil(ms / 60000);
         const h = Math.floor(tot / 60);
         const m = tot % 60;
-        const t = h > 0 ? (isAr() ? `${h}س ${m}د` : `${h}h ${m}m`) : (isAr() ? `${m}د` : `${m}m`);
+        const t = h > 0 ? (window.zT(`${h}س ${m}د`, `${h}h ${m}m`)) : (window.zT(`${m}د`, `${m}m`));
         return T('rmExpires', '⏳ تُحذف خلال {t}', '⏳ Deleted in {t}', { t });
     }
 
@@ -926,7 +926,7 @@
         const owner = isCustom && String(cur.custom.owner_id) === me();
         const ov = document.createElement('div');
         ov.className = 'rm-overlay';
-        ov.dir = isAr() ? 'rtl' : 'ltr';
+        ov.dir = window.zA('rtl', 'ltr');
         ov.innerHTML = `
             <div class="rm-head">
                 <button class="rm-hbtn" data-act="back">${ic('back', 18)}</button>
@@ -1360,7 +1360,7 @@
         if (!room || !c) return;
         const el = document.createElement('div');
         el.className = 'rm-sheet';
-        el.dir = isAr() ? 'rtl' : 'ltr';
+        el.dir = window.zA('rtl', 'ltr');
         el.innerHTML = `<div>
             <h3 class="rm-mt">${T('rmInviteTitle', 'دعوة مستخدمين', 'Invite users')}</h3>
             <input class="rm-search" id="rm-inv-q" autocomplete="off" maxlength="30"
@@ -1970,7 +1970,7 @@
         return new Promise(resolve => {
             const el = document.createElement('div');
             el.className = 'rm-sheet center';
-            el.dir = isAr() ? 'rtl' : 'ltr';
+            el.dir = window.zA('rtl', 'ltr');
             el.innerHTML = `<div>
                 <div class="rm-hero">${avatar(room.emoji, 34)}</div>
                 <h3 class="rm-mt">${esc(room.name)}</h3>

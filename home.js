@@ -4,7 +4,7 @@
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     const myName = () => {
-        const fallback = isAr() ? 'لاعب' : 'Player';
+        const fallback = window.zT('لاعب', 'Player');
         return isAr()
             ? (US().nickname_ar || US().nickname_en || fallback)
             : (US().nickname_en || US().nickname_ar || fallback);
@@ -15,7 +15,7 @@
     const isPro = () => !!(window.ZeloPremium && window.ZeloPremium.has(me().id));
     const postLimit = () => (isPro() ? PRO_POST_MAX : FREE_POST_MAX);
     const postErrText = (err) => String((err && err.message) || '').includes('premium_required')
-        ? (isAr() ? 'المنشورات الأطول من 280 حرفاً للمشتركين فقط' : 'Posts over 280 characters are for subscribers only')
+        ? (window.zT('المنشورات الأطول من 280 حرفاً للمشتركين فقط', 'Posts over 280 characters are for subscribers only'))
         : null;
     const avatarUrl = (name, url) => url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'P')}&background=0c0e20&color=00FF87&size=96&bold=true`;
 
@@ -203,7 +203,7 @@
             <div class="zrope-head">
                 <span class="zrope-chip">${esc(topicTitle(p.topic_type))}</span>
                 <span class="zrope-name">${esc(subject)}</span>
-                ${tot ? `<span class="zrope-tot">${tot} ${isAr() ? 'صوت' : 'votes'}</span>` : ''}
+                ${tot ? `<span class="zrope-tot">${tot} ${window.zT('صوت', 'votes')}</span>` : ''}
             </div>
             ${(clubs(0) || clubs(1)) ? `<div class="zrope-clubs"><div>${clubs(0)}</div><div>${clubs(1)}</div></div>` : ''}
             <div class="zrope-btns">
@@ -234,18 +234,18 @@
             console.error('[ZELO] rope_vote error:', error);
             await fetchRope([postCache[id]]);
             updateRope(id);
-            alert((isAr() ? 'تعذّر تسجيل صوتك: ' : 'Could not save your vote: ') + (error.message || ''));
+            alert((window.zT('تعذّر تسجيل صوتك: ', 'Could not save your vote: ')) + (error.message || ''));
         }
     };
 
     // ===== اختيار النمط في شاشة النشر =====
     function topicBoxHtml() {
-        const chips = [`<button type="button" class="topic-chip on" data-t="" onclick="window.pickTopic('')">${isAr() ? 'رأي عام' : 'General'}</button>`]
+        const chips = [`<button type="button" class="topic-chip on" data-t="" onclick="window.pickTopic('')">${window.zT('رأي عام', 'General')}</button>`]
             .concat(Object.keys(TOPICS).map(k => `<button type="button" class="topic-chip" data-t="${k}" onclick="window.pickTopic('${k}')">${esc(topicTitle(k))}</button>`))
-            .concat([`<button type="button" class="topic-chip" data-t="__pred" onclick="window.pickPred()">⚽ ${isAr() ? 'توقّع مباراة' : 'Match prediction'}</button>`]).join('');
+            .concat([`<button type="button" class="topic-chip" data-t="__pred" onclick="window.pickPred()">⚽ ${window.zT('توقّع مباراة', 'Match prediction')}</button>`]).join('');
         return `
             <div class="topic-box">
-                <div class="topic-title">${isAr() ? 'نوع المنشور' : 'Post type'}</div>
+                <div class="topic-title">${window.zT('نوع المنشور', 'Post type')}</div>
                 <div class="topic-chips">${chips}</div>
                 <div id="topic-fields"></div>
             </div>`;
@@ -263,8 +263,8 @@
         box.innerHTML = `
             <input class="topic-input" maxlength="60" placeholder="${esc(tl(T.ph))}" oninput="window.setTopicName(this.value)">
             ${t === 'compare' ? `<input class="topic-input" maxlength="60" placeholder="${esc(tl(T.ph2))}" oninput="window.setTopicNameB(this.value)">` : ''}
-            ${person ? `<div class="topic-hint">${isAr() ? 'النقد للأداء والقرارات فقط. السب والاتهامات غير مسموحة.' : 'Criticism of performance and decisions only. No insults or accusations.'}</div>` : ''}
-            ${t === 'prediction' ? `<div class="topic-hint">${isAr() ? 'التوقع مجاني دائماً، ويعطيك شارة فقط ولا يرتبط بأي مال.' : 'Predictions are always free: badges only, never money.'}</div>` : ''}`;
+            ${person ? `<div class="topic-hint">${window.zT('النقد للأداء والقرارات فقط. السب والاتهامات غير مسموحة.', 'Criticism of performance and decisions only. No insults or accusations.')}</div>` : ''}
+            ${t === 'prediction' ? `<div class="topic-hint">${window.zT('التوقع مجاني دائماً، ويعطيك شارة فقط ولا يرتبط بأي مال.', 'Predictions are always free: badges only, never money.')}</div>` : ''}`;
     };
 
     // ===== توقّع مباراة =====
@@ -277,8 +277,8 @@
         const sd = (a, b) => a.toDateString() === b.toDateString();
         const tm = new Date(now.getTime() + 864e5);
         let day;
-        if (sd(d, now)) day = isAr() ? 'اليوم' : 'Today';
-        else if (sd(d, tm)) day = isAr() ? 'غدًا' : 'Tomorrow';
+        if (sd(d, now)) day = window.zT('اليوم', 'Today');
+        else if (sd(d, tm)) day = window.zT('غدًا', 'Tomorrow');
         else day = d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
         return { day, t };
     }
@@ -304,21 +304,21 @@
         const pm = pendingPred;
         if (pm.match) {
             const m = pm.match;
-            const lab = [m.team_a, isAr() ? 'تعادل' : 'Draw', m.team_b];
+            const lab = [m.team_a, window.zT('تعادل', 'Draw'), m.team_b];
             box.innerHTML = `
-                <div class="pred-item" onclick="window.predChange()"><span>${esc(m.team_a)} × ${esc(m.team_b)}</span><small>${isAr() ? 'تغيير' : 'Change'}</small></div>
-                <div class="topic-hint">${isAr() ? 'ما توقّعك للنتيجة؟' : 'Your prediction?'}</div>
-                <div class="zpred-btns">${[0, 1, 2].map(i => `<button type="button" class="zpred-btn" style="${pm.pick === i ? 'background:#f5c35a;color:#0a1033;border-color:#f5c35a;' : ''}" onclick="window.predSetPick(${i})">${i === 1 ? esc(lab[1]) : (isAr() ? 'فوز ' : 'Win ') + esc(lab[i])}</button>`).join('')}</div>
-                <div class="topic-hint">${isAr() ? 'التوقّع مجاني دائمًا، بلا مال ولا جوائز نقدية.' : 'Free forever: no money involved.'}</div>`;
+                <div class="pred-item" onclick="window.predChange()"><span>${esc(m.team_a)} × ${esc(m.team_b)}</span><small>${window.zT('تغيير', 'Change')}</small></div>
+                <div class="topic-hint">${window.zT('ما توقّعك للنتيجة؟', 'Your prediction?')}</div>
+                <div class="zpred-btns">${[0, 1, 2].map(i => `<button type="button" class="zpred-btn" style="${pm.pick === i ? 'background:#f5c35a;color:#0a1033;border-color:#f5c35a;' : ''}" onclick="window.predSetPick(${i})">${i === 1 ? esc(lab[1]) : (window.zT('فوز ', 'Win ')) + esc(lab[i])}</button>`).join('')}</div>
+                <div class="topic-hint">${window.zT('التوقّع مجاني دائمًا، بلا مال ولا جوائز نقدية.', 'Free forever: no money involved.')}</div>`;
             return;
         }
         const ql = (q || '').trim().toLowerCase();
         const list = (predMatches || []).filter(m => !ql || (m.team_a + ' ' + m.team_b + ' ' + (m.competition_name || '')).toLowerCase().includes(ql)).slice(0, 40);
         box.innerHTML = `
-            <input class="topic-input" id="pred-q" placeholder="${isAr() ? 'ابحث عن مباراة أو فريق' : 'Search a match or team'}" value="${esc(q || '')}" oninput="window.predSearch(this.value)">
-            <div class="pred-list">${predMatches === null ? `<div class="topic-hint">${isAr() ? 'جارٍ التحميل...' : 'Loading...'}</div>`
+            <input class="topic-input" id="pred-q" placeholder="${window.zT('ابحث عن مباراة أو فريق', 'Search a match or team')}" value="${esc(q || '')}" oninput="window.predSearch(this.value)">
+            <div class="pred-list">${predMatches === null ? `<div class="topic-hint">${window.zT('جارٍ التحميل...', 'Loading...')}</div>`
                 : list.length ? list.map(m => { const w = predWhen(m.match_date); return `<div class="pred-item" onclick="window.predChoose('${esc(String(m.id))}')"><span>${esc(m.team_a)} × ${esc(m.team_b)}</span><small>${esc(w.day)} ${esc(w.t)}</small></div>`; }).join('')
-                : `<div class="topic-hint">${isAr() ? 'لا توجد مباريات قادمة مطابقة.' : 'No upcoming matches found.'}</div>`}</div>`;
+                : `<div class="topic-hint">${window.zT('لا توجد مباريات قادمة مطابقة.', 'No upcoming matches found.')}</div>`}</div>`;
     }
     window.predSearch = v => { renderPredPicker(v); const i = document.getElementById('pred-q'); if (i) { i.focus(); i.setSelectionRange(v.length, v.length); } };
     window.predChoose = id => { const m = (predMatches || []).find(x => String(x.id) === String(id)); if (m && pendingPred) { pendingPred.match = m; pendingPred.pick = null; renderPredPicker(''); } };
@@ -344,27 +344,27 @@
         const started = !fin && (r.status !== 'NOT_STARTED' || new Date(r.match_date) <= new Date());
         const outcome = fin ? (r.home_score > r.away_score ? 0 : r.home_score === r.away_score ? 1 : 2) : null;
         const pillCls = fin ? (outcome === r.pick ? 'ok' : 'no') : '';
-        const pillTxt = fin ? (outcome === r.pick ? (isAr() ? 'صحّ ✓' : 'Correct ✓') : (isAr() ? 'خطأ ✗' : 'Wrong ✗')) : (isAr() ? 'توقّع' : 'Prediction');
+        const pillTxt = fin ? (outcome === r.pick ? (window.zT('صحّ ✓', 'Correct ✓')) : (window.zT('خطأ ✗', 'Wrong ✗'))) : (window.zT('توقّع', 'Prediction'));
         const w = predWhen(r.match_date);
         // في العربية يظهر الفريق الأول على اليمين، فنعكس ترتيب الرقمين ليطابق موضع كل فريق
         const scoreTxt = (isAr() ? r.away_score + ' - ' + r.home_score : r.home_score + ' - ' + r.away_score);
-        const center = fin ? `<div class="zpred-day">${isAr() ? 'انتهت' : 'Full time'}</div><div class="zpred-score">${scoreTxt}</div>`
-            : started ? `<div class="zpred-day">${isAr() ? 'جارية' : 'Live'}</div><div class="zpred-score">${r.home_score != null ? scoreTxt : '—'}</div>`
+        const center = fin ? `<div class="zpred-day">${window.zT('انتهت', 'Full time')}</div><div class="zpred-score">${scoreTxt}</div>`
+            : started ? `<div class="zpred-day">${window.zT('جارية', 'Live')}</div><div class="zpred-score">${r.home_score != null ? scoreTxt : '—'}</div>`
             : `<div class="zpred-day">${esc(w.day)}</div><div class="zpred-time">${esc(w.t)}</div>`;
-        const lab = [r.team_a, isAr() ? 'تعادل' : 'Draw', r.team_b];
-        const pickTxt = r.pick === 1 ? lab[1] : (isAr() ? 'فوز ' : 'Win ') + lab[r.pick];
+        const lab = [r.team_a, window.zT('تعادل', 'Draw'), r.team_b];
+        const pickTxt = r.pick === 1 ? lab[1] : (window.zT('فوز ', 'Win ')) + lab[r.pick];
         let lower;
         const open = !fin && !started;
         if (r.n0 == null) {
-            lower = `<div class="zpred-btns">${[0, 1, 2].map(i => `<button class="zpred-btn" onclick="window.predVote(${p.id},${i})">${i === 1 ? esc(lab[1]) : (isAr() ? 'فوز ' : 'Win ') + esc(lab[i])}</button>`).join('')}</div>
-                <div class="zpred-note">${isAr() ? 'صوّت لترى نسب الجمهور' : 'Vote to see the results'}</div>`;
+            lower = `<div class="zpred-btns">${[0, 1, 2].map(i => `<button class="zpred-btn" onclick="window.predVote(${p.id},${i})">${i === 1 ? esc(lab[1]) : (window.zT('فوز ', 'Win ')) + esc(lab[i])}</button>`).join('')}</div>
+                <div class="zpred-note">${window.zT('صوّت لترى نسب الجمهور', 'Vote to see the results')}</div>`;
         } else {
             const n = [r.n0, r.n1, r.n2], tot = n[0] + n[1] + n[2];
             lower = `<div class="zpred-bars">${[0, 1, 2].map(i => {
                 const pc = tot ? Math.round(n[i] / tot * 100) : 0;
                 const can = open && !r.is_owner;
-                return `<div class="zpred-bar${r.mine === i ? ' me' : ''}" ${can ? `onclick="window.predVote(${p.id},${i})"` : ''}><i style="width:${pc}%"></i><span><b>${i === 1 ? esc(lab[1]) : esc(lab[i])}${r.pick === i ? ' 📌' : ''}${r.mine === i ? ` · ${isAr() ? 'صوتك' : 'You'}` : ''}</b><b>${pc}%</b></span></div>`;
-            }).join('')}</div><div class="zpred-note">${tot} ${isAr() ? 'صوت' : 'votes'}</div>`;
+                return `<div class="zpred-bar${r.mine === i ? ' me' : ''}" ${can ? `onclick="window.predVote(${p.id},${i})"` : ''}><i style="width:${pc}%"></i><span><b>${i === 1 ? esc(lab[1]) : esc(lab[i])}${r.pick === i ? ' 📌' : ''}${r.mine === i ? ` · ${window.zT('صوتك', 'You')}` : ''}</b><b>${pc}%</b></span></div>`;
+            }).join('')}</div><div class="zpred-note">${tot} ${window.zT('صوت', 'votes')}</div>`;
         }
         return `
             <div class="zpred-top"><span class="zpred-pill ${pillCls}">${pillTxt}</span><span class="zpred-comp">${esc(r.comp || '')}</span></div>
@@ -373,7 +373,7 @@
                 <div class="zpred-center">${center}</div>
                 <div class="zpred-team">${crestHtml(r.team_b)}<div class="zpred-tn">${esc(r.team_b)}</div></div>
             </div>
-            <div class="zpred-mine">📌 ${isAr() ? 'توقّع صاحب المنشور: ' : "Author's pick: "}<b>${esc(pickTxt)}</b></div>
+            <div class="zpred-mine">📌 ${window.zT('توقّع صاحب المنشور: ', "Author's pick: ")}<b>${esc(pickTxt)}</b></div>
             ${lower}`;
     }
     function updatePred(id) {
@@ -385,8 +385,8 @@
         const { error } = await c.rpc('vote_prediction', { p_post: id, p_pick: pick });
         if (error) {
             const m = String(error.message || '');
-            if (m.includes('voting_closed')) alert(isAr() ? 'أُغلق التصويت: المباراة بدأت.' : 'Voting is closed: the match started.');
-            else alert((isAr() ? 'تعذّر تسجيل صوتك: ' : 'Could not save your vote: ') + m);
+            if (m.includes('voting_closed')) alert(window.zT('أُغلق التصويت: المباراة بدأت.', 'Voting is closed: the match started.'));
+            else alert((window.zT('تعذّر تسجيل صوتك: ', 'Could not save your vote: ')) + m);
         }
         await fetchPreds([id]);
         updatePred(id);
@@ -395,7 +395,7 @@
     // أنواع المنشور والتوقّع: الباقة الكاملة (درجة 3)
     async function tier3Gate() {
         const ok = window.ZeloPremium && window.ZeloPremium.myTier ? (await window.ZeloPremium.myTier()) >= 3 : false;
-        if (!ok) window.zeloComposeNotice(isAr() ? '🧩 أنواع المنشور والتوقّع في الباقة الكاملة (4.99$)' : '🧩 Post types and predictions need the Pro plan', true, 'topic');
+        if (!ok) window.zeloComposeNotice(window.zT('🧩 أنواع المنشور والتوقّع في الباقة الكاملة (4.99$)', '🧩 Post types and predictions need the Pro plan'), true, 'topic');
         return ok;
     }
     window.pickTopic = function (t) {
@@ -409,7 +409,7 @@
     function readImage(file, maxSize = 900, quality = 0.75) {
         return new Promise((resolve, reject) => {
             if (!file) return resolve('');
-            if (!file.type.startsWith('image/')) return reject(new Error(isAr() ? 'الملف ليس صورة' : 'Not an image'));
+            if (!file.type.startsWith('image/')) return reject(new Error(window.zT('الملف ليس صورة', 'Not an image')));
             const reader = new FileReader();
             reader.onerror = () => reject(new Error('read failed'));
             reader.onload = () => {
@@ -736,7 +736,7 @@
     }
 
     function fullDate(iso) {
-        try { return new Date(iso).toLocaleString(isAr() ? 'ar-u-nu-latn' : 'en', { dateStyle: 'medium', timeStyle: 'short' }); }
+        try { return new Date(iso).toLocaleString(window.zA('ar-u-nu-latn', 'en'), { dateStyle: 'medium', timeStyle: 'short' }); }
         catch (e) { return ''; }
     }
 
@@ -754,7 +754,7 @@
         return `
             <div onclick="window.openPostPage(${p.id})" style="cursor:pointer;">
                 <div class="post-text">${esc(p.content).replace(/\n/g, '<br>')}</div>
-                ${p.topic_type && String(p.content || '').length > 260 ? `<div class="zrope-more">${isAr() ? 'عرض المزيد' : 'Show more'}</div>` : ''}
+                ${p.topic_type && String(p.content || '').length > 260 ? `<div class="zrope-more">${window.zT('عرض المزيد', 'Show more')}</div>` : ''}
                 ${p.image_url ? `<img class="post-img" src="${p.image_url}" onerror="this.style.display='none'">` : ''}
                 ${p.video_url ? `<video class="post-video" src="${p.video_url}" muted loop playsinline preload="metadata" onclick="event.stopPropagation();window.openVideoViewer(${p.id})" style="width:100%;border-radius:14px;margin-top:8px;max-height:420px;background:#000;cursor:pointer;"></video>` : ''}
             </div>
@@ -802,16 +802,16 @@
         const handle = handleOf(p.user_id);
         return `
             <div class="post-card${p.topic_type ? ' has-rope' : ''}" id="post-${p.id}" data-uid="${esc(p.user_id)}" data-pid="${p.id}" ${p._boostId ? `data-boost-id="${p._boostId}"` : ''}>
-                ${p._rpBy ? `<div style="font-size:12px;color:#14F195;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:14px;">${ICONS.repost.replace(/(width|height)="19"/g,'$1="14"')}</span>${isAr() ? 'مرّره ' : 'Passed by '}${esc(p._rpBy)}</div>` : (p._pin ? `<div style="font-size:12px;color:#8e98c8;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 3h6l-1 7 3 3H7l3-3z"/></svg>${isAr() ? 'مثبّت' : 'Pinned'}</div>` : '')}
+                ${p._rpBy ? `<div style="font-size:12px;color:#14F195;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:14px;">${ICONS.repost.replace(/(width|height)="19"/g,'$1="14"')}</span>${window.zT('مرّره ', 'Passed by ')}${esc(p._rpBy)}</div>` : (p._pin ? `<div style="font-size:12px;color:#8e98c8;font-weight:700;padding:0 14px 6px;display:flex;align-items:center;gap:5px;"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5M9 3h6l-1 7 3 3H7l3-3z"/></svg>${window.zT('مثبّت', 'Pinned')}</div>` : '')}
                 <div class="post-head">
                     <img class="post-avatar" style="cursor:pointer" onclick="window.openUserProfile('${esc(p.user_id)}')" src="${esc(avatarUrl(p.author_name, (profMap[String(p.user_id)] && profMap[String(p.user_id)].photo) || p.author_avatar))}" onerror="this.style.display='none'">
                     <div class="post-meta">
                         <div class="post-author">${esc(p.author_name)}${badgeHtml(p.user_id)}</div>
                         <div class="post-sub">
-                            ${p._boostId ? `<span style="color:#f5c35a;font-weight:800;">${isAr() ? 'معزّز' : 'Boosted'}</span><span>·</span>` : ''}
+                            ${p._boostId ? `<span style="color:#f5c35a;font-weight:800;">${window.zT('معزّز', 'Boosted')}</span><span>·</span>` : ''}
                             ${handle ? `<span class="post-handle">@${esc(handle)}</span><span>·</span>` : ''}
                             ${timeHtml(p.created_at)}
-                            ${edited ? `<span>· ${isAr() ? 'معدّل' : 'edited'}</span>` : ''}
+                            ${edited ? `<span>· ${window.zT('معدّل', 'edited')}</span>` : ''}
                         </div>
                     </div>
                     <button class="dots-btn" onclick="window.openPostMenu(${p.id})" aria-label="more">⋮</button>
@@ -1063,7 +1063,7 @@
                 if (!p || p._rpAt) return;
                 if (new Date(r.created_at) <= new Date(p.created_at)) return;
                 p._rpAt = r.created_at;
-                p._rpBy = String(r.user_id) === String(uid) ? (isAr() ? 'أنت' : 'You') : (names[String(r.user_id)] || (isAr() ? 'أحدهم' : 'Someone'));
+                p._rpBy = String(r.user_id) === String(uid) ? (window.zT('أنت', 'You')) : (names[String(r.user_id)] || (window.zT('أحدهم', 'Someone')));
             });
             return [...byId.values()].sort((x, y) =>
                 new Date(y._rpAt || y.created_at) - new Date(x._rpAt || x.created_at));
@@ -1074,16 +1074,16 @@
         const list = document.getElementById('feed-list');
         if (!list) return;
         const c = db();
-        if (!c) { list.innerHTML = emptyBox(isAr() ? 'لا يوجد اتصال بقاعدة البيانات' : 'No database connection'); return; }
+        if (!c) { list.innerHTML = emptyBox(window.zT('لا يوجد اتصال بقاعدة البيانات', 'No database connection')); return; }
 
         const { data: posts, error } = await c.from('posts').select('*').order('created_at', { ascending: false }).limit(50);
         if (error) {
             console.error('[ZELO] loadFeed error:', error);
-            list.innerHTML = emptyBox((isAr() ? '❌ تعذر تحميل المنشورات: ' : '❌ Failed to load posts: ') + esc(error.message));
+            list.innerHTML = emptyBox((window.zT('❌ تعذر تحميل المنشورات: ', '❌ Failed to load posts: ')) + esc(error.message));
             return;
         }
         if (!posts || !posts.length) {
-            list.innerHTML = emptyBox(isAr() ? 'لا توجد منشورات بعد. كن أول من ينشر! 🚀' : 'No posts yet. Be the first! 🚀');
+            list.innerHTML = emptyBox(window.zT('لا توجد منشورات بعد. كن أول من ينشر! 🚀', 'No posts yet. Be the first! 🚀'));
             return;
         }
 
@@ -1093,7 +1093,7 @@
         let visible = (await mergeReposts(c, posts)).filter(p => !isHiddenUser(p.user_id) && !hiddenPosts.has(String(p.id)));
         visible = await mixBoosts(visible);
         if (!visible.length) {
-            list.innerHTML = emptyBox(isAr() ? 'لا توجد منشورات لعرضها الآن.' : 'No posts to show right now.');
+            list.innerHTML = emptyBox(window.zT('لا توجد منشورات لعرضها الآن.', 'No posts to show right now.'));
             return;
         }
 
@@ -1190,7 +1190,7 @@
         input.click();
     }
     window.openPostImagePicker = async function() {
-        const ok = await imageGate(() => window.zeloComposeNotice(isAr() ? '📷 نشر الصور في الباقة المميّزة (1.99$) فما فوق' : '📷 Images need the Plus plan or higher', true, 'image'));
+        const ok = await imageGate(() => window.zeloComposeNotice(window.zT('📷 نشر الصور في الباقة المميّزة (1.99$) فما فوق', '📷 Images need the Plus plan or higher'), true, 'image'));
         if (ok) chooseImage(window.pickPostImage);
     };
     window.openEditImagePicker = async function(id) {
@@ -1227,16 +1227,16 @@
         const content = (textEl?.value || '').trim();
 
         if (pendingPred && (!pendingPred.match || pendingPred.pick === null)) {
-            alert(isAr() ? 'اختر المباراة ثم توقّعك.' : 'Choose a match and your prediction.');
+            alert(window.zT('اختر المباراة ثم توقّعك.', 'Choose a match and your prediction.'));
             return;
         }
         if (!content && !pendingImage && !pendingVideo && !pendingPred) {
-            alert(isAr() ? 'اكتب نصاً أو أضف صورة أو فيديو أولاً.' : 'Write something or add an image or video first.');
+            alert(window.zT('اكتب نصاً أو أضف صورة أو فيديو أولاً.', 'Write something or add an image or video first.'));
             return;
         }
 
         const c = db();
-        if (!c) { alert(isAr() ? 'لا يوجد اتصال بقاعدة البيانات' : 'No database connection'); return; }
+        if (!c) { alert(window.zT('لا يوجد اتصال بقاعدة البيانات', 'No database connection')); return; }
         if (content.length > FREE_POST_MAX) {
             const ok = window.ZeloPremium ? await window.ZeloPremium.isPremium() : false;
             if (!ok) { if (window.openSubscriptions) window.openSubscriptions(); else alert(postErrText({ message: 'premium_required' })); return; }
@@ -1249,15 +1249,15 @@
         if (tp.type) {
             const n = tp.name.trim(), nb = tp.nameB.trim();
             if (n.length < 2 || (tp.type === 'compare' && nb.length < 2)) {
-                alert(isAr() ? 'اكتب اسم الموضوع (حرفان على الأقل).' : 'Enter the subject name (2+ characters).');
+                alert(window.zT('اكتب اسم الموضوع (حرفان على الأقل).', 'Enter the subject name (2+ characters).'));
                 return;
             }
             if (!content) {
-                alert(isAr() ? 'اكتب رأيك في المنشور أولاً.' : 'Write your opinion first.');
+                alert(window.zT('اكتب رأيك في المنشور أولاً.', 'Write your opinion first.'));
                 return;
             }
             if (hasBadWords(content + ' ' + n + ' ' + nb)) {
-                alert(isAr() ? 'المنشور يحتوي على سب أو اتهام غير مسموح. انتقد الأداء والقرارات فقط.' : 'Your post contains an insult or accusation. Criticize performance and decisions only.');
+                alert(window.zT('المنشور يحتوي على سب أو اتهام غير مسموح. انتقد الأداء والقرارات فقط.', 'Your post contains an insult or accusation. Criticize performance and decisions only.'));
                 return;
             }
             topicFields = { topic_type: tp.type, topic_name: n, topic_name_b: tp.type === 'compare' ? nb : null };
@@ -1273,7 +1273,7 @@
                 if (upErr) throw upErr;
                 videoUrl = c.storage.from('post-videos').getPublicUrl(videoPath).data.publicUrl;
             } catch (e) {
-                alert((isAr() ? 'فشل رفع الفيديو: ' : 'Video upload failed: ') + (e.message || ''));
+                alert((window.zT('فشل رفع الفيديو: ', 'Video upload failed: ')) + (e.message || ''));
                 return;
             }
         }
@@ -1296,8 +1296,8 @@
                 try { await c.from('posts').delete().eq('id', newPost.id); } catch (e) {}
                 await removeStoredImage(imageToSave);
                 const pm = String(pe.message || '');
-                alert(pm.includes('match_started') ? (isAr() ? 'هذه المباراة بدأت، اختر مباراة أخرى.' : 'That match already started.')
-                    : (isAr() ? 'تعذّر نشر التوقّع: ' : 'Could not publish: ') + pm);
+                alert(pm.includes('match_started') ? (window.zT('هذه المباراة بدأت، اختر مباراة أخرى.', 'That match already started.'))
+                    : (window.zT('تعذّر نشر التوقّع: ', 'Could not publish: ')) + pm);
                 return;
             }
         }
@@ -1306,11 +1306,11 @@
             if (videoPath) { try { await c.storage.from('post-videos').remove([videoPath]); } catch (e) {} }
             await removeStoredImage(imageToSave);
             const msg = String(error.message || '');
-            if (msg.includes('video_daily_limit')) { alert(isAr() ? 'وصلت إلى حد 5 فيديوهات اليوم.' : 'You reached the limit of 5 videos today.'); return; }
+            if (msg.includes('video_daily_limit')) { alert(window.zT('وصلت إلى حد 5 فيديوهات اليوم.', 'You reached the limit of 5 videos today.')); return; }
             if (msg.includes('premium_required')) { if (window.openSubscriptions) window.openSubscriptions(); return; }
-            if (msg.includes('tier3_required')) { alert(isAr() ? 'أنواع المنشور والتوقّع في الباقة الكاملة (4.99$).' : 'Post types and predictions need the Pro plan.'); if (window.openSubscriptions) window.openSubscriptions(); return; }
-            if (msg.includes('post_too_long')) { alert(isAr() ? 'المنشور أطول من 1000 حرف.' : 'Post is over 1000 characters.'); return; }
-            alert(postErrText(error) || ((isAr() ? 'فشل النشر: ' : 'Post failed: ') + error.message));
+            if (msg.includes('tier3_required')) { alert(window.zT('أنواع المنشور والتوقّع في الباقة الكاملة (4.99$).', 'Post types and predictions need the Pro plan.')); if (window.openSubscriptions) window.openSubscriptions(); return; }
+            if (msg.includes('post_too_long')) { alert(window.zT('المنشور أطول من 1000 حرف.', 'Post is over 1000 characters.')); return; }
+            alert(postErrText(error) || ((window.zT('فشل النشر: ', 'Post failed: ')) + error.message));
             return;
         }
 
@@ -1443,12 +1443,12 @@
             const { error } = await c.from('post_bookmarks').delete().eq('post_id', id).eq('user_id', uid);
             if (error) { alert(error.message); return; }
             p.saved = false;
-            toast(isAr() ? 'أُزيل من المحفوظات' : 'Removed from bookmarks');
+            toast(window.zT('أُزيل من المحفوظات', 'Removed from bookmarks'));
         } else {
             const { error } = await c.from('post_bookmarks').insert([{ post_id: id, user_id: uid }]);
             if (error && error.code !== '23505') { alert(error.message); return; }
             p.saved = true;
-            toast(isAr() ? 'تم حفظ المنشور 🔖' : 'Post saved 🔖');
+            toast(window.zT('تم حفظ المنشور 🔖', 'Post saved 🔖'));
         }
         updatePostUI(id);
     };
@@ -1478,11 +1478,11 @@
                 </div>` : ''}
             <div class="tool-row">
                 <button type="button" class="tool-btn" style="margin:0;" onclick="window.openEditImagePicker(${id})">
-                    📷 ${isAr() ? 'تغيير الصورة' : 'Change image'}
+                    📷 ${window.zT('تغيير الصورة', 'Change image')}
                 </button>
                 <div style="display:flex; gap:8px;">
-                    <button class="act-btn" style="padding:7px 14px;" onclick="window.cancelEditPost(${id})">${isAr() ? 'إلغاء' : 'Cancel'}</button>
-                    <button class="save-mini" onclick="window.saveEditPost(${id})">${isAr() ? 'حفظ' : 'Save'}</button>
+                    <button class="act-btn" style="padding:7px 14px;" onclick="window.cancelEditPost(${id})">${window.zT('إلغاء', 'Cancel')}</button>
+                    <button class="save-mini" onclick="window.saveEditPost(${id})">${window.zT('حفظ', 'Save')}</button>
                 </div>
             </div>`;
     }
@@ -1521,7 +1521,7 @@
         if (st.newImage) image = st.newImage;
 
         if (!content && !image) {
-            alert(isAr() ? 'لا يمكن ترك المنشور فارغاً.' : 'Post cannot be empty.');
+            alert(window.zT('لا يمكن ترك المنشور فارغاً.', 'Post cannot be empty.'));
             return;
         }
 
@@ -1547,7 +1547,7 @@
     };
 
     window.deletePost = async function(id) {
-        if (!confirm(isAr() ? 'هل تريد حذف هذا المنشور؟' : 'Delete this post?')) return;
+        if (!confirm(window.zT('هل تريد حذف هذا المنشور؟', 'Delete this post?'))) return;
         const videoPath = postCache[id] && postCache[id].video_path;
         const imageUrl = postCache[id] && postCache[id].image_url;
         const { error } = await db().from('posts').delete().eq('id', id).eq('user_id', me().id);
@@ -1574,9 +1574,9 @@
         }
         try {
             await navigator.clipboard.writeText(link);
-            alert(isAr() ? 'تم نسخ رابط المنشور بنجاح! 🔗' : 'Post link copied successfully! 🔗');
+            alert(window.zT('تم نسخ رابط المنشور بنجاح! 🔗', 'Post link copied successfully! 🔗'));
         } catch (e) {
-            prompt(isAr() ? 'انسخ الرابط:' : 'Copy link:', link);
+            prompt(window.zT('انسخ الرابط:', 'Copy link:'), link);
         }
     };
 
@@ -1627,7 +1627,7 @@
                             <span class="cm-time">· ${timeHtml(cm.created_at)}</span>
                             <button class="dots-btn" onclick="window.openCommentMenu(${postId}, ${cm.id})" aria-label="more">⋮</button>
                         </div>
-                        ${(replyingTo && depth > 0) ? `<div class="cm-replying">${isAr() ? 'ردًا على' : 'Replying to'} <span>@${esc(replyingTo)}</span></div>` : ''}
+                        ${(replyingTo && depth > 0) ? `<div class="cm-replying">${window.zT('ردًا على', 'Replying to')} <span>@${esc(replyingTo)}</span></div>` : ''}
                         ${commentContentHtml(cm)}
                         <div class="cm-actions" id="cm-actions-${cm.id}">${cmActionsHtml(postId, cm)}</div>
                     </div>
@@ -1641,7 +1641,7 @@
         const list = document.getElementById(`pp-cm-list-${id}`) || document.getElementById(`cm-list-${id}`);
         if (!list) return;
         const c = db();
-        if (!c) { list.innerHTML = `<div class="cm-empty">${isAr() ? 'لا يوجد اتصال' : 'No connection'}</div>`; return; }
+        if (!c) { list.innerHTML = `<div class="cm-empty">${window.zT('لا يوجد اتصال', 'No connection')}</div>`; return; }
 
         const { data, error } = await c.from('post_comments')
             .select('*')
@@ -1650,7 +1650,7 @@
 
         if (error) {
             console.error('[ZELO] loadComments error:', error);
-            list.innerHTML = `<div class="cm-empty">${isAr() ? '❌ تعذر تحميل التعليقات' : '❌ Failed to load comments'}</div>`;
+            list.innerHTML = `<div class="cm-empty">${window.zT('❌ تعذر تحميل التعليقات', '❌ Failed to load comments')}</div>`;
             return;
         }
 
@@ -1659,7 +1659,7 @@
 
         const rows = (data || []).filter(cm => !isHiddenUser(cm.user_id));
         if (!rows.length) {
-            list.innerHTML = `<div class="cm-empty">${isAr() ? 'لا توجد تعليقات بعد' : 'No comments yet'}</div>`;
+            list.innerHTML = `<div class="cm-empty">${window.zT('لا توجد تعليقات بعد', 'No comments yet')}</div>`;
             return;
         }
 
@@ -1725,7 +1725,7 @@
     };
 
     window.deleteComment = async function(postId, commentId) {
-        if (!confirm(isAr() ? 'هل تريد حذف هذا الرد؟' : 'Delete this reply?')) return;
+        if (!confirm(window.zT('هل تريد حذف هذا الرد؟', 'Delete this reply?'))) return;
         const { error } = await db().from('post_comments').delete().eq('id', commentId).eq('user_id', me().id);
         if (error) { alert(error.message); return; }
         await loadComments(postId);
@@ -1765,16 +1765,16 @@
         ov.innerHTML = `
             <div class="compose-top">
                 <button class="compose-close" onclick="window.closeReply()">✕</button>
-                <button class="compose-post-btn" id="reply-send" style="opacity:0.5;" onclick="window.submitReply(${id})">${isAr() ? 'الرّد' : 'Reply'}</button>
+                <button class="compose-post-btn" id="reply-send" style="opacity:0.5;" onclick="window.submitReply(${id})">${window.zT('الرّد', 'Reply')}</button>
             </div>
             <div style="padding: 12px 16px 0; color: #9aa6d6; font-size: 0.9rem;">
-                ${isAr() ? 'ردا على' : 'Replying to'} <span style="color:#f5c35a; direction:ltr; unicode-bidi:plaintext;">@${esc(targetName)}</span>
+                ${window.zT('ردا على', 'Replying to')} <span style="color:#f5c35a; direction:ltr; unicode-bidi:plaintext;">@${esc(targetName)}</span>
             </div>
             <div class="compose-body">
                 <img class="post-avatar" src="${esc(avatarUrl(u.name, u.avatar))}" onerror="this.style.display='none'">
                 <div style="flex:1; min-width:0;">
                     <textarea id="reply-text" maxlength="500"
-                              placeholder="${isAr() ? 'انشر ردّك' : 'Post your reply'}"
+                              placeholder="${window.zT('انشر ردّك', 'Post your reply')}"
                               oninput="window.updateReplyBtn()"></textarea>
                     <div id="reply-preview"></div>
                 </div>
@@ -1783,7 +1783,7 @@
             <div class="compose-tools">
                 <button type="button" class="tool-btn" style="margin:0;" onclick="window.openReplyImagePicker()">📷</button>
                 <button class="tool-btn" onclick="window.toggleReplyPanel('emoji')">😀</button>
-                <button class="tool-btn" onclick="window.toggleReplyPanel('stickers')">🎉 ${isAr() ? 'ملصقات' : 'Stickers'}</button>
+                <button class="tool-btn" onclick="window.toggleReplyPanel('stickers')">🎉 ${window.zT('ملصقات', 'Stickers')}</button>
             </div>
         `;
         document.body.appendChild(ov);
@@ -1801,8 +1801,8 @@
         const pv = document.getElementById('reply-preview');
         if (!pv) return;
         pv.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(17,26,74,0.95);border:1px solid rgba(245,195,90,0.3);border-radius:14px;padding:8px 12px;color:#f8fafc;font-size:0.82rem;font-weight:800;margin-top:8px;">
-            <span>📷 ${isAr() ? 'اشترك لكي تستطيع إرسال الصور' : 'Subscribe to send images'}</span>
-            <button type="button" class="btn-action" onclick="window.closeReply(); window.openSubscriptions && window.openSubscriptions()" style="flex-shrink:0;width:auto;margin-top:0;padding:7px 18px;font-size:0.82rem;border-radius:999px;">${isAr() ? 'اشترك' : 'Subscribe'}</button>
+            <span>📷 ${window.zT('اشترك لكي تستطيع إرسال الصور', 'Subscribe to send images')}</span>
+            <button type="button" class="btn-action" onclick="window.closeReply(); window.openSubscriptions && window.openSubscriptions()" style="flex-shrink:0;width:auto;margin-top:0;padding:7px 18px;font-size:0.82rem;border-radius:999px;">${window.zT('اشترك', 'Subscribe')}</button>
         </div>`;
     };
     window.openReplyImagePicker = async function() {
@@ -1881,7 +1881,7 @@
         if (!content && !image) return;
 
         const c = db();
-        if (!c) { alert(isAr() ? 'لا يوجد اتصال بقاعدة البيانات' : 'No database connection'); return; }
+        if (!c) { alert(window.zT('لا يوجد اتصال بقاعدة البيانات', 'No database connection')); return; }
         const u = me();
 
         const row = { post_id: id, user_id: u.id, author_name: u.name, author_avatar: u.avatar, content: content };
@@ -1891,8 +1891,8 @@
         const { error } = await c.from('post_comments').insert([row]);
         if (error) {
             if (String(error.message || '').includes('premium_required')) { window.zeloReplyNeedSub(); return; }
-            alert((isAr() ? 'فشل إرسال الرد: ' : 'Reply failed: ') + error.message +
-                (isAr() ? '\n(تأكد من تشغيل أوامر SQL المحدّثة)' : '\n(make sure the updated SQL has been run)'));
+            alert((window.zT('فشل إرسال الرد: ', 'Reply failed: ')) + error.message +
+                (window.zT('\n(تأكد من تشغيل أوامر SQL المحدّثة)', '\n(make sure the updated SQL has been run)')));
             return;
         }
 
@@ -1914,7 +1914,7 @@
             updatePostUI(id);
         }
         if (document.getElementById(`pp-cm-list-${id}`)) await loadComments(id);  // صفحة المنشور مفتوحة: حدّث الردود
-        else toast(isAr() ? 'تم إرسال ردّك ✅' : 'Your reply was sent ✅');
+        else toast(window.zT('تم إرسال ردّك ✅', 'Your reply was sent ✅'));
     };
 
 
@@ -1953,7 +1953,7 @@
         ov.innerHTML = `
             <div class="pp-top">
                 ${window.zeloBackBtn('window.closePostPage()', isAr())}
-                <div class="pp-title">${isAr() ? 'نشر' : 'Post'}</div>
+                <div class="pp-title">${window.zT('نشر', 'Post')}</div>
             </div>
             <div class="pp-scroll">
                 <div class="pp-main">
@@ -1967,14 +1967,14 @@
                     </div>
                     <div class="pp-text">${esc(p.content).replace(/\n/g, '<br>')}</div>
                     ${p.image_url ? `<img class="pp-img" src="${p.image_url}" onerror="this.style.display='none'">` : ''}
-                    <div class="pp-meta">${esc(fullDate(p.created_at))}${edited ? ` · ${isAr() ? 'معدّل' : 'edited'}` : ''} · <b id="pp-views">${p.views || 0}</b> ${isAr() ? 'المشاهدات' : 'Views'}</div>
+                    <div class="pp-meta">${esc(fullDate(p.created_at))}${edited ? ` · ${window.zT('معدّل', 'edited')}` : ''} · <b id="pp-views">${p.views || 0}</b> ${window.zT('المشاهدات', 'Views')}</div>
                     <div class="pp-actions"><div class="post-actions">${actionsHtml(p)}</div></div>
                 </div>
                 <div class="pp-comments" id="pp-cm-list-${id}"><div class="cm-empty">...</div></div>
             </div>
             <div class="pp-replybar">
                 <div class="pp-replypill" onclick="window.openReply(${id})">
-                    <span style="flex:1">${isAr() ? 'انشر ردّك' : 'Post your reply'}</span>
+                    <span style="flex:1">${window.zT('انشر ردّك', 'Post your reply')}</span>
                     <img src="${esc(avatarUrl(u.name, u.avatar))}" onerror="this.style.display='none'">
                 </div>
             </div>`;
@@ -1998,7 +1998,7 @@
         ov.innerHTML = `
             <div class="pp-top">
                 ${window.zeloBackBtn("document.getElementById('fl-overlay')?.remove()", isAr())}
-                <div class="pp-title">${isAr() ? 'المتابِعون' : 'Followers'}</div>
+                <div class="pp-title">${window.zT('المتابِعون', 'Followers')}</div>
             </div>
             <div class="pp-scroll"><div class="pp-main" id="fl-list"><div class="cm-empty">...</div></div></div>`;
         document.body.appendChild(ov);
@@ -2006,13 +2006,13 @@
         const { data, error } = await c.from('user_follows').select('follower_id').eq('following_id', mine);
         const list = document.getElementById('fl-list');
         if (!list) return;
-        if (error) { list.innerHTML = `<div class="cm-empty">${isAr() ? '❌ تعذر تحميل المتابِعين' : '❌ Failed to load followers'}</div>`; return; }
+        if (error) { list.innerHTML = `<div class="cm-empty">${window.zT('❌ تعذر تحميل المتابِعين', '❌ Failed to load followers')}</div>`; return; }
         const ids = [...new Set((data || []).map(r => String(r.follower_id)))];
-        if (!ids.length) { list.innerHTML = `<div class="cm-empty">${isAr() ? 'لا يوجد متابِعون بعد' : 'No followers yet'}</div>`; return; }
+        if (!ids.length) { list.innerHTML = `<div class="cm-empty">${window.zT('لا يوجد متابِعون بعد', 'No followers yet')}</div>`; return; }
         await fetchBadges(ids);
         list.innerHTML = ids.map(uid => {
             const pr = profMap[uid] || {};
-            const name = pr.username || (isAr() ? 'لاعب' : 'Player');
+            const name = pr.username || (window.zT('لاعب', 'Player'));
             return `<div class="fl-row" onclick="window.openUserProfile('${esc(uid)}')">
                 <img class="post-avatar" src="${esc(avatarUrl(name))}" onerror="this.style.display='none'">
                 <div class="post-meta">
@@ -2032,7 +2032,7 @@
         el.innerHTML = `<span>${esc(msg)}</span>`;
         if (undoFn) {
             const b = document.createElement('button');
-            b.textContent = isAr() ? 'تراجع' : 'Undo';
+            b.textContent = window.zT('تراجع', 'Undo');
             b.onclick = () => { el.remove(); undoFn(); };
             el.appendChild(b);
         }
@@ -2051,7 +2051,7 @@
         ov.addEventListener('click', e => { if (e.target === ov) window.closeSheet(); });
         const sheet = document.createElement('div');
         sheet.className = 'sheet';
-        sheet.dir = isAr() ? 'rtl' : 'ltr';
+        sheet.dir = window.zA('rtl', 'ltr');
         sheet.innerHTML = '<div class="sheet-grip"></div>' + (title ? `<div class="sheet-title">${esc(title)}</div>` : '');
         items.forEach(it => {
             if (it === 'sep') { sheet.insertAdjacentHTML('beforeend', '<div class="sheet-sep"></div>'); return; }
@@ -2078,13 +2078,13 @@
             const { error } = await c.from('user_follows').delete().eq('follower_id', mine).eq('following_id', uid);
             if (error) { alert(error.message); return; }
             followSet.delete(uid);
-            toast(isAr() ? 'تم إلغاء المتابعة' : 'Unfollowed');
+            toast(window.zT('تم إلغاء المتابعة', 'Unfollowed'));
         } else {
             const { error } = await c.from('user_follows').insert([{ follower_id: mine, following_id: uid }]);
             if (error && error.code !== '23505') { alert(error.message); return; }
             followSet.add(uid);
             notifyUser(uid, 'follow');
-            toast(isAr() ? 'تمت المتابعة ✅' : 'Following ✅');
+            toast(window.zT('تمت المتابعة ✅', 'Following ✅'));
         }
     }
 
@@ -2106,7 +2106,7 @@
         if (error && error.code !== '23505') { alert(error.message); return; }
         muteSet.add(uid);
         hideUserContent(uid);
-        toast(isAr() ? 'تم الكتم' : 'Muted', async () => {
+        toast(window.zT('تم الكتم', 'Muted'), async () => {
             await c.from('user_mutes').delete().eq('user_id', mine).eq('muted_id', uid);
             muteSet.delete(uid);
             loadFeed();
@@ -2118,7 +2118,7 @@
         const mine = me().id;
         uid = String(uid);
         if (!c || !mine || uid === mine) return;
-        const msg = isAr() ? `هل تريد حظر ${tag}؟ لن ترى منشوراته وردوده.` : `Block ${tag}? You won't see their posts or replies.`;
+        const msg = window.zT(`هل تريد حظر ${tag}؟ لن ترى منشوراته وردوده.`, `Block ${tag}? You won't see their posts or replies.`);
         if (!confirm(msg)) return;
         const { error } = await c.from('user_blocks').insert([{ user_id: mine, blocked_id: uid }]);
         if (error && error.code !== '23505') { alert(error.message); return; }
@@ -2126,7 +2126,7 @@
         followSet.delete(uid);
         blockSet.add(uid);
         hideUserContent(uid);
-        toast(isAr() ? 'تم الحظر' : 'Blocked', async () => {
+        toast(window.zT('تم الحظر', 'Blocked'), async () => {
             await c.from('user_blocks').delete().eq('user_id', mine).eq('blocked_id', uid);
             blockSet.delete(uid);
             loadFeed();
@@ -2137,7 +2137,7 @@
         hiddenPosts.add(String(id));
         saveHidden();
         document.getElementById(`post-${id}`)?.remove();
-        toast(isAr() ? 'تم إخفاء المنشور' : 'Post hidden', () => {
+        toast(window.zT('تم إخفاء المنشور', 'Post hidden'), () => {
             hiddenPosts.delete(String(id));
             saveHidden();
             loadFeed();
@@ -2157,7 +2157,7 @@
         ];
         openSheet(
             reasons.map(r => ({ icon: r[1], label: isAr() ? r[2] : r[3], action: () => (r[0] === 'other' ? openReportText(type, id) : submitReport(type, id, r[0])) })),
-            isAr() ? 'ما سبب البلاغ؟' : 'Why are you reporting this?'
+            window.zT('ما سبب البلاغ؟', 'Why are you reporting this?')
         );
     }
 
@@ -2168,12 +2168,12 @@
         ov.id = 'zrt-ov';
         ov.style.cssText = 'position:fixed;inset:0;z-index:6000;background:rgba(3,6,24,.7);display:flex;align-items:flex-end;justify-content:center;';
         ov.innerHTML = `
-            <div style="width:100%;max-width:520px;background:#0f1a5c;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));direction:${isAr() ? 'rtl' : 'ltr'};color:#fff;">
-                <div style="font-weight:900;font-size:1.05rem;margin-bottom:10px;">${isAr() ? 'اكتب سبب البلاغ' : 'Describe the problem'}</div>
-                <textarea id="zrt-txt" maxlength="300" rows="4" placeholder="${isAr() ? 'اشرح المشكلة باختصار…' : 'Briefly explain…'}" style="width:100%;box-sizing:border-box;background:#0a1033;color:#fff;border:1px solid rgba(245,195,90,.35);border-radius:14px;padding:12px;font-family:inherit;font-size:1rem;resize:none;"></textarea>
+            <div style="width:100%;max-width:520px;background:#0f1a5c;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));direction:${window.zA('rtl', 'ltr')};color:#fff;">
+                <div style="font-weight:900;font-size:1.05rem;margin-bottom:10px;">${window.zT('اكتب سبب البلاغ', 'Describe the problem')}</div>
+                <textarea id="zrt-txt" maxlength="300" rows="4" placeholder="${window.zT('اشرح المشكلة باختصار…', 'Briefly explain…')}" style="width:100%;box-sizing:border-box;background:#0a1033;color:#fff;border:1px solid rgba(245,195,90,.35);border-radius:14px;padding:12px;font-family:inherit;font-size:1rem;resize:none;"></textarea>
                 <div style="display:flex;gap:10px;margin-top:12px;">
-                    <button id="zrt-cancel" style="flex:1;padding:12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:800;font-family:inherit;">${isAr() ? 'إلغاء' : 'Cancel'}</button>
-                    <button id="zrt-send" style="flex:1;padding:12px;border-radius:999px;border:none;background:linear-gradient(135deg,#f5c35a,#fde9a8);color:#0a1033;font-weight:900;font-family:inherit;opacity:.5;" disabled>${isAr() ? 'إرسال' : 'Send'}</button>
+                    <button id="zrt-cancel" style="flex:1;padding:12px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;font-weight:800;font-family:inherit;">${window.zT('إلغاء', 'Cancel')}</button>
+                    <button id="zrt-send" style="flex:1;padding:12px;border-radius:999px;border:none;background:linear-gradient(135deg,#f5c35a,#fde9a8);color:#0a1033;font-weight:900;font-family:inherit;opacity:.5;" disabled>${window.zT('إرسال', 'Send')}</button>
                 </div>
             </div>`;
         document.body.appendChild(ov);
@@ -2196,18 +2196,18 @@
         if (!c) return;
         const { error } = await c.from('post_reports').insert([{ reporter_id: me().id, target_type: type, target_id: id, reason: reason }]);
         if (error && error.code !== '23505') { alert(error.message); return; }
-        toast(isAr() ? 'تم استلام بلاغك، شكرًا لك' : 'Report received. Thank you');
+        toast(window.zT('تم استلام بلاغك، شكرًا لك', 'Report received. Thank you'));
     }
 
     function showEngagements(id) {
         const p = postCache[id];
         if (!p) return;
         openSheet([
-            { stat: true, label: isAr() ? 'المشاهدات' : 'Views', value: p.views || 0 },
-            { stat: true, label: isAr() ? 'الأهداف' : 'Goals', value: p.likes || 0 },
-            { stat: true, label: isAr() ? 'التمريرات' : 'Passes', value: p.reposts || 0 },
-            { stat: true, label: isAr() ? 'الردود' : 'Replies', value: p.comments || 0 }
-        ], isAr() ? 'التفاعلات مع المنشور' : 'Post engagements');
+            { stat: true, label: window.zT('المشاهدات', 'Views'), value: p.views || 0 },
+            { stat: true, label: window.zT('الأهداف', 'Goals'), value: p.likes || 0 },
+            { stat: true, label: window.zT('التمريرات', 'Passes'), value: p.reposts || 0 },
+            { stat: true, label: window.zT('الردود', 'Replies'), value: p.comments || 0 }
+        ], window.zT('التفاعلات مع المنشور', 'Post engagements'));
     }
 
     // عناصر المتابعة والكتم والحظر المشتركة بين المنشور والرد
@@ -2217,11 +2217,11 @@
         return [
             {
                 icon: followed ? '➖' : '➕',
-                label: followed ? (isAr() ? `إلغاء متابعة ${tag}` : `Unfollow ${tag}`) : (isAr() ? `تابِع ${tag}` : `Follow ${tag}`),
+                label: followed ? (window.zT(`إلغاء متابعة ${tag}`, `Unfollow ${tag}`)) : (window.zT(`تابِع ${tag}`, `Follow ${tag}`)),
                 action: () => toggleFollow(uid)
             },
-            { icon: '🔇', label: isAr() ? `كتم ${tag}` : `Mute ${tag}`, action: () => muteUser(uid) },
-            { icon: '🚫', label: isAr() ? `حظر ${tag}` : `Block ${tag}`, action: () => blockUser(uid, tag) }
+            { icon: '🔇', label: window.zT(`كتم ${tag}`, `Mute ${tag}`), action: () => muteUser(uid) },
+            { icon: '🚫', label: window.zT(`حظر ${tag}`, `Block ${tag}`), action: () => blockUser(uid, tag) }
         ];
     }
 
@@ -2231,34 +2231,34 @@
         const mine = String(p.user_id) === me().id;
         if (mine && window.pfOpenPostMenu && document.querySelector(`.pf-card[data-pid="${id}"]`)) { window.pfOpenPostMenu(id); return; }
         const common = [
-            { icon: '📊', label: isAr() ? 'عرض التفاعلات مع المنشور' : 'View post engagements', action: () => showEngagements(id) },
-            { icon: '🔖', label: postCache[id].saved ? (isAr() ? 'إزالة من المحفوظات' : 'Remove bookmark') : (isAr() ? 'حفظ المنشور' : 'Save post'), action: () => window.toggleBookmark(id) },
-            { icon: '🔗', label: isAr() ? 'نسخ رابط المنشور' : 'Copy post link', action: () => window.sharePost(id) }
+            { icon: '📊', label: window.zT('عرض التفاعلات مع المنشور', 'View post engagements'), action: () => showEngagements(id) },
+            { icon: '🔖', label: postCache[id].saved ? (window.zT('إزالة من المحفوظات', 'Remove bookmark')) : (window.zT('حفظ المنشور', 'Save post')), action: () => window.toggleBookmark(id) },
+            { icon: '🔗', label: window.zT('نسخ رابط المنشور', 'Copy post link'), action: () => window.sharePost(id) }
         ];
         if (mine) {
             openSheet([
-                { icon: '✏️', label: isAr() ? 'تعديل المنشور' : 'Edit post', action: () => window.startEditPost(id) },
-                { icon: '🚀', label: isAr() ? 'تعزيز المنشور' : 'Boost post', action: () => {
+                { icon: '✏️', label: window.zT('تعديل المنشور', 'Edit post'), action: () => window.startEditPost(id) },
+                { icon: '🚀', label: window.zT('تعزيز المنشور', 'Boost post'), action: () => {
                     if (!isPro()) {
                         if (typeof window.openSubscriptions === 'function') window.openSubscriptions();
-                        else toast(isAr() ? 'التعزيز متاح للمشتركين فقط' : 'Boosting is for subscribers only');
+                        else toast(window.zT('التعزيز متاح للمشتركين فقط', 'Boosting is for subscribers only'));
                         return;
                     }
                     if (typeof window.zeloOpenBoost === 'function') window.zeloOpenBoost(id);
-                    else toast(isAr() ? 'التعزيز غير متاح حالياً' : 'Boost is not available right now');
+                    else toast(window.zT('التعزيز غير متاح حالياً', 'Boost is not available right now'));
                 } },
-                { icon: '🗑️', label: isAr() ? 'حذف المنشور' : 'Delete post', danger: true, action: () => window.deletePost(id) },
+                { icon: '🗑️', label: window.zT('حذف المنشور', 'Delete post'), danger: true, action: () => window.deletePost(id) },
                 'sep',
                 ...common
             ]);
             return;
         }
         openSheet([
-            { icon: '😕', label: isAr() ? 'لست مهتمًا بهذا المنشور' : 'Not interested in this post', action: () => notInterested(id) },
+            { icon: '😕', label: window.zT('لست مهتمًا بهذا المنشور', 'Not interested in this post'), action: () => notInterested(id) },
             'sep',
             ...userActionItems(p.user_id, handleOf(p.user_id), p.author_name),
             'sep',
-            { icon: '🚩', label: isAr() ? 'الإبلاغ عن المنشور' : 'Report post', action: () => openReport('post', id) },
+            { icon: '🚩', label: window.zT('الإبلاغ عن المنشور', 'Report post'), action: () => openReport('post', id) },
             'sep',
             ...common
         ]);
@@ -2270,14 +2270,14 @@
         const mine = String(cm.user_id) === me().id;
         if (mine) {
             openSheet([
-                { icon: '🗑️', label: isAr() ? 'حذف الرد' : 'Delete reply', danger: true, action: () => window.deleteComment(postId, cid) }
+                { icon: '🗑️', label: window.zT('حذف الرد', 'Delete reply'), danger: true, action: () => window.deleteComment(postId, cid) }
             ]);
             return;
         }
         openSheet([
             ...userActionItems(cm.user_id, handleOf(cm.user_id), cm.author_name),
             'sep',
-            { icon: '🚩', label: isAr() ? 'الإبلاغ عن الرد' : 'Report reply', action: () => openReport('comment', cid) }
+            { icon: '🚩', label: window.zT('الإبلاغ عن الرد', 'Report reply'), action: () => openReport('comment', cid) }
         ]);
     };
 
@@ -2344,7 +2344,7 @@
         const ov = document.createElement('div');
         ov.id = 'pc-overlay';
         ov.className = 'pc-overlay';
-        ov.innerHTML = `<div class="pc-sheet"><div class="pc-empty">${isAr() ? 'جارٍ التحميل...' : 'Loading...'}</div></div>`;
+        ov.innerHTML = `<div class="pc-sheet"><div class="pc-empty">${window.zT('جارٍ التحميل...', 'Loading...')}</div></div>`;
         document.body.appendChild(ov);
         try { history.pushState({ pc: 1 }, ''); pcPushed = true; window.addEventListener('popstate', onPcPop); } catch (e) {}
 
@@ -2360,7 +2360,7 @@
         let row = Array.isArray(prof.data) ? prof.data[0] : prof.data;
         if (!row) row = { username: handleOf(uid) || '', nickname_ar: src.author_name || '', photo_url: src.author_avatar || '' };
         const PF = window.ZeloProfile;
-        if (!PF || !PF.showOther) { ov.firstElementChild.innerHTML = `<div class="pc-empty">${isAr() ? 'تعذّر فتح الملف' : 'Could not open profile'}</div>`; return; }
+        if (!PF || !PF.showOther) { ov.firstElementChild.innerHTML = `<div class="pc-empty">${window.zT('تعذّر فتح الملف', 'Could not open profile')}</div>`; return; }
         PF.showOther(ov.firstElementChild, {
             uid, row,
             followers: followers.count || 0, following: following.count || 0, posts: postsCount.count || 0,
@@ -2368,7 +2368,7 @@
             onFollow: async () => { await toggleFollow(uid); return followSet.has(uid); },
             onMessage: () => {
                 if (typeof window.openChat === 'function') { window.closeUserProfile(); window.openChat(uid); }
-                else alert(isAr() ? 'نظام الرسائل غير مربوط بعد' : 'Messaging is not linked yet');
+                else alert(window.zT('نظام الرسائل غير مربوط بعد', 'Messaging is not linked yet'));
             }
         });
     };
@@ -2393,7 +2393,7 @@
         const fab = document.createElement('button');
         fab.id = 'fab-compose';
         fab.className = 'fab-compose';
-        fab.setAttribute('aria-label', isAr() ? 'منشور جديد' : 'New post');
+        fab.setAttribute('aria-label', window.zT('منشور جديد', 'New post'));
         fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
         fab.onclick = () => window.openCompose();
         document.body.appendChild(fab);
@@ -2420,13 +2420,13 @@
         ov.innerHTML = `
             <div class="compose-top">
                 <button class="compose-close" onclick="window.closeCompose()">✕</button>
-                <button class="compose-post-btn" onclick="window.createPost()">${isAr() ? 'نشر' : 'Post'}</button>
+                <button class="compose-post-btn" onclick="window.createPost()">${window.zT('نشر', 'Post')}</button>
             </div>
             <div class="compose-body">
                 <img class="post-avatar" src="${esc(avatarUrl(u.name, u.avatar))}" onerror="this.style.display='none'">
                 <div style="flex:1; min-width:0;">
                     <textarea id="new-post-text" maxlength="${postLimit()}"
-                              placeholder="${isAr() ? 'ماذا يحدث؟' : "What's happening?"}"></textarea>
+                              placeholder="${window.zT('ماذا يحدث؟', "What's happening?")}"></textarea>
                     <div id="composer-preview"></div>
                 </div>
             </div>
@@ -2436,10 +2436,10 @@
                      background:rgba(17,26,74,0.95); border:1px solid rgba(245,195,90,0.3); border-radius:14px;
                      padding:8px 12px; color:#f8fafc; font-size:0.82rem; font-weight:800;"></div>
                 <button type="button" class="tool-btn" style="margin:0;" onclick="window.openPostImagePicker()">
-                    📷 ${isAr() ? 'إضافة صورة' : 'Add image'}
+                    📷 ${window.zT('إضافة صورة', 'Add image')}
                 </button>
                 <button type="button" class="tool-btn" style="margin:0;" onclick="window.pickPostVideo()">
-                    🎬 ${isAr() ? 'فيديو' : 'Video'}
+                    🎬 ${window.zT('فيديو', 'Video')}
                 </button>
                 <div id="post-counter" style="margin-inline-start:auto; display:flex; align-items:center; gap:6px; font-variant-numeric:tabular-nums; font-size:0.85rem; font-weight:800;"></div>
             </div>
@@ -2487,7 +2487,7 @@
         n.style.display = 'flex';
         n.innerHTML = `<span>${esc(text)}</span>` + (withBtn
             ? `<button type="button" class="btn-action" onclick="window.openSubscriptions && window.openSubscriptions()"
-                       style="flex-shrink:0; width:auto; margin-top:0; padding:7px 18px; font-size:0.82rem; border-radius:999px;">${isAr() ? 'اشترك' : 'Subscribe'}</button>` : '');
+                       style="flex-shrink:0; width:auto; margin-top:0; padding:7px 18px; font-size:0.82rem; border-radius:999px;">${window.zT('اشترك', 'Subscribe')}</button>` : '');
     };
 
     // زر رفع الفيديو: لغير المشترك رسالة اشتراك، وللمشترك "قريباً" إلى أن تُبنى الميزة
@@ -2497,7 +2497,7 @@
     window.pickPostVideo = async function() {
         const ok = window.ZeloPremium && window.ZeloPremium.myTier ? (await window.ZeloPremium.myTier()) >= 2 : false;
         if (!ok) {
-            window.zeloComposeNotice(isAr() ? '🎬 نشر الفيديو في الباقة المميّزة (1.99$) فما فوق' : '🎬 Video posts need the Plus plan or higher', true, 'video');
+            window.zeloComposeNotice(window.zT('🎬 نشر الفيديو في الباقة المميّزة (1.99$) فما فوق', '🎬 Video posts need the Plus plan or higher'), true, 'video');
             return;
         }
         const input = document.createElement('input');
@@ -2510,8 +2510,8 @@
     async function handleVideoFile(file) {
         if (!file) return;
         const isMp4 = file.type === 'video/mp4' || /\.mp4$/i.test(file.name || '');
-        if (!isMp4) { alert(isAr() ? 'الصيغة المقبولة MP4 فقط.' : 'Only MP4 files are allowed.'); return; }
-        if (file.size > VIDEO_MAX_BYTES) { alert(isAr() ? 'حجم الفيديو يتجاوز 30 ميغابايت.' : 'Video is larger than 30 MB.'); return; }
+        if (!isMp4) { alert(window.zT('الصيغة المقبولة MP4 فقط.', 'Only MP4 files are allowed.')); return; }
+        if (file.size > VIDEO_MAX_BYTES) { alert(window.zT('حجم الفيديو يتجاوز 30 ميغابايت.', 'Video is larger than 30 MB.')); return; }
 
         const url = URL.createObjectURL(file);
         const probe = document.createElement('video');
@@ -2521,8 +2521,8 @@
             probe.onloadedmetadata = () => resolve(probe.duration);
             probe.onerror = () => resolve(NaN);
         });
-        if (!isFinite(duration)) { URL.revokeObjectURL(url); alert(isAr() ? 'تعذّر قراءة الفيديو.' : 'Could not read the video.'); return; }
-        if (duration > VIDEO_MAX_SECONDS) { URL.revokeObjectURL(url); alert(isAr() ? 'مدة الفيديو يجب ألا تتجاوز 60 ثانية.' : 'Video must be 60 seconds or less.'); return; }
+        if (!isFinite(duration)) { URL.revokeObjectURL(url); alert(window.zT('تعذّر قراءة الفيديو.', 'Could not read the video.')); return; }
+        if (duration > VIDEO_MAX_SECONDS) { URL.revokeObjectURL(url); alert(window.zT('مدة الفيديو يجب ألا تتجاوز 60 ثانية.', 'Video must be 60 seconds or less.')); return; }
 
         pendingVideo = file;
         pendingImage = '';
@@ -2705,7 +2705,7 @@
                             <div class="zvv-name">${esc(p.author_name)}${badgeHtml(p.user_id)}</div>
                             ${handleOf(p.user_id) ? `<div class="zvv-handle">@${esc(handleOf(p.user_id))}</div>` : ''}
                         </div>
-                        ${mine ? '' : `<button class="zvv-follow ${followed ? 'on' : ''}" data-follow="${esc(p.user_id)}" onclick="window.zvvFollow('${esc(p.user_id)}')">${followed ? (isAr() ? 'متابَع' : 'Following') : (isAr() ? 'متابعة' : 'Follow')}</button>`}
+                        ${mine ? '' : `<button class="zvv-follow ${followed ? 'on' : ''}" data-follow="${esc(p.user_id)}" onclick="window.zvvFollow('${esc(p.user_id)}')">${followed ? (window.zT('متابَع', 'Following')) : (window.zT('متابعة', 'Follow'))}</button>`}
                     </div>
                     ${p.content ? `<div class="zvv-text">${esc(p.content).replace(/\n/g, '<br>')}</div>` : ''}
                     <div class="zvv-acts">${zvvActionsHtml(p)}</div>
@@ -2744,7 +2744,7 @@
         document.querySelectorAll('#zvv .zvv-follow').forEach(b => {
             if (b.dataset.follow === String(uid)) {
                 b.classList.toggle('on', on);
-                b.textContent = on ? (isAr() ? 'متابَع' : 'Following') : (isAr() ? 'متابعة' : 'Follow');
+                b.textContent = on ? (window.zT('متابَع', 'Following')) : (window.zT('متابعة', 'Follow'));
             }
         });
     };
@@ -2764,7 +2764,7 @@
 
         const root = document.createElement('div');
         root.id = 'zvv';
-        root.dir = isAr() ? 'rtl' : 'ltr';
+        root.dir = window.zA('rtl', 'ltr');
         root.innerHTML = `
             ${window.zeloBackBtn('window.closeVideoViewer()', isAr(), 'zvv-back')}
             <div class="zvv-feed">${ids.map(id => zvvItemHtml(postCache[id])).join('')}</div>`;
@@ -2859,7 +2859,7 @@
         restoreFeedLocal();
         // نعرض آخر منشورات رأيناها فوراً ثم نحدّثها بصمت، بدل شاشة "جاري التحميل"
         container.innerHTML = `
-            <div id="feed-list">${feedHtmlCache || `<div class="loading-box">${isAr() ? 'جاري تحميل المنشورات...' : 'Loading posts...'}</div>`}</div>
+            <div id="feed-list">${feedHtmlCache || `<div class="loading-box">${window.zT('جاري تحميل المنشورات...', 'Loading posts...')}</div>`}</div>
         `;
         if (feedHtmlCache) { observeViews(); observeBoosts(); observeVideos(); }
 

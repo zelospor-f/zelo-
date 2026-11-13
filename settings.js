@@ -128,7 +128,7 @@
     `;
 
     const isAr = () => (window.userState?.lang || 'ar').startsWith('ar');
-    const L = (ar, en) => (isAr() ? ar : en);
+    const L = (ar, en) => window.zT(ar, en);
 
     function esc(str) {
         return String(str ?? '').replace(/[&<>"']/g, c => ({
@@ -198,7 +198,7 @@
     }
     function clearTimers() { clearTimeout(SET.timer); clearInterval(SET.rt); }
     function mount(html) { const z = $('zset'); if (z) z.innerHTML = html; }
-    const backBtn = () => `<button class="zs-back" id="zs-back">${isAr() ? '›' : '‹'}</button>`;
+    const backBtn = () => `<button class="zs-back" id="zs-back">${window.zA('›', '‹')}</button>`;
 
     // ---------- الشاشة الرئيسية ----------
     function screenMain() {
@@ -207,7 +207,7 @@
             <button class="zs-row" id="${id}">
                 <span class="zs-row-ico">${ico}</span>
                 <span class="zs-row-txt"><b>${label}</b><small dir="auto">${esc(val)}</small></span>
-                <span class="zs-chev">${isAr() ? '‹' : '›'}</span>
+                <span class="zs-chev">${window.zA('‹', '›')}</span>
             </button>`;
         mount(`
             <div class="zs-head line">${backBtn()}<div class="zs-title">⚙️ ${tr('set_settings', 'الإعدادات', 'Settings')}</div></div>
@@ -710,7 +710,7 @@
     // ---------- حذف الحساب ----------
     function screenDelete() {
         clearTimers();
-        const word = isAr() ? 'حذف' : 'DELETE';
+        const word = window.zT('حذف', 'DELETE');
         mount(`
             <div class="zs-head line">${backBtn()}<div class="zs-title">🗑️ ${tr('set_delete_account_2', 'حذف الحساب', 'Delete account')}</div></div>
             <div class="zs-body">
@@ -775,7 +775,7 @@
         const box = document.createElement('div');
         box.id = 'zset';
         box.className = 'zset';
-        box.dir = isAr() ? 'rtl' : 'ltr';
+        box.dir = window.zA('rtl', 'ltr');
         document.body.appendChild(box);
         screenMain();
     }

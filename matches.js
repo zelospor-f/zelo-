@@ -17,7 +17,7 @@ window.openChallengesScreen = async function() {
         position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
         width: 100vw !important; height: 100vh !important; background: var(--bg-dark, #0a1033) !important; 
         z-index: 99999 !important; padding: 20px; box-sizing: border-box; overflow-y: auto; color: white;
-        direction: ${isAr ? 'rtl' : 'ltr'}; text-align: ${isAr ? 'right' : 'left'};
+        direction: ${window.zA('rtl', 'ltr')}; text-align: ${window.zA('right', 'left')};
     `;
     document.body.appendChild(overlay);
 
@@ -91,11 +91,11 @@ function renderMatchList(overlay, isAr, asPage) {
             const isStarted = now >= matchDate; 
             const hasPredicted = userState.predictedMatches.includes(m.id);
 
-            const formattedDate = !isNaN(matchDate.getTime()) ? matchDate.toLocaleDateString(isAr ? 'ar-EG' : 'en-US') : '';
-            const formattedTime = !isNaN(matchDate.getTime()) ? matchDate.toLocaleTimeString(isAr ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+            const formattedDate = !isNaN(matchDate.getTime()) ? matchDate.toLocaleDateString(window.zA('ar-EG', 'en-US')) : '';
+            const formattedTime = !isNaN(matchDate.getTime()) ? matchDate.toLocaleTimeString(window.zA('ar-EG', 'en-US'), { hour: '2-digit', minute: '2-digit' }) : '';
 
             const BALL = '<img src="zelo-coin.png" alt="" style="width:16px;height:16px;flex:none" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png\';}else{this.style.display=\'none\';}">';
-            const winLine = `<div style="font-size:0.72rem; font-weight:700; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px;">${isAr ? 'واكسب' : 'Win'} ${BALL}</div>`;
+            const winLine = `<div style="font-size:0.72rem; font-weight:700; margin-top:2px; display:flex; align-items:center; justify-content:center; gap:5px;">${window.zT('واكسب', 'Win')} ${BALL}</div>`;
             let buttonHtml = '';
             if (hasPredicted) {
                 buttonHtml = `<button disabled style="width:100%; padding:12px; background:rgba(245, 195, 90, 0.2); color:#f5c35a; border:1px solid #f5c35a; border-radius:12px; font-size:1rem; font-weight:bold;">${getT('btnPredicted')}</button>`;
@@ -123,8 +123,8 @@ function renderMatchList(overlay, isAr, asPage) {
                     
                     <div id="btn-container-${m.id}" style="padding: 0 15px 10px 15px;">${buttonHtml}</div>
                     <div style="padding: 0 15px 15px 15px;">
-                        <button onclick="window.openMatchRoom ? window.openMatchRoom('${m.id}') : null" style="width:100%; padding:11px; background:rgba(255,255,255,0.05); color:#f5c35a; border:1px solid rgba(245,195,90,0.35); border-radius:12px; font-size:0.95rem; font-weight:800; cursor:pointer; font-family:inherit;">💬 ${isAr ? 'غرفة المباراة' : 'Match room'}</button>
-                        <button onclick="window.createMatchLinkedRoom ? window.createMatchLinkedRoom('${m.id}') : null" style="width:100%; margin-top:8px; padding:10px; background:transparent; color:#cbd5e1; border:1px dashed rgba(255,255,255,0.25); border-radius:12px; font-size:0.88rem; font-weight:800; cursor:pointer; font-family:inherit;">➕ ${isAr ? 'إنشاء غرفة' : 'Create room'}</button>
+                        <button onclick="window.openMatchRoom ? window.openMatchRoom('${m.id}') : null" style="width:100%; padding:11px; background:rgba(255,255,255,0.05); color:#f5c35a; border:1px solid rgba(245,195,90,0.35); border-radius:12px; font-size:0.95rem; font-weight:800; cursor:pointer; font-family:inherit;">💬 ${window.zT('غرفة المباراة', 'Match room')}</button>
+                        <button onclick="window.createMatchLinkedRoom ? window.createMatchLinkedRoom('${m.id}') : null" style="width:100%; margin-top:8px; padding:10px; background:transparent; color:#cbd5e1; border:1px dashed rgba(255,255,255,0.25); border-radius:12px; font-size:0.88rem; font-weight:800; cursor:pointer; font-family:inherit;">➕ ${window.zT('إنشاء غرفة', 'Create room')}</button>
                     </div>
                 </div>
             `;
@@ -167,7 +167,7 @@ window.renderMatchesPage = async function(container) {
         }
     }
 
-    container.style.direction = isAr ? 'rtl' : 'ltr';
+    container.style.direction = window.zA('rtl', 'ltr');
     renderMatchList(container, isAr, true);
 
     // الزر يُربط بالصفحة كلها (وليس بالحاوية) حتى لا يُقص بسبب تأثيرات الحاوية
@@ -190,7 +190,7 @@ window.showPredictionModal = function(matchId, team1, team2) {
         position: fixed !important; top: 50% !important; left: 50% !important; transform: translate(-50%, -50%) !important;
         background: #111a4a !important; padding: 25px; border-radius: 20px; z-index: 100000 !important; width: 90%; max-width: 400px; color: white;
         box-shadow: 0 0 0 100vw rgba(0,0,0,0.85), 0 10px 40px rgba(0,0,0,0.8) !important; border: 1px solid rgba(255,255,255,0.1);
-        direction: ${isAr ? 'rtl' : 'ltr'}; box-sizing: border-box;
+        direction: ${window.zA('rtl', 'ltr')}; box-sizing: border-box;
     `;
 
     modal.innerHTML = `
@@ -276,7 +276,7 @@ window.openPredictionHistoryScreen = function() {};
  * ============================================================ */
 (function () {
     const isAr = () => (typeof userState !== 'undefined' && userState && userState.lang === 'ar');
-    const L = (a, e) => (isAr() ? a : e);
+    const L = (a, e) => window.zT(a, e);
     const esc = x => String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const uid = () => (typeof userState !== 'undefined' && userState && userState.userId) ? String(userState.userId) : '';
@@ -347,7 +347,7 @@ window.openPredictionHistoryScreen = function() {};
         ov.id = 'fc-picker';
         ov.style.cssText = 'position:fixed;inset:0;z-index:100100;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;';
         ov.onclick = e => { if (e.target === ov) ov.remove(); };
-        ov.innerHTML = `<div style="width:100%;max-width:500px;box-sizing:border-box;direction:${isAr() ? 'rtl' : 'ltr'};background:#0a1033;border:1px solid rgba(245,195,90,.3);border-radius:20px 20px 0 0;padding:18px 16px 22px;color:#fff;max-height:80vh;display:flex;flex-direction:column;"><div style="text-align:center;color:#9aa6d6;padding:30px;">⏳</div></div>`;
+        ov.innerHTML = `<div style="width:100%;max-width:500px;box-sizing:border-box;direction:${window.zA('rtl', 'ltr')};background:#0a1033;border:1px solid rgba(245,195,90,.3);border-radius:20px 20px 0 0;padding:18px 16px 22px;color:#fff;max-height:80vh;display:flex;flex-direction:column;"><div style="text-align:center;color:#9aa6d6;padding:30px;">⏳</div></div>`;
         document.body.appendChild(ov);
         const box = ov.firstElementChild;
 
@@ -374,7 +374,7 @@ window.openPredictionHistoryScreen = function() {};
             <div style="overflow-y:auto;flex:1;margin-bottom:12px;">
                 ${users.map(u => `<div class="fc-u" data-id="${esc(u.user_id)}" style="display:flex;align-items:center;gap:12px;padding:10px;margin-bottom:8px;border-radius:14px;cursor:pointer;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);">
                     ${avatarHtml(u, 40)}
-                    <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:.9rem;">${esc(nameOf(u))}</div><div style="font-size:.74rem;color:#ffd98a;direction:ltr;text-align:${isAr() ? 'right' : 'left'};">@${esc(u.username || '')}</div></div>
+                    <div style="flex:1;min-width:0;"><div style="font-weight:800;font-size:.9rem;">${esc(nameOf(u))}</div><div style="font-size:.74rem;color:#ffd98a;direction:ltr;text-align:${window.zA('right', 'left')};">@${esc(u.username || '')}</div></div>
                     <div class="fc-chk" style="width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;color:#0a1033;font-weight:900;"></div>
                 </div>`).join('')}
             </div>
@@ -438,7 +438,7 @@ window.openPredictionHistoryScreen = function() {};
         if (c.state === 'waiting') {
             banner = `<div style="font-size:.8rem;line-height:1.6;color:#c9d3ff;font-weight:600;">${L('انتهت المباراة. نؤكد النتيجة الآن وسيظهر الفائز هنا تلقائياً وسيصلك إشعار.', 'The match is over. We are confirming the result; the winner will appear here and you will get a notification.')}</div>`;
         } else if (c.state === 'settled') {
-            banner = `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(245,195,90,.12);border:1px solid rgba(245,195,90,.4);font-weight:900;font-size:.9rem;color:#ffd98a;">🏆 ${winners.length ? L('الفائزون: ', 'Winners: ') + esc(winners.map(w => (w.user_id === me ? L('أنت', 'You') : (isAr() ? (w.name_ar || w.name_en) : (w.name_en || w.name_ar)) || w.username || '')).join(isAr() ? '، ' : ', ')) : L('لم يُصب أحد النتيجة', 'Nobody got it right')}</div>`;
+            banner = `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(245,195,90,.12);border:1px solid rgba(245,195,90,.4);font-weight:900;font-size:.9rem;color:#ffd98a;">🏆 ${winners.length ? L('الفائزون: ', 'Winners: ') + esc(winners.map(w => (w.user_id === me ? L('أنت', 'You') : (isAr() ? (w.name_ar || w.name_en) : (w.name_en || w.name_ar)) || w.username || '')).join(window.zT('، ', ', '))) : L('لم يُصب أحد النتيجة', 'Nobody got it right')}</div>`;
         }
         const rows = members.map(m => {
             const isMe = m.user_id === me;
@@ -499,7 +499,7 @@ window.openPredictionHistoryScreen = function() {};
         if (!ov) {
             ov = document.createElement('div');
             ov.id = 'fc-overlay';
-            ov.style.cssText = `position:fixed;inset:0;z-index:99990;background:#0a1033;color:#fff;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 40px;box-sizing:border-box;direction:${isAr() ? 'rtl' : 'ltr'};`;
+            ov.style.cssText = `position:fixed;inset:0;z-index:99990;background:#0a1033;color:#fff;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 40px;box-sizing:border-box;direction:${window.zA('rtl', 'ltr')};`;
             document.body.appendChild(ov);
         }
         ov.innerHTML = `<div style="text-align:center;color:#9aa6d6;padding:60px;">⏳</div>`;
