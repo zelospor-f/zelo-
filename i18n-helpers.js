@@ -1,7 +1,7 @@
 // ===== نظام الترجمة: الملفات في locales/ar.json و locales/en.json =====
-window.i18n = { ar: {}, en: {} };
+window.i18n = { ar: {}, en: {}, tr: {} };
 
-const SUPPORTED_LANGS = ['ar', 'en'];
+const SUPPORTED_LANGS = ['ar', 'en', 'tr'];
 
 // يحوّل أي رمز لغة (fa, en-US, ar-EG ...) إلى لغة مدعومة أو null
 function normalizeLang(l) {
@@ -46,6 +46,7 @@ function t(key, a, b) {
     let text;
 
     if (window.i18n[lang] && window.i18n[lang][key] !== undefined) text = window.i18n[lang][key];
+    else if (lang === 'tr' && window.i18n.en && window.i18n.en[key] !== undefined) text = window.i18n.en[key];
     else if (window.i18n[other] && window.i18n[other][key] !== undefined) text = window.i18n[other][key];
     else text = fallback || key;
 
@@ -66,7 +67,7 @@ window.getT = function (key) { return t(key); };
 function tr(key, ar, en, params) {
     const lang = getCurrentLang();
     const dict = window.i18n[lang];
-    let text = (dict && dict[key] !== undefined) ? dict[key] : (lang === 'ar' ? ar : en);
+    let text = (dict && dict[key] !== undefined) ? dict[key] : (lang === 'ar' ? ar : en); // tr يرجع للإنجليزية عند غياب المفتاح
     text = String(text === undefined || text === null ? key : text);
     Object.keys(params || {}).forEach(function (p) {
         text = text.split('{' + p + '}').join(params[p]);
