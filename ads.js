@@ -289,7 +289,7 @@
             const need = drawerOpen || !!document.querySelector(sel) || coversBottom();
             if (need === bannerHidden) {
                 // نعيد طلب الإخفاء كل بضع ثوانٍ: قد يعود الإعلان للظهور عند تحديثه تلقائياً
-                if (need && Date.now() - lastHide > 2500) {
+                if (need && Date.now() - lastHide > 1000) {
                     lastHide = Date.now();
                     try { await AdMob.hideBanner(); } catch (e) {}
                 }
@@ -304,7 +304,7 @@
             } catch (e) {}
         };
         new MutationObserver(apply).observe(document.body, { childList: true, attributes: true, attributeFilter: ['class', 'style'], subtree: false });
-        setInterval(apply, 800); // شبكة أمان: أي نافذة تُفتح أو تُغلق تُلتقط خلال أقل من ثانية
+        setInterval(apply, 350); // شبكة أمان: أي نافذة تُفتح أو تُغلق تُلتقط خلال أقل من ثانية
         // القائمة الجانبية تبقى في الصفحة وتُفتح بتغيير class، لذلك تُبلغنا بحدث
         window.addEventListener('zdrawer:open', () => { drawerOpen = true; apply(); });
         window.addEventListener('zdrawer:close', () => { drawerOpen = false; apply(); });
