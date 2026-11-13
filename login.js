@@ -99,12 +99,10 @@ function getDefaultLanguage() {
 }
 
 function getLanguageSelector() {
-    const cur = userState?.lang || 'ar';
+    const cur = (typeof window.zeloLangMeta === 'function') ? window.zeloLangMeta(userState?.lang || 'ar') : { flag: '🌐', name: userState?.lang };
     return `
-        <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 12px;">
-            <div class="lang-btn ${cur === 'ar' ? 'lang-btn-active' : ''}" onclick="setLanguage('ar')">🇸🇦 العربية</div>
-            <div class="lang-btn ${cur === 'en' ? 'lang-btn-active' : ''}" onclick="setLanguage('en')">🇬🇧 English</div>
-            <div class="lang-btn ${cur === 'tr' ? 'lang-btn-active' : ''}" onclick="setLanguage('tr')">🇹🇷 Türkçe</div>
+        <div style="display: flex; justify-content: center; margin-bottom: 12px;">
+            <div class="lang-btn lang-btn-active" onclick="window.zeloOpenLangPicker(window.setLanguage)">${cur.flag} ${cur.name} ▾</div>
         </div>
     `;
 }
@@ -177,7 +175,7 @@ window.renderLoginScreen = function() {
                         <span style="background: rgba(255,255,255,0.05); padding: 4px 8px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; color: #00FF87; border: 1px solid rgba(255,255,255,0.1);">
                             ${clubsInCountry.length} ⚽
                         </span>
-                        <span style="color: #666; font-size: 0.9rem;">${isAr ? '👈' : '👉'}</span>
+                        <span style="color: #666; font-size: 0.9rem;">${window.zA('👈', '👉')}</span>
                     </div>
                 </div>
             `;
@@ -199,7 +197,7 @@ window.renderLoginScreen = function() {
                 </div>
             </div>
 
-            <div class="inner-scroll-area" style="text-align: ${isAr ? 'right' : 'left'};">
+            <div class="inner-scroll-area" style="text-align: ${window.zA('right', 'left')};">
                 ${countriesHtml}
             </div>
 
@@ -262,7 +260,7 @@ window.showClubsForCountry = function(countryKey, keepScroll) {
                 </div>
             </div>
 
-            <div class="inner-scroll-area" style="text-align: ${isAr ? 'right' : 'left'};">
+            <div class="inner-scroll-area" style="text-align: ${window.zA('right', 'left')};">
                 ${clubsHtml}
             </div>
 

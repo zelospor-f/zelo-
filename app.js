@@ -71,7 +71,7 @@ onReady(() => {
     }
 
     const savedLang = localStorage.getItem('app_lang') || localStorage.getItem('lang') || 'ar';
-    userState.lang = savedLang.startsWith('ar') ? 'ar' : (savedLang.startsWith('tr') ? 'tr' : 'en');
+    userState.lang = (typeof normalizeLang === 'function' && normalizeLang(savedLang)) || 'en';
 
     if (typeof applyLanguageSettings === 'function') applyLanguageSettings();
 
@@ -200,7 +200,8 @@ async function updateTopBar() {
 
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
-        const localeLang = userState.lang === 'ar' ? 'ar-EG' : (userState.lang === 'tr' ? 'tr-TR' : 'en-US');
+        const LOC = { ar: 'ar-EG', tr: 'tr-TR', es: 'es-ES', fr: 'fr-FR', pt: 'pt-BR', ru: 'ru-RU', hi: 'hi-IN', id: 'id-ID', fa: 'fa-IR' };
+        const localeLang = LOC[userState.lang] || 'en-US';
         pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ${localeLang.startsWith("ar") ? "كورة" : "Kora"}`;
     }
 
@@ -221,7 +222,7 @@ async function updateTopBar() {
                 : '';
         }).join('');
 
-        const labelText = userState.lang === 'ar' ? 'أنديتك:' : (userState.lang === 'tr' ? 'Kulüpler:' : 'Clubs:');
+        const labelText = window.zT('أنديتك:', 'Clubs:');
         clubEl.innerHTML = `<span style="color:#aaa;">${labelText}</span> ${logos}`;
     }
 
@@ -283,7 +284,7 @@ function showPage(pageId) {
             } else {
                 contentDiv.innerHTML = `<div style="text-align:center; padding:60px 20px; color:#94a3b8; font-weight:700;">
                     <div style="font-size:2.5rem; margin-bottom:10px;">💬</div>
-                    ${userState.lang === 'ar' ? 'الرسائل — قريباً' : 'Messages — coming soon'}
+                    ${window.zT('الرسائل — قريباً', 'Messages — coming soon')}
                 </div>`;
             }
             break;
@@ -307,10 +308,10 @@ if (typeof window.openChallengesScreen !== 'function') {
         const isAr = userState.lang === 'ar';
         contentDiv.innerHTML = `
             <div style="padding: 30px 20px; text-align: center; color: white;">
-                <h2 style="font-size: 2rem; margin-bottom: 15px;">⚽ ${isAr ? 'تحديات الأسبوع' : 'Weekly Challenges'}</h2>
-                <p style="color: #ccc; margin-bottom: 25px;">${isAr ? 'قريباً سيتم عرض التحديات هنا...' : 'Challenges coming soon...'}</p>
+                <h2 style="font-size: 2rem; margin-bottom: 15px;">⚽ ${window.zT('تحديات الأسبوع', 'Weekly Challenges')}</h2>
+                <p style="color: #ccc; margin-bottom: 25px;">${window.zT('قريباً سيتم عرض التحديات هنا...', 'Challenges coming soon...')}</p>
                 <button onclick="showPage('home')" class="btn-action" style="margin-top: 20px;">
-                    ${isAr ? 'العودة للرئيسية' : 'Back to Home'}
+                    ${window.zT('العودة للرئيسية', 'Back to Home')}
                 </button>
             </div>
         `;

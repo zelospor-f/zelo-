@@ -9,7 +9,7 @@
     const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
     const esc = s => String(s ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
     const isAr = () => String(US().lang || LS.get('app_lang') || 'ar').startsWith('ar');
-    const T = (ar, en) => isAr() ? ar : en;
+    const T = (ar, en) => (window.zT ? window.zT(ar, en) : (isAr() ? ar : en));
 
     // داخل تطبيق الأندرويد (Capacitor) أم في المتصفح؟
     const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -143,7 +143,8 @@
 
     function langBar() {
         const cur = String(US().lang || LS.get('app_lang') || 'ar').slice(0, 2);
-        return `<div class="au-lang"><span class="${cur === 'ar' ? 'on' : ''}" onclick="window.authSetLang('ar')">🇸🇦 العربية</span><span class="${cur !== 'ar' && cur !== 'tr' ? 'on' : ''}" onclick="window.authSetLang('en')">🇬🇧 English</span><span class="${cur === 'tr' ? 'on' : ''}" onclick="window.authSetLang('tr')">🇹🇷 Türkçe</span></div>`;
+        const m = (typeof window.zeloLangMeta === 'function') ? window.zeloLangMeta(cur) : { flag: '🌐', name: cur };
+        return `<div class="au-lang"><span class="on" onclick="window.zeloOpenLangPicker(window.authSetLang)">${m.flag} ${m.name} ▾</span></div>`;
     }
     window.authSetLang = function(l) {
         if (typeof userState !== 'undefined') userState.lang = l;
