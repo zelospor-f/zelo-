@@ -1713,6 +1713,7 @@
 
     // أيقونة جانبية صغيرة + السحب من الحافة (يمين للعربية، يسار لغيرها)
     function attachRoomsHandle(parent) {
+        return; // أُلغيت نافذة الغرف/الاقتراحات الجانبية: لا أيقونة ولا سحب من الحافة
         ensureCss();
         parent = parent || document.body;
         if (parent.querySelector(':scope > .rm-handle')) return;
@@ -2153,7 +2154,7 @@
     window.closeRoom = closeRoom;
     window.createRoomForMatch = createRoomForMatch;
     window.createMatchLinkedRoom = createMatchLinkedRoom;
-    window.openRoomsDrawer = openRoomsDrawer;
+    window.openRoomsDrawer = function () {};   // أُلغيت نافذة الغرف/الاقتراحات الجانبية
     window.attachRoomsHandle = attachRoomsHandle;
 
     // قبول دعوة داخلية من الإشعار (بدون رمز)
