@@ -42,6 +42,7 @@
     let convs = [];
     let listEl = null, listTimer = null, filterText = '';
     let chat = null;                // {uid, timer, lastSig}
+    let dmTab = 'msgs';
     let listCache = { uid: '', html: '' };   // آخر قائمة محادثات معروضة (تظهر فورًا عند العودة)
 
     // ===== أدوات =====
@@ -471,7 +472,13 @@
     // ===== رسم الصفحة =====
     const STYLES = `
     .dm-wrap { padding: 8px 12px 90px; }
-    .dm-title { color:#fff; font-weight:900; font-size:1.15rem; text-align:center; padding:10px 0; }
+    .dm-title { color:#fff; font-weight:900; font-size:1.6rem; }
+    .dm-head2 { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:6px 0 12px; }
+    .dm-newroom { height:42px; padding:0 16px 0 14px; border:0; border-radius:999px; background:linear-gradient(135deg,#ffe7ad,#f5c35a); color:#0a1033; font-family:inherit; font-weight:900; font-size:0.9rem; display:flex; align-items:center; gap:6px; cursor:pointer; box-shadow:0 10px 24px rgba(245,195,90,0.3); }
+    .dm-newroom:active { transform:scale(0.97); }
+    .dm-pills { display:flex; gap:8px; margin:12px 0 6px; }
+    .dm-pill { padding:7px 20px; border-radius:999px; background:rgba(255,255,255,0.07); color:#cfd8ff; font-weight:700; font-size:0.85rem; border:1px solid rgba(255,255,255,0.1); font-family:inherit; cursor:pointer; }
+    .dm-pill.on { background:linear-gradient(135deg,#ffe7ad,#f5c35a); color:#0a1033; font-weight:900; border-color:transparent; }
     .dm-search { width:100%; box-sizing:border-box; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1); color:#fff; border-radius:999px; padding:10px 16px; font-size:0.9rem; outline:none; }
     .dm-item { display:flex; gap:12px; align-items:center; padding:12px 4px; cursor:pointer; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
     .dm-item:active { background:rgba(255,255,255,0.05); }
@@ -483,14 +490,14 @@
     .dm-ic { font-size:0.7rem; }
     .dm-last { color:#94a3b8; font-size:0.84rem; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .dm-row2.unread .dm-last { color:#fff; font-weight:800; }
-    .dm-dot { background:#1d9bf0; color:#fff; min-width:10px; height:10px; border-radius:999px; font-size:0.65rem; font-weight:900; padding:0 5px; display:flex; align-items:center; justify-content:center; }
+    .dm-dot { background:#f5c35a; color:#0a1033; min-width:10px; height:10px; border-radius:999px; font-size:0.65rem; font-weight:900; padding:0 5px; display:flex; align-items:center; justify-content:center; }
     .dm-dot:not(:empty) { height:auto; min-width:18px; padding:1px 5px; }
     .dm-empty { color:#7a7f9a; text-align:center; padding:40px 16px; font-weight:700; }
     .dm-notif { display:flex; gap:12px; align-items:center; padding:12px 4px; cursor:pointer; border-bottom:1px solid rgba(255,255,255,0.06); margin-bottom:4px; }
     .dm-notif:active { background:rgba(255,255,255,0.05); }
     .dm-notif-ic { width:52px; height:52px; min-width:52px; border-radius:50%; background:linear-gradient(135deg,#f5c35a,#e08a2c); display:flex; align-items:center; justify-content:center; box-shadow:0 0 14px rgba(245,195,90,0.35); }
     .dm-notif-ic svg { width:26px; height:26px; stroke:#0a1033; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
-    .dm-fab { position:fixed; bottom:92px; left:18px; right:auto; inset-inline-start:auto; width:56px; height:56px; border-radius:50%; border:none; background:#1d9bf0; color:#fff; font-size:1.5rem; z-index:1500; box-shadow:0 6px 20px rgba(29,155,240,0.5); cursor:pointer; }
+    .dm-fab { position:fixed; bottom:92px; left:18px; right:auto; inset-inline-start:auto; width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(135deg,#ffe7ad,#f5c35a); color:#0a1033; font-size:1.5rem; z-index:1500; box-shadow:0 6px 20px rgba(245,195,90,0.4); cursor:pointer; }
 
     .dm-sheet-ov { position:fixed; inset:0; z-index:4000; background:rgba(0,0,0,0.55); display:flex; align-items:flex-end; justify-content:center; }
     .dm-sheet { width:100%; max-width:520px; background:#1a1d2e; border-radius:18px 18px 0 0; padding:8px 0 18px; max-height:80vh; overflow-y:auto; }
@@ -540,7 +547,15 @@
         }
         container.innerHTML = `
             <div class="dm-wrap">
-                <div class="dm-title">${T('الرسائل', 'Messages')}</div>
+                <div class="dm-head2">
+                    <div class="dm-title">${T('الرسائل', 'Messages')}</div>
+                    <button class="dm-newroom" id="dm-newroom"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>${T('غرفة جديدة', 'New room')}</button>
+                </div>
+                <div class="dm-pills">
+                    <button class="dm-pill ${dmTab === 'msgs' ? 'on' : ''}" data-t="msgs">${T('رسائل', 'Messages')}</button>
+                    <button class="dm-pill ${dmTab === 'rooms' ? 'on' : ''}" data-t="rooms">${T('غرف', 'Rooms')}</button>
+                </div>
+                <div id="dm-pane-msgs">
                 <input class="dm-search" id="dm-filter" placeholder="${T('بحث', 'Search')}">
                 <div class="dm-notif" id="dm-notif-row">
                     <div class="dm-notif-ic"><svg viewBox="0 0 24 24"><path d="M6 17v-6a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21.5a2 2 0 0 0 4 0"/></svg></div>
@@ -551,12 +566,26 @@
                     <span class="dm-dot" id="dm-notif-badge" style="display:none;"></span>
                 </div>
                 <div id="dm-list">${(listCache.uid === me().id && listCache.html) ? listCache.html : `<div class="dm-empty">${T('جارٍ التحميل...', 'Loading...')}</div>`}</div>
+                </div>
+                <div id="dm-pane-rooms" style="display:none"></div>
             </div>
             <button class="dm-fab" id="dm-fab">✉️</button>`;
         listEl = container.querySelector('#dm-list');
         filterText = '';
         container.querySelector('#dm-filter').oninput = e => { filterText = e.target.value; renderList(); };
         container.querySelector('#dm-fab').onclick = newChatSheet;
+        container.querySelector('#dm-newroom').onclick = () => { if (typeof window.createRoomFlow === 'function') window.createRoomFlow(); };
+        const showTab = (t) => {
+            dmTab = t;
+            container.querySelectorAll('.dm-pill').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+            const pm = container.querySelector('#dm-pane-msgs'), pr = container.querySelector('#dm-pane-rooms'), fab = container.querySelector('#dm-fab');
+            pm.style.display = t === 'msgs' ? '' : 'none';
+            pr.style.display = t === 'rooms' ? '' : 'none';
+            if (fab) fab.style.display = t === 'msgs' ? '' : 'none';
+            if (t === 'rooms' && typeof window.renderRoomsSection === 'function') { pr.innerHTML = ''; window.renderRoomsSection(pr); }
+        };
+        container.querySelectorAll('.dm-pill').forEach(b => { b.onclick = () => showTab(b.dataset.t); });
+        if (dmTab === 'rooms') showTab('rooms');
         container.querySelector('#dm-notif-row').onclick = () => { if (typeof showPage === 'function') showPage('notifications'); };
         if (typeof window.zeloNotifSummary === 'function') {
             window.zeloNotifSummary().then(r => {
