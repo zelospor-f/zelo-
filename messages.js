@@ -549,7 +549,6 @@
             <div class="dm-wrap">
                 <div class="dm-head2">
                     <div class="dm-title">${T('الرسائل', 'Messages')}</div>
-                    <button class="dm-newroom" id="dm-newroom"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>${T('غرفة جديدة', 'New room')}</button>
                 </div>
                 <div class="dm-pills">
                     <button class="dm-pill ${dmTab === 'msgs' ? 'on' : ''}" data-t="msgs">${T('رسائل', 'Messages')}</button>
@@ -574,7 +573,7 @@
         filterText = '';
         container.querySelector('#dm-filter').oninput = e => { filterText = e.target.value; renderList(); };
         container.querySelector('#dm-fab').onclick = newChatSheet;
-        container.querySelector('#dm-newroom').onclick = () => { if (typeof window.createRoomFlow === 'function') window.createRoomFlow(); };
+
         const showTab = (t) => {
             dmTab = t;
             container.querySelectorAll('.dm-pill').forEach(b => b.classList.toggle('on', b.dataset.t === t));
