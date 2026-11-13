@@ -1209,6 +1209,8 @@
   "supporters": "поддержавших",
   "No support yet": "Поддержки пока нет",
   "Be the first to support": "Станьте первым, кто поддержит",
-  "Profile": "Профиль"
+  "Profile": "Профиль",
+  "Save {n}%": "Скидка {n}%",
+  "✅ Restored {n}": "✅ Восстановлено: {n}"
  }
 }
