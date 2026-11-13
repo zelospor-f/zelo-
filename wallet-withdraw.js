@@ -138,6 +138,9 @@
       top.appendChild(h('h2', '', 'محفظتي'));
       const x = h('button', 'zw-x', ((window.userState&&window.userState.lang)||'ar').startsWith('ar') ? '›' : '‹'); x.onclick = () => ov.remove();
       top.insertBefore(x, top.firstChild); wrap.appendChild(top);
+      // مساحة لبانر الإعلان كي لا يغطي الرصيد
+      const adGap = h('div', ''); adGap.style.cssText = 'flex-shrink:0;height:max(0px,calc(var(--zelo-ad-h,0px) - 10px));';
+      wrap.appendChild(adGap);
 
       // الرصيد
       const rate = S.cfg ? S.cfg.diamonds_per_usdt : 200;
