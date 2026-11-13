@@ -87,6 +87,7 @@
         .lg-pok{background:rgba(20,241,149,.12);border:1px solid rgba(20,241,149,.4);color:#14f195}
         .lg-pno{background:rgba(255,90,110,.12);border:1px solid rgba(255,90,110,.4);color:#ff8f9d}
         .lg-pn{font-size:.72rem;color:#8d99cf}
+        .lg-cmp{text-align:center;font-size:.7rem;font-weight:800;color:#9aa6d6;margin:-2px 0 8px}
         .lg-empty{text-align:center;color:#9aa6d6;padding:40px 10px;font-size:.9rem}
         .lg-soon{opacity:.75}
         `;
@@ -147,6 +148,56 @@
         if (window.mrRefreshRank) window.mrRefreshRank();
     }
 
+    // ---- بطاقة المباراة (مشتركة بين صفحة الدوري وشاشة التنبؤ) ----
+    const hm = d => new Date(d).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', hour12: false });
+    function teamHtml(n, crests) {
+            const u = crests[String(n || '').trim().toLowerCase()];
+            const ini = esc(String(n || '?').trim().charAt(0).toUpperCase());
+            const img = u ? `<img src="${esc(u)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="this.remove()">` : '';
+            return `<div class="lg-t"><span class="lg-cr"><span class="lg-cr-i">${ini}</span>${img}</span><span class="lg-tn">${esc(n)}</span></div>`;
+    }
+
+    function makeCard(m, preds, crests, showComp) {
+            const live = m.status === 'LIVE';
+            const fin_ = m.status === 'FINISHED';
+            let mid;
+            if (fin_) mid = `<div class="lg-mid"><div class="lg-sc">${m.home_score ?? '-'} - ${m.away_score ?? '-'}</div><div class="lg-end">${T('انتهت', 'Full time')}</div></div>`;
+            else if (live) mid = `<div class="lg-mid"><div class="lg-sc" style="color:#ff5f7d">${m.live_home ?? 0} - ${m.live_away ?? 0}</div><div class="lg-end" style="color:#ff5f7d">● ${T('مباشر', 'LIVE')}</div></div>`;
+            else mid = `<div class="lg-mid"><div class="lg-tm">${hm(m.match_date)}</div><div class="lg-end">${T('بتوقيتك', 'Your time')}</div></div>`;
+            let pr = '';
+            if (fin_) {
+                const p = preds[m.id];
+                if (p) {
+                    const exact = p.predicted_home === m.home_score && p.predicted_away === m.away_score;
+                    const sgn = (a, b) => Math.sign(a - b);
+                    const win = sgn(p.predicted_home, p.predicted_away) === sgn(m.home_score, m.away_score);
+                    const cls = (exact || win) ? 'lg-pok' : 'lg-pno';
+                    const txt = exact ? T('نتيجة دقيقة 🎯', 'Exact score 🎯') : win ? T('أصبت ✓', 'Correct ✓') : T('لم تصب ✗', 'Missed ✗');
+                    pr = `<div class="lg-prw"><span class="lg-pc ${cls}">${T('توقعك', 'Your pick')} ${p.predicted_home} - ${p.predicted_away} · ${txt}</span></div>`;
+                } else {
+                    pr = `<div class="lg-prw"><span class="lg-pn">${T('لم تتوقع هذه المباراة', 'You did not predict this match')}</span></div>`;
+                }
+            }
+            let act = '', top = '';
+            if (!fin_) {
+                const started = (Date.now() + 3600000) >= new Date(m.match_date).getTime();
+                const p = preds[m.id] || ((window.userState && window.userState.predictedMatches || []).includes(m.id) ? {} : null);
+                const BALL = '<img src="zelo-coin.png" alt="" style="width:15px;height:15px;flex:none" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png\';}else{this.style.display=\'none\';}">';
+                let btn;
+                if (p) btn = `<button disabled class="lg-pb done">${T('تم التوقع', 'Predicted')}${p.predicted_home != null ? ` · ${p.predicted_home} - ${p.predicted_away}` : ''}</button>`;
+                else if (started) btn = `<button disabled class="lg-pb closed">${T('مغلق', 'Closed')}</button>`;
+                else btn = `<button onclick="window.lgPredict(${m.id})" class="lg-pb">${T('توقّع واكسب', 'Predict & win')} ${BALL}</button>`;
+                const fc = (!started && window.fcMatchButton) ? window.fcMatchButton(m.id) : '';
+                act = `<div id="btn-container-${m.id}" style="margin-top:10px"><div style="display:flex;gap:10px">${btn}${fc}</div></div>`;
+                top = `<div class="lg-rt">
+                    <button class="lg-chip" onclick="window.openMatchRoom && window.openMatchRoom('${m.id}')">💬 ${T('غرفة المباراة', 'Match room')}</button>
+                    <button class="lg-chip dash" onclick="window.createMatchLinkedRoom && window.createMatchLinkedRoom('${m.id}')">＋ ${T('إنشاء غرفة', 'Create room')}</button></div>`;
+            }
+            const comp = showComp && m.competition_name ? `<div class="lg-cmp">${esc(lgName(m.competition_code, m.competition_name))}</div>` : '';
+        return `<div class="lg-m ${live ? 'lv' : ''}">${top}${comp}
+                <div class="lg-mr">${teamHtml(m.team_a, crests)}${mid}${teamHtml(m.team_b, crests)}</div>${pr}${act}</div>`;
+        }
+
     // ================= داخل الدوري (قادمة / منتهية فقط) =================
     window.openLeague = async function (code, which) {
         if (!box) box = document.getElementById('main-content');
@@ -185,52 +236,7 @@
         const day = d => new Date(d).toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
         const hm = d => new Date(d).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit', hour12: false });
 
-        const teamHtml = n => {
-            const u = crests[String(n || '').trim().toLowerCase()];
-            const ini = esc(String(n || '?').trim().charAt(0).toUpperCase());
-            const img = u ? `<img src="${esc(u)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:contain" onerror="this.remove()">` : '';
-            return `<div class="lg-t"><span class="lg-cr"><span class="lg-cr-i">${ini}</span>${img}</span><span class="lg-tn">${esc(n)}</span></div>`;
-        };
-
-        const card = m => {
-            const live = m.status === 'LIVE';
-            const fin_ = m.status === 'FINISHED';
-            let mid;
-            if (fin_) mid = `<div class="lg-mid"><div class="lg-sc">${m.home_score ?? '-'} - ${m.away_score ?? '-'}</div><div class="lg-end">${T('انتهت', 'Full time')}</div></div>`;
-            else if (live) mid = `<div class="lg-mid"><div class="lg-sc" style="color:#ff5f7d">${m.live_home ?? 0} - ${m.live_away ?? 0}</div><div class="lg-end" style="color:#ff5f7d">● ${T('مباشر', 'LIVE')}</div></div>`;
-            else mid = `<div class="lg-mid"><div class="lg-tm">${hm(m.match_date)}</div><div class="lg-end">${T('بتوقيتك', 'Your time')}</div></div>`;
-            let pr = '';
-            if (fin_) {
-                const p = preds[m.id];
-                if (p) {
-                    const exact = p.predicted_home === m.home_score && p.predicted_away === m.away_score;
-                    const sgn = (a, b) => Math.sign(a - b);
-                    const win = sgn(p.predicted_home, p.predicted_away) === sgn(m.home_score, m.away_score);
-                    const cls = (exact || win) ? 'lg-pok' : 'lg-pno';
-                    const txt = exact ? T('نتيجة دقيقة 🎯', 'Exact score 🎯') : win ? T('أصبت ✓', 'Correct ✓') : T('لم تصب ✗', 'Missed ✗');
-                    pr = `<div class="lg-prw"><span class="lg-pc ${cls}">${T('توقعك', 'Your pick')} ${p.predicted_home} - ${p.predicted_away} · ${txt}</span></div>`;
-                } else {
-                    pr = `<div class="lg-prw"><span class="lg-pn">${T('لم تتوقع هذه المباراة', 'You did not predict this match')}</span></div>`;
-                }
-            }
-            let act = '', top = '';
-            if (!fin_) {
-                const started = (Date.now() + 3600000) >= new Date(m.match_date).getTime();
-                const p = preds[m.id] || ((window.userState && window.userState.predictedMatches || []).includes(m.id) ? {} : null);
-                const BALL = '<img src="zelo-coin.png" alt="" style="width:15px;height:15px;flex:none" onerror="if(!this.dataset.f){this.dataset.f=1;this.src=\'https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png\';}else{this.style.display=\'none\';}">';
-                let btn;
-                if (p) btn = `<button disabled class="lg-pb done">${T('تم التوقع', 'Predicted')}${p.predicted_home != null ? ` · ${p.predicted_home} - ${p.predicted_away}` : ''}</button>`;
-                else if (started) btn = `<button disabled class="lg-pb closed">${T('مغلق', 'Closed')}</button>`;
-                else btn = `<button onclick="window.lgPredict(${m.id})" class="lg-pb">${T('توقّع واكسب', 'Predict & win')} ${BALL}</button>`;
-                const fc = (!started && window.fcMatchButton) ? window.fcMatchButton(m.id) : '';
-                act = `<div id="btn-container-${m.id}" style="margin-top:10px"><div style="display:flex;gap:10px">${btn}${fc}</div></div>`;
-                top = `<div class="lg-rt">
-                    <button class="lg-chip" onclick="window.openMatchRoom && window.openMatchRoom('${m.id}')">💬 ${T('غرفة المباراة', 'Match room')}</button>
-                    <button class="lg-chip dash" onclick="window.createMatchLinkedRoom && window.createMatchLinkedRoom('${m.id}')">＋ ${T('إنشاء غرفة', 'Create room')}</button></div>`;
-            }
-            return `<div class="lg-m ${live ? 'lv' : ''}">${top}
-                <div class="lg-mr">${teamHtml(m.team_a)}${mid}${teamHtml(m.team_b)}</div>${pr}${act}</div>`;
-        };
+        const card = m => makeCard(m, preds, crests, false);
         const grouped = arr => {
             if (!arr.length) return `<div class="lg-empty">${T('لا توجد مباريات', 'No matches')}</div>`;
             let out = '', last = '';
@@ -255,6 +261,48 @@
         box.scrollTop = 0;
         window.scrollTo(0, 0);
     };
+
+    // ================= شاشة «تنبّأ»: كل المباريات المتاحة للتوقع =================
+    window.closeLgPredict = function () { document.getElementById('lg-predict-overlay')?.remove(); };
+    window.openPredictList = async function () {
+        css();
+        window.closeLgPredict();
+        const ov = document.createElement('div');
+        ov.id = 'lg-predict-overlay';
+        ov.style.cssText = `position:fixed;inset:0;z-index:99990;background:#0a1033;color:#fff;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 40px;box-sizing:border-box;direction:${window.zA('rtl', 'ltr')};`;
+        document.body.appendChild(ov);
+        const head = `<div class="lg-top">${window.zeloBackBtn ? window.zeloBackBtn('window.closeLgPredict()', isAr()) : ''}<div class="lg-title">${T('تنبّأ بنتائج المباريات', 'Predict match results')}</div></div>`;
+        ov.innerHTML = head + `<div class="lg-empty">⏳ ${T('جارٍ التحميل...', 'Loading...')}</div>`;
+        const c = db();
+        let ms = [], preds = {}, crests = {};
+        if (c) {
+            try {
+                const from = new Date(Date.now() - 3 * 3600000).toISOString();
+                const { data } = await c.from('matches').select('*').in('status', ['NOT_STARTED', 'LIVE'])
+                    .gte('match_date', from).order('match_date', { ascending: true }).limit(80);
+                ms = data || [];
+                const uid = window.userState && window.userState.userId;
+                if (uid && ms.length) {
+                    const r = await c.from('match_predictions').select('match_id,predicted_home,predicted_away').eq('user_id', uid).in('match_id', ms.map(m => m.id));
+                    (r.data || []).forEach(p => { preds[p.match_id] = p; });
+                }
+                const st = await c.from('standings').select('team_name,crest');
+                (st.data || []).forEach(t => { if (t.crest) crests[String(t.team_name).trim().toLowerCase()] = t.crest; });
+            } catch (e) { console.error('[ZELO] predict list:', e); }
+        }
+        ms.forEach(m => { MAP[m.id] = m; });
+        const day = d => new Date(d).toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
+        let out = '', last = '';
+        ms.forEach(m => {
+            const d = day(m.match_date);
+            if (d !== last) { out += `<div class="lg-day"><span>${esc(d)}</span><i></i></div>`; last = d; }
+            out += makeCard(m, preds, crests, true);
+        });
+        if (!document.getElementById('lg-predict-overlay')) return;
+        ov.innerHTML = head + (window.fcEntryHtml ? window.fcEntryHtml() : '') + (out || `<div class="lg-empty">${T('لا توجد مباريات متاحة الآن', 'No matches available now')}</div>`);
+        if (window.fcRefreshBadge) window.fcRefreshBadge();
+    };
+
 
     window.lgPredict = function (id) {
         const m = MAP[id];
