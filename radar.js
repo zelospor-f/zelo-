@@ -106,10 +106,11 @@
             dom, mix: m, fans: Math.round(12000 + Math.random() * 470000), age, silent: !!age });
     }
 
+    const EMO = { joy: '😍', hype: '🔥', rage: '😡' };
     function renderFeed() {
         const el = document.getElementById('fp-feed');
         if (!el) return;
-        el.innerHTML = S.feed.map(o => `<div class="fp-row"><div><i class="fp-dot" style="background:${COL[o.dom]}"></i>${o.ev} · ${o.city}</div><span>${fmt(o.fans)}</span></div>`).join('');
+        el.innerHTML = S.feed.map(o => `<div class="fp-row"><div class="fp-ic" style="border-color:${COL[o.dom]}66">${EMO[o.dom]}</div><div class="fp-rt"><b>${o.ev}</b><small>${o.city}</small></div><span>${fmt(o.fans)}</span></div>`).join('');
     }
     function pick(o) {
         S.sel = o;
@@ -244,8 +245,8 @@
         const el = document.getElementById('fp-side'); if (!el) return;
         const m = S.byId[S.curr];
         if (!m) { el.innerHTML = ''; return; }
-        const b = (k, label) => `<button class="fp-chip fp-sidebtn" data-s="${k}" aria-pressed="${S.side === k}">${label}</button>`;
-        el.innerHTML = `<div class="fp-sidehint">${T('مع أي فريق أنت؟', 'Which side are you on?')}</div><div class="fp-sidebtns">`
+        const b = (k, label) => `<button class="fp-sidebtn" data-s="${k}" aria-pressed="${S.side === k}">${label}</button>`;
+        el.innerHTML = `<div class="fp-h">${T('مع أي فريق أنت؟', 'Which side are you on?')}</div><div class="fp-sidebtns">`
             + b('a', m.team_a) + b('b', m.team_b) + b('n', T('محايد', 'Neutral')) + `</div>`;
         el.querySelectorAll('[data-s]').forEach(x => x.onclick = () => {
             S.side = x.dataset.s; saveSide(S.curr, S.side);
@@ -273,12 +274,18 @@
     function renderChips() {
         const el = document.getElementById('fp-matches'); if (!el) return;
         if (!S.matches.length) {
-            el.innerHTML = `<div class="fp-empty">${T('لا توجد مباراة مباشرة الآن.', 'No live match right now.')}
-                <button class="fp-chip" id="fp-demo">${T('عرض تجريبي', 'Demo mode')}</button></div>`;
+            el.innerHTML = `<div class="fp-mcard"><div class="fp-empty">${T('لا توجد مباراة مباشرة الآن.', 'No live match right now.')}</div>
+                <button class="fp-sidebtn" id="fp-demo" style="flex:none;padding:8px 14px">${T('عرض تجريبي', 'Demo mode')}</button></div>`;
             const d = document.getElementById('fp-demo'); if (d) d.onclick = startDemo;
             return;
         }
-        el.innerHTML = S.matches.map(m => `<button class="fp-chip" data-m="${m.id}" aria-pressed="${String(m.id) === String(S.curr)}">${m.team_a} × ${m.team_b}</button>`).join('');
+        const m = S.byId[S.curr] || S.matches[0];
+        const sc = v => (v == null ? '-' : v);
+        const h = m.live_home != null ? m.live_home : m.home_score, a = m.live_away != null ? m.live_away : m.away_score;
+        let html = `<div class="fp-mcard"><div style="flex:1;min-width:0"><div class="fp-ml">● ${T('مباراة مباشرة الآن', 'Live now')}</div>
+            <div class="fp-mrow"><div>${m.team_a}</div><div class="fp-sc">${sc(h)} - ${sc(a)}</div><div>${m.team_b}</div></div></div></div>`;
+        if (S.matches.length > 1) html += '<div class="fp-chips2">' + S.matches.map(x => `<button class="fp-chip" data-m="${x.id}" aria-pressed="${String(x.id) === String(S.curr)}">${x.team_a} × ${x.team_b}</button>`).join('') + '</div>';
+        el.innerHTML = html;
         el.querySelectorAll('[data-m]').forEach(b => b.onclick = () => selectMatch(b.dataset.m));
     }
     function selectMatch(id) {
@@ -403,71 +410,96 @@
         const ar = isAr();
         box.innerHTML = `
         <style>
-            .fp-wrap{direction:${window.zA('rtl', 'ltr')};color:#fff}
-            .fp-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-            .fp-head h2{font-size:1.25rem;font-weight:900;margin:0}
-            .fp-live{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:#ff4d5e;margin-top:3px}
-            .fp-live i{width:8px;height:8px;border-radius:50%;background:#ff4d5e;animation:fpb 1.2s infinite}
+            .fp-wrap{direction:${window.zA('rtl', 'ltr')};color:#f4f6ff;padding:0 18px 10px}
+            .fp-top{display:flex;align-items:center;gap:12px;padding:6px 0 0}
+            .fp-back{width:42px;height:42px;border-radius:14px;border:1px solid rgba(245,195,90,.35);background:rgba(44,75,181,.22);color:#e8ecff;display:flex;align-items:center;justify-content:center;padding:0;flex:none;cursor:pointer}
+            .fp-top h2{font-size:19px;font-weight:900;margin:0;line-height:1.2}
+            .fp-live{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#9aa6d6}
+            .fp-live i{width:8px;height:8px;border-radius:50%;background:#14f195;animation:fpb 1.2s infinite}
+            .fp-live b{color:#fff}
             @keyframes fpb{50%{opacity:.25}}
-            .fp-chips{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto}
-            .fp-chip{flex:none;border:1px solid #2b3578;background:rgba(17,26,74,.9);color:#98a2d6;padding:7px 14px;border-radius:18px;font-size:.82rem;font-family:inherit;cursor:pointer}
-            .fp-chip[aria-pressed="true"]{color:#fff;border-color:var(--c,#f5c35a);box-shadow:0 0 12px -2px var(--c,#f5c35a)}
-            .fp-map{border:1px solid rgba(245,195,90,.4);border-radius:20px;background:#070a22;overflow-x:auto;overflow-y:hidden}
+            .fp-box{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:12px;margin-top:12px}
+            .fp-mcard{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid rgba(20,241,149,.4);border-radius:20px;padding:10px 12px;margin-top:12px}
+            .fp-ml{font-size:11px;font-weight:900;color:#14f195}
+            .fp-mrow{display:flex;align-items:center;justify-content:space-between;margin-top:6px;gap:8px;font-weight:900;font-size:14px}
+            .fp-sc{font-weight:700;font-size:22px;color:#14f195;direction:ltr;letter-spacing:2px}
+            .fp-chips2{display:flex;gap:8px;margin-top:8px;overflow-x:auto}
+            .fp-chips{display:flex;gap:7px;margin-bottom:10px;overflow-x:auto}
+            .fp-chip{flex:none;border:1px solid var(--c,#f5c35a);background:transparent;color:var(--c,#f5c35a);padding:5px 13px;border-radius:999px;font-size:12px;font-weight:800;font-family:inherit;cursor:pointer}
+            .fp-chip[aria-pressed="true"]{background:var(--c,#f5c35a);color:#0a1033;font-weight:900}
+            .fp-map{border-radius:14px;background:#070c2b;border:1px solid rgba(255,255,255,.06);overflow-x:auto;overflow-y:hidden}
             .fp-map canvas{display:block}
-            .fp-card{margin-top:12px;background:rgba(17,26,74,.9);border:1px solid #232c70;border-radius:18px;padding:14px}
-            .fp-card h3{font-size:.85rem;color:#98a2d6;font-weight:700;margin:0 0 10px}
-            .fp-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#1a2260}
-            .fp-bar div{transition:width .8s}
-            .fp-leg{display:flex;justify-content:space-between;margin-top:10px;font-size:.8rem}
-            .fp-leg b{display:block;font-size:1.15rem}
-            .fp-detail strong{font-size:1rem}
-            .fp-detail p{color:#98a2d6;font-size:.8rem;margin:4px 0 0}
-            .fp-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid #1d2566;font-size:.88rem}
-            .fp-row span{color:#98a2d6;font-size:.75rem}
-            .fp-matches{display:flex;gap:8px;margin-bottom:10px;overflow-x:auto;align-items:center}
-            .fp-empty{color:#98a2d6;font-size:.85rem;display:flex;gap:10px;align-items:center}
-            .fp-vote{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
-            .fp-vote.off{opacity:.4;pointer-events:none}
-            .fp-vbtn{border:1px solid var(--c);background:rgba(17,26,74,.9);color:#fff;border-radius:16px;padding:14px 4px;font-size:1rem;font-weight:900;font-family:inherit;cursor:pointer;box-shadow:0 0 14px -4px var(--c)}
-            .fp-vbtn small{display:block;font-weight:600;color:#98a2d6;font-size:.7rem;margin-top:2px}
+            .fp-detail{margin-top:10px;padding:9px 12px;border-radius:12px;background:rgba(0,0,0,.28);font-size:12px;color:#cfd8ff;line-height:1.7;border:1px solid transparent}
+            .fp-detail strong{color:#fff}
+            .fp-detail p{margin:2px 0 0}
+            .fp-h{font-weight:900;font-size:15px;margin-bottom:8px}
+            .fp-side{margin-top:14px}
+            .fp-sidebtns{display:flex;gap:8px}
+            .fp-sidebtn{flex:1;text-align:center;padding:11px 4px;border-radius:14px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#cfd8ff}
+            .fp-sidebtn[aria-pressed="true"]{background:linear-gradient(135deg,#ffe7ad,#f5c35a);color:#0a1033;font-weight:900;border-color:transparent}
+            .fp-vwrap{margin-top:14px}
+            .fp-vote{display:flex;gap:10px}
+            .fp-vote.off{opacity:.45;pointer-events:none}
+            .fp-vbtn{flex:1;text-align:center;padding:14px 4px 12px;border-radius:18px;background:color-mix(in srgb,var(--c) 12%,transparent);border:1.5px solid color-mix(in srgb,var(--c) 55%,transparent);color:var(--c);font-family:inherit;font-weight:900;font-size:14px;cursor:pointer}
+            .fp-vbtn span{display:block;font-size:28px;line-height:1;margin-bottom:6px}
+            .fp-vbtn small{display:block;font-weight:600;color:#9aa6d6;font-size:10.5px;margin-top:2px}
             .fp-vbtn.hit{animation:fph .25s}
-            @keyframes fph{50%{transform:scale(.92);background:var(--c)}}
-            .fp-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-inline-end:8px}
-            .fp-side{margin-top:12px}
-            .fp-sidehint{color:#98a2d6;font-size:.8rem;margin-bottom:8px}
-            .fp-sidebtns{display:flex;gap:8px;flex-wrap:wrap}
-            .fp-sidebtn{--c:#f5c35a}
-            .fp-trow{margin-bottom:14px}
-            .fp-tname{font-size:.9rem;font-weight:800;margin-bottom:6px}
-            .fp-tname span{color:#98a2d6;font-weight:600;font-size:.75rem;margin-inline-start:6px}
+            @keyframes fph{50%{transform:scale(.92)}}
+            .fp-card{margin-top:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:14px}
+            .fp-card h3{font-size:15px;font-weight:900;margin:0 0 10px}
+            .fp-bar{display:flex;height:14px;border-radius:99px;overflow:hidden}
+            .fp-bar div{transition:width .8s}
+            .fp-leg{display:flex;justify-content:space-between;margin-top:10px;font-size:12.5px;font-weight:800}
+            .fp-leg b{font-size:17px}
+            .fp-trow{margin-bottom:12px}
+            .fp-trow .fp-bar{height:10px}
+            .fp-tname{font-weight:900;font-size:13px;margin-bottom:6px}
+            .fp-tname span{color:#9aa6d6;font-weight:600;font-size:11px;margin-inline-start:6px}
+            .fp-trow .fp-leg{font-size:11px;font-weight:600;color:#9aa6d6;margin-top:5px}
+            .fp-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid rgba(255,255,255,.07)}
+            .fp-ic{width:36px;height:36px;border-radius:50%;background:rgba(245,195,90,.12);border:1px solid;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none}
+            .fp-rt{flex:1;min-width:0}
+            .fp-rt b{display:block;font-weight:900;font-size:13px}
+            .fp-rt small{color:#9aa6d6;font-size:11.5px}
+            .fp-row>span{color:#f5c35a;font-size:12px}
+            .fp-empty{color:#9aa6d6;font-size:.85rem;flex:1}
         </style>
         <div class="fp-wrap">
-            <div class="fp-head"><div><h2>📡 ${T('رادار نبض المشجعين', 'Fan Pulse Radar')}</h2>
-                <div class="fp-live"><i></i>${T('مباشر', 'Live')} · <span id="fp-fans">0</span> ${T('تفاعل', 'reactions')}</div></div></div>
-            <div class="fp-chips" id="fp-chips">
-                <button class="fp-chip" data-f="all" aria-pressed="true">${T('الكل', 'All')}</button>
-                <button class="fp-chip" data-f="joy" style="--c:${COL.joy}" aria-pressed="false">${T('فرح', 'Joy')}</button>
-                <button class="fp-chip" data-f="hype" style="--c:${COL.hype}" aria-pressed="false">${T('حماس', 'Hype')}</button>
-                <button class="fp-chip" data-f="rage" style="--c:${COL.rage}" aria-pressed="false">${T('غضب', 'Anger')}</button>
+            <div class="fp-top">
+                <button class="fp-back" id="fp-back" aria-label="${T('رجوع', 'Back')}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="transform:${window.zA('none', 'scaleX(-1)')}"><path d="M9 6l6 6-6 6"/></svg></button>
+                <div style="flex:1"><h2>${T('رادار نبض المشجعين', 'Fan Pulse Radar')}</h2>
+                <div class="fp-live"><i></i>${T('مباشر', 'Live')} · <b id="fp-fans">0</b> ${T('تفاعل', 'reactions')}</div></div>
             </div>
-            <div class="fp-matches" id="fp-matches"></div>
-            <div class="fp-map" id="fp-map" dir="ltr"><canvas id="fp-canvas"></canvas></div>
+            <div id="fp-matches"></div>
+            <div class="fp-box">
+                <div class="fp-chips" id="fp-chips">
+                    <button class="fp-chip" data-f="all" aria-pressed="true">${T('الكل', 'All')}</button>
+                    <button class="fp-chip" data-f="joy" style="--c:${COL.joy}" aria-pressed="false">${T('فرح', 'Joy')}</button>
+                    <button class="fp-chip" data-f="hype" style="--c:${COL.hype}" aria-pressed="false">${T('حماس', 'Hype')}</button>
+                    <button class="fp-chip" data-f="rage" style="--c:${COL.rage}" aria-pressed="false">${T('غضب', 'Anger')}</button>
+                </div>
+                <div class="fp-map" id="fp-map" dir="ltr"><canvas id="fp-canvas"></canvas></div>
+                <div class="fp-detail" id="fp-detail"><strong>${T('اضغط على أي نبضة في الخريطة', 'Tap any pulse on the map')}</strong><p>${T('ستظهر تفاصيل الحدث ونسب مشاعر الجمهور.', 'See the event and the crowd’s emotion mix.')}</p></div>
+            </div>
             <div class="fp-side" id="fp-side"></div>
-            <div class="fp-vote off" id="fp-vote">
-                <button class="fp-vbtn" data-e="joy" style="--c:${COL.joy}">😍 ${T('فرح', 'Joy')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
-                <button class="fp-vbtn" data-e="hype" style="--c:${COL.hype}">🔥 ${T('حماس', 'Hype')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
-                <button class="fp-vbtn" data-e="rage" style="--c:${COL.rage}">😡 ${T('غضب', 'Anger')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
+            <div class="fp-vwrap">
+                <div class="fp-h">${T('كيف تشعر الآن؟', 'How do you feel?')}</div>
+                <div class="fp-vote off" id="fp-vote">
+                    <button class="fp-vbtn" data-e="joy" style="--c:${COL.joy}"><span>😍</span>${T('فرح', 'Joy')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
+                    <button class="fp-vbtn" data-e="hype" style="--c:${COL.hype}"><span>🔥</span>${T('حماس', 'Hype')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
+                    <button class="fp-vbtn" data-e="rage" style="--c:${COL.rage}"><span>😡</span>${T('غضب', 'Anger')}<small>${T('اضغط للتفاعل', 'tap to react')}</small></button>
+                </div>
             </div>
             <div class="fp-card">
                 <h3>${T('مزاج الجماهير حول العالم الآن', 'Global fan mood right now')}</h3>
                 <div class="fp-bar"><div id="fp-bj" style="background:${COL.joy}"></div><div id="fp-bh" style="background:${COL.hype}"></div><div id="fp-br" style="background:${COL.rage}"></div></div>
-                <div class="fp-leg"><div style="color:${COL.joy}"><b id="fp-pj">0%</b>${T('فرح', 'Joy')}</div><div style="color:${COL.hype}"><b id="fp-ph">0%</b>${T('حماس', 'Hype')}</div><div style="color:${COL.rage}"><b id="fp-pr">0%</b>${T('غضب', 'Anger')}</div></div>
+                <div class="fp-leg"><div style="color:${COL.joy}"><b id="fp-pj">0%</b> ${T('فرح', 'Joy')}</div><div style="color:${COL.hype}"><b id="fp-ph">0%</b> ${T('حماس', 'Hype')}</div><div style="color:${COL.rage}"><b id="fp-pr">0%</b> ${T('غضب', 'Anger')}</div></div>
             </div>
             <div class="fp-card"><h3>${T('مزاج جمهور كل فريق', 'Mood of each team’s fans')}</h3><div id="fp-teams-body"></div></div>
-            <div class="fp-card fp-detail" id="fp-detail"><strong>${T('اضغط على أي نبضة في الخريطة', 'Tap any pulse on the map')}</strong><p>${T('ستظهر تفاصيل الحدث ونسب مشاعر الجمهور.', 'See the event and the crowd’s emotion mix.')}</p></div>
-            <div class="fp-card"><h3>${T('آخر الأحداث', 'Latest events')}</h3><div id="fp-feed"></div></div>
+            <div class="fp-card" style="padding-bottom:4px"><h3 style="margin-bottom:6px">${T('آخر الأحداث', 'Latest events')}</h3><div id="fp-feed"></div></div>
             <div style="height:20px"></div>
         </div>`;
+        const bk = document.getElementById('fp-back'); if (bk) bk.onclick = () => { stop(); window.showPage('home'); };
 
         const cv = document.getElementById('fp-canvas'), dpr = window.devicePixelRatio || 1;
         cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
@@ -484,9 +516,9 @@
             if (best) pick(best);
         });
         document.getElementById('fp-chips').addEventListener('click', e => {
-            const b = e.target.closest('.fp-chip'); if (!b) return;
+            const b = e.target.closest('#fp-chips .fp-chip'); if (!b) return;
             S.filt = b.dataset.f;
-            box.querySelectorAll('.fp-chip').forEach(c => c.setAttribute('aria-pressed', c === b));
+            document.querySelectorAll('#fp-chips .fp-chip').forEach(c => c.setAttribute('aria-pressed', c === b));
         });
 
         box.querySelectorAll('.fp-vbtn').forEach(b => b.addEventListener('click', () => tap(b.dataset.e, b)));

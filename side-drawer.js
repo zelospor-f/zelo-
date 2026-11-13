@@ -129,7 +129,7 @@
         .zdrawer-item.wallet-item .zdrawer-icon { background: rgba(245,195,90,0.22); }
 
         /* ===== التذييل ===== */
-        .zdrawer-footer { margin-top: auto; padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 16px); }
+        .zdrawer-footer { margin-top: 14px; padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 16px); }
         .zdrawer-invite {
             width: calc(100% - 28px); margin: 4px 14px 8px;
             display: flex; align-items: center; justify-content: center; gap: 10px;
