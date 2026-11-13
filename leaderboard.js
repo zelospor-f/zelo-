@@ -196,7 +196,7 @@ function lbSafePhoto(url) {
     window.openLeaders = function (which) { window.renderLeaders(document.getElementById('main-content'), which || 'clubs'); };
     window.closeLeaders = function () {
         document.getElementById('ldr-bar')?.remove();
-        if (typeof window.showPage === 'function') window.showPage('matches');
+        if (typeof window.showPage === 'function') window.showPage('points');
     };
     // الصفحة القديمة (showPage('leaderboard')) تفتح الشاشة الجديدة
     window.renderLeaderboardPage = function (container) { window.renderLeaders(container, 'clubs'); };
@@ -206,29 +206,6 @@ function lbSafePhoto(url) {
         if (e.target && e.target.closest && e.target.closest('#bottom-nav')) document.getElementById('ldr-bar')?.remove();
     }, true);
 
-    /* دائرة المتصدرين في صفحة المباريات (رقم ترتيبك الأسبوعي) */
-    let cachedRank = null;
-    const fmt = n => { n = Number(n); return (isFinite(n) && n > 0) ? (n > 999 ? '999+' : String(n)) : '—'; };
-    window.mrRankChip = function () {
-        const t = L('المتصدرون', 'Leaders');
-        return `<button onclick="window.openLeaders('clubs')" aria-label="${t}" style="background:none;border:0;padding:0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-family:inherit">
-            <span style="width:46px;height:46px;border-radius:50%;box-sizing:border-box;padding:2px;background:linear-gradient(135deg,#2c4bb5,#f5c35a,#14206b);box-shadow:0 0 14px rgba(245,195,90,.35);display:block">
-                <span id="mr-rank-num" style="width:100%;height:100%;border-radius:50%;background:#0a1033;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:${cachedRank && fmt(cachedRank).length > 3 ? '.8rem' : '1.05rem'}">${fmt(cachedRank)}</span>
-            </span>
-            <span style="font-size:.68rem;font-weight:800;color:#f5c35a;white-space:nowrap">${t}</span></button>`;
-    };
-    window.mrRefreshRank = async function () {
-        const c = (typeof supabaseClient !== 'undefined') ? supabaseClient : null;
-        const uid = (typeof userState !== 'undefined' && userState?.userId) ? String(userState.userId) : '';
-        if (!c || !uid) return;
-        try {
-            const { data, error } = await c.rpc('get_user_rank', { p_user_id: uid, p_category: 'weekly' });
-            if (error) return;
-            cachedRank = data;
-            const el = document.getElementById('mr-rank-num');
-            if (el) { el.textContent = fmt(cachedRank); el.style.fontSize = fmt(cachedRank).length > 3 ? '.8rem' : '1.05rem'; }
-        } catch (e) {}
-    };
 })();
 
 window.openSpecificClubFans = async function(clubId) {

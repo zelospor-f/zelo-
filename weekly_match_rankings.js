@@ -245,10 +245,10 @@ window.renderPointsScreen = async function(containerId) {
                     </div>
                     <div style="color:${GREY};font-size:.9rem;font-weight:700;margin-top:2px;">${T('نقاطك الحالية', 'Your current points')}</div>
                 </div>
-                <div style="display:flex;align-items:center;gap:4px;flex:0 0 auto;">
+                <div onclick="window.zeloPtsGo(function(){window.openLeaders&&window.openLeaders('clubs')},true)" style="display:flex;align-items:center;gap:4px;flex:0 0 auto;cursor:pointer;">
                     ${diamond}
                     <div style="text-align:center;min-width:58px;">
-                        <span style="display:inline-block;border:1px solid rgba(245,195,90,.35);border-radius:999px;padding:1px 8px;font-size:.72rem;color:#cfd8e6;">${T('المستوى', 'Level')}</span>
+                        <span style="display:inline-block;border:1px solid #f5c35a;background:rgba(245,195,90,.14);border-radius:999px;padding:1px 9px;font-size:.72rem;font-weight:900;color:#ffd98a;">${T('المتصدرون', 'Leaders')} ${window.zA('‹', '›')}</span>
                         <div style="font-size:2.2rem;font-weight:900;color:${G2};line-height:1.1;">${level}</div>
                         <div style="font-size:.85rem;font-weight:800;color:${G};">${tierName}</div>
                     </div>
