@@ -539,3 +539,107 @@ window.openPredictionHistoryScreen = function() {};
         } catch (e) { console.warn(e); toast(L('تعذّر الاتصال', 'Connection failed')); }
     };
 })();
+
+
+/* ============================================================
+ * مباريات الليلة / المباريات المباشرة (من اختصارات الرئيسية)
+ * window.openTodayMatches('tonight' | 'live')
+ * ============================================================ */
+(function () {
+    const L = (a, e) => window.zT(a, e);
+    const db = () => (typeof supabaseClient !== 'undefined' && supabaseClient) ? supabaseClient : null;
+    const esc = x => String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    let mode = 'tonight', timer = null, rows = [];
+
+    function isLive(m) {
+        const st = String(m.status || '').toUpperCase().trim();
+        if (st === 'FINISHED') return false;
+        const ls = String(m.live_status || m.api_status || '').toUpperCase().trim();
+        if (['IN_PLAY', 'PAUSED', 'LIVE'].includes(ls)) return true;
+        if (['FINISHED', 'POSTPONED', 'CANCELLED', 'SUSPENDED'].includes(ls)) return false;
+        if (['LIVE', 'IN_PLAY', 'PAUSED', 'HALF_TIME'].includes(st)) return true;
+        const mins = (Date.now() - new Date(m.match_date).getTime()) / 60000;
+        return mins >= 0 && mins <= 150;
+    }
+
+    async function load() {
+        const c = db();
+        if (!c) return;
+        try {
+            if (mode === 'live') {
+                const r = await c.from('matches').select('*').neq('status', 'FINISHED').order('match_date', { ascending: true });
+                rows = (r.data || []).filter(isLive);
+            } else {
+                const a = new Date(); a.setHours(0, 0, 0, 0);
+                const b = new Date(a); b.setDate(b.getDate() + 1);
+                const r = await c.from('matches').select('*').gte('match_date', a.toISOString()).lt('match_date', b.toISOString()).order('match_date', { ascending: true });
+                rows = r.data || [];
+            }
+        } catch (e) { console.error('[ZELO] today matches:', e); }
+    }
+
+    function card(m) {
+        const live = isLive(m);
+        const done = String(m.status || '').toUpperCase() === 'FINISHED';
+        const d = new Date(m.match_date);
+        const hm = isNaN(d) ? '' : d.toLocaleTimeString(window.zA('ar-EG', 'en-GB'), { hour: '2-digit', minute: '2-digit' });
+        let mid, tag, tagStyle;
+        if (done) { mid = `${m.home_score ?? 0} - ${m.away_score ?? 0}`; tag = L('انتهت', 'Full time'); tagStyle = 'color:#c9d3ff;background:rgba(255,255,255,.08);'; }
+        else if (live) { mid = `${m.live_home ?? 0} - ${m.live_away ?? 0}`; tag = '● ' + L('مباشر', 'LIVE'); tagStyle = 'color:#14f195;background:rgba(20,241,149,.12);'; }
+        else { mid = hm; tag = L('لم تبدأ', 'Upcoming'); tagStyle = 'color:#ffd98a;background:rgba(245,195,90,.12);'; }
+        const comp = m.competition_name ? `<div style="display:flex;align-items:center;gap:6px;min-width:0;">${m.competition_emblem ? `<img src="${esc(m.competition_emblem)}" alt="" style="width:16px;height:16px;object-fit:contain;" onerror="this.remove()">` : ''}<span style="font-size:.78rem;color:#9aa6d6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(m.competition_name)}</span></div>` : '<span></span>';
+        return `<div style="border-radius:18px;background:#111a4a;border:1px solid ${live ? 'rgba(20,241,149,.35)' : 'rgba(255,255,255,.08)'};padding:12px 14px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">${comp}<span style="padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:900;white-space:nowrap;${tagStyle}">${tag}</span></div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <div style="flex:1;text-align:center;font-weight:800;font-size:.95rem;color:#fff;">${esc(m.team_a)}</div>
+                <div dir="ltr" style="min-width:74px;text-align:center;font-weight:900;font-size:${(done || live) ? '1.5rem' : '1.15rem'};color:${live ? '#14f195' : '#f5c35a'};font-variant-numeric:tabular-nums;">${mid}</div>
+                <div style="flex:1;text-align:center;font-weight:800;font-size:.95rem;color:#fff;">${esc(m.team_b)}</div>
+            </div>
+            ${(!done && !live && hm) ? '' : (hm ? `<div style="text-align:center;margin-top:8px;font-size:.74rem;color:#8d99cf;">🕒 ${hm}</div>` : '')}
+        </div>`;
+    }
+
+    function render() {
+        const ov = document.getElementById('ztm-overlay');
+        if (!ov) return;
+        const title = mode === 'live' ? L('المباريات المباشرة', 'Live matches') : L('مباريات الليلة', "Tonight's matches");
+        const empty = mode === 'live' ? L('لا توجد مباريات مباشرة الآن', 'No live matches right now') : L('لا توجد مباريات اليوم', 'No matches today');
+        const y = ov.scrollTop;
+        ov.innerHTML = `<div style="max-width:520px;margin:0 auto;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+                ${window.zeloBackBtn ? window.zeloBackBtn('window.closeTodayMatches()', (userState?.lang === 'ar')) : ''}
+                <div style="flex:1;font-weight:900;font-size:1.1rem;color:#f5c35a;">${title}</div>
+            </div>
+            ${rows.length ? rows.map(card).join('') : `<div style="text-align:center;color:#9aa6d6;padding:60px 10px;font-weight:700;">${empty}</div>`}
+        </div>`;
+        ov.scrollTop = y;
+    }
+
+    window.closeTodayMatches = function () {
+        clearInterval(timer); timer = null;
+        document.getElementById('ztm-overlay')?.remove();
+    };
+
+    window.openTodayMatches = async function (m) {
+        mode = (m === 'live') ? 'live' : 'tonight';
+        window.closeTodayMatches();
+        const ov = document.createElement('div');
+        ov.id = 'ztm-overlay';
+        const nav = document.getElementById('bottom-nav');
+        const navH = (nav && nav.getBoundingClientRect().height > 0) ? Math.round(window.innerHeight - nav.getBoundingClientRect().top) : 0;
+        ov.style.cssText = `position:fixed;top:0;left:0;right:0;bottom:${navH}px;z-index:450;background:#0a1033;color:#fff;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 24px;box-sizing:border-box;direction:${window.zA('rtl', 'ltr')};`;
+        ov.innerHTML = `<div style="text-align:center;color:#9aa6d6;padding:60px;">⏳</div>`;
+        document.body.appendChild(ov);
+        await load();
+        render();
+        timer = setInterval(async () => {
+            if (!document.getElementById('ztm-overlay')) { clearInterval(timer); timer = null; return; }
+            await load(); render();
+        }, 30000);
+        // أي ضغطة على الشريط السفلي تغلق الشاشة
+        if (nav) {
+            const onNav = () => { window.closeTodayMatches(); nav.removeEventListener('click', onNav, true); };
+            nav.addEventListener('click', onNav, true);
+        }
+    };
+})();
