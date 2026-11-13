@@ -348,10 +348,14 @@
         }
     }
 
+    // لا نعرض «تم تفعيل اشتراكك» عند فتح التطبيق (إعادة تحقق تلقائية)، بل فقط إن بدأ المستخدم شراءً/استعادة قبل لحظات
+    let lastUserAction = 0;
+    const markAction = () => { lastUserAction = Date.now(); };
     async function onPaid() {
         await isPremium(true);
         closeSubscriptions();
         mountPromo();
+        if (Date.now() - lastUserAction > 180000) return;
         toast(window.zT('✅ تم تفعيل اشتراكك', '✅ Subscription activated'));
     }
 
@@ -438,6 +442,7 @@
     async function startPay(planId, btn, upgrade) {
         const ar = isAr();
         if (!SKUS.includes(planId)) return;
+        markAction();
         try {
             if (btn) btn.disabled = true;
             let r;
@@ -458,6 +463,7 @@
     // استعادة المشتريات (مثلاً بعد إعادة تثبيت التطبيق)
     async function restorePurchases() {
         const ar = isAr();
+        markAction();
         try {
             const dg = await getDG();
             if (dg) {
