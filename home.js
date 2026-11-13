@@ -3147,6 +3147,7 @@
         if (d) d.style.display = (window.__zNotifUnread || 0) > 0 ? 'block' : 'none';
     }
     window.zhOpenSearch = function () {
+        if (typeof window.openSearchScreen === 'function') { window.openSearchScreen(); return; }
         if (typeof window.openSideDrawer !== 'function') return;
         window.openSideDrawer();
     };
