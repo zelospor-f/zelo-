@@ -492,6 +492,7 @@
                     ${window.zeloBackBtn(V ? "window.closeUserProfile()" : "if(typeof window.showPage === 'function') window.showPage('home');")}
                 </div>
 
+                ${V ? '' : `<button class="zelo-back" aria-label="Menu" onclick="window.openSideDrawer && window.openSideDrawer()" style="position:absolute;top:10px;inset-inline-end:10px;z-index:5;"><svg viewBox="0 0 24 24" width="22" height="22" style="stroke:#f5c35a;stroke-width:2.2;fill:none;stroke-linecap:round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>`}
                 ${(!V && window.zeloBanNoteHtml) ? window.zeloBanNoteHtml() : ''}
                 <div class="pp">
                     <div class="wall pp-wall">${P.wallHtml(matched)}</div>
