@@ -240,15 +240,17 @@
       ni.placeholder = window.zT('عدد الكورة', 'Kora amount'); ni.value = S.amount > 0 ? S.amount : '';
       ni.oninput = () => {
         S.amount = Math.floor(Number(ni.value)) || 0;
-        clearTimeout(timer);
-        timer = setTimeout(async () => { await checkElig(); render(); }, 400);
+        const e = document.getElementById('zw-est');
+        if (e) { e.textContent = window.zT('ستستلم: ', 'You will receive: ') + (S.amount / rate).toFixed(2) + ' USDT'; e.style.display = S.amount > 0 ? '' : 'none'; }
+        const g = document.getElementById('zw-go');
+        if (g) g.disabled = S.busy || S.amount <= 0;
       };
       const all = h('button', 'zw-btn sec', window.zT('الكل', 'All'));
       all.onclick = async () => { S.amount = S.avail; await checkElig(); render(); };
       line.appendChild(ni); line.appendChild(all); rc.appendChild(line);
-      if (S.amount > 0) rc.appendChild(h('div', 'zw-est', window.zT('ستستلم: ', 'You will receive: ') + (S.amount / rate).toFixed(2) + ' USDT'));
+      const est = h('div', 'zw-est', window.zT('ستستلم: ', 'You will receive: ') + (S.amount / rate).toFixed(2) + ' USDT'); est.id = 'zw-est'; if (S.amount <= 0) est.style.display = 'none'; rc.appendChild(est);
       const go = h('button', 'zw-btn', window.zT('اطلب السحب', 'Request withdrawal'));
-      go.disabled = S.busy || S.amount <= 0 || (S.pro && (!S.elig || S.elig.decision === 'rejected'));
+      go.id = 'zw-go'; go.disabled = S.busy || S.amount <= 0;
       go.onclick = async () => {
         if (!S.pro) {
           S.msg = window.zT('وثّق حسابك بالاشتراك لتتمكن من السحب', 'Verify your account by subscribing to be able to withdraw');
@@ -257,6 +259,8 @@
           if (window.openSubscriptions) window.openSubscriptions();
           return;
         }
+        await checkElig();
+        if (!S.elig || S.elig.decision === 'rejected') { S.msg = S.elig && S.elig.reasons ? S.elig.reasons.join(' • ') : window.zT('الشروط غير مكتملة', 'Conditions not met'); render(); return; }
         if (!confirm(window.zT('سحب ' + S.amount + ' كورة (' + (S.amount / rate).toFixed(2) + ' USDT) إلى:\n' + S.addr.address + '\nشبكة BEP20', 'Withdraw ' + S.amount + ' Kora (' + (S.amount / rate).toFixed(2) + ' USDT) to:\n' + S.addr.address + '\nBEP20 network'))) return;
         S.busy = true; render();
         const r = await sb.rpc('request_usdt_withdrawal', { p_diamonds: S.amount });
