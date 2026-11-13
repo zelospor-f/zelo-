@@ -181,23 +181,23 @@
         injectStyle();
         closeSubscriptions();
         const ar = isAr();
-        const dir = ar ? 'rtl' : 'ltr';
+        const dir = window.zA('rtl', 'ltr');
 
         const plans = PLANS.map(p => {
             const rows = MATRIX.map(f => {
                 const on = p.tier >= f.min;
-                const lb = on && f.label && f.label[p.tier] ? `<span class="zp-lb">${ar ? f.label[p.tier][0] : f.label[p.tier][1]}</span>` : '';
-                return `<div class="zp-rw ${on ? '' : 'off'}"><span>${ar ? f.ar : f.en}${lb}</span><b class="${on ? 'y' : 'n'}">${on ? '✓' : '✗'}</b></div>`;
+                const lb = on && f.label && f.label[p.tier] ? `<span class="zp-lb">${window.zT(f.label[p.tier][0], f.label[p.tier][1])}</span>` : '';
+                return `<div class="zp-rw ${on ? '' : 'off'}"><span>${window.zT(f.ar, f.en)}${lb}</span><b class="${on ? 'y' : 'n'}">${on ? '✓' : '✗'}</b></div>`;
             }).join('');
             return `
             <div class="zp-plan ${p.best ? 'best' : ''}" data-tier="${p.tier}">
-                ${p.best ? `<div class="zp-tag">${ar ? 'الأفضل قيمة' : 'Best value'}</div>` : ''}
+                ${p.best ? `<div class="zp-tag">${window.zT('الأفضل قيمة', 'Best value')}</div>` : ''}
                 <div class="zp-row" style="flex-direction:row;justify-content:space-between;align-items:baseline;width:100%;margin-bottom:6px">
-                    <div class="zp-name">${ar ? p.ar : p.en}</div>
-                    <div><span class="zp-price">${money(p.m.price)}</span><span class="zp-per">/ ${ar ? 'شهرياً' : 'month'}</span></div>
+                    <div class="zp-name">${window.zT(p.ar, p.en)}</div>
+                    <div><span class="zp-price">${money(p.m.price)}</span><span class="zp-per">/ ${window.zT('شهرياً', 'month')}</span></div>
                 </div>
                 ${rows}
-                <button class="zp-btn ${p.best ? 'main' : 'ghost'}" data-tier="${p.tier}">${ar ? 'اشترك' : 'Subscribe'}</button>
+                <button class="zp-btn ${p.best ? 'main' : 'ghost'}" data-tier="${p.tier}">${window.zT('اشترك', 'Subscribe')}</button>
             </div>`;
         }).join('');
         const feats = '';
@@ -206,18 +206,17 @@
         wrap.id = 'zp-overlay';
         wrap.dir = dir;
         wrap.innerHTML = `
-            ${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn('window.closeSubscriptions()', ar, 'zp-close') : '<button class="zp-close" aria-label="back" style="width:40px;height:40px;border-radius:12px;border:1px solid rgba(245,195,90,.35);background:rgba(44,75,181,.2);color:#f5c35a;font-size:20px;cursor:pointer">' + (ar ? '›' : '‹') + '</button>'}
-            <h2>${ar ? 'الاشتراكات' : 'Subscriptions'}</h2>
-            <div class="zp-sub">${ar ? 'شارك ناديك المفضل واحصل على مزايا إضافية.' : 'Show your favorite club and unlock extra perks.'}</div>
-            <div class="zp-active" id="zp-active">${ar ? '✅ اشتراكك فعّال' : '✅ Your subscription is active'}</div>
+            ${typeof window.zeloBackBtn === 'function' ? window.zeloBackBtn('window.closeSubscriptions()', ar, 'zp-close') : '<button class="zp-close" aria-label="back" style="width:40px;height:40px;border-radius:12px;border:1px solid rgba(245,195,90,.35);background:rgba(44,75,181,.2);color:#f5c35a;font-size:20px;cursor:pointer">' + (window.zA('›', '‹')) + '</button>'}
+            <h2>${window.zT('الاشتراكات', 'Subscriptions')}</h2>
+            <div class="zp-sub">${window.zT('شارك ناديك المفضل واحصل على مزايا إضافية.', 'Show your favorite club and unlock extra perks.')}</div>
+            <div class="zp-active" id="zp-active">${window.zT('✅ اشتراكك فعّال', '✅ Your subscription is active')}</div>
             ${feats}
             <div class="zp-plans" id="zp-plans">${plans}</div>
             <div class="zp-dots" id="zp-dots">${PLANS.map((p, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('')}</div>
-            <div class="zp-note">${ar ? 'الدفع عبر Google Play. يتجدد الاشتراك تلقائياً ويمكنك إلغاؤه في أي وقت من إعدادات الاشتراكات في Google Play.'
-                                      : 'Billed through Google Play. The subscription renews automatically and you can cancel anytime in Google Play subscription settings.'}</div>
-            <div class="zp-note">${ar ? 'ZELO Sport تطبيق مستقل وغير تابع لأي نادٍ أو رابطة. أسماء الأندية وشعاراتها ملك لأصحابها وتُعرض للتعريف بالنادي المفضّل فقط.' : 'ZELO Sport is an independent app and is not affiliated with any club or league. Club names and logos belong to their owners and are shown only to identify a favourite club.'}</div>
-            <div class="zp-note" style="color:#ffb4a8">${ar ? 'تحذير: أي تلاعب في الكورة أو المكافآت أو الإعلانات يعرّض الحساب للحذف وخسارة كل شيء، بما في ذلك الاشتراك والرصيد، دون تعويض.' : 'Warning: any manipulation of Kora, rewards or ads may lead to account deletion and loss of everything, including your subscription and balance, with no refund.'}</div>
-            <button class="zp-btn ghost" id="zp-restore" style="margin-top:8px">${ar ? 'استعادة مشترياتي' : 'Restore purchases'}</button>`;
+            <div class="zp-note">${window.zT('الدفع عبر Google Play. يتجدد الاشتراك تلقائياً ويمكنك إلغاؤه في أي وقت من إعدادات الاشتراكات في Google Play.', 'Billed through Google Play. The subscription renews automatically and you can cancel anytime in Google Play subscription settings.')}</div>
+            <div class="zp-note">${window.zT('ZELO Sport تطبيق مستقل وغير تابع لأي نادٍ أو رابطة. أسماء الأندية وشعاراتها ملك لأصحابها وتُعرض للتعريف بالنادي المفضّل فقط.', 'ZELO Sport is an independent app and is not affiliated with any club or league. Club names and logos belong to their owners and are shown only to identify a favourite club.')}</div>
+            <div class="zp-note" style="color:#ffb4a8">${window.zT('تحذير: أي تلاعب في الكورة أو المكافآت أو الإعلانات يعرّض الحساب للحذف وخسارة كل شيء، بما في ذلك الاشتراك والرصيد، دون تعويض.', 'Warning: any manipulation of Kora, rewards or ads may lead to account deletion and loss of everything, including your subscription and balance, with no refund.')}</div>
+            <button class="zp-btn ghost" id="zp-restore" style="margin-top:8px">${window.zT('استعادة مشترياتي', 'Restore purchases')}</button>`;
         document.body.appendChild(wrap);
 
         wrap.querySelector('.zp-close').addEventListener('click', function (e) { e.preventDefault(); closeSubscriptions(); });
@@ -225,25 +224,25 @@
             const a = document.getElementById('zp-active');
             if (a && t > 0) {
                 const pl = PLANS.find(p => p.tier === t);
-                a.textContent = (isAr() ? '✅ اشتراكك فعّال: ' : '✅ Active: ') + (pl ? (isAr() ? pl.ar : pl.en) : '');
+                a.textContent = (window.zT('✅ اشتراكك فعّال: ', '✅ Active: ')) + (pl ? (window.zT(pl.ar, pl.en)) : '');
                 a.style.display = 'block';
             }
         });
         let curTier = 0;
         const refreshBtns = () => wrap.querySelectorAll('.zp-btn[data-tier]').forEach(b => {
             const t = Number(b.dataset.tier);
-            b.textContent = curTier === 0 ? (ar ? 'اشترك' : 'Subscribe')
-                : t > curTier ? (ar ? 'ترقية' : 'Upgrade')
-                : t === curTier ? (ar ? 'باقتك الحالية' : 'Your current plan')
-                : (ar ? 'باقتك أعلى من هذه' : 'Your plan is higher');
+            b.textContent = curTier === 0 ? (window.zT('اشترك', 'Subscribe'))
+                : t > curTier ? (window.zT('ترقية', 'Upgrade'))
+                : t === curTier ? (window.zT('باقتك الحالية', 'Your current plan'))
+                : (window.zT('باقتك أعلى من هذه', 'Your plan is higher'));
             b.style.opacity = t <= curTier && curTier > 0 ? '.55' : '1';
         });
         myTier().then(t => { curTier = t; refreshBtns(); });
         wrap.querySelectorAll('.zp-btn[data-tier]').forEach(b => {
             b.onclick = () => {
                 const t = Number(b.dataset.tier);
-                if (curTier > 0 && t === curTier) return toast(ar ? 'هذه باقتك الحالية' : 'This is your current plan');
-                if (curTier > 0 && t < curTier) return toast(ar ? 'لا يمكن النزول إلى باقة أقل أثناء اشتراكك الحالي' : 'You cannot move to a lower plan while subscribed');
+                if (curTier > 0 && t === curTier) return toast(window.zT('هذه باقتك الحالية', 'This is your current plan'));
+                if (curTier > 0 && t < curTier) return toast(window.zT('لا يمكن النزول إلى باقة أقل أثناء اشتراكك الحالي', 'You cannot move to a lower plan while subscribed'));
                 openChooser(PLANS.find(p => p.tier === t), curTier > 0);
             };
         });
@@ -279,21 +278,21 @@
         const pm = realPrices[p.m.id] || money(p.m.price), py = realPrices[p.y.id] || money(p.y.price);
         const box = document.createElement('div');
         box.id = 'zp-choose';
-        box.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;direction:' + (ar ? 'rtl' : 'ltr');
+        box.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.65);display:flex;align-items:flex-end;direction:' + (window.zA('rtl', 'ltr'));
         box.innerHTML = `
             <div style="width:100%;background:#111a4a;border-radius:20px 20px 0 0;padding:16px 16px calc(24px + env(safe-area-inset-bottom,0px));box-sizing:border-box;border-top:1px solid ${C.goldLine}">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                    <div style="color:#fff;font-size:1.05rem;font-weight:900">${isUpgrade ? (ar ? 'ترقية إلى ' : 'Upgrade to ') : ''}${ar ? p.ar : p.en}</div>
+                    <div style="color:#fff;font-size:1.05rem;font-weight:900">${isUpgrade ? (window.zT('ترقية إلى ', 'Upgrade to ')) : ''}${window.zT(p.ar, p.en)}</div>
                     <button id="zp-ch-x" aria-label="close" style="background:none;border:none;color:${C.muted};font-size:1.3rem;cursor:pointer">✕</button>
                 </div>
                 <button class="zp-btn ghost" data-sku="${p.m.id}" style="margin-top:0;display:flex;justify-content:space-between;align-items:center">
-                    <span>${ar ? 'شهري' : 'Monthly'}</span><span>${esc(pm)} / ${ar ? 'شهر' : 'mo'}</span>
+                    <span>${window.zT('شهري', 'Monthly')}</span><span>${esc(pm)} / ${window.zT('شهر', 'mo')}</span>
                 </button>
                 <button class="zp-btn main" data-sku="${p.y.id}" style="display:flex;justify-content:space-between;align-items:center;position:relative">
-                    <span>${ar ? 'سنوي' : 'Yearly'} <span style="background:#0a1033;color:${C.gold};font-size:.68rem;padding:2px 8px;border-radius:20px;margin-inline-start:6px">${ar ? 'وفّر ' + savePct(p) + '٪' : 'Save ' + savePct(p) + '%'}</span></span>
-                    <span>${esc(py)} / ${ar ? 'سنة' : 'yr'}</span>
+                    <span>${window.zT('سنوي', 'Yearly')} <span style="background:#0a1033;color:${C.gold};font-size:.68rem;padding:2px 8px;border-radius:20px;margin-inline-start:6px">${window.zT('وفّر ' + savePct(p) + '٪', 'Save ' + savePct(p) + '%')}</span></span>
+                    <span>${esc(py)} / ${window.zT('سنة', 'yr')}</span>
                 </button>
-                ${isUpgrade ? `<div class="zp-note">${ar ? 'الترقية فورية. تُحسب لك المدة المتبقية من باقتك الحالية.' : 'Upgrades apply immediately. Your remaining time is credited.'}</div>` : ''}
+                ${isUpgrade ? `<div class="zp-note">${window.zT('الترقية فورية. تُحسب لك المدة المتبقية من باقتك الحالية.', 'Upgrades apply immediately. Your remaining time is credited.')}</div>` : ''}
             </div>`;
         ov.appendChild(box);
         box.querySelector('#zp-ch-x').onclick = () => box.remove();
@@ -353,7 +352,7 @@
         await isPremium(true);
         closeSubscriptions();
         mountPromo();
-        toast(isAr() ? '✅ تم تفعيل اشتراكك' : '✅ Subscription activated');
+        toast(window.zT('✅ تم تفعيل اشتراكك', '✅ Subscription activated'));
     }
 
     // --- المسار 1: Digital Goods API ---
@@ -380,7 +379,7 @@
         const d = e.detail || {};
         if (d.kind !== 'sub') return;
         if (d.ok) onPaid();
-        else toast((isAr() ? 'تعذّر تفعيل الاشتراك: ' : 'Could not activate: ') + d.msg);
+        else toast((window.zT('تعذّر تفعيل الاشتراك: ', 'Could not activate: ')) + d.msg);
     });
     document.addEventListener('deviceready', () => { try { setupPlugin(); } catch (e) {} });
 
@@ -418,7 +417,7 @@
             if (dg) {
                 const details = await dg.getDetails(SKUS);
                 (details || []).forEach(d => {
-                    map[d.itemId] = new Intl.NumberFormat(isAr() ? 'ar' : 'en',
+                    map[d.itemId] = new Intl.NumberFormat(window.zA('ar', 'en'),
                         { style: 'currency', currency: d.price.currency }).format(Number(d.price.value));
                 });
             } else if (hasPlugin()) {
@@ -444,13 +443,13 @@
             let r;
             if (await getDG()) r = await buyWithDigitalGoods(planId);
             else if (hasPlugin()) r = await buyWithPlugin(planId, upgrade);
-            else return toast(ar ? 'الشراء متاح داخل تطبيق Google Play فقط' : 'Purchases are available in the Google Play app only');
+            else return toast(window.zT('الشراء متاح داخل تطبيق Google Play فقط', 'Purchases are available in the Google Play app only'));
             if (r.ok && !r.pending) return onPaid();
-            if (!r.ok && r.msg !== 'cancelled') toast((ar ? 'تعذّر إتمام الشراء: ' : 'Purchase failed: ') + r.msg);
+            if (!r.ok && r.msg !== 'cancelled') toast((window.zT('تعذّر إتمام الشراء: ', 'Purchase failed: ')) + r.msg);
         } catch (e) {
             if (e && e.name === 'AbortError') return;      // المستخدم أغلق نافذة الدفع
             console.warn('[premium] purchase failed', e);
-            toast(ar ? 'تعذّر إتمام الشراء، حاول مرة أخرى' : 'Purchase failed, try again');
+            toast(window.zT('تعذّر إتمام الشراء، حاول مرة أخرى', 'Purchase failed, try again'));
         } finally {
             if (btn) btn.disabled = false;
         }
@@ -470,7 +469,7 @@
                 }
             } else if (hasPlugin()) {
                 setupPlugin();
-                toast(ar ? 'جارٍ البحث عن مشترياتك…' : 'Looking for your purchases…');
+                toast(window.zT('جارٍ البحث عن مشترياتك…', 'Looking for your purchases…'));
                 const st = window.CdvPurchase.store;
                 try { await st.restorePurchases(); } catch (e) { console.warn('[premium] restorePurchases', e); }
                 await new Promise(r => setTimeout(r, 2000));
@@ -482,21 +481,21 @@
                     const pid = (t.products && t.products[0] && t.products[0].id) || n.productId;
                     if (n.purchaseToken && pid) owned.push({ t, pid, token: n.purchaseToken });
                 });
-                if (!owned.length) return toast(ar ? 'لا توجد مشتريات غير مفعّلة' : 'No pending purchases found');
+                if (!owned.length) return toast(window.zT('لا توجد مشتريات غير مفعّلة', 'No pending purchases found'));
                 let ok = 0, lastErr = '';
                 for (const o of owned) {
                     const v = await verifyOnServer(o.pid, o.token);
                     if (v.ok) { ok++; try { await o.t.finish(); } catch (e) {} } else lastErr = v.msg;
                 }
-                if (ok) { await isPremium(true); return toast(ar ? '✅ تمت استعادة ' + ok + ' عملية' : '✅ Restored ' + ok); }
-                return toast((ar ? 'تعذّر التحقق: ' : 'Verify failed: ') + lastErr);
+                if (ok) { await isPremium(true); return toast(window.zT('✅ تمت استعادة ' + ok + ' عملية', '✅ Restored ' + ok)); }
+                return toast((window.zT('تعذّر التحقق: ', 'Verify failed: ')) + lastErr);
             } else {
-                return toast(ar ? 'الشراء متاح داخل تطبيق Google Play فقط' : 'Purchases are available in the Google Play app only');
+                return toast(window.zT('الشراء متاح داخل تطبيق Google Play فقط', 'Purchases are available in the Google Play app only'));
             }
-            toast(ar ? 'لا توجد مشتريات لاستعادتها' : 'No purchases to restore');
+            toast(window.zT('لا توجد مشتريات لاستعادتها', 'No purchases to restore'));
         } catch (e) {
             console.warn('[premium] restore failed', e);
-            toast(ar ? 'تعذّرت الاستعادة' : 'Restore failed');
+            toast(window.zT('تعذّرت الاستعادة', 'Restore failed'));
         }
     }
 
@@ -509,19 +508,18 @@
         if (pro) { box.innerHTML = ''; return; }
         const ar = isAr();
         box.innerHTML = `
-            <div style="position:relative; margin:14px 0; padding:18px; border-radius:20px; direction:${ar ? 'rtl' : 'ltr'};
+            <div style="position:relative; margin:14px 0; padding:18px; border-radius:20px; direction:${window.zA('rtl', 'ltr')};
                         background:rgba(17,26,74,0.6); border:1px solid ${C.goldLine};">
-                <button id="zp-promo-x" aria-label="${ar ? 'إغلاق' : 'Close'}"
+                <button id="zp-promo-x" aria-label="${window.zT('إغلاق', 'Close')}"
                         style="position:absolute; top:8px; inset-inline-end:8px; width:30px; height:30px; padding:0; border-radius:50%; border:none; background:rgba(255,255,255,0.08); color:#9aa6d6; font-size:18px; line-height:1; cursor:pointer;">✕</button>
                 <div style="font-size:1.05rem; font-weight:900; color:#fff; margin-bottom:6px;">
-                    ${ar ? 'وثّق حسابك بشعار ناديك المفضل' : 'Verify your account with your favorite club badge'}
+                    ${window.zT('وثّق حسابك بشعار ناديك المفضل', 'Verify your account with your favorite club badge')}
                 </div>
                 <div style="font-size:0.82rem; color:${C.muted}; line-height:1.6; margin-bottom:12px;">
-                    ${ar ? 'اشترك لتظهر بجانب اسمك شارة ناديك، مع منشورات أطول وصور، وباقات أعلى للفيديو والتوقّعات.'
-                         : 'Subscribe to show your club badge next to your name, with longer posts and images, and higher plans for video and predictions.'}
+                    ${window.zT('اشترك لتظهر بجانب اسمك شارة ناديك، مع منشورات أطول وصور، وباقات أعلى للفيديو والتوقّعات.', 'Subscribe to show your club badge next to your name, with longer posts and images, and higher plans for video and predictions.')}
                 </div>
                 <button id="zp-promo-btn" onclick="window.openSubscriptions()">
-                    ${ar ? 'عرض الاشتراكات' : 'View subscriptions'}
+                    ${window.zT('عرض الاشتراكات', 'View subscriptions')}
                 </button>
             </div>`;
         const x = document.getElementById('zp-promo-x');
