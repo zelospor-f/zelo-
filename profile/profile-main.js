@@ -534,7 +534,7 @@
                         <button class="pp-btn" id="pc-bell" style="flex:0 0 48px;padding:10px 0;font-size:1.05rem;" aria-label="Notifications">🔕</button>
                     </div>` : `<div class="zp-btns">
                         <button class="zp-edit" onclick="window.openEditProfile()">${ic('<path d="M4 20l4-1 11-11-3-3L5 16z"/>', 18)}${tr('ui_edit_profile_short', 'تعديل الملف', 'Edit profile')}</button>
-                        <button class="zp-ib" aria-label="${tr('ui_my_room', 'غرفتي', 'My room')}" onclick="window.openMyRoomOrCreate && window.openMyRoomOrCreate()">${ic('<path d="M4 5h16v11H9l-5 4z"/>', 22)}</button>
+                        <button class="zp-ib" aria-label="${tr('ui_messages', 'الرسائل', 'Messages')}" onclick="showPage('messages')">${ic('<rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3.5 7l8.5 6 8.5-6"/>', 22)}</button>
                         <button class="zp-ib" aria-label="${tr('ui_share', 'مشاركة', 'Share')}" onclick="window.openShareSheet()">${ic('<path d="M12 15V4M8 8l4-4 4 4"/><path d="M5 12v7h14v-7"/>', 22)}</button>
                     </div>
 
