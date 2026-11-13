@@ -71,7 +71,7 @@ onReady(() => {
     }
 
     const savedLang = localStorage.getItem('app_lang') || localStorage.getItem('lang') || 'ar';
-    userState.lang = savedLang.startsWith('ar') ? 'ar' : 'en';
+    userState.lang = savedLang.startsWith('ar') ? 'ar' : (savedLang.startsWith('tr') ? 'tr' : 'en');
 
     if (typeof applyLanguageSettings === 'function') applyLanguageSettings();
 
@@ -200,7 +200,7 @@ async function updateTopBar() {
 
     if (pointsEl) {
         const displayPoints = Number(userState.points || 0);
-        const localeLang = userState.lang === 'ar' ? 'ar-EG' : 'en-US';
+        const localeLang = userState.lang === 'ar' ? 'ar-EG' : (userState.lang === 'tr' ? 'tr-TR' : 'en-US');
         pointsEl.innerText = `🪙 ${displayPoints.toLocaleString(localeLang)} ${localeLang.startsWith("ar") ? "كورة" : "Kora"}`;
     }
 
@@ -221,7 +221,7 @@ async function updateTopBar() {
                 : '';
         }).join('');
 
-        const labelText = userState.lang === 'ar' ? 'أنديتك:' : 'Clubs:';
+        const labelText = userState.lang === 'ar' ? 'أنديتك:' : (userState.lang === 'tr' ? 'Kulüpler:' : 'Clubs:');
         clubEl.innerHTML = `<span style="color:#aaa;">${labelText}</span> ${logos}`;
     }
 
