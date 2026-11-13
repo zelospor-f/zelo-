@@ -68,6 +68,8 @@
     const editState = {};
     let pendingImage = '';
 
+    let pendingVideoMeta = null;
+    let pendingVideoSrc = null;
     let pendingVideo = null;   // ملف الفيديو المختار قبل النشر
 
     // ===================== شدّ الحبل: أنماط المنشورات =====================
@@ -1199,7 +1201,7 @@
     };
 
     window.pickPostImage = async function(input) {
-        pendingVideo = null;
+        pendingVideo = null; pendingVideoSrc = null;
         const file = input.files && input.files[0];
         if (!file) return;
         try {
@@ -1217,7 +1219,7 @@
 
     window.clearPostImage = function() {
         pendingImage = '';
-        pendingVideo = null;
+        pendingVideo = null; pendingVideoSrc = null;
         const pv = document.getElementById('composer-preview');
         if (pv) pv.innerHTML = '';
     };
@@ -2507,31 +2509,165 @@
         input.click();
     };
 
-    async function handleVideoFile(file) {
-        if (!file) return;
-        const isMp4 = file.type === 'video/mp4' || /\.mp4$/i.test(file.name || '');
-        if (!isMp4) { alert(window.zT('الصيغة المقبولة MP4 فقط.', 'Only MP4 files are allowed.')); return; }
-        if (file.size > VIDEO_MAX_BYTES) { alert(window.zT('حجم الفيديو يتجاوز 30 ميغابايت.', 'Video is larger than 30 MB.')); return; }
+    // ===== قص الفيديو (إضافة أندرويد VideoTrim؛ إن لم تتوفر يعمل الرفع القديم) =====
+    const VIDEO_SRC_MAX = 400 * 1024 * 1024;   // أكبر ملف مصدر يُقبل قبل القص
+    const nativeTrim = () => {
+        try {
+            const cap = window.Capacitor;
+            return (cap && cap.Plugins && cap.Plugins.VideoTrim && (!cap.isPluginAvailable || cap.isPluginAvailable('VideoTrim'))) ? cap.Plugins.VideoTrim : null;
+        } catch (e) { return null; }
+    };
+    const fmtT = t => { t = Math.max(0, Math.round(t)); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+    const bufToB64 = buf => {
+        const u = new Uint8Array(buf); let bin = '';
+        for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+        return btoa(bin);
+    };
+    const b64ToU8 = b64 => { const bin = atob(b64); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; };
 
-        const url = URL.createObjectURL(file);
+    function readVideoMeta(url) {
         const probe = document.createElement('video');
         probe.preload = 'metadata';
         probe.src = url;
-        const duration = await new Promise(resolve => {
-            probe.onloadedmetadata = () => resolve(probe.duration);
-            probe.onerror = () => resolve(NaN);
+        return new Promise(resolve => {
+            probe.onloadedmetadata = () => resolve({ duration: probe.duration, w: probe.videoWidth, h: probe.videoHeight });
+            probe.onerror = () => resolve(null);
         });
-        if (!isFinite(duration)) { URL.revokeObjectURL(url); alert(window.zT('تعذّر قراءة الفيديو.', 'Could not read the video.')); return; }
-        if (duration > VIDEO_MAX_SECONDS) { URL.revokeObjectURL(url); alert(window.zT('مدة الفيديو يجب ألا تتجاوز 60 ثانية.', 'Video must be 60 seconds or less.')); return; }
+    }
 
+    function acceptVideo(file, url, meta) {
         pendingVideo = file;
+        pendingVideoMeta = meta || null;
         pendingImage = '';
         const pv = document.getElementById('composer-preview');
         if (pv) pv.innerHTML = `
             <div class="img-preview">
                 <video src="${url}" controls muted playsinline style="max-width:100%;border-radius:12px;"></video>
                 <button class="img-remove" onclick="window.clearPostImage()">✕</button>
+            </div>
+            ${nativeTrim() && pendingVideoSrc ? `<button onclick="window.zvtOpen()" style="margin-top:8px;padding:9px 16px;border-radius:999px;border:1px solid rgba(245,195,90,.5);background:rgba(245,195,90,.1);color:#f5c35a;font-weight:800;font-family:inherit;cursor:pointer;">✂️ ${window.zT('قص الفيديو', 'Trim video')}</button>` : ''}`;
+    }
+
+    async function handleVideoFile(file) {
+        if (!file) return;
+        const isMp4 = file.type === 'video/mp4' || /\.mp4$/i.test(file.name || '');
+        if (!isMp4) { alert(window.zT('الصيغة المقبولة MP4 فقط.', 'Only MP4 files are allowed.')); return; }
+        const VT = nativeTrim();
+        if (!VT && file.size > VIDEO_MAX_BYTES) { alert(window.zT('حجم الفيديو يتجاوز 30 ميغابايت.', 'Video is larger than 30 MB.')); return; }
+        if (VT && file.size > VIDEO_SRC_MAX) { alert(window.zT('حجم الفيديو كبير جداً (الأقصى 400 ميغابايت).', 'Video is too large (max 400 MB).')); return; }
+
+        const url = URL.createObjectURL(file);
+        const meta = await readVideoMeta(url);
+        if (!meta || !isFinite(meta.duration)) { URL.revokeObjectURL(url); alert(window.zT('تعذّر قراءة الفيديو.', 'Could not read the video.')); return; }
+
+        pendingVideoSrc = { file, url, meta };
+        const fits = file.size <= VIDEO_MAX_BYTES && meta.duration <= VIDEO_MAX_SECONDS;
+        if (!VT) {
+            if (meta.duration > VIDEO_MAX_SECONDS) { URL.revokeObjectURL(url); alert(window.zT('مدة الفيديو يجب ألا تتجاوز 60 ثانية.', 'Video must be 60 seconds or less.')); return; }
+            pendingVideoSrc = null;
+            acceptVideo(file, url, meta);
+            return;
+        }
+        if (fits) acceptVideo(file, url, meta);
+        else openTrimUi();   // أكبر من الحد: القص إلزامي
+    }
+
+    window.zvtOpen = function () { openTrimUi(); };
+
+    function openTrimUi() {
+        const src = pendingVideoSrc;
+        const VT = nativeTrim();
+        if (!src || !VT) return;
+        document.getElementById('zvt-overlay')?.remove();
+        const { file, url, meta } = src;
+        const dur = meta.duration;
+        const maxLen = Math.min(VIDEO_MAX_SECONDS, dur);
+        let st = 0, en = maxLen;
+        const ov = document.createElement('div');
+        ov.id = 'zvt-overlay';
+        ov.dir = window.zA('rtl', 'ltr');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:100050;background:#05081f;color:#fff;overflow-y:auto;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 24px;box-sizing:border-box;';
+        ov.innerHTML = `
+            <div style="max-width:520px;margin:0 auto;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <button id="zvt-x" style="width:38px;height:38px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff;font-size:1rem;">✕</button>
+                    <div style="font-weight:900;font-size:1.05rem;">✂️ ${window.zT('قص الفيديو', 'Trim video')}</div>
+                    <span style="width:38px;"></span>
+                </div>
+                <video id="zvt-v" src="${url}" playsinline controls style="width:100%;max-height:48vh;border-radius:14px;background:#000;"></video>
+                <div style="margin-top:14px;display:flex;flex-direction:column;gap:12px;">
+                    <label style="font-size:.85rem;color:#9aa6d6;font-weight:700;display:flex;justify-content:space-between;"><span>${window.zT('البداية', 'Start')}</span><b id="zvt-sv" style="color:#f5c35a;">0:00</b></label>
+                    <input id="zvt-s" type="range" min="0" max="${dur}" step="0.1" value="0" style="width:100%;accent-color:#f5c35a;">
+                    <label style="font-size:.85rem;color:#9aa6d6;font-weight:700;display:flex;justify-content:space-between;"><span>${window.zT('النهاية', 'End')}</span><b id="zvt-ev" style="color:#f5c35a;"></b></label>
+                    <input id="zvt-e" type="range" min="0" max="${dur}" step="0.1" value="${maxLen}" style="width:100%;accent-color:#f5c35a;">
+                    <div id="zvt-info" style="text-align:center;font-weight:800;font-size:.9rem;"></div>
+                    <div id="zvt-prog" style="display:none;height:8px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;"><i style="display:block;height:100%;width:0;background:#f5c35a;transition:width .3s;"></i></div>
+                    <button id="zvt-go" style="padding:15px;border:0;border-radius:16px;background:linear-gradient(135deg,#ffd978,#f5a623);color:#121215;font-weight:900;font-size:1rem;font-family:inherit;">${window.zT('قص واستخدم', 'Trim & use')}</button>
+                </div>
             </div>`;
+        document.body.appendChild(ov);
+        const $ = id => ov.querySelector('#' + id);
+        const v = $('zvt-v'), rs = $('zvt-s'), re = $('zvt-e'), go = $('zvt-go');
+
+        const sync = (changed) => {
+            st = Number(rs.value); en = Number(re.value);
+            if (changed === 's') { if (en - st > VIDEO_MAX_SECONDS) en = st + VIDEO_MAX_SECONDS; if (en <= st) en = Math.min(dur, st + 1); }
+            if (changed === 'e') { if (en - st > VIDEO_MAX_SECONDS) st = en - VIDEO_MAX_SECONDS; if (st >= en) st = Math.max(0, en - 1); }
+            rs.value = st; re.value = en;
+            $('zvt-sv').textContent = fmtT(st);
+            $('zvt-ev').textContent = fmtT(en);
+            const len = en - st;
+            $('zvt-info').textContent = window.zT(`المدة المختارة: ${fmtT(len)}`, `Selected length: ${fmtT(len)}`);
+            go.disabled = len < 1;
+            if (changed) { try { v.currentTime = changed === 's' ? st : Math.max(st, en - 1); } catch (e) {} }
+        };
+        rs.oninput = () => sync('s');
+        re.oninput = () => sync('e');
+        sync();
+        v.addEventListener('timeupdate', () => { if (v.currentTime >= en) { v.pause(); v.currentTime = st; } });
+        $('zvt-x').onclick = () => { ov.remove(); if (!pendingVideo) pendingVideoSrc = null; };
+
+        go.onclick = async () => {
+            go.disabled = true; rs.disabled = true; re.disabled = true; v.pause();
+            const prog = $('zvt-prog'); prog.style.display = 'block';
+            const bar = prog.firstElementChild;
+            const setP = (pct, label) => { bar.style.width = pct + '%'; $('zvt-info').textContent = label + ' ' + Math.round(pct) + '%'; };
+            const name = 'in_' + Date.now() + '.mp4';
+            let lis = null;
+            try {
+                const CH = 2 * 1024 * 1024;
+                for (let off = 0; off < file.size; off += CH) {
+                    const buf = await file.slice(off, off + CH).arrayBuffer();
+                    await VT.writeChunk({ name, data: bufToB64(buf), append: off > 0 });
+                    setP(Math.min(100, (off + CH) / file.size * 100), window.zT('تجهيز', 'Preparing'));
+                }
+                const len = en - st;
+                const portrait = meta.h > meta.w;
+                const lim = portrait ? 1280 : 720;
+                const targetHeight = meta.h > lim ? lim : 0;
+                const bitrate = Math.max(800000, Math.min(4000000, Math.floor((24 * 1024 * 1024 * 8) / len) - 128000));
+                lis = VT.addListener ? await VT.addListener('progress', e => setP(Number(e && e.percent) || 0, window.zT('جارٍ القص', 'Trimming'))) : null;
+                const res = await VT.trim({ name, startMs: Math.round(st * 1000), endMs: Math.round(en * 1000), targetHeight, bitrate });
+                const parts = [];
+                for (let off = 0; off < res.size; off += CH) {
+                    const r = await VT.readChunk({ name: res.name, offset: off, length: CH });
+                    parts.push(b64ToU8(r.data));
+                }
+                try { await VT.clean(); } catch (e) {}
+                const out = new File(parts, 'trim.mp4', { type: 'video/mp4' });
+                if (out.size > VIDEO_MAX_BYTES) { alert(window.zT('الفيديو ما زال أكبر من 30 ميغابايت، قصّر المدة.', 'Still larger than 30 MB, choose a shorter range.')); go.disabled = false; rs.disabled = false; re.disabled = false; prog.style.display = 'none'; sync(); return; }
+                const nurl = URL.createObjectURL(out);
+                ov.remove();
+                acceptVideo(out, nurl, { duration: len, w: meta.w, h: meta.h });
+            } catch (e) {
+                console.error('[ZELO] trim:', e);
+                try { await VT.clean(); } catch (x) {}
+                alert(window.zT('تعذّر قص الفيديو.', 'Could not trim the video.'));
+                go.disabled = false; rs.disabled = false; re.disabled = false; prog.style.display = 'none'; sync();
+            } finally {
+                try { if (lis && lis.remove) lis.remove(); } catch (e) {}
+            }
+        };
     }
 
     window.closeCompose = function() {
