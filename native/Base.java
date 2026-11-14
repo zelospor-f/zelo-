@@ -383,7 +383,7 @@ abstract class Base extends Activity {
         String ln;
         while ((ln = r.readLine()) != null) sb.append(ln);
         r.close();
-        if (code >= 400) throw new Exception("HTTP " + code + " " + sb);
+        if (code >= 400) { banCheck(sb.toString()); throw new Exception("HTTP " + code + " " + sb); }
         return sb.toString();
     }
 
@@ -396,6 +396,15 @@ abstract class Base extends Activity {
     }
 
     // يرسل طلبًا ويعيد نص الرد (لاستدعاء دوال القاعدة rpc)
+    // من admin-reports.js: رسالة مفهومة بدل account_banned عند التفاعل وأنت محظور
+    protected void banCheck(final String t) {
+        if (t != null && t.indexOf("account_banned") >= 0) {
+            runOnUiThread(new Runnable() {
+                @Override public void run() { Toast.makeText(Base.this, "حسابك موقوف حاليًا عن النشر والتفاعل، يمكنك التصفح فقط. تفاصيل الإيقاف في ملفك الشخصي.", Toast.LENGTH_LONG).show(); }
+            });
+        }
+    }
+
     protected String rpc(String fn, String body) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(url + "/rest/v1/rpc/" + fn).openConnection();
         c.setRequestMethod("POST");
@@ -412,7 +421,7 @@ abstract class Base extends Activity {
         String ln;
         while ((ln = r.readLine()) != null) sb.append(ln);
         r.close();
-        if (code >= 400) throw new Exception(sb.toString().length() > 0 ? sb.toString() : ("HTTP " + code));
+        if (code >= 400) { banCheck(sb.toString()); throw new Exception(sb.toString().length() > 0 ? sb.toString() : ("HTTP " + code)); }
         return sb.toString();
     }
 
@@ -439,6 +448,7 @@ abstract class Base extends Activity {
                 while ((ln = r.readLine()) != null) sb.append(ln);
                 msg = sb.toString();
             } catch (Exception ignore) {}
+            banCheck(msg);
             throw new Exception("HTTP " + code + " " + msg);
         }
     }

@@ -1496,6 +1496,7 @@ public class Home extends Profile {
         t0 = System.currentTimeMillis();
         loadBalance();
         loadPage();
+        checkMyBan();
     }
 
     protected void loadPage() {

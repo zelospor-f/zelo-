@@ -65,7 +65,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 
-abstract class Profile extends Boost {
+abstract class Profile extends AdminReports {
     // ---------------- الملف الشخصي ----------------
     protected String pjson = "";
 
@@ -258,6 +258,7 @@ abstract class Profile extends Boost {
 
         LinearLayout hdr = new LinearLayout(this);
         hdr.setOrientation(LinearLayout.VERTICAL);
+        if (mine) { View bn = banNoteView(); if (bn != null) hdr.addView(bn); }
 
         // الغلاف
         FrameLayout cov = new FrameLayout(this);
@@ -437,6 +438,19 @@ abstract class Profile extends Boost {
                 tiles.addView(profTile(ti[q], tl[q], ta[q]), tlp);
             }
             hdr.addView(tiles);
+            if (isAdmin()) {
+                TextView adm = tv(GOLD, 14, true);
+                adm.setText("🚩 الإدارة — البلاغات والحظر");
+                adm.setGravity(Gravity.CENTER);
+                adm.setBackground(box(0x26F5C35A, 0x80F5C35A, 14));
+                adm.setPadding(dp(10), dp(12), dp(10), dp(12));
+                adm.setOnClickListener(new View.OnClickListener() {
+                    @Override public void onClick(View v) { openReportsPanel(); }
+                });
+                LinearLayout.LayoutParams admLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                admLp.setMargins(dp(14), dp(8), dp(14), 0);
+                hdr.addView(adm, admLp);
+            }
         }
 
         // التبويبات
