@@ -65,7 +65,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 
-public class Home extends Profile {
+public class Home extends FollowList {
     // ---------------- شاشة الفيديو الواحدة ----------------
     protected Dialog vDlg;
     protected List<JSONObject> vList = new ArrayList<JSONObject>();
@@ -411,9 +411,9 @@ public class Home extends Profile {
     }
 
     // ---------------- الانتقال إلى صفحات الويب ----------------
+    // لم يعد هناك ويب: أي إجراء غير مُحوَّل يُظهر رسالة بدل إغلاق الشاشة
     protected void goWeb(String action) {
-        pendingAction = action;
-        finish();
+        toast(L("هذه الميزة غير متاحة بعد", "This feature is not available yet"));
     }
 
     // ---------------- بطاقة المنشور ----------------
@@ -600,7 +600,7 @@ public class Home extends Profile {
             labels.add(fl ? "إلغاء متابعة " + tag : "متابعة " + tag); icons.add(fl ? 19 : 18); danger.add(false); acts.add(new Runnable() { public void run() { toggleFollowUser(author); } });
             labels.add("كتم " + tag); icons.add(20); danger.add(false); acts.add(new Runnable() { public void run() { muteUser(author); } });
             labels.add("حظر " + tag); icons.add(21); danger.add(true); acts.add(new Runnable() { public void run() { blockUser(author, tag); } });
-            labels.add("إبلاغ"); icons.add(16); danger.add(true); acts.add(new Runnable() { public void run() { goWeb("report:" + pid); } });
+            labels.add("إبلاغ"); icons.add(16); danger.add(true); acts.add(new Runnable() { public void run() { openReport("post", String.valueOf(pid)); } });
             labels.add("التفاعلات"); icons.add(3); danger.add(false); acts.add(new Runnable() { public void run() { showEngagements(o); } });
             labels.add(sv ? "إزالة من المحفوظات" : "حفظ المنشور"); icons.add(4); danger.add(false); acts.add(new Runnable() { public void run() { toggleSave(o); } });
             labels.add("مشاركة الرابط"); icons.add(5); danger.add(false); acts.add(new Runnable() { public void run() { shareLink(o); } });
@@ -1649,7 +1649,7 @@ public class Home extends Profile {
         l.setPadding(0, dp(4), 0, 0);
         c.addView(l);
         c.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else if ("radar".equals(action)) openFanRadar(); else if ("tonight".equals(action) || "live".equals(action)) openTodayMatches(action); else goWeb(action); }
+            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else if ("radar".equals(action)) openFanRadar(); else if ("earn".equals(action)) openChallengesRanking(); else if ("tonight".equals(action) || "live".equals(action)) openTodayMatches(action); else goWeb(action); }
         });
         return c;
     }
@@ -1699,6 +1699,14 @@ public class Home extends Profile {
         return t;
     }
 
+    private boolean homeBuilt = false;
+    private final Runnable sessionTick = new Runnable() {
+        @Override public void run() {
+            pool.execute(new Runnable() { @Override public void run() { refreshSession(); } });
+            timerH.postDelayed(this, 40L * 60 * 1000);
+        }
+    };
+
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -1711,10 +1719,82 @@ public class Home extends Profile {
         linkTpl = getIntent().getStringExtra("linkTpl");
         String pj0 = getIntent().getStringExtra("pjson");
         pjson = pj0 == null ? "" : pj0;
+        if (url == null || key == null) { url = SB_URL; key = SB_KEY; }
+        if (linkTpl == null) linkTpl = "https://zelospor-f.github.io/zelo-/?post={id}";
+        getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(NAVY));
+        if (uid != null && token != null) { buildHome(); return; }
+        // بدون ويب: الجلسة من التخزين المحلي أو شاشة الدخول
+        if (restoreSession()) {
+            pool.execute(new Runnable() {
+                @Override public void run() {
+                    boolean ok = refreshSession();
+                    final JSONObject row = ok || token != null ? loadUserRow(uid) : null;
+                    runOnUiThread(new Runnable() { @Override public void run() {
+                        if (token == null || (row == null && !restoreSession())) { clearSession(); startLogin(); return; }
+                        applyUserRow(row);
+                        buildHome();
+                    } });
+                }
+            });
+        } else startLogin();
+    }
+
+    // يملأ بيانات المستخدم من صف users (بدل ما كان يمرّره الويب)
+    protected void applyUserRow(JSONObject r) {
+        try {
+            JSONObject p = new JSONObject();
+            if (r != null) {
+                String na = r.isNull("nickname_ar") ? "" : r.optString("nickname_ar"), ne = r.isNull("nickname_en") ? "" : r.optString("nickname_en");
+                String un = r.isNull("username") ? "" : r.optString("username");
+                String nick = isAr() ? (na.length() > 0 ? na : ne) : (ne.length() > 0 ? ne : na);
+                uname = nick.length() > 0 ? nick : un;
+                String ph = r.isNull("photo_url") ? "" : r.optString("photo_url");
+                uavatar = ph;
+                p.put("nickname", nick); p.put("nickname_ar", na); p.put("nickname_en", ne); p.put("username", un);
+                p.put("bio", r.isNull("bio") ? "" : r.optString("bio"));
+                p.put("dob", r.isNull("dob") ? "" : r.optString("dob"));
+                p.put("dobVisible", r.optBoolean("dob_visible", false)); p.put("dob_visible", r.optBoolean("dob_visible", false));
+                p.put("photoUrl", ph); p.put("photo_url", ph);
+                p.put("badgeClub", r.isNull("badge_club") ? "" : r.optString("badge_club"));
+                p.put("selected_clubs", r.optJSONArray("selected_clubs") == null ? new JSONArray() : r.optJSONArray("selected_clubs"));
+            }
+            pjson = p.toString();
+        } catch (Exception ignore) {}
+    }
+
+    protected void startLogin() {
+        showAuth(new Runnable() { @Override public void run() {
+            pool.execute(new Runnable() { @Override public void run() {
+                final JSONObject row = loadUserRow(uid);
+                runOnUiThread(new Runnable() { @Override public void run() { applyUserRow(row); buildHome(); } });
+            } });
+        } });
+        handleAuthIntent(getIntent());
+    }
+
+    // رابط عميق أثناء تشغيل التطبيق: عودة Google من المتصفح أو رابط دعوة
+    @Override protected void onNewIntent(Intent in) {
+        super.onNewIntent(in);
+        setIntent(in);
+        captureReferral(in);
+        handleAuthIntent(in);
+    }
+
+    // تسجيل الخروج: يمسح الجلسة ويعيد شاشة الدخول
+    protected void doLogout() {
+        signOutThen(new Runnable() { @Override public void run() { getIntent().removeExtra("uid"); getIntent().removeExtra("token"); recreate(); } });
+    }
+
+    protected void buildHome() {
+        if (homeBuilt) return;
+        homeBuilt = true;
+        timerH.postDelayed(sessionTick, 40L * 60 * 1000);
         captureReferral(getIntent());
+        captureInstallReferrer();
         startNotifBadge();
         timerH.postDelayed(new Runnable() { @Override public void run() { startPush(); } }, 3000);
         timerH.postDelayed(startBanner, 4000);
+        bpPreload();
 
         getSharedPreferences("zn", MODE_PRIVATE).edit().putInt("boot", 1).apply();
 
@@ -1825,14 +1905,14 @@ public class Home extends Profile {
         });
         FrameLayout listBox = new FrameLayout(this);
         listBox.addView(lv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        // زر "+" لكتابة منشور (يفتح نافذة الكتابة في الويب)
+        // زر "+" لكتابة منشور (يفتح نافذة الكتابة)
         TextView fab = tv(Color.WHITE, 30, false);
         fab.setText("+");
         fab.setGravity(Gravity.CENTER);
         fab.setBackground(oval(0xFF2C4BB5, 0));
         fab.setElevation(dp(6));
         fab.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { goWeb("compose"); }
+            @Override public void onClick(View v) { openCompose(); }
         });
         FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.BOTTOM | Gravity.LEFT);
         flp.setMargins(dp(18), 0, 0, dp(18));
@@ -1867,5 +1947,70 @@ public class Home extends Profile {
     protected void onDestroy() {
         super.onDestroy();
         pool.shutdownNow();
+    }
+
+    // ===== من home.js: الإبلاغ عن منشور/رد + فتح منشور من إشعار =====
+    protected void openReport(final String type, final String id) {
+        final String[][] rs = {
+            { "spam", "📢 محتوى مزعج أو إعلاني", "📢 Spam" }, { "abuse", "😡 إساءة أو تحرّش", "😡 Abuse or harassment" },
+            { "hate", "⚠️ خطاب كراهية", "⚠️ Hateful content" }, { "violence", "🩸 عنف أو محتوى صادم", "🩸 Violent or graphic content" },
+            { "adult", "🔞 محتوى للبالغين", "🔞 Adult content" }, { "misinfo", "❓ معلومات مضللة", "❓ Misinformation" },
+            { "other", "… سبب آخر", "… Something else" }
+        };
+        String[] labels = new String[rs.length];
+        for (int i = 0; i < rs.length; i++) labels[i] = L(rs[i][1], rs[i][2]);
+        new AlertDialog.Builder(this).setTitle(L("ما سبب البلاغ؟", "Why are you reporting this?")).setItems(labels, new DialogInterface.OnClickListener() {
+            @Override public void onClick(DialogInterface d, int w) {
+                if ("other".equals(rs[w][0])) openReportText(type, id); else submitReport(type, id, rs[w][0]);
+            }
+        }).show();
+    }
+
+    private void openReportText(final String type, final String id) {
+        final EditText t = new EditText(this);
+        t.setHint(L("اشرح المشكلة باختصار…", "Briefly explain…"));
+        t.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(300) });
+        t.setMinLines(3);
+        new AlertDialog.Builder(this).setTitle(L("اكتب سبب البلاغ", "Describe the problem")).setView(t)
+            .setPositiveButton(L("إرسال", "Send"), new DialogInterface.OnClickListener() {
+                @Override public void onClick(DialogInterface d, int w) {
+                    String x = t.getText().toString().trim();
+                    if (x.length() < 3) { toast(L("اكتب 3 أحرف على الأقل", "Write at least 3 characters")); return; }
+                    submitReport(type, id, "other: " + x);
+                }
+            }).setNegativeButton(L("إلغاء", "Cancel"), null).show();
+    }
+
+    private void submitReport(final String type, final String id, final String reason) {
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                boolean ok = true; String err = "";
+                try {
+                    JSONObject o = new JSONObject();
+                    o.put("reporter_id", uid); o.put("target_type", type); o.put("target_id", id); o.put("reason", reason);
+                    send("POST", "post_reports", "[" + o.toString() + "]");
+                } catch (Exception e) { err = String.valueOf(e.getMessage()); ok = err.indexOf("23505") >= 0; }
+                final boolean fok = ok; final String ferr = err;
+                runOnUiThread(new Runnable() { @Override public void run() { toast(fok ? L("تم استلام بلاغك، شكرًا لك", "Report received. Thank you") : ferr); } });
+            }
+        });
+    }
+
+    // arg = pid أو pid:cid
+    protected void openPostById(final String arg) {
+        final String pid = arg.indexOf(':') > 0 ? arg.substring(0, arg.indexOf(':')) : arg;
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                JSONObject p = null;
+                try {
+                    JSONArray a = new JSONArray(get("posts?select=id,user_id,author_name,content,created_at,image_url,video_url,video_path,topic_type,topic_name,topic_name_b&id=eq." + pid + "&limit=1"));
+                    if (a.length() > 0) p = a.getJSONObject(0);
+                } catch (Exception ignore) {}
+                final JSONObject fp = p;
+                runOnUiThread(new Runnable() { @Override public void run() {
+                    if (fp == null) toast(L("المنشور غير متاح", "Post not available")); else openComments(fp);
+                } });
+            }
+        });
     }
 }
