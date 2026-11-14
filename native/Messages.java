@@ -307,7 +307,7 @@ abstract class Messages extends Login {
         rt.setGravity(Gravity.CENTER); rt.setPadding(0, dp(30), 0, dp(10));
         dmRoomsPane.addView(rt);
         TextView ro = gpBtn(L("فتح الغرف", "Open rooms"), false, true);
-        ro.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { goWeb("rooms"); } });
+        ro.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openRoomsHub(); } });
         dmRoomsPane.addView(ro, lpm(30, 0, 30, 0));
         wrap.addView(dmRoomsPane);
 

@@ -65,9 +65,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 
-abstract class Profile extends Push {
+abstract class Profile extends Rooms {
     // ---------------- الملف الشخصي ----------------
-    protected String pjson = "";
 
     @Override protected void onAvatarChanged(String photo) {
         try { JSONObject o = pjson.length() > 0 ? new JSONObject(pjson) : new JSONObject(); o.put("photo_url", photo); pjson = o.toString(); } catch (Exception ignore) {}
@@ -281,7 +280,7 @@ abstract class Profile extends Push {
         cLeft.setGravity(Gravity.CENTER);
         cLeft.setBackground(oval(0x66000000, 0));
         cLeft.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if (mine) goWeb("drawer"); else d.dismiss(); }
+            @Override public void onClick(View v) { if (mine) openSideDrawer(); else d.dismiss(); }
         });
         FrameLayout.LayoutParams l1 = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.START);
         l1.setMargins(dp(12), dp(12), dp(12), 0);

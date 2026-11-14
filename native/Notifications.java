@@ -270,7 +270,7 @@ abstract class Notifications extends NftMarket {
     }
     protected void ntInvite(final JSONObject n, final String roomId) {
         new AlertDialog.Builder(this).setMessage(L("هل تريد قبول الدعوة؟", "Accept this invitation?"))
-            .setPositiveButton(L("قبول", "Accept"), new DialogInterface.OnClickListener() { @Override public void onClick(DialogInterface d, int w) { ntRead(n.optString("id")); goWeb("acceptinvite:" + roomId); } })
+            .setPositiveButton(L("قبول", "Accept"), new DialogInterface.OnClickListener() { @Override public void onClick(DialogInterface d, int w) { ntRead(n.optString("id")); acceptRoomInvite(roomId); } })
             .setNegativeButton(L("رفض", "Decline"), new DialogInterface.OnClickListener() { @Override public void onClick(DialogInterface d, int w) { ntRead(n.optString("id")); if (ntDlg != null) ntLoad(); } })
             .show();
     }
@@ -280,7 +280,7 @@ abstract class Notifications extends NftMarket {
         int i = act.indexOf(':');
         String kind = i < 0 ? act : act.substring(0, i), arg = i < 0 ? "" : act.substring(i + 1);
         if (ntDlg != null) { try { ntDlg.dismiss(); } catch (Exception ignore) {} }
-        if (kind.equals("room")) goWeb("joinroom:" + arg);
+        if (kind.equals("room")) joinRoomByCode(arg);
         else if (kind.equals("match")) openMatchRoom(arg);
         else if (kind.equals("user")) openProfile(arg);
         else if (kind.equals("post")) goWeb("post:" + arg);

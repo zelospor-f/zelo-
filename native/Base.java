@@ -89,6 +89,9 @@ abstract class Base extends Activity {
     protected abstract void openMatchesPage();
     protected abstract void openMessagesPage();
     protected abstract void openNotificationsPage();
+    protected abstract void openRoomsHub();
+    protected abstract void joinRoomByCode(String code);
+    protected abstract void acceptRoomInvite(String roomId);
     protected abstract void openVideosTab();
     protected abstract View makeRow();
     protected abstract void toggleFollowUser(final String target);
@@ -149,6 +152,7 @@ abstract class Base extends Activity {
     protected BaseAdapter adapter;
     protected TextView status, balance;
     protected String url, key, token, uid, uname, uavatar, linkTpl;
+    protected String pjson = "";
     protected boolean loading = false, endReached = false;
     protected int offset = 0;
     protected long t0;
