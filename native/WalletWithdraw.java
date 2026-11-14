@@ -72,7 +72,7 @@ import org.json.JSONObject;
 // WalletWithdraw.java — محوَّل من wallet-withdraw.js (صفحة «محفظتي» وسحب USDT BEP20)
 // نفس الشروط ونفس دوال القاعدة. زر «اربح» يفتح صفحة الإعلانات (ويب حتى يُحوَّل ads.js).
 // ============================================================
-abstract class WalletWithdraw extends Store {
+abstract class WalletWithdraw extends Ads {
     protected static final String[][] WW_TITLES = {
         { "verified", "تأكيد البريد/الهاتف", "Email/phone verification" }, { "account_age", "عمر الحساب", "Account age" }, { "invites", "الدعوات الناجحة", "Successful invites" },
         { "min_balance", "الحد الأدنى للسحب", "Minimum withdrawal" }, { "hold", "فترة التعليق", "Holding period" }, { "amount", "المبلغ المطلوب", "Requested amount" },
@@ -264,7 +264,7 @@ abstract class WalletWithdraw extends Store {
             col.addView(lb);
             col.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
                 if (k == 0) { if (wwDlg != null) wwDlg.dismiss(); openStorePage(); }
-                else if (k == 1) { if (wwDlg != null) wwDlg.dismiss(); goWeb("earn"); }
+                else if (k == 1) { if (wwDlg != null) wwDlg.dismiss(); openAdsPage(); }
                 else if (k == 2) { if (wwScroll != null && wwSecW != null) wwScroll.smoothScrollTo(0, wwSecW.getTop()); }
                 else { if (wwScroll != null && wwSecH != null) wwScroll.smoothScrollTo(0, wwSecH.getTop()); }
             } });

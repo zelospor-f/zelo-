@@ -1714,6 +1714,7 @@ public class Home extends Profile {
         captureReferral(getIntent());
         startNotifBadge();
         timerH.postDelayed(new Runnable() { @Override public void run() { startPush(); } }, 3000);
+        timerH.postDelayed(startBanner, 4000);
 
         getSharedPreferences("zn", MODE_PRIVATE).edit().putInt("boot", 1).apply();
 

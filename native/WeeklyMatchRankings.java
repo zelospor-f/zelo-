@@ -231,7 +231,7 @@ abstract class WeeklyMatchRankings extends WalletWithdraw {
         rows.setOrientation(LinearLayout.VERTICAL);
         rows.setBackground(wmCard(18));
         rows.addView(wmRow("⚽", L("تنبّأ بنتائج المباريات", "Predict match results"), L("احصل على نقاط لكل توقع صحيح", "Earn points for each correct pick"), L("حتى 3 كورة", "Up to 3 Kora"), false, new Runnable() { @Override public void run() { openPredictList(); } }));
-        rows.addView(wmRow("🎯", L("شاهد إعلانًا", "Watch an ad"), L("نقاط مكافأة بعد كل إعلان", "Bonus points after each ad"), L("مكافأة", "Bonus"), false, new Runnable() { @Override public void run() { goWeb("earn"); } }));
+        rows.addView(wmRow("🎯", L("شاهد إعلانًا", "Watch an ad"), L("نقاط مكافأة بعد كل إعلان", "Bonus points after each ad"), L("مكافأة", "Bonus"), false, new Runnable() { @Override public void run() { openAdsPage(); } }));
         rows.addView(wmRow("❓", L("خمّن اللاعب", "Guess the player"), L("لغز جديد كل يوم واكسب نقاطاً", "A new puzzle every day"), L("كل يوم", "Daily"), false, new Runnable() { @Override public void run() { openGuessPlayer(); } }));
         rows.addView(wmRow("👥", L("ادعُ أصدقاءك", "Invite friends"), L("لكل صديق ينضم ويتنبأ، احصل على نقاط", "Earn points for each friend who joins"), L("لكل صديق", "Per friend"), false, new Runnable() { @Override public void run() { drInvite(); } }));
         rows.addView(wmRow("⭐", L("انشر واستقبل الدعم", "Post and receive support"), L("فيديوهاتك ومنشوراتك يدعمها المتابعون بالنقاط", "Followers support your posts with points"), L("من المتابعين", "From followers"), true, new Runnable() { @Override public void run() { pgClose(); } }));
