@@ -442,7 +442,15 @@ jobs:
           import android.content.Context;
           import android.content.DialogInterface;
           import android.content.Intent;
+          import android.content.SharedPreferences;
           import android.graphics.Bitmap;
+          import android.graphics.Canvas;
+          import android.graphics.ColorFilter;
+          import android.graphics.Paint;
+          import android.graphics.Path;
+          import android.graphics.RectF;
+          import android.graphics.PixelFormat;
+          import android.graphics.drawable.Drawable;
           import android.graphics.BitmapFactory;
           import android.graphics.Color;
           import android.graphics.Outline;
@@ -466,6 +474,8 @@ jobs:
           import android.widget.LinearLayout;
           import android.widget.ListView;
           import android.widget.TextView;
+          import android.widget.ScrollView;
+          import android.widget.SeekBar;
           import android.widget.Toast;
           import android.widget.VideoView;
           import android.widget.MediaController;
@@ -492,6 +502,13 @@ jobs:
           public class NativeFeedActivity extends Activity {
               // يضبطها هذا الشاشة عند الرجوع إلى صفحة من صفحات الويب (يقرؤها NativeFeedPlugin)
               public static String pendingAction = null;
+              // إشعارات تنتظر الرجوع إلى الويب لإرسالها: {kind, target, postId, text, amount}
+              public static final List<String[]> pendingNotify = new ArrayList<String[]>();
+              private void queueNotify(String kind, String target, String postId, String text, String amount) {
+                  if (target == null || target.length() == 0 || target.equals(uid)) return;
+                  synchronized (pendingNotify) { pendingNotify.add(new String[] { kind, target, postId, text == null ? "" : text, amount == null ? "" : amount }); }
+              }
+              private final Map<String, long[]> sup = new HashMap<String, long[]>(); // {net, supporters}
 
               private static final int GOLD = 0xFFF5C35A;
               private static final int NAVY = 0xFF0A1033;
@@ -507,6 +524,30 @@ jobs:
               private final LruCache<String, Bitmap> cache = new LruCache<String, Bitmap>(24 * 1024 * 1024) {
                   @Override protected int sizeOf(String k, Bitmap v) { return v.getByteCount(); }
               };
+              private final Set<String> reposted = new HashSet<String>();
+              private final Set<String> saved = new HashSet<String>();
+              private final Set<String> viewedMine = new HashSet<String>();
+              private final Set<String> viewedSession = new HashSet<String>();
+              private final Set<String> followSet = new HashSet<String>();
+              private final Set<String> muteSet = new HashSet<String>();
+              private final Set<String> blockSet = new HashSet<String>();
+              private final Set<String> hiddenSet = new HashSet<String>();
+              private final Map<String, JSONObject> preds = new HashMap<String, JSONObject>();
+              private final Map<String, long[]> ropes = new HashMap<String, long[]>(); // {n0, n1, mine}
+              private boolean metaLoaded = false;
+              private static final Map<String, String[]> TOPICS = new HashMap<String, String[]>();
+              static {
+                  TOPICS.put("player", new String[] { "لاعب", "يستحق", "لا يستحق" });
+                  TOPICS.put("coach", new String[] { "مدرب", "أبقوه", "أقيلوه" });
+                  TOPICS.put("referee", new String[] { "حكم", "قرار صحيح", "قرار خاطئ" });
+                  TOPICS.put("club", new String[] { "نادٍ", "أفخر به", "أنتقده" });
+                  TOPICS.put("league", new String[] { "دوري", "قوي", "مبالغ فيه" });
+                  TOPICS.put("national", new String[] { "منتخب", "جاهز", "غير جاهز" });
+                  TOPICS.put("match", new String[] { "مباراة", "عادلة", "ظالمة" });
+                  TOPICS.put("transfer", new String[] { "صفقة", "ناجحة", "فاشلة" });
+                  TOPICS.put("compare", new String[] { "مقارنة", "", "" });
+                  TOPICS.put("prediction", new String[] { "توقع", "سيحدث", "لن يحدث" });
+              }
               private BaseAdapter adapter;
               private TextView status, balance;
               private String url, key, token, uid, uname, uavatar, linkTpl;
@@ -516,8 +557,86 @@ jobs:
 
               private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density); }
 
+              // أيقونات مرسومة بنفس أشكال الصفحة القديمة (0 تعليق، 1 تمريرة، 2 هدف، 3 مشاهدات، 4 حفظ، 5 مشاركة)
+              private static class Ic extends Drawable {
+                  final int type, color, px;
+                  final boolean on;
+                  final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+                  Ic(int type, int color, boolean on, int px) { this.type = type; this.color = color; this.on = on; this.px = px; }
+                  @Override public int getIntrinsicWidth() { return px; }
+                  @Override public int getIntrinsicHeight() { return px; }
+                  @Override public void setAlpha(int a) {}
+                  @Override public void setColorFilter(ColorFilter f) {}
+                  @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
+                  @Override public void draw(Canvas c) {
+                      c.save();
+                      c.translate(getBounds().left, getBounds().top);
+                      float sc = px / 24f;
+                      c.scale(sc, sc);
+                      p.setStyle(Paint.Style.STROKE);
+                      p.setStrokeWidth(type == 2 ? 1.7f : 1.8f);
+                      p.setStrokeCap(Paint.Cap.ROUND);
+                      p.setStrokeJoin(Paint.Join.ROUND);
+                      p.setColor(color);
+                      Path a = new Path();
+                      if (type == 0) {
+                          a.moveTo(21, 11.5f); a.cubicTo(21, 15.64f, 17.2f, 19, 12.5f, 19);
+                          a.cubicTo(11.6f, 19, 10.7f, 18.88f, 9.9f, 18.65f); a.lineTo(5, 21); a.lineTo(6.4f, 17.4f);
+                          a.cubicTo(5.5f, 16.3f, 4.5f, 14.5f, 4.5f, 12.5f); a.cubicTo(4.5f, 8.36f, 8.3f, 5, 13, 5);
+                          a.cubicTo(17.7f, 5, 21, 8.36f, 21, 11.5f); a.close();
+                          c.drawPath(a, p);
+                      } else if (type == 1) {
+                          RectF ov = new RectF(4, 4, 20, 20);
+                          a.arcTo(ov, 180, 133.5f);
+                          c.drawPath(a, p);
+                          Path h1 = new Path();
+                          h1.moveTo(18, 3); h1.lineTo(18, 7); h1.lineTo(14, 7);
+                          c.drawPath(h1, p);
+                          c.drawCircle(12, 12, 2.6f, p);
+                          Path a2 = new Path();
+                          a2.arcTo(ov, 0, 133.5f);
+                          c.drawPath(a2, p);
+                          Path h2 = new Path();
+                          h2.moveTo(6, 21); h2.lineTo(6, 17); h2.lineTo(10, 17);
+                          c.drawPath(h2, p);
+                      } else if (type == 2) {
+                          if (on) { p.setStyle(Paint.Style.FILL_AND_STROKE); }
+                          c.drawCircle(12, 12, 9, p);
+                          p.setStyle(Paint.Style.STROKE);
+                          p.setColor(on ? 0xFF0A1033 : color);
+                          a.moveTo(12, 8.2f); a.lineTo(15.2f, 10.5f); a.lineTo(14, 14.2f); a.lineTo(10, 14.2f); a.lineTo(8.8f, 10.5f); a.close();
+                          c.drawPath(a, p);
+                          c.drawLine(12, 8.2f, 12, 3.2f, p); c.drawLine(15.2f, 10.5f, 19.8f, 9, p);
+                          c.drawLine(14, 14.2f, 16.8f, 18.1f, p); c.drawLine(10, 14.2f, 7.2f, 18.1f, p);
+                          c.drawLine(8.8f, 10.5f, 4.2f, 9, p);
+                      } else if (type == 3) {
+                          c.drawLine(18, 20, 18, 10, p); c.drawLine(12, 20, 12, 4, p); c.drawLine(6, 20, 6, 14, p);
+                      } else if (type == 4) {
+                          a.moveTo(19, 21); a.lineTo(12, 16); a.lineTo(5, 21); a.lineTo(5, 5); a.quadTo(5, 3, 7, 3);
+                          a.lineTo(17, 3); a.quadTo(19, 3, 19, 5); a.close();
+                          if (on) p.setStyle(Paint.Style.FILL_AND_STROKE);
+                          c.drawPath(a, p);
+                      } else {
+                          a.moveTo(4, 12); a.lineTo(4, 20); a.quadTo(4, 22, 6, 22); a.lineTo(18, 22); a.quadTo(20, 22, 20, 20); a.lineTo(20, 12);
+                          c.drawPath(a, p);
+                          Path b = new Path();
+                          b.moveTo(16, 6); b.lineTo(12, 2); b.lineTo(8, 6);
+                          c.drawPath(b, p);
+                          c.drawLine(12, 2, 12, 15, p);
+                      }
+                      c.restore();
+                  }
+              }
+
+              private void setIc(TextView t, int type, int color, boolean on) {
+                  t.setCompoundDrawablesRelativeWithIntrinsicBounds(new Ic(type, color, on, dp(19)), null, null, null);
+                  t.setCompoundDrawablePadding(dp(5));
+                  t.setTextColor(color);
+              }
+
               private static class Holder {
-                  TextView avatar, name, time, body, video, heart, cm, rp, vw, more;
+                  TextView avatar, name, time, body, video, heart, cm, rp, vw, sv, sh, more;
+                  LinearLayout rope, pred, supbar;
                   ImageView avImg, img;
               }
 
@@ -577,16 +696,41 @@ jobs:
               }
 
               private void send(String method, String path, String body) throws Exception {
-                  sendUrl(method, url + "/rest/v1/" + path, body);
+                  sendUrl(method, url + "/rest/v1/" + path, body, "return=minimal");
               }
 
               private void sendUrl(String method, String full, String body) throws Exception {
+                  sendUrl(method, full, body, "return=minimal");
+              }
+
+              // يرسل طلبًا ويعيد نص الرد (لاستدعاء دوال القاعدة rpc)
+              private String rpc(String fn, String body) throws Exception {
+                  HttpURLConnection c = (HttpURLConnection) new URL(url + "/rest/v1/rpc/" + fn).openConnection();
+                  c.setRequestMethod("POST");
+                  c.setRequestProperty("apikey", key);
+                  c.setRequestProperty("Authorization", "Bearer " + token);
+                  c.setRequestProperty("Content-Type", "application/json");
+                  c.setConnectTimeout(15000);
+                  c.setReadTimeout(20000);
+                  c.setDoOutput(true);
+                  c.getOutputStream().write(body.getBytes("UTF-8"));
+                  int code = c.getResponseCode();
+                  BufferedReader r = new BufferedReader(new InputStreamReader(code >= 400 ? c.getErrorStream() : c.getInputStream(), "UTF-8"));
+                  StringBuilder sb = new StringBuilder();
+                  String ln;
+                  while ((ln = r.readLine()) != null) sb.append(ln);
+                  r.close();
+                  if (code >= 400) throw new Exception(sb.toString().length() > 0 ? sb.toString() : ("HTTP " + code));
+                  return sb.toString();
+              }
+
+              private void sendUrl(String method, String full, String body, String prefer) throws Exception {
                   HttpURLConnection c = (HttpURLConnection) new URL(full).openConnection();
                   c.setRequestMethod(method);
                   c.setRequestProperty("apikey", key);
                   c.setRequestProperty("Authorization", "Bearer " + token);
                   c.setRequestProperty("Content-Type", "application/json");
-                  c.setRequestProperty("Prefer", "return=minimal");
+                  c.setRequestProperty("Prefer", prefer);
                   c.setConnectTimeout(15000);
                   c.setReadTimeout(20000);
                   if (body != null) {
@@ -788,6 +932,15 @@ jobs:
                   });
                   row.addView(h.video, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
 
+                  h.rope = new LinearLayout(this);
+                  h.rope.setOrientation(LinearLayout.VERTICAL);
+                  h.rope.setPadding(0, dp(8), 0, 0);
+                  row.addView(h.rope);
+                  h.pred = new LinearLayout(this);
+                  h.pred.setOrientation(LinearLayout.VERTICAL);
+                  h.pred.setPadding(0, dp(8), 0, 0);
+                  row.addView(h.pred);
+
                   LinearLayout acts = new LinearLayout(this);
                   acts.setOrientation(LinearLayout.HORIZONTAL);
                   acts.setPadding(0, dp(6), 0, 0);
@@ -795,11 +948,31 @@ jobs:
                   h.cm = tv(MUTED, 15, false);
                   h.rp = tv(MUTED, 15, false);
                   h.vw = tv(MUTED, 15, false);
-                  TextView[] all = new TextView[] { h.heart, h.cm, h.rp, h.vw };
+                  h.sv = tv(MUTED, 15, false);
+                  h.sh = tv(MUTED, 15, false);
+                  TextView[] all = new TextView[] { h.cm, h.rp, h.heart, h.vw, h.sv, h.sh };
                   for (int q = 0; q < all.length; q++) {
-                      all[q].setPadding(dp(8), dp(10), dp(18), dp(10));
+                      all[q].setPadding(dp(6), dp(10), dp(12), dp(10));
                       acts.addView(all[q]);
                   }
+                  h.rp.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          Object t = v.getTag();
+                          if (t instanceof Integer) toggleRepost((Integer) t);
+                      }
+                  });
+                  h.sv.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          Object t = v.getTag();
+                          if (t instanceof Integer) toggleSave((Integer) t);
+                      }
+                  });
+                  h.sh.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          Object t = v.getTag();
+                          if (t instanceof Integer) shareLink(items.get((Integer) t));
+                      }
+                  });
                   h.heart.setOnClickListener(new View.OnClickListener() {
                       @Override public void onClick(View v) {
                           Object t = v.getTag();
@@ -813,6 +986,17 @@ jobs:
                       }
                   });
                   row.addView(acts);
+                  h.supbar = new LinearLayout(this);
+                  h.supbar.setGravity(Gravity.CENTER_VERTICAL);
+                  h.supbar.setPadding(dp(12), dp(8), dp(8), dp(8));
+                  GradientDrawable sbg = new GradientDrawable();
+                  sbg.setColor(0x14F5C35A);
+                  sbg.setCornerRadius(dp(16));
+                  sbg.setStroke(dp(1), 0x2EF5C35A);
+                  h.supbar.setBackground(sbg);
+                  LinearLayout.LayoutParams sbl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  sbl.setMargins(0, dp(6), 0, 0);
+                  row.addView(h.supbar, sbl);
 
                   w.addView(row, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                   return w;
@@ -823,17 +1007,33 @@ jobs:
               // ---------------- القوائم والتفاعل ----------------
               private void showMenu(final int idx) {
                   final JSONObject o = items.get(idx);
-                  final boolean mine = uid != null && uid.equals(o.optString("user_id", ""));
+                  final String author = o.optString("user_id", "");
+                  final boolean mine = uid != null && uid.equals(author);
+                  final String tag = o.optString("author_name", "هذا المستخدم");
+                  final String pid = String.valueOf(o.optLong("id"));
                   final List<String> labels = new ArrayList<String>();
-                  labels.add("🔗 مشاركة الرابط");
-                  if (mine) { labels.add("✏️ تعديل النص"); labels.add("🗑 حذف المنشور"); }
+                  final List<Runnable> acts = new ArrayList<Runnable>();
+                  if (mine) {
+                      labels.add("✏️ تعديل النص"); acts.add(new Runnable() { public void run() { editPost(idx); } });
+                      labels.add("🚀 تعزيز المنشور"); acts.add(new Runnable() { public void run() { openBoost(pid); } });
+                      labels.add("📊 التفاعلات"); acts.add(new Runnable() { public void run() { showEngagements(o); } });
+                      labels.add(saved.contains(pid) ? "🔖 إزالة من المحفوظات" : "🔖 حفظ المنشور"); acts.add(new Runnable() { public void run() { toggleSave(idx); } });
+                      labels.add("🔗 مشاركة الرابط"); acts.add(new Runnable() { public void run() { shareLink(o); } });
+                      labels.add("🗑 حذف المنشور"); acts.add(new Runnable() { public void run() { deletePost(idx); } });
+                  } else {
+                      labels.add("🙈 لا أريد رؤية هذا"); acts.add(new Runnable() { public void run() { hidePost(o); } });
+                      final boolean fl = followSet.contains(author);
+                      labels.add(fl ? "➖ إلغاء متابعة " + tag : "➕ متابعة " + tag); acts.add(new Runnable() { public void run() { toggleFollowUser(author); } });
+                      labels.add("🔇 كتم " + tag); acts.add(new Runnable() { public void run() { muteUser(author); } });
+                      labels.add("⛔ حظر " + tag); acts.add(new Runnable() { public void run() { blockUser(author, tag); } });
+                      labels.add("🚩 إبلاغ"); acts.add(new Runnable() { public void run() { goWeb("report:" + pid); } });
+                      labels.add("📊 التفاعلات"); acts.add(new Runnable() { public void run() { showEngagements(o); } });
+                      labels.add(saved.contains(pid) ? "🔖 إزالة من المحفوظات" : "🔖 حفظ المنشور"); acts.add(new Runnable() { public void run() { toggleSave(idx); } });
+                      labels.add("🔗 مشاركة الرابط"); acts.add(new Runnable() { public void run() { shareLink(o); } });
+                  }
                   new AlertDialog.Builder(this)
                       .setItems(labels.toArray(new String[0]), new DialogInterface.OnClickListener() {
-                          @Override public void onClick(DialogInterface d, int which) {
-                              if (which == 0) shareLink(o);
-                              else if (which == 1) editPost(idx);
-                              else if (which == 2) deletePost(idx);
-                          }
+                          @Override public void onClick(DialogInterface d, int which) { acts.get(which).run(); }
                       }).show();
               }
 
@@ -915,6 +1115,492 @@ jobs:
                       }).show();
               }
 
+              private void bindRope(Holder h, final JSONObject o) {
+                  h.rope.removeAllViews();
+                  final String tt = o.isNull("topic_type") ? "" : o.optString("topic_type", "");
+                  String[] T = TOPICS.get(tt);
+                  if (tt.length() == 0 || T == null) { h.rope.setVisibility(View.GONE); return; }
+                  h.rope.setVisibility(View.VISIBLE);
+                  final String pk = String.valueOf(o.optLong("id"));
+                  long[] r = ropes.get(pk);
+                  if (r == null) r = new long[] { 0, 0, -1 };
+                  boolean cmp = "compare".equals(tt);
+                  String la = cmp ? o.optString("topic_name", "") : T[1];
+                  String lb = cmp ? o.optString("topic_name_b", "") : T[2];
+                  String subject = cmp ? (la + " ⟷ " + lb) : o.optString("topic_name", "");
+                  long tot = r[0] + r[1];
+
+                  LinearLayout head = new LinearLayout(this);
+                  head.setGravity(Gravity.CENTER_VERTICAL);
+                  TextView chip = tv(GOLD, 12, true);
+                  chip.setText(T[0]);
+                  chip.setPadding(dp(10), dp(2), dp(10), dp(2));
+                  GradientDrawable cg = new GradientDrawable();
+                  cg.setColor(0x29F5C35A);
+                  cg.setCornerRadius(dp(12));
+                  chip.setBackground(cg);
+                  head.addView(chip);
+                  TextView nm = tv(Color.WHITE, 14, true);
+                  nm.setText(subject);
+                  nm.setPadding(dp(8), 0, dp(8), 0);
+                  head.addView(nm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  if (tot > 0) {
+                      TextView tv2 = tv(MUTED, 11, false);
+                      tv2.setText(tot + " صوت");
+                      head.addView(tv2);
+                  }
+                  h.rope.addView(head);
+
+                  LinearLayout btns = new LinearLayout(this);
+                  btns.setPadding(0, dp(8), 0, 0);
+                  for (int side = 0; side < 2; side++) {
+                      final int sd = side;
+                      boolean on = r[2] == side;
+                      TextView b = tv(on ? (side == 0 ? 0xFF062A24 : Color.WHITE) : (side == 0 ? 0xFF2DE2C4 : 0xFFFF8FA1), 13, true);
+                      b.setText((side == 0 ? la : lb) + " · " + r[side]);
+                      b.setGravity(Gravity.CENTER);
+                      GradientDrawable bg = new GradientDrawable();
+                      bg.setCornerRadius(dp(22));
+                      int base = side == 0 ? 0xFF2DE2C4 : 0xFFFF4D6D;
+                      bg.setColor(on ? base : (side == 0 ? 0x1F2DE2C4 : 0x1FFF4D6D));
+                      bg.setStroke(dp(1), side == 0 ? 0x802DE2C4 : 0x80FF4D6D);
+                      b.setBackground(bg);
+                      b.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { ropeVote(pk, sd); }
+                      });
+                      LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(40), 1f);
+                      lp.setMargins(dp(4), 0, dp(4), 0);
+                      btns.addView(b, lp);
+                  }
+                  h.rope.addView(btns);
+              }
+
+              private void ropeVote(final String pk, int side) {
+                  final long[] r = ropes.get(pk);
+                  if (r == null) return;
+                  final long[] old = new long[] { r[0], r[1], r[2] };
+                  int prev = (int) r[2];
+                  int next = prev == side ? -1 : side;
+                  if (prev == 0 || prev == 1) r[prev] = Math.max(0, r[prev] - 1);
+                  if (next != -1) r[next]++;
+                  r[2] = next;
+                  adapter.notifyDataSetChanged();
+                  final int fn = next;
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              rpc("rope_vote", "{\"p_post\":" + pk + ",\"p_side\":" + fn + "}");
+                          } catch (Exception e) {
+                              runOnUiThread(new Runnable() {
+                                  @Override public void run() {
+                                      r[0] = old[0]; r[1] = old[1]; r[2] = old[2];
+                                      adapter.notifyDataSetChanged();
+                                      toast("تعذّر تسجيل صوتك");
+                                  }
+                              });
+                          }
+                      }
+                  });
+              }
+
+              private String predWhen(String iso, boolean wantDay) {
+                  try {
+                      SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                      f.setTimeZone(TimeZone.getTimeZone("UTC"));
+                      Date d = f.parse(iso.substring(0, 19));
+                      if (!wantDay) return new SimpleDateFormat("HH:mm").format(d);
+                      SimpleDateFormat day = new SimpleDateFormat("yyyyMMdd");
+                      String a = day.format(d), b = day.format(new Date()), c2 = day.format(new Date(System.currentTimeMillis() + 86400000L));
+                      if (a.equals(b)) return "اليوم";
+                      if (a.equals(c2)) return "غدًا";
+                      return new SimpleDateFormat("dd/MM").format(d);
+                  } catch (Exception e) {
+                      return "";
+                  }
+              }
+
+              private String initials(String n) {
+                  String t = n == null ? "?" : n.trim();
+                  String[] w = t.split("\\s+");
+                  String r = w.length > 1 ? (w[0].substring(0, 1) + w[1].substring(0, 1)) : t.substring(0, Math.min(2, t.length()));
+                  return r.toUpperCase();
+              }
+
+              private View crest(String n) {
+                  TextView c = tv(Color.WHITE, 15, true);
+                  c.setText(initials(n));
+                  c.setGravity(Gravity.CENTER);
+                  c.setBackground(oval(0xFF1C2766, 0x24FFFFFF));
+                  return c;
+              }
+
+              private void bindPred(Holder h, JSONObject o) {
+                  h.pred.removeAllViews();
+                  final String pk = String.valueOf(o.optLong("id"));
+                  final JSONObject r = preds.get(pk);
+                  if (r == null) { h.pred.setVisibility(View.GONE); return; }
+                  h.pred.setVisibility(View.VISIBLE);
+                  LinearLayout box = new LinearLayout(this);
+                  box.setOrientation(LinearLayout.VERTICAL);
+                  box.setPadding(dp(12), dp(12), dp(12), dp(12));
+                  GradientDrawable bg = new GradientDrawable();
+                  bg.setColor(0xFF0D1440);
+                  bg.setCornerRadius(dp(14));
+                  bg.setStroke(dp(1), 0x1AFFFFFF);
+                  box.setBackground(bg);
+
+                  String status = r.optString("status", "");
+                  boolean hasScore = !r.isNull("home_score") && !r.isNull("away_score");
+                  boolean fin = "FINISHED".equals(status) && hasScore;
+                  boolean started = false;
+                  try {
+                      SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+                      f.setTimeZone(TimeZone.getTimeZone("UTC"));
+                      Date md = f.parse(r.optString("match_date", "").substring(0, 19));
+                      started = !fin && (!"NOT_STARTED".equals(status) || md.getTime() <= System.currentTimeMillis());
+                  } catch (Exception ignore) {}
+                  int pick = r.optInt("pick", 0);
+                  int outcome = -1;
+                  if (fin) {
+                      int hs = r.optInt("home_score"), as = r.optInt("away_score");
+                      outcome = hs > as ? 0 : (hs == as ? 1 : 2);
+                  }
+
+                  LinearLayout top = new LinearLayout(this);
+                  top.setGravity(Gravity.CENTER_VERTICAL);
+                  TextView pill = tv(fin ? (outcome == pick ? 0xFF2DE2C4 : 0xFFFF8FA1) : GOLD, 12, true);
+                  pill.setText(fin ? (outcome == pick ? "صحّ ✓" : "خطأ ✗") : "توقّع");
+                  pill.setPadding(dp(11), dp(3), dp(11), dp(3));
+                  GradientDrawable pg = new GradientDrawable();
+                  pg.setCornerRadius(dp(14));
+                  pg.setColor(fin ? (outcome == pick ? 0x262DE2C4 : 0x26FF4D6D) : 0x26F5C35A);
+                  pg.setStroke(dp(1), fin ? (outcome == pick ? 0x992DE2C4 : 0x99FF4D6D) : 0x80F5C35A);
+                  pill.setBackground(pg);
+                  top.addView(pill);
+                  top.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+                  TextView comp = tv(0xFF8F9BD1, 11, true);
+                  comp.setText(r.optString("comp", ""));
+                  top.addView(comp);
+                  box.addView(top);
+
+                  String ta = r.optString("team_a", ""), tb = r.optString("team_b", "");
+                  LinearLayout mid = new LinearLayout(this);
+                  mid.setGravity(Gravity.CENTER_VERTICAL);
+                  mid.setPadding(0, dp(10), 0, 0);
+                  LinearLayout colA = new LinearLayout(this);
+                  colA.setOrientation(LinearLayout.VERTICAL);
+                  colA.setGravity(Gravity.CENTER_HORIZONTAL);
+                  colA.addView(crest(ta), new LinearLayout.LayoutParams(dp(44), dp(44)));
+                  TextView na = tv(0xFFE8ECFF, 12, true);
+                  na.setText(ta);
+                  na.setGravity(Gravity.CENTER);
+                  na.setSingleLine(true);
+                  colA.addView(na);
+                  LinearLayout colB = new LinearLayout(this);
+                  colB.setOrientation(LinearLayout.VERTICAL);
+                  colB.setGravity(Gravity.CENTER_HORIZONTAL);
+                  colB.addView(crest(tb), new LinearLayout.LayoutParams(dp(44), dp(44)));
+                  TextView nb = tv(0xFFE8ECFF, 12, true);
+                  nb.setText(tb);
+                  nb.setGravity(Gravity.CENTER);
+                  nb.setSingleLine(true);
+                  colB.addView(nb);
+                  LinearLayout ctr = new LinearLayout(this);
+                  ctr.setOrientation(LinearLayout.VERTICAL);
+                  ctr.setGravity(Gravity.CENTER_HORIZONTAL);
+                  ctr.setMinimumWidth(dp(80));
+                  TextView d1 = tv(0xFF8F9BD1, 11, true);
+                  TextView d2;
+                  String score = r.optInt("away_score") + " - " + r.optInt("home_score");
+                  if (fin) { d1.setText("انتهت"); d2 = tv(GOLD, 24, true); d2.setText(score); }
+                  else if (started) { d1.setText("جارية"); d2 = tv(GOLD, 24, true); d2.setText(hasScore ? score : "—"); }
+                  else { d1.setText(predWhen(r.optString("match_date", ""), true)); d2 = tv(Color.WHITE, 18, true); d2.setText(predWhen(r.optString("match_date", ""), false)); }
+                  d1.setGravity(Gravity.CENTER);
+                  d2.setGravity(Gravity.CENTER);
+                  d2.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+                  ctr.addView(d1);
+                  ctr.addView(d2);
+                  mid.addView(colA, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  mid.addView(ctr);
+                  mid.addView(colB, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  box.addView(mid);
+
+                  final String[] lab = new String[] { ta, "تعادل", tb };
+                  TextView mine = tv(0xFFCDD6FF, 13, true);
+                  mine.setGravity(Gravity.CENTER);
+                  mine.setPadding(0, dp(9), 0, 0);
+                  mine.setText("📌 توقّع صاحب المنشور: " + (pick == 1 ? lab[1] : ("فوز " + lab[Math.max(0, Math.min(2, pick))])));
+                  box.addView(mine);
+
+                  boolean open = !fin && !started;
+                  boolean owner = r.optBoolean("is_owner", false);
+                  if (r.isNull("n0")) {
+                      LinearLayout bt = new LinearLayout(this);
+                      bt.setPadding(0, dp(10), 0, 0);
+                      for (int i = 0; i < 3; i++) {
+                          final int pi = i;
+                          TextView b = tv(0xFFE8ECFF, 12, true);
+                          b.setText(i == 1 ? lab[1] : ("فوز " + lab[i]));
+                          b.setGravity(Gravity.CENTER);
+                          b.setSingleLine(true);
+                          GradientDrawable bb = new GradientDrawable();
+                          bb.setColor(0x0AFFFFFF);
+                          bb.setCornerRadius(dp(10));
+                          bb.setStroke(dp(1), 0x2EFFFFFF);
+                          b.setBackground(bb);
+                          b.setOnClickListener(new View.OnClickListener() {
+                              @Override public void onClick(View v) { predVote(pk, pi); }
+                          });
+                          LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, dp(38), 1f);
+                          lp.setMargins(dp(3), 0, dp(3), 0);
+                          bt.addView(b, lp);
+                      }
+                      box.addView(bt);
+                      TextView note = tv(0xFF8F9BD1, 11, false);
+                      note.setGravity(Gravity.CENTER);
+                      note.setPadding(0, dp(7), 0, 0);
+                      note.setText("صوّت لترى نسب الجمهور");
+                      box.addView(note);
+                  } else {
+                      long[] n = new long[] { r.optLong("n0"), r.optLong("n1"), r.optLong("n2") };
+                      long tot = n[0] + n[1] + n[2];
+                      int mineSel = r.isNull("mine") ? -1 : r.optInt("mine", -1);
+                      LinearLayout bars = new LinearLayout(this);
+                      bars.setOrientation(LinearLayout.VERTICAL);
+                      bars.setPadding(0, dp(10), 0, 0);
+                      for (int i = 0; i < 3; i++) {
+                          final int pi = i;
+                          int pc = tot > 0 ? (int) Math.round(n[i] * 100.0 / tot) : 0;
+                          FrameLayout bar = new FrameLayout(this);
+                          GradientDrawable bgb = new GradientDrawable();
+                          bgb.setColor(0x0FFFFFFF);
+                          bgb.setCornerRadius(dp(8));
+                          bar.setBackground(bgb);
+                          View fill = new View(this);
+                          fill.setBackgroundColor(mineSel == i ? 0x612DE2C4 : 0x47F5C35A);
+                          bar.addView(fill, new FrameLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT));
+                          final View ff = fill;
+                          final int fpc = pc;
+                          bar.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                              @Override public void onLayoutChange(View v, int l, int t, int r2, int b, int ol, int ot, int or2, int ob) {
+                                  ViewGroup.LayoutParams lp = ff.getLayoutParams();
+                                  int w = (r2 - l) * fpc / 100;
+                                  if (lp.width != w) { lp.width = w; ff.setLayoutParams(lp); }
+                              }
+                          });
+                          LinearLayout line = new LinearLayout(this);
+                          line.setGravity(Gravity.CENTER_VERTICAL);
+                          line.setPadding(dp(10), 0, dp(10), 0);
+                          TextView t1 = tv(Color.WHITE, 12, true);
+                          t1.setText((i == 1 ? lab[1] : lab[i]) + (pick == i ? " 📌" : "") + (mineSel == i ? " · صوتك" : ""));
+                          line.addView(t1, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                          TextView t2 = tv(Color.WHITE, 12, true);
+                          t2.setText(pc + "%");
+                          line.addView(t2);
+                          bar.addView(line, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+                          if (open && !owner) {
+                              bar.setOnClickListener(new View.OnClickListener() {
+                                  @Override public void onClick(View v) { predVote(pk, pi); }
+                              });
+                          }
+                          LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(32));
+                          lp.setMargins(0, dp(3), 0, dp(3));
+                          bars.addView(bar, lp);
+                      }
+                      box.addView(bars);
+                      TextView note = tv(0xFF8F9BD1, 11, false);
+                      note.setGravity(Gravity.CENTER);
+                      note.setText(tot + " صوت");
+                      box.addView(note);
+                  }
+                  h.pred.addView(box);
+              }
+
+              private void predVote(final String pk, final int pick) {
+                  final JSONObject r = preds.get(pk);
+                  if (r == null || r.optBoolean("is_owner", false)) return;
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          String err = null;
+                          try {
+                              rpc("vote_prediction", "{\"p_post\":" + pk + ",\"p_pick\":" + pick + "}");
+                              JSONArray a = new JSONArray(rpc("get_prediction_info", "{\"p_ids\":[" + pk + "]}"));
+                              for (int i = 0; i < a.length(); i++) preds.put(String.valueOf(a.getJSONObject(i).optLong("post_id")), a.getJSONObject(i));
+                          } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                          final String fe = err;
+                          runOnUiThread(new Runnable() {
+                              @Override public void run() {
+                                  if (fe != null) toast(fe.contains("voting_closed") ? "أُغلق التصويت: المباراة بدأت." : "تعذّر تسجيل صوتك");
+                                  adapter.notifyDataSetChanged();
+                              }
+                          });
+                      }
+                  });
+              }
+
+              private void recordView(JSONObject o, int[] s) {
+                  final String pk = String.valueOf(o.optLong("id"));
+                  if (uid == null || viewedSession.contains(pk)) return;
+                  viewedSession.add(pk);
+                  if (viewedMine.contains(pk)) return;
+                  viewedMine.add(pk);
+                  s[3]++;
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              sendUrl("POST", url + "/rest/v1/post_views?on_conflict=post_id,user_id", "{\"post_id\":" + pk + ",\"user_id\":\"" + uid + "\"}", "resolution=ignore-duplicates,return=minimal");
+                          } catch (Exception ignore) {}
+                      }
+                  });
+              }
+
+              private void toggleRepost(int idx) {
+                  final String k = String.valueOf(items.get(idx).optLong("id"));
+                  final int[] s = stats.get(k);
+                  if (s == null || uid == null) return;
+                  final boolean was = reposted.contains(k);
+                  if (was) { reposted.remove(k); s[2] = Math.max(0, s[2] - 1); } else { reposted.add(k); s[2]++; }
+                  adapter.notifyDataSetChanged();
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              if (was) send("DELETE", "post_reposts?post_id=eq." + k + "&user_id=eq." + uid, null);
+                              else { send("POST", "post_reposts", "{\"post_id\":" + k + ",\"user_id\":\"" + uid + "\"}"); queueNotify("repost", ownerOf(k), k, contentOf(k), null); }
+                          } catch (Exception e) {
+                              runOnUiThread(new Runnable() {
+                                  @Override public void run() {
+                                      if (was) { reposted.add(k); s[2]++; } else { reposted.remove(k); s[2] = Math.max(0, s[2] - 1); }
+                                      adapter.notifyDataSetChanged();
+                                      toast("تعذّرت إعادة النشر");
+                                  }
+                              });
+                          }
+                      }
+                  });
+              }
+
+              private void toggleSave(int idx) {
+                  final String k = String.valueOf(items.get(idx).optLong("id"));
+                  if (uid == null) return;
+                  final boolean was = saved.contains(k);
+                  if (was) saved.remove(k); else saved.add(k);
+                  adapter.notifyDataSetChanged();
+                  toast(was ? "أُزيل من المحفوظات" : "تم حفظ المنشور 🔖");
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              if (was) send("DELETE", "post_bookmarks?post_id=eq." + k + "&user_id=eq." + uid, null);
+                              else send("POST", "post_bookmarks", "{\"post_id\":" + k + ",\"user_id\":\"" + uid + "\"}");
+                          } catch (Exception e) {
+                              runOnUiThread(new Runnable() {
+                                  @Override public void run() {
+                                      if (was) saved.add(k); else saved.remove(k);
+                                      adapter.notifyDataSetChanged();
+                                      toast("تعذّر الحفظ");
+                                  }
+                              });
+                          }
+                      }
+                  });
+              }
+
+              private void showEngagements(JSONObject o) {
+                  int[] s = stats.get(String.valueOf(o.optLong("id")));
+                  if (s == null) s = new int[] { 0, 0, 0, 0 };
+                  new AlertDialog.Builder(this)
+                      .setTitle("التفاعلات مع المنشور")
+                      .setMessage("المشاهدات: " + s[3] + "\nالأهداف: " + s[0] + "\nالتمريرات: " + s[2] + "\nالردود: " + s[1])
+                      .setPositiveButton("حسنًا", null)
+                      .show();
+              }
+
+              private void toggleFollowUser(final String target) {
+                  if (uid == null || target.equals(uid)) return;
+                  final boolean was = followSet.contains(target);
+                  if (was) followSet.remove(target); else followSet.add(target);
+                  toast(was ? "تم إلغاء المتابعة" : "تمت المتابعة ✅");
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              if (was) send("DELETE", "user_follows?follower_id=eq." + uid + "&following_id=eq." + target, null);
+                              else { send("POST", "user_follows", "{\"follower_id\":\"" + uid + "\",\"following_id\":\"" + target + "\"}"); queueNotify("follow", target, null, null, null); }
+                          } catch (Exception e) {
+                              runOnUiThread(new Runnable() {
+                                  @Override public void run() {
+                                      if (was) followSet.add(target); else followSet.remove(target);
+                                      toast("تعذّر التنفيذ");
+                                  }
+                              });
+                          }
+                      }
+                  });
+              }
+
+              private void dropUser(String target) {
+                  List<JSONObject> rm = new ArrayList<JSONObject>();
+                  for (JSONObject p : items) if (target.equals(p.optString("user_id", ""))) rm.add(p);
+                  items.removeAll(rm);
+                  adapter.notifyDataSetChanged();
+              }
+
+              private void muteUser(final String target) {
+                  if (uid == null || target.equals(uid)) return;
+                  muteSet.add(target);
+                  dropUser(target);
+                  toast("تم الكتم");
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try { send("POST", "user_mutes", "{\"user_id\":\"" + uid + "\",\"muted_id\":\"" + target + "\"}"); } catch (Exception ignore) {}
+                      }
+                  });
+              }
+
+              private void blockUser(final String target, String tag) {
+                  if (uid == null || target.equals(uid)) return;
+                  new AlertDialog.Builder(this)
+                      .setMessage("هل تريد حظر " + tag + "؟ لن ترى منشوراته وردوده.")
+                      .setNegativeButton("إلغاء", null)
+                      .setPositiveButton("حظر", new DialogInterface.OnClickListener() {
+                          @Override public void onClick(DialogInterface d, int w) {
+                              blockSet.add(target);
+                              followSet.remove(target);
+                              dropUser(target);
+                              toast("تم الحظر");
+                              pool.execute(new Runnable() {
+                                  @Override public void run() {
+                                      try {
+                                          send("POST", "user_blocks", "{\"user_id\":\"" + uid + "\",\"blocked_id\":\"" + target + "\"}");
+                                          send("DELETE", "user_follows?follower_id=eq." + uid + "&following_id=eq." + target, null);
+                                      } catch (Exception ignore) {}
+                                  }
+                              });
+                          }
+                      }).show();
+              }
+
+              private void hidePost(JSONObject o) {
+                  String k = String.valueOf(o.optLong("id"));
+                  hiddenSet.add(k);
+                  SharedPreferences sp = getSharedPreferences("zn", MODE_PRIVATE);
+                  sp.edit().putString("hidden", android.text.TextUtils.join(",", hiddenSet)).apply();
+                  items.remove(o);
+                  adapter.notifyDataSetChanged();
+                  toast("تم إخفاء المنشور");
+              }
+
+              private String ownerOf(String pk) {
+                  try {
+                      for (JSONObject p : new ArrayList<JSONObject>(items)) if (pk.equals(String.valueOf(p.optLong("id")))) return p.optString("user_id", "");
+                  } catch (Exception ignore) {}
+                  return "";
+              }
+              private String contentOf(String pk) {
+                  try {
+                      for (JSONObject p : new ArrayList<JSONObject>(items)) if (pk.equals(String.valueOf(p.optLong("id")))) return p.optString("content", "");
+                  } catch (Exception ignore) {}
+                  return "";
+              }
+
               private void toggleLike(int idx) {
                   final String k = String.valueOf(items.get(idx).optLong("id"));
                   final int[] s = stats.get(k);
@@ -926,7 +1612,7 @@ jobs:
                       @Override public void run() {
                           try {
                               if (was) send("DELETE", "post_likes?post_id=eq." + k + "&user_id=eq." + uid, null);
-                              else send("POST", "post_likes", "{\"post_id\":" + k + ",\"user_id\":\"" + uid + "\"}");
+                              else { send("POST", "post_likes", "{\"post_id\":" + k + ",\"user_id\":\"" + uid + "\"}"); queueNotify("like", ownerOf(k), k, contentOf(k), null); }
                           } catch (Exception e) {
                               runOnUiThread(new Runnable() {
                                   @Override public void run() {
@@ -936,6 +1622,835 @@ jobs:
                                   }
                               });
                           }
+                      }
+                  });
+              }
+
+              // ---------------- الدعم ----------------
+              private static final String[][] GIFTS = {
+                  { "ball", "5", "كرة", "⚽", "#FFFFFF" },
+                  { "boot", "30", "حذاء ذهبي", "👟", "#F5C35A" },
+                  { "cup", "500", "كأس", "🏆", "#C8D0DC" },
+                  { "goldcup", "1000", "كأس البطولة", "🏆", "#F5C35A" }
+              };
+              private static final String[][] SHIRTS = {
+                  { "s1", "20", "1", "حارس المرمى", "#2E7D32" }, { "s4", "20", "4", "مدافع", "#546E7A" },
+                  { "s5", "20", "5", "مدافع", "#455A64" }, { "s6", "50", "6", "وسط", "#6A1B9A" },
+                  { "s8", "50", "8", "وسط", "#00838F" }, { "s7", "100", "7", "جناح", "#C0392B" },
+                  { "s11", "100", "11", "جناح", "#EF6C00" }, { "s9", "150", "9", "مهاجم", "#2C4BB5" },
+                  { "s10", "200", "10", "صانع ألعاب", "#B7791F" }
+              };
+
+              private String kfmt(long n) {
+                  if (n >= 1000000L) return (n / 100000L) / 10.0 + "M";
+                  if (n >= 1000L) return (n / 100L) / 10.0 + "K";
+                  return String.valueOf(n);
+              }
+              private String nfmt(long n) { return String.format(java.util.Locale.US, "%,d", n); }
+
+              private void loadSupportStats(String fids) {
+                  try {
+                      JSONArray x = new JSONArray(rpc("support_stats", "{\"p_post_ids\":[" + fids + "]}"));
+                      for (int q = 0; q < x.length(); q++) {
+                          JSONObject r = x.getJSONObject(q);
+                          sup.put(String.valueOf(r.optLong("post_id")), new long[] { r.optLong("total_net", 0), r.optLong("supporters", 0) });
+                      }
+                      runOnUiThread(new Runnable() { @Override public void run() { adapter.notifyDataSetChanged(); } });
+                  } catch (Exception ignore) {}
+              }
+
+              private View goldDot() {
+                  TextView z = tv(NAVY, 11, true);
+                  z.setText("Z");
+                  z.setGravity(Gravity.CENTER);
+                  z.setBackground(oval(GOLD, 0xFFFFE7AD));
+                  return z;
+              }
+
+              private void bindSupport(Holder h, JSONObject o) {
+                  h.supbar.removeAllViews();
+                  final String pk = String.valueOf(o.optLong("id"));
+                  final String owner = o.optString("user_id", "");
+                  final boolean isOwner = owner.equals(uid);
+                  long[] st = sup.get(pk);
+                  long net = st == null ? 0 : st[0];
+                  long cnt = st == null ? 0 : st[1];
+                  LinearLayout left = new LinearLayout(this);
+                  left.setGravity(Gravity.CENTER_VERTICAL);
+                  if (cnt > 0) {
+                      left.addView(goldDot(), new LinearLayout.LayoutParams(dp(20), dp(20)));
+                      TextView t = tv(GOLD, 14, true);
+                      t.setText("  " + nfmt(net) + " ZELO");
+                      left.addView(t);
+                      TextView c2 = tv(MUTED, 12, true);
+                      c2.setText("  ·  " + kfmt(cnt) + (cnt == 1 ? " داعم" : " داعمين") + "  ›");
+                      left.addView(c2);
+                      left.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { openSupporters(pk, owner); }
+                      });
+                  } else {
+                      TextView t = tv(MUTED, 13, true);
+                      t.setText(isOwner ? "لا يوجد دعم بعد" : "كن أول من يدعم");
+                      left.addView(t);
+                  }
+                  h.supbar.addView(left, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  if (!isOwner) {
+                      TextView b = tv(NAVY, 13, true);
+                      b.setText("ادعم");
+                      b.setGravity(Gravity.CENTER);
+                      GradientDrawable g = new GradientDrawable();
+                      g.setColor(GOLD);
+                      g.setCornerRadius(dp(18));
+                      b.setBackground(g);
+                      b.setPadding(dp(18), dp(8), dp(18), dp(8));
+                      b.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { openSupportSheet(pk, owner); }
+                      });
+                      h.supbar.addView(b);
+                  }
+              }
+
+              private int col(String hex) { try { return Color.parseColor(hex); } catch (Exception e) { return GOLD; } }
+
+              // حالة نافذة الهدايا الحالية
+              private String sPost, sOwner;
+              private boolean sShirts = false, sBusy = false;
+              private int sSel = 0, sCombo = 0;
+              private long sComboNet = 0, sBalance = 0;
+              private String sNum = "10";
+              private Dialog sDlg;
+              private LinearLayout sGrid;
+              private TextView sBal, sMsg, sSend, sTabG, sTabS;
+              private EditText sNumEt;
+              private LinearLayout sNumRow;
+
+              private String[] curItem() {
+                  // {id, price, name, glyphOrNum, color, sub}
+                  if (!sShirts) { String[] g = GIFTS[Math.min(sSel, GIFTS.length - 1)]; return new String[] { g[0], g[1], g[2], g[3], g[4], "" }; }
+                  if (sSel == 0) return new String[] { "custom", "100", "قميصك", sNum, "#C0392B", uname == null ? "" : uname };
+                  String[] x = SHIRTS[Math.min(sSel - 1, SHIRTS.length - 1)];
+                  return new String[] { x[0], x[1], "قميص " + x[2], x[2], x[4], x[3] };
+              }
+
+              private void flushSupportNotify() {
+                  if (sComboNet > 0) queueNotify("support", sOwner, sPost, null, String.valueOf(sComboNet));
+                  sComboNet = 0;
+                  sCombo = 0;
+              }
+
+              private void openSupportSheet(String pk, String owner) {
+                  if (uid == null) return;
+                  sPost = pk; sOwner = owner; sShirts = false; sSel = 0; sBusy = false; sCombo = 0; sComboNet = 0; sBalance = 0;
+                  final Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
+                  sDlg = d;
+                  d.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  d.getWindow().setGravity(Gravity.BOTTOM);
+                  d.getWindow().setBackgroundDrawable(new ColorDrawable(0xCC000000));
+                  d.getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                  d.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                      @Override public void onDismiss(DialogInterface x) { flushSupportNotify(); loadBalance(); }
+                  });
+                  ScrollView sc = new ScrollView(this);
+                  LinearLayout box = new LinearLayout(this);
+                  box.setOrientation(LinearLayout.VERTICAL);
+                  box.setPadding(dp(18), dp(14), dp(18), dp(22));
+                  GradientDrawable pbg = new GradientDrawable();
+                  pbg.setColor(0xFF16161C);
+                  pbg.setCornerRadii(new float[] { dp(26), dp(26), dp(26), dp(26), 0, 0, 0, 0 });
+                  box.setBackground(pbg);
+
+                  TextView title = tv(Color.WHITE, 17, true);
+                  title.setText("أرسل هدية للكاتب");
+                  title.setGravity(Gravity.CENTER);
+                  title.setPadding(0, 0, 0, dp(12));
+                  box.addView(title);
+
+                  LinearLayout tabs = new LinearLayout(this);
+                  sTabG = tv(GOLD, 14, true); sTabG.setText("الهدايا");
+                  sTabS = tv(Color.WHITE, 14, true); sTabS.setText("القمصان");
+                  TextView[] tb = new TextView[] { sTabG, sTabS };
+                  for (int i = 0; i < 2; i++) {
+                      final int ti2 = i;
+                      tb[i].setGravity(Gravity.CENTER);
+                      tb[i].setPadding(0, dp(10), 0, dp(10));
+                      tb[i].setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { flushSupportNotify(); sShirts = ti2 == 1; sSel = 0; drawSupportGrid(); updateSupport(); }
+                      });
+                      LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                      lp.setMargins(dp(4), 0, dp(4), 0);
+                      tabs.addView(tb[i], lp);
+                  }
+                  box.addView(tabs);
+
+                  sGrid = new LinearLayout(this);
+                  sGrid.setOrientation(LinearLayout.VERTICAL);
+                  sGrid.setPadding(0, dp(10), 0, dp(6));
+                  box.addView(sGrid);
+
+                  sNumRow = new LinearLayout(this);
+                  sNumRow.setGravity(Gravity.CENTER_VERTICAL);
+                  sNumRow.setPadding(dp(14), dp(8), dp(14), dp(8));
+                  GradientDrawable nbg = new GradientDrawable();
+                  nbg.setColor(CARD); nbg.setCornerRadius(dp(14));
+                  sNumRow.setBackground(nbg);
+                  TextView nl = tv(MUTED, 13, false);
+                  nl.setText("رقم قميصك (1 - 99)");
+                  sNumRow.addView(nl, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  sNumEt = new EditText(this);
+                  sNumEt.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+                  sNumEt.setText(sNum);
+                  sNumEt.setTextColor(Color.WHITE);
+                  sNumEt.setGravity(Gravity.CENTER);
+                  sNumEt.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(2) });
+                  sNumEt.addTextChangedListener(new android.text.TextWatcher() {
+                      @Override public void beforeTextChanged(CharSequence a, int b, int c, int e) {}
+                      @Override public void onTextChanged(CharSequence a, int b, int c, int e) {}
+                      @Override public void afterTextChanged(android.text.Editable ed) {
+                          String v = ed.toString().replaceAll("[^0-9]", "");
+                          int n = 0;
+                          try { n = v.length() == 0 ? 0 : Integer.parseInt(v); } catch (Exception ignore) {}
+                          sNum = n > 0 ? String.valueOf(n) : "1";
+                          if (sShirts && sSel == 0) { drawSupportGrid(); updateSupport(); }
+                      }
+                  });
+                  sNumRow.addView(sNumEt, new LinearLayout.LayoutParams(dp(80), ViewGroup.LayoutParams.WRAP_CONTENT));
+                  LinearLayout.LayoutParams nlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  nlp.setMargins(0, dp(4), 0, dp(8));
+                  box.addView(sNumRow, nlp);
+
+                  sBal = tv(MUTED, 13, false);
+                  sBal.setGravity(Gravity.CENTER);
+                  box.addView(sBal);
+                  sMsg = tv(MUTED, 12, false);
+                  sMsg.setGravity(Gravity.CENTER);
+                  sMsg.setPadding(0, dp(4), 0, dp(6));
+                  box.addView(sMsg);
+
+                  sSend = tv(NAVY, 16, true);
+                  sSend.setGravity(Gravity.CENTER);
+                  GradientDrawable sgd = new GradientDrawable();
+                  sgd.setColor(GOLD); sgd.setCornerRadius(dp(16));
+                  sSend.setBackground(sgd);
+                  sSend.setPadding(0, dp(15), 0, dp(15));
+                  sSend.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { submitSupport(); }
+                  });
+                  box.addView(sSend);
+
+                  sc.addView(box);
+                  d.setContentView(sc);
+                  d.show();
+                  drawSupportGrid();
+                  updateSupport();
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              JSONArray a = new JSONArray(get("users?select=points&user_id=eq." + uid));
+                              if (a.length() > 0) sBalance = a.getJSONObject(0).optLong("points", 0);
+                          } catch (Exception ignore) {}
+                          runOnUiThread(new Runnable() { @Override public void run() { updateSupport(); } });
+                      }
+                  });
+              }
+
+              private void drawSupportGrid() {
+                  sGrid.removeAllViews();
+                  int n = sShirts ? SHIRTS.length + 1 : GIFTS.length;
+                  LinearLayout rowL = null;
+                  for (int i = 0; i < n; i++) {
+                      if (i % 3 == 0) {
+                          rowL = new LinearLayout(this);
+                          LinearLayout.LayoutParams rp2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                          rp2.setMargins(0, dp(4), 0, dp(4));
+                          sGrid.addView(rowL, rp2);
+                      }
+                      final int idx = i;
+                      String[] it;
+                      if (!sShirts) { String[] g = GIFTS[i]; it = new String[] { g[0], g[1], g[2], g[3], g[4], "" }; }
+                      else if (i == 0) it = new String[] { "custom", "100", "قميصك", sNum, "#C0392B", uname == null ? "باسمك" : uname };
+                      else { String[] x = SHIRTS[i - 1]; it = new String[] { x[0], x[1], "قميص " + x[2], x[2], x[4], x[3] }; }
+                      LinearLayout cell = new LinearLayout(this);
+                      cell.setOrientation(LinearLayout.VERTICAL);
+                      cell.setGravity(Gravity.CENTER_HORIZONTAL);
+                      cell.setPadding(dp(4), dp(10), dp(4), dp(8));
+                      GradientDrawable cg = new GradientDrawable();
+                      cg.setCornerRadius(dp(16));
+                      cg.setColor(idx == sSel ? 0x33F5C35A : CARD);
+                      cg.setStroke(dp(1), idx == sSel ? GOLD : 0x14FFFFFF);
+                      cell.setBackground(cg);
+                      TextView ic = tv(sShirts ? Color.WHITE : NAVY, sShirts ? 18 : 24, true);
+                      ic.setText(it[3]);
+                      ic.setGravity(Gravity.CENTER);
+                      GradientDrawable ig = new GradientDrawable();
+                      ig.setShape(GradientDrawable.OVAL);
+                      ig.setColor(sShirts ? col(it[4]) : 0x1FFFFFFF);
+                      ig.setStroke(dp(1), 0x33FFFFFF);
+                      ic.setBackground(ig);
+                      cell.addView(ic, new LinearLayout.LayoutParams(dp(54), dp(54)));
+                      TextView nm = tv(Color.WHITE, 13, true);
+                      nm.setText(it[2]);
+                      nm.setGravity(Gravity.CENTER);
+                      nm.setPadding(0, dp(5), 0, 0);
+                      nm.setSingleLine(true);
+                      cell.addView(nm);
+                      if (it[5].length() > 0) {
+                          TextView sb = tv(MUTED, 11, false);
+                          sb.setText(it[5]);
+                          sb.setGravity(Gravity.CENTER);
+                          sb.setSingleLine(true);
+                          cell.addView(sb);
+                      }
+                      TextView pr = tv(GOLD, 13, true);
+                      pr.setText(it[1] + " ZELO");
+                      pr.setGravity(Gravity.CENTER);
+                      cell.addView(pr);
+                      cell.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { flushSupportNotify(); sSel = idx; drawSupportGrid(); updateSupport(); }
+                      });
+                      LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+                      cl.setMargins(dp(4), 0, dp(4), 0);
+                      rowL.addView(cell, cl);
+                  }
+                  int rem = n % 3;
+                  if (rem != 0 && rowL != null) for (int k = rem; k < 3; k++) rowL.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+              }
+
+              private void updateSupport() {
+                  if (sDlg == null || !sDlg.isShowing()) return;
+                  String[] it = curItem();
+                  long price = Long.parseLong(it[1]);
+                  boolean enough = sBalance >= price;
+                  sTabG.setTextColor(!sShirts ? GOLD : Color.WHITE);
+                  sTabS.setTextColor(sShirts ? GOLD : Color.WHITE);
+                  sNumRow.setVisibility(sShirts && sSel == 0 ? View.VISIBLE : View.GONE);
+                  sBal.setText("رصيدك الحالي: " + nfmt(sBalance) + " ZELO");
+                  sMsg.setText(enough ? (sCombo > 1 ? "" : "اضغط أكثر من مرة لتكرار الهدية") : "رصيدك لا يكفي لهذه الهدية");
+                  sMsg.setTextColor(enough ? MUTED : 0xFFFF6B6B);
+                  sSend.setText("أرسل " + it[2] + ("custom".equals(it[0]) ? " " + it[3] : "") + (sCombo > 1 ? " ×" + sCombo : "") + " · " + it[1] + " ZELO");
+                  sSend.setAlpha(!enough || sBusy ? 0.45f : 1f);
+              }
+
+              private void submitSupport() {
+                  if (sBusy) return;
+                  final String[] it = curItem();
+                  final long price = Long.parseLong(it[1]);
+                  if (sBalance < price) return;
+                  sBusy = true;
+                  updateSupport();
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          String err = null;
+                          long net = price;
+                          try {
+                              JSONObject b = new JSONObject();
+                              b.put("p_from_user_id", uid);
+                              b.put("p_from_name", uname == null ? "" : uname);
+                              b.put("p_post_id", Long.parseLong(sPost));
+                              b.put("p_amount", price);
+                              b.put("p_gift_id", it[0]);
+                              String res = rpc("support_post", b.toString());
+                              try { JSONObject r = new JSONObject(res); if (!r.isNull("net")) net = r.optLong("net", price); } catch (Exception ignore) {}
+                              JSONArray a = new JSONArray(get("users?select=points&user_id=eq." + uid));
+                              if (a.length() > 0) sBalance = a.getJSONObject(0).optLong("points", sBalance);
+                          } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                          try { loadSupportStats(sPost); } catch (Exception ignore) {}
+                          final String fe = err;
+                          final long fnet = net;
+                          runOnUiThread(new Runnable() {
+                              @Override public void run() {
+                                  sBusy = false;
+                                  if (fe != null) {
+                                      String m = "تعذّر الدعم، حاول لاحقًا";
+                                      if (fe.contains("insufficient_balance")) m = "رصيدك لا يكفي";
+                                      else if (fe.contains("daily_limit")) m = "وصلت إلى حد الدعم اليومي";
+                                      else if (fe.contains("own_post")) m = "لا يمكنك دعم منشورك";
+                                      else if (fe.contains("invalid_gift")) m = "هذه الهدية غير متاحة، حدّث التطبيق";
+                                      toast(m);
+                                  } else {
+                                      sCombo++;
+                                      sComboNet += fnet;
+                                      toast("🎁 " + it[2] + (sCombo > 1 ? " ×" + sCombo : ""));
+                                  }
+                                  updateSupport();
+                              }
+                          });
+                      }
+                  });
+              }
+
+              private void openSupporters(final String pk, final String owner) {
+                  final Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
+                  d.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  d.getWindow().setGravity(Gravity.BOTTOM);
+                  d.getWindow().setBackgroundDrawable(new ColorDrawable(0xCC000000));
+                  d.getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                  LinearLayout box = new LinearLayout(this);
+                  box.setOrientation(LinearLayout.VERTICAL);
+                  box.setPadding(dp(18), dp(14), dp(18), dp(18));
+                  GradientDrawable pbg = new GradientDrawable();
+                  pbg.setColor(0xFF16161C);
+                  pbg.setCornerRadii(new float[] { dp(26), dp(26), dp(26), dp(26), 0, 0, 0, 0 });
+                  box.setBackground(pbg);
+                  TextView title = tv(Color.WHITE, 18, true);
+                  title.setText("الداعمون");
+                  box.addView(title);
+                  final TextView count = tv(MUTED, 12, false);
+                  count.setText(" ");
+                  box.addView(count);
+                  final TextView total = tv(GOLD, 16, true);
+                  total.setPadding(0, dp(8), 0, dp(8));
+                  box.addView(total);
+                  final ScrollView sv2 = new ScrollView(this);
+                  final LinearLayout list = new LinearLayout(this);
+                  list.setOrientation(LinearLayout.VERTICAL);
+                  TextView ld = tv(MUTED, 14, false);
+                  ld.setText("جارٍ التحميل...");
+                  ld.setGravity(Gravity.CENTER);
+                  ld.setPadding(0, dp(24), 0, dp(24));
+                  list.addView(ld);
+                  sv2.addView(list);
+                  box.addView(sv2, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(320)));
+                  if (!owner.equals(uid)) {
+                      TextView go = tv(NAVY, 15, true);
+                      go.setText("ادعم هذا المنشور");
+                      go.setGravity(Gravity.CENTER);
+                      GradientDrawable gg = new GradientDrawable();
+                      gg.setColor(GOLD); gg.setCornerRadius(dp(16));
+                      go.setBackground(gg);
+                      go.setPadding(0, dp(14), 0, dp(14));
+                      go.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { d.dismiss(); openSupportSheet(pk, owner); }
+                      });
+                      LinearLayout.LayoutParams glp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                      glp.setMargins(0, dp(10), 0, 0);
+                      box.addView(go, glp);
+                  }
+                  d.setContentView(box);
+                  d.show();
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          final List<String[]> rows = new ArrayList<String[]>();
+                          String err = null;
+                          try {
+                              JSONArray a = new JSONArray(rpc("support_supporters", "{\"p_post_id\":" + pk + ",\"p_limit\":50}"));
+                              Map<String, String> names = new HashMap<String, String>();
+                              StringBuilder ids = new StringBuilder();
+                              for (int i = 0; i < a.length(); i++) { if (ids.length() > 0) ids.append(","); ids.append(a.getJSONObject(i).optString("from_user_id")); }
+                              if (ids.length() > 0) {
+                                  try {
+                                      JSONArray pp = new JSONArray(get("public_profiles?select=user_id,nickname,username&user_id=in.(" + ids + ")"));
+                                      for (int i = 0; i < pp.length(); i++) {
+                                          JSONObject p = pp.getJSONObject(i);
+                                          String nn = p.isNull("nickname") ? "" : p.optString("nickname", "");
+                                          if (nn.length() == 0) nn = p.isNull("username") ? "" : p.optString("username", "");
+                                          if (nn.length() > 0) names.put(p.optString("user_id"), nn);
+                                      }
+                                  } catch (Exception ignore) {}
+                              }
+                              for (int i = 0; i < a.length(); i++) {
+                                  JSONObject r = a.getJSONObject(i);
+                                  String uidr = r.optString("from_user_id");
+                                  String nm = names.containsKey(uidr) ? names.get(uidr) : r.optString("from_name", "مستخدم");
+                                  rows.add(new String[] { nm, String.valueOf(r.optLong("total_amount")), String.valueOf(r.optInt("times")) });
+                              }
+                          } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                          long[] st = sup.get(pk);
+                          final long tn = st == null ? 0 : st[0];
+                          final long cn = st == null ? rows.size() : st[1];
+                          final boolean bad = err != null;
+                          runOnUiThread(new Runnable() {
+                              @Override public void run() {
+                                  list.removeAllViews();
+                                  if (bad) {
+                                      TextView e1 = tv(MUTED, 14, false); e1.setText("تعذّر التحميل"); e1.setGravity(Gravity.CENTER); e1.setPadding(0, dp(24), 0, dp(24)); list.addView(e1); return;
+                                  }
+                                  if (rows.isEmpty()) {
+                                      TextView e1 = tv(MUTED, 14, false); e1.setText("لا يوجد داعمون بعد\nكن أول من يدعم"); e1.setGravity(Gravity.CENTER); e1.setPadding(0, dp(24), 0, dp(24)); list.addView(e1);
+                                      count.setText("عدد الدعم 0");
+                                      return;
+                                  }
+                                  count.setText("عدد الدعم " + kfmt(cn));
+                                  total.setText("إجمالي الدعم: " + nfmt(tn) + " ZELO");
+                                  int[] rk = new int[] { 0xFFFFD978, 0xFFD9DEE7, 0xFFD9975B };
+                                  for (int i = 0; i < rows.size(); i++) {
+                                      String[] r = rows.get(i);
+                                      LinearLayout line = new LinearLayout(this_());
+                                      line.setGravity(Gravity.CENTER_VERTICAL);
+                                      line.setPadding(0, dp(10), 0, dp(10));
+                                      TextView rank = tv(i < 3 ? NAVY : MUTED, 12, true);
+                                      rank.setText(String.valueOf(i + 1));
+                                      rank.setGravity(Gravity.CENTER);
+                                      rank.setBackground(oval(i < 3 ? rk[i] : 0x1FFFFFFF, 0x00000000));
+                                      line.addView(rank, new LinearLayout.LayoutParams(dp(24), dp(24)));
+                                      LinearLayout mid = new LinearLayout(this_());
+                                      mid.setOrientation(LinearLayout.VERTICAL);
+                                      mid.setPadding(dp(10), 0, dp(10), 0);
+                                      TextView nm = tv(Color.WHITE, 15, true);
+                                      nm.setText(r[0]);
+                                      nm.setSingleLine(true);
+                                      mid.addView(nm);
+                                      TextView sb = tv(MUTED, 12, false);
+                                      sb.setText(nfmt(Long.parseLong(r[1])) + " ZELO · " + r[2] + " مرة");
+                                      mid.addView(sb);
+                                      line.addView(mid, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                                      list.addView(line);
+                                  }
+                              }
+                          });
+                      }
+                  });
+              }
+              private Context this_() { return this; }
+
+              // ---------------- الاشتراكات والتعزيز ----------------
+              private static final String[][] PLANS = {
+                  { "1", "الأساسية", "0.99", "8.49", "zelo_t1_m", "zelo_t1_y" },
+                  { "2", "المميّزة", "1.99", "16.99", "zelo_t2_m", "zelo_t2_y" },
+                  { "3", "الكاملة", "4.99", "41.99", "zelo_t3_m", "zelo_t3_y" }
+              };
+              private static final String[][] MATRIX = {
+                  { "1", "توثيق الحساب وشعار النادي" }, { "1", "منشور أطول (حتى 1000 حرف)" }, { "1", "رسائل صوتية داخل الغرف" },
+                  { "2", "نشر الصور" }, { "2", "نشر الفيديو" }, { "2", "الذكاء الاصطناعي" },
+                  { "3", "نوع المنشور" }, { "3", "توقّع المباريات" }
+              };
+
+              private interface TierCb { void on(int tier); }
+              private void fetchTier(final TierCb cb) {
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          int t = 0;
+                          try {
+                              JSONArray a = new JSONArray(rpc("tier_among", "{\"p_ids\":[\"" + uid + "\"]}"));
+                              if (a.length() > 0) t = a.getJSONObject(0).optInt("tier", 0);
+                          } catch (Exception ignore) {}
+                          final int ft = t;
+                          runOnUiThread(new Runnable() { @Override public void run() { cb.on(ft); } });
+                      }
+                  });
+              }
+
+              private Dialog sheetDialog(boolean full) {
+                  Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
+                  d.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, full ? ViewGroup.LayoutParams.MATCH_PARENT : ViewGroup.LayoutParams.WRAP_CONTENT);
+                  d.getWindow().setGravity(full ? Gravity.TOP : Gravity.BOTTOM);
+                  d.getWindow().setBackgroundDrawable(new ColorDrawable(full ? NAVY : 0xCC000000));
+                  d.getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                  return d;
+              }
+
+              private TextView pill(String text, int fg, int bgc, int stroke) {
+                  TextView b = tv(fg, 15, true);
+                  b.setText(text);
+                  b.setGravity(Gravity.CENTER);
+                  GradientDrawable g = new GradientDrawable();
+                  g.setColor(bgc);
+                  g.setCornerRadius(dp(14));
+                  if (stroke != 0) g.setStroke(dp(1), stroke);
+                  b.setBackground(g);
+                  b.setPadding(dp(12), dp(12), dp(12), dp(12));
+                  return b;
+              }
+
+              private void openSubscriptions() {
+                  final Dialog d = sheetDialog(true);
+                  ScrollView sc = new ScrollView(this);
+                  final LinearLayout box = new LinearLayout(this);
+                  box.setOrientation(LinearLayout.VERTICAL);
+                  box.setPadding(dp(16), dp(14), dp(16), dp(24));
+                  TextView x = tv(GOLD, 22, true);
+                  x.setText("‹ رجوع");
+                  x.setPadding(0, dp(6), 0, dp(10));
+                  x.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
+                  box.addView(x);
+                  TextView h1 = tv(Color.WHITE, 24, true);
+                  h1.setText("الاشتراكات");
+                  box.addView(h1);
+                  TextView sub = tv(MUTED, 13, false);
+                  sub.setText("شارك ناديك المفضل واحصل على مزايا إضافية.");
+                  sub.setPadding(0, dp(2), 0, dp(8));
+                  box.addView(sub);
+                  final TextView active = tv(GOLD, 14, true);
+                  active.setVisibility(View.GONE);
+                  active.setPadding(dp(12), dp(8), dp(12), dp(8));
+                  GradientDrawable ag = new GradientDrawable();
+                  ag.setColor(0x1FF5C35A); ag.setCornerRadius(dp(12)); ag.setStroke(dp(1), 0x66F5C35A);
+                  active.setBackground(ag);
+                  box.addView(active);
+
+                  final List<TextView> btns = new ArrayList<TextView>();
+                  for (int i = 0; i < PLANS.length; i++) {
+                      final String[] p = PLANS[i];
+                      final int tier = Integer.parseInt(p[0]);
+                      LinearLayout card = new LinearLayout(this);
+                      card.setOrientation(LinearLayout.VERTICAL);
+                      card.setPadding(dp(14), dp(14), dp(14), dp(14));
+                      GradientDrawable cg = new GradientDrawable();
+                      cg.setColor(CARD); cg.setCornerRadius(dp(18));
+                      cg.setStroke(dp(tier == 3 ? 2 : 1), tier == 3 ? GOLD : 0x73F5C35A);
+                      card.setBackground(cg);
+                      LinearLayout head = new LinearLayout(this);
+                      head.setGravity(Gravity.CENTER_VERTICAL);
+                      TextView nm = tv(Color.WHITE, 18, true);
+                      nm.setText(p[1] + (tier == 3 ? "  ★ الأفضل قيمة" : ""));
+                      head.addView(nm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                      TextView pr = tv(GOLD, 20, true);
+                      pr.setText("$" + p[2] + " / شهريًا");
+                      head.addView(pr);
+                      card.addView(head);
+                      for (int m = 0; m < MATRIX.length; m++) {
+                          boolean on = tier >= Integer.parseInt(MATRIX[m][0]);
+                          LinearLayout rw = new LinearLayout(this);
+                          rw.setGravity(Gravity.CENTER_VERTICAL);
+                          rw.setPadding(0, dp(7), 0, dp(7));
+                          TextView lb = tv(on ? Color.WHITE : 0xFF6F7AA8, 14, false);
+                          lb.setText(MATRIX[m][1]);
+                          rw.addView(lb, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                          TextView mk = tv(on ? 0xFF2DE2C4 : 0xFFFF6B86, 16, true);
+                          mk.setText(on ? "✓" : "✗");
+                          rw.addView(mk);
+                          card.addView(rw);
+                      }
+                      TextView btn = pill("اشترك", tier == 3 ? NAVY : GOLD, tier == 3 ? GOLD : 0x00000000, tier == 3 ? 0 : 0x73F5C35A);
+                      btn.setTag(Integer.valueOf(tier));
+                      btns.add(btn);
+                      LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                      bl.setMargins(0, dp(8), 0, 0);
+                      card.addView(btn, bl);
+                      btn.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { Object cur = box.getTag(); int ct = cur instanceof Integer ? (Integer) cur : 0; planClick(d, p, tier, ct); }
+                      });
+                      LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                      cl.setMargins(0, dp(10), 0, 0);
+                      box.addView(card, cl);
+                  }
+                  String[] notes = new String[] {
+                      "الدفع عبر Google Play. يتجدد الاشتراك تلقائيًا ويمكنك إلغاؤه في أي وقت من إعدادات الاشتراكات في Google Play. السعر النهائي بعملتك يظهر في نافذة الدفع.",
+                      "ZELO Sport تطبيق مستقل وغير تابع لأي نادٍ أو رابطة. أسماء الأندية وشعاراتها ملك لأصحابها وتُعرض للتعريف بالنادي المفضّل فقط.",
+                      "تحذير: أي تلاعب في الكورة أو المكافآت أو الإعلانات يعرّض الحساب للحذف وخسارة كل شيء، بما في ذلك الاشتراك والرصيد، دون تعويض."
+                  };
+                  for (int i = 0; i < notes.length; i++) {
+                      TextView n = tv(i == 2 ? 0xFFFFB4A8 : MUTED, 11, false);
+                      n.setText(notes[i]);
+                      n.setPadding(0, dp(10), 0, 0);
+                      box.addView(n);
+                  }
+                  TextView rs = pill("استعادة مشترياتي", GOLD, 0x00000000, 0x73F5C35A);
+                  rs.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); goWeb("restore"); } });
+                  LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  rl.setMargins(0, dp(14), 0, 0);
+                  box.addView(rs, rl);
+                  sc.addView(box);
+                  d.setContentView(sc);
+                  d.show();
+                  fetchTier(new TierCb() {
+                      @Override public void on(int t) {
+                          box.setTag(Integer.valueOf(t));
+                          if (t > 0) {
+                              active.setText("✅ اشتراكك فعّال: " + PLANS[Math.min(t, 3) - 1][1]);
+                              active.setVisibility(View.VISIBLE);
+                          }
+                          for (TextView b : btns) {
+                              int pt = (Integer) b.getTag();
+                              b.setText(t == 0 ? "اشترك" : pt > t ? "ترقية" : pt == t ? "باقتك الحالية" : "باقتك أعلى من هذه");
+                              b.setAlpha(pt <= t && t > 0 ? 0.55f : 1f);
+                          }
+                      }
+                  });
+              }
+
+              private void planClick(final Dialog parent, final String[] p, int tier, final int cur) {
+                  if (cur > 0 && tier == cur) { toast("هذه باقتك الحالية"); return; }
+                  if (cur > 0 && tier < cur) { toast("لا يمكن النزول إلى باقة أقل أثناء اشتراكك الحالي"); return; }
+                  final Dialog d = sheetDialog(false);
+                  LinearLayout box = new LinearLayout(this);
+                  box.setOrientation(LinearLayout.VERTICAL);
+                  box.setPadding(dp(16), dp(16), dp(16), dp(24));
+                  GradientDrawable pbg = new GradientDrawable();
+                  pbg.setColor(CARD);
+                  pbg.setCornerRadii(new float[] { dp(22), dp(22), dp(22), dp(22), 0, 0, 0, 0 });
+                  box.setBackground(pbg);
+                  TextView t = tv(Color.WHITE, 18, true);
+                  t.setText((cur > 0 ? "ترقية إلى " : "") + p[1]);
+                  t.setPadding(0, 0, 0, dp(12));
+                  box.addView(t);
+                  final String up = cur > 0 ? "1" : "0";
+                  TextView m = pill("شهري  ·  $" + p[2] + " / شهر", GOLD, 0x00000000, 0x73F5C35A);
+                  m.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); parent.dismiss(); goWeb("pay:" + p[4] + ":" + up); } });
+                  box.addView(m);
+                  int save = (int) Math.round((1 - Double.parseDouble(p[3]) / (Double.parseDouble(p[2]) * 12)) * 100);
+                  TextView y = pill("سنوي (وفّر " + save + "٪)  ·  $" + p[3] + " / سنة", NAVY, GOLD, 0);
+                  y.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); parent.dismiss(); goWeb("pay:" + p[5] + ":" + up); } });
+                  LinearLayout.LayoutParams yl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                  yl.setMargins(0, dp(10), 0, 0);
+                  box.addView(y, yl);
+                  if (cur > 0) {
+                      TextView n = tv(MUTED, 11, false);
+                      n.setText("الترقية فورية. تُحسب لك المدة المتبقية من باقتك الحالية.");
+                      n.setPadding(0, dp(10), 0, 0);
+                      box.addView(n);
+                  }
+                  d.setContentView(box);
+                  d.show();
+              }
+
+              private int bDaily = 1, bDays = 1;
+              private long bBalance = 0, bAudience = -1;
+              private TextView bDailyV, bDaysV, bTotal, bReach, bBal, bMsg, bBtn;
+              private boolean bBusy = false;
+
+              private void openBoost(final String pk) {
+                  if (uid == null) return;
+                  fetchTier(new TierCb() {
+                      @Override public void on(int t) {
+                          if (t <= 0) { toast("التعزيز للمشتركين فقط"); openSubscriptions(); return; }
+                          showBoost(pk);
+                      }
+                  });
+              }
+
+              private void showBoost(final String pk) {
+                  bDaily = 1; bDays = 1; bBalance = 0; bAudience = -1; bBusy = false;
+                  final Dialog d = sheetDialog(false);
+                  ScrollView sc = new ScrollView(this);
+                  LinearLayout box = new LinearLayout(this);
+                  box.setOrientation(LinearLayout.VERTICAL);
+                  box.setPadding(dp(18), dp(16), dp(18), dp(22));
+                  GradientDrawable pbg = new GradientDrawable();
+                  pbg.setColor(0xFF121215);
+                  pbg.setCornerRadii(new float[] { dp(24), dp(24), dp(24), dp(24), 0, 0, 0, 0 });
+                  pbg.setStroke(dp(1), 0x40F5C35A);
+                  box.setBackground(pbg);
+                  TextView title = tv(Color.WHITE, 18, true);
+                  title.setText("تعزيز المنشور");
+                  title.setGravity(Gravity.CENTER);
+                  box.addView(title);
+                  TextView ds = tv(MUTED, 13, false);
+                  ds.setText("اختر الميزانية اليومية والمدة. تُخصم النقاط حسب الظهور الفعلي فقط.");
+                  ds.setPadding(0, dp(8), 0, dp(14));
+                  box.addView(ds);
+
+                  LinearLayout r1 = new LinearLayout(this);
+                  TextView l1 = tv(MUTED, 13, false); l1.setText("الميزانية اليومية");
+                  bDailyV = tv(Color.WHITE, 15, true);
+                  r1.addView(l1, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  r1.addView(bDailyV);
+                  box.addView(r1);
+                  SeekBar s1 = new SeekBar(this);
+                  s1.setMax(499);
+                  s1.setProgress(0);
+                  s1.getProgressDrawable().setColorFilter(GOLD, android.graphics.PorterDuff.Mode.SRC_IN);
+                  s1.getThumb().setColorFilter(GOLD, android.graphics.PorterDuff.Mode.SRC_IN);
+                  box.addView(s1);
+
+                  LinearLayout r2 = new LinearLayout(this);
+                  r2.setPadding(0, dp(14), 0, 0);
+                  TextView l2 = tv(MUTED, 13, false); l2.setText("المدة");
+                  bDaysV = tv(Color.WHITE, 15, true);
+                  r2.addView(l2, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  r2.addView(bDaysV);
+                  box.addView(r2);
+                  SeekBar s2 = new SeekBar(this);
+                  s2.setMax(29);
+                  s2.setProgress(0);
+                  s2.getProgressDrawable().setColorFilter(GOLD, android.graphics.PorterDuff.Mode.SRC_IN);
+                  s2.getThumb().setColorFilter(GOLD, android.graphics.PorterDuff.Mode.SRC_IN);
+                  box.addView(s2);
+
+                  LinearLayout r3 = new LinearLayout(this);
+                  r3.setPadding(0, dp(16), 0, 0);
+                  TextView l3 = tv(MUTED, 13, false); l3.setText("الإجمالي");
+                  bTotal = tv(Color.WHITE, 15, true);
+                  r3.addView(l3, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  r3.addView(bTotal);
+                  box.addView(r3);
+                  LinearLayout r4 = new LinearLayout(this);
+                  r4.setPadding(0, dp(8), 0, 0);
+                  TextView l4 = tv(MUTED, 13, false); l4.setText("الوصول اليومي المتوقع");
+                  bReach = tv(Color.WHITE, 13, true);
+                  r4.addView(l4, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  r4.addView(bReach);
+                  box.addView(r4);
+                  bBal = tv(MUTED, 13, false);
+                  bBal.setPadding(0, dp(8), 0, 0);
+                  box.addView(bBal);
+                  bMsg = tv(0xFFFF6B6B, 12, false);
+                  bMsg.setPadding(0, dp(8), 0, dp(6));
+                  box.addView(bMsg);
+                  bBtn = pill("تعزيز المنشور", NAVY, GOLD, 0);
+                  box.addView(bBtn);
+
+                  SeekBar.OnSeekBarChangeListener ch = new SeekBar.OnSeekBarChangeListener() {
+                      @Override public void onProgressChanged(SeekBar sb, int p, boolean u) {
+                          if (sb.getMax() == 499) bDaily = p + 1; else bDays = p + 1;
+                          updateBoost();
+                      }
+                      @Override public void onStartTrackingTouch(SeekBar sb) {}
+                      @Override public void onStopTrackingTouch(SeekBar sb) {}
+                  };
+                  s1.setOnSeekBarChangeListener(ch);
+                  s2.setOnSeekBarChangeListener(ch);
+                  bBtn.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { submitBoost(pk, d); }
+                  });
+                  sc.addView(box);
+                  d.setContentView(sc);
+                  d.show();
+                  updateBoost();
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              JSONArray a = new JSONArray(get("users?select=points&user_id=eq." + uid));
+                              if (a.length() > 0) bBalance = a.getJSONObject(0).optLong("points", 0);
+                          } catch (Exception ignore) {}
+                          try { bAudience = Long.parseLong(rpc("boost_audience_size", "{}").trim()); } catch (Exception ignore) {}
+                          runOnUiThread(new Runnable() { @Override public void run() { updateBoost(); } });
+                      }
+                  });
+              }
+
+              private void updateBoost() {
+                  if (bDailyV == null) return;
+                  long daily = bDaily * 1000L;
+                  boolean enough = bBalance >= daily;
+                  bDailyV.setText(nfmt(daily) + " ZELO");
+                  bDaysV.setText(bDays + " يومًا");
+                  bTotal.setText(nfmt(daily * bDays) + " ZELO");
+                  if (bAudience < 0) bReach.setText("—");
+                  else bReach.setText("حتى " + nfmt(Math.min(daily * 10, bAudience * 3)) + " ظهور يوميًا (تقديري)");
+                  bBal.setText("رصيدك: " + nfmt(bBalance) + " ZELO");
+                  bMsg.setText(enough ? "" : "رصيدك لا يكفي لميزانية يوم واحد. اربح نقاطًا أولًا.");
+                  bBtn.setAlpha(!enough || bBusy ? 0.5f : 1f);
+              }
+
+              private void submitBoost(final String pk, final Dialog d) {
+                  if (bBusy || bBalance < bDaily * 1000L) return;
+                  bBusy = true;
+                  updateBoost();
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          String err = null;
+                          try {
+                              JSONObject b = new JSONObject();
+                              b.put("p_user_id", uid);
+                              b.put("p_post_id", Long.parseLong(pk));
+                              b.put("p_daily_points", bDaily * 1000L);
+                              b.put("p_days", bDays);
+                              rpc("create_boost", b.toString());
+                          } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                          final String fe = err;
+                          runOnUiThread(new Runnable() {
+                              @Override public void run() {
+                                  bBusy = false;
+                                  if (fe == null) { d.dismiss(); toast("تم تعزيز المنشور ✅"); loadBalance(); return; }
+                                  String m = "تعذّر التعزيز، حاول لاحقًا";
+                                  if (fe.contains("premium_required")) m = "التعزيز للمشتركين فقط";
+                                  else if (fe.contains("insufficient_balance")) m = "رصيدك لا يكفي";
+                                  else if (fe.contains("already_active")) m = "هذا المنشور معزّز حاليًا";
+                                  else if (fe.contains("not_owner")) m = "لا يمكنك تعزيز منشور ليس لك";
+                                  toast(m);
+                                  updateBoost();
+                              }
+                          });
                       }
                   });
               }
@@ -1077,12 +2592,13 @@ jobs:
                                       b.put("author_avatar", uavatar == null ? "" : uavatar);
                                       b.put("content", txt);
                                       send("POST", "post_comments", b.toString());
+                                      queueNotify("comment", ownerOf(pk), pk, txt, null);
                                   } catch (Exception e) { err = String.valueOf(e.getMessage()); }
                                   final String fe = err;
                                   runOnUiThread(new Runnable() {
                                       @Override public void run() {
                                           sendBtn.setEnabled(true);
-                                          if (fe != null) { toast(fe.contains("premium_required") ? "هذه الميزة للمشتركين فقط" : "تعذّر الإرسال"); return; }
+                                          if (fe != null) { if (fe.contains("premium_required")) { toast("هذه الميزة للمشتركين فقط"); openSubscriptions(); } else toast("تعذّر الإرسال"); return; }
                                           et.setText("");
                                           reload.run();
                                       }
@@ -1136,11 +2652,31 @@ jobs:
                           String err = null;
                           final List<JSONObject> got = new ArrayList<JSONObject>();
                           try {
-                              JSONArray a = new JSONArray(get("posts?select=id,user_id,author_name,content,created_at,image_url,video_url,video_path&order=created_at.desc&limit=" + PAGE + "&offset=" + offset));
+                              if (!metaLoaded && uid != null) {
+                                  metaLoaded = true;
+                                  try {
+                                      JSONArray x = new JSONArray(get("user_follows?select=following_id&follower_id=eq." + uid + "&limit=1000"));
+                                      for (int q = 0; q < x.length(); q++) followSet.add(x.getJSONObject(q).optString("following_id"));
+                                  } catch (Exception ignore) {}
+                                  try {
+                                      JSONArray x = new JSONArray(get("user_mutes?select=muted_id&user_id=eq." + uid + "&limit=1000"));
+                                      for (int q = 0; q < x.length(); q++) muteSet.add(x.getJSONObject(q).optString("muted_id"));
+                                  } catch (Exception ignore) {}
+                                  try {
+                                      JSONArray x = new JSONArray(get("user_blocks?select=blocked_id&user_id=eq." + uid + "&limit=1000"));
+                                      for (int q = 0; q < x.length(); q++) blockSet.add(x.getJSONObject(q).optString("blocked_id"));
+                                  } catch (Exception ignore) {}
+                                  String hs = getSharedPreferences("zn", MODE_PRIVATE).getString("hidden", "");
+                                  for (String h0 : hs.split(",")) if (h0.length() > 0) hiddenSet.add(h0);
+                              }
+                              JSONArray a = new JSONArray(get("posts?select=id,user_id,author_name,content,created_at,image_url,video_url,video_path,topic_type,topic_name,topic_name_b&order=created_at.desc&limit=" + PAGE + "&offset=" + offset));
                               StringBuilder ids = new StringBuilder();
                               Set<String> users = new HashSet<String>();
+                              final int rawN = a.length();
                               for (int k = 0; k < a.length(); k++) {
                                   JSONObject p = a.getJSONObject(k);
+                                  String au = p.optString("user_id", "");
+                                  if (muteSet.contains(au) || blockSet.contains(au) || hiddenSet.contains(String.valueOf(p.optLong("id")))) continue;
                                   got.add(p);
                                   stats.put(String.valueOf(p.optLong("id")), new int[] { 0, 0, 0, 0 });
                                   if (ids.length() > 0) ids.append(",");
@@ -1149,7 +2685,7 @@ jobs:
                               }
                               final String fids = ids.toString();
                               final long mid = System.currentTimeMillis() - t0;
-                              final int n = got.size();
+                              final int n = rawN;
                               runOnUiThread(new Runnable() {
                                   @Override public void run() {
                                       items.addAll(got);
@@ -1183,6 +2719,45 @@ jobs:
                                       JSONArray la = new JSONArray(get("post_likes?select=post_id&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
                                       for (int q = 0; q < la.length(); q++) liked.add(String.valueOf(la.getJSONObject(q).optLong("post_id")));
                                   } catch (Exception ignore) {}
+                                  try {
+                                      JSONArray x = new JSONArray(get("post_reposts?select=post_id&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
+                                      for (int q = 0; q < x.length(); q++) reposted.add(String.valueOf(x.getJSONObject(q).optLong("post_id")));
+                                  } catch (Exception ignore) {}
+                                  try {
+                                      JSONArray x = new JSONArray(get("post_bookmarks?select=post_id&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
+                                      for (int q = 0; q < x.length(); q++) saved.add(String.valueOf(x.getJSONObject(q).optLong("post_id")));
+                                  } catch (Exception ignore) {}
+                                  try {
+                                      JSONArray x = new JSONArray(get("post_views?select=post_id&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
+                                      for (int q = 0; q < x.length(); q++) viewedMine.add(String.valueOf(x.getJSONObject(q).optLong("post_id")));
+                                  } catch (Exception ignore) {}
+                                  try {
+                                      JSONArray x = new JSONArray(rpc("get_prediction_info", "{\"p_ids\":[" + fids + "]}"));
+                                      for (int q = 0; q < x.length(); q++) preds.put(String.valueOf(x.getJSONObject(q).optLong("post_id")), x.getJSONObject(q));
+                                  } catch (Exception ignore) {}
+                                  loadSupportStats(fids);
+                                  try {
+                                      JSONArray x = new JSONArray(rpc("rope_summary", "{\"p_ids\":[" + fids + "]}"));
+                                      for (int q = 0; q < x.length(); q++) {
+                                          JSONObject ro = x.getJSONObject(q);
+                                          String pk = String.valueOf(ro.optLong("post_id"));
+                                          long[] r = ropes.get(pk);
+                                          if (r == null) { r = new long[] { 0, 0, -1 }; ropes.put(pk, r); }
+                                          int sd = ro.optInt("side", 0);
+                                          if (sd == 0 || sd == 1) r[sd] += ro.optLong("n", 0);
+                                      }
+                                      JSONArray y = new JSONArray(get("post_rope_votes?select=post_id,side&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
+                                      for (int q = 0; q < y.length(); q++) {
+                                          String pk = String.valueOf(y.getJSONObject(q).optLong("post_id"));
+                                          long[] r = ropes.get(pk);
+                                          if (r == null) { r = new long[] { 0, 0, -1 }; ropes.put(pk, r); }
+                                          r[2] = y.getJSONObject(q).optInt("side", -1);
+                                      }
+                                  } catch (Exception ignore) {}
+                                  for (JSONObject p : got) {
+                                      String pk = String.valueOf(p.optLong("id"));
+                                      if (!p.isNull("topic_type") && ropes.get(pk) == null) ropes.put(pk, new long[] { 0, 0, -1 });
+                                  }
                               }
                           } catch (Exception e) {
                               err = String.valueOf(e.getMessage());
@@ -1191,6 +2766,7 @@ jobs:
                           runOnUiThread(new Runnable() {
                               @Override public void run() {
                                   loading = false;
+                                  getSharedPreferences("zn", MODE_PRIVATE).edit().putInt("boot", 0).apply();
                                   if (fe != null) { if (items.isEmpty()) status.setText("خطأ: " + fe); return; }
                                   adapter.notifyDataSetChanged();
                               }
@@ -1216,8 +2792,28 @@ jobs:
                   l.setPadding(0, dp(4), 0, 0);
                   c.addView(l);
                   c.setOnClickListener(new View.OnClickListener() {
-                      @Override public void onClick(View v) { goWeb(action); }
+                      @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else goWeb(action); }
                   });
+                  return c;
+              }
+
+              private View navItem(String glyph, String label, final String action, boolean active) {
+                  LinearLayout c = new LinearLayout(this);
+                  c.setOrientation(LinearLayout.VERTICAL);
+                  c.setGravity(Gravity.CENTER);
+                  TextView g = tv(active ? GOLD : MUTED, 20, false);
+                  g.setText(glyph);
+                  g.setGravity(Gravity.CENTER);
+                  c.addView(g);
+                  TextView l = tv(active ? GOLD : MUTED, 11, active);
+                  l.setText(label);
+                  l.setGravity(Gravity.CENTER);
+                  c.addView(l);
+                  if (action != null) {
+                      c.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { goWeb(action); }
+                      });
+                  }
                   return c;
               }
 
@@ -1251,6 +2847,8 @@ jobs:
                   uname = getIntent().getStringExtra("uname");
                   uavatar = getIntent().getStringExtra("uavatar");
                   linkTpl = getIntent().getStringExtra("linkTpl");
+
+                  getSharedPreferences("zn", MODE_PRIVATE).edit().putInt("boot", 1).apply();
 
                   FrameLayout outer = new FrameLayout(this);
                   outer.setBackgroundColor(NAVY);
@@ -1292,7 +2890,7 @@ jobs:
                       @Override public void onClick(View v) { goWeb("points"); }
                   });
                   LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(46));
-                  blp.setMargins(dp(10), 0, 0, 0);
+                  blp.setMargins(0, 0, dp(10), 0);
                   top.addView(balance, blp);
                   top.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
                   TextView rf = iconBtn("↻", null);
@@ -1302,11 +2900,6 @@ jobs:
                   top.addView(rf);
                   top.addView(iconBtn("🔍", "search"));
                   top.addView(iconBtn("🔔", "notifications"));
-                  TextView close = iconBtn("✕", null);
-                  close.setOnClickListener(new View.OnClickListener() {
-                      @Override public void onClick(View v) { finish(); }
-                  });
-                  top.addView(close);
                   root.addView(top);
 
                   // دوائر الاختصارات
@@ -1319,6 +2912,7 @@ jobs:
                   shortcuts.addView(circleBtn("⬆", "كيف تكسب", "earn", false));
                   shortcuts.addView(circleBtn("🏆", "الترتيب", "ranking", false));
                   shortcuts.addView(circleBtn("🎯", "الرادار", "radar", false));
+                  shortcuts.addView(circleBtn("⭐", "الاشتراكات", "subs", false));
                   hs.addView(shortcuts);
                   root.addView(hs);
 
@@ -1361,16 +2955,33 @@ jobs:
                           int[] s = stats.get(String.valueOf(o.optLong("id")));
                           if (s == null) s = new int[] { 0, 0, 0, 0 };
                           boolean lk = liked.contains(String.valueOf(o.optLong("id")));
-                          h.heart.setText((lk ? "❤️ " : "🤍 ") + s[0]);
-                          h.heart.setTextColor(lk ? 0xFFFF4D6D : MUTED);
+                          h.heart.setText(String.valueOf(s[0]));
+                          setIc(h.heart, 2, lk ? 0xFFFF4D6D : MUTED, lk);
                           Integer ti = Integer.valueOf(i);
                           h.heart.setTag(ti);
                           h.more.setTag(ti);
                           h.video.setTag(ti);
                           h.cm.setTag(ti);
-                          h.cm.setText("💬 " + s[1]);
-                          h.rp.setText("🔁 " + s[2]);
-                          h.vw.setText("👁 " + s[3]);
+                          h.cm.setText(String.valueOf(s[1]));
+                          setIc(h.cm, 0, MUTED, false);
+                          String pk2 = String.valueOf(o.optLong("id"));
+                          boolean rpd = reposted.contains(pk2);
+                          h.rp.setText(String.valueOf(s[2]));
+                          setIc(h.rp, 1, rpd ? 0xFF14F195 : MUTED, false);
+                          h.rp.setTag(ti);
+                          h.vw.setText(String.valueOf(s[3]));
+                          setIc(h.vw, 3, MUTED, false);
+                          boolean svd = saved.contains(pk2);
+                          h.sv.setText("");
+                          setIc(h.sv, 4, svd ? GOLD : MUTED, svd);
+                          h.sv.setTag(ti);
+                          h.sh.setText("");
+                          setIc(h.sh, 5, MUTED, false);
+                          h.sh.setTag(ti);
+                          bindRope(h, o);
+                          bindPred(h, o);
+                          bindSupport(h, o);
+                          recordView(o, s);
                           return cv;
                       }
                   };
@@ -1381,8 +2992,8 @@ jobs:
                           if (total > 0 && first + visible >= total - 4) loadPage();
                       }
                   });
-                  root.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-
+                  FrameLayout listBox = new FrameLayout(this);
+                  listBox.addView(lv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
                   // زر "+" لكتابة منشور (يفتح نافذة الكتابة في الويب)
                   TextView fab = tv(Color.WHITE, 30, false);
                   fab.setText("+");
@@ -1393,13 +3004,32 @@ jobs:
                       @Override public void onClick(View v) { goWeb("compose"); }
                   });
                   FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.BOTTOM | Gravity.LEFT);
-                  flp.setMargins(dp(18), 0, 0, dp(28));
-                  outer.addView(fab, flp);
+                  flp.setMargins(dp(18), 0, 0, dp(18));
+                  listBox.addView(fab, flp);
+                  root.addView(listBox, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+                  // الشريط السفلي الأصلي
+                  View line = new View(this);
+                  line.setBackgroundColor(0x2EF5C35A);
+                  root.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+                  LinearLayout nav = new LinearLayout(this);
+                  nav.setBackgroundColor(NAVY);
+                  nav.addView(navItem("🏠", "الرئيسية", null, true), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem("⚽", "المباريات", "nav:matches", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem("▶️", "فيديو", "nav:videos", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem("✉️", "الرسائل", "nav:messages", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem("👤", "الملف الشخصي", "nav:profile", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  root.addView(nav);
 
                   setContentView(outer);
                   t0 = System.currentTimeMillis();
                   loadBalance();
                   loadPage();
+              }
+
+              @Override
+              public void onBackPressed() {
+                  moveTaskToBack(true);
               }
 
               @Override
@@ -1424,6 +3054,11 @@ jobs:
               @PluginMethod
               public void open(PluginCall call) {
                   try {
+                      // إن لم تكتمل المرة السابقة (احتمال انهيار) نرجع للرئيسية القديمة (ويب)
+                      if (getContext().getSharedPreferences("zn", android.content.Context.MODE_PRIVATE).getInt("boot", 0) == 1) {
+                          call.reject("native_unstable");
+                          return;
+                      }
                       Intent i = new Intent(getContext(), NativeFeedActivity.class);
                       i.putExtra("url", call.getString("url"));
                       i.putExtra("key", call.getString("key"));
@@ -1442,6 +3077,16 @@ jobs:
               // عند الرجوع من الشاشة الأصلية إلى صفحة ويب: نُبلغ الويب بالإجراء المطلوب
               @Override
               protected void handleOnResume() {
+                  java.util.List<String[]> nl = new java.util.ArrayList<String[]>();
+                  synchronized (NativeFeedActivity.pendingNotify) {
+                      nl.addAll(NativeFeedActivity.pendingNotify);
+                      NativeFeedActivity.pendingNotify.clear();
+                  }
+                  for (String[] n : nl) {
+                      JSObject o2 = new JSObject();
+                      o2.put("kind", n[0]); o2.put("target", n[1]); o2.put("postId", n[2]); o2.put("text", n[3]); o2.put("amount", n[4]);
+                      notifyListeners("notify", o2);
+                  }
                   String a = NativeFeedActivity.pendingAction;
                   if (a != null) {
                       NativeFeedActivity.pendingAction = null;
