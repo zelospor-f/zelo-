@@ -5,10 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#0a1033">
 
-    <!-- وسوم إجبار متصفح الـ APK على عدم تخزين أي نسخة قديمة -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
 
     <title>ZELO FC Mobile</title>
 
@@ -482,7 +478,8 @@
     <!-- تحميل جميع الملفات ديناميكياً برقم وقت فريد يمنع الـ APK من حفظ القديم -->
     <script>
         (function() {
-            var timeStamp = '?v=' + new Date().getTime();
+            // بدون رقم وقت: يحفظ الهاتف الملفات ويتحقق من تحديثها فقط (تصل التعديلات خلال دقائق)
+            var timeStamp = '';
             var scriptFiles = [
                 'env.js',
                 'clubsData.js',

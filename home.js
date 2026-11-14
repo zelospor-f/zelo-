@@ -3307,6 +3307,25 @@
         try {
             const P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeFeed;
             if (!P || me().id !== 'eb880283-f32e-4fb5-a84a-e6007b633352') return;
+            // الشاشة الأصلية تطلب فتح صفحة ويب عند الضغط على اختصار فيها
+            if (!window.__znBound && typeof P.addListener === 'function') {
+                window.__znBound = true;
+                P.addListener('action', ev => {
+                    const n = ev && ev.name;
+                    try {
+                        if (n === 'profile') showPage('profile');
+                        else if (n === 'points') showPage('points');
+                        else if (n === 'notifications') showPage('notifications');
+                        else if (n === 'search') window.zhOpenSearch();
+                        else if (n === 'tonight') window.openTodayMatches('tonight');
+                        else if (n === 'live') window.openTodayMatches('live');
+                        else if (n === 'earn') window.openLegendaryRankingScreen && window.openLegendaryRankingScreen();
+                        else if (n === 'ranking') window.openLeagueTable && window.openLeagueTable();
+                        else if (n === 'radar') window.openFanRadar && window.openFanRadar();
+                        else if (n === 'compose') window.openCompose();
+                    } catch (e) { console.error('[ZELO] native action', e); }
+                });
+            }
             if (document.getElementById('zn-test')) return;
             const b = document.createElement('button');
             b.id = 'zn-test';
@@ -3315,7 +3334,12 @@
             b.onclick = async () => {
                 try {
                     const c = db(); const ses = (await c.auth.getSession()).data.session;
-                    await P.open({ url: c.supabaseUrl, key: c.supabaseKey, token: ses.access_token });
+                    const av = me().avatar || '';
+                    await P.open({
+                        url: c.supabaseUrl, key: c.supabaseKey, token: ses.access_token, uid: me().id,
+                        uname: me().name || '', uavatar: /^https?:/.test(av) ? av : '',
+                        linkTpl: (window.zeloPostLink ? window.zeloPostLink('__ID__') : '')
+                    });
                 } catch (e) { alert('native: ' + (e && e.message || e)); }
             };
             document.body.appendChild(b);
