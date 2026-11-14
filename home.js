@@ -3337,11 +3337,44 @@
                 else if (n.indexOf('pay:') === 0) { const pr = n.split(':'); if (window.ZeloPremium) window.ZeloPremium.subscribe(pr[1], pr[2] === '1'); }
                 else if (n === 'restore') { if (window.ZeloPremium) window.ZeloPremium.restore(); }
                 else if (n.indexOf('report:') === 0) { if (window.zeloOpenReport) window.zeloOpenReport('post', n.slice(7)); }
+                if (n.indexOf('nav:') !== 0 && n !== 'compose' && n !== 'profile') showNativeBack();
             } catch (e) { console.error('[ZELO] native action', e); }
         });
     }
 
+    let lastOpenAt = 0;
+    function removeNativeBack() { const b = document.getElementById('zn-back'); if (b) b.remove(); }
+    function showNativeBack() {
+        removeNativeBack();
+        const b = document.createElement('button');
+        b.id = 'zn-back';
+        b.type = 'button';
+        b.textContent = window.zT('‹ الرئيسية', '‹ Home');
+        b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:99990;background:#f5c35a;color:#0a1033;border:0;border-radius:999px;padding:10px 22px;font-weight:900;font-size:.95rem;box-shadow:0 6px 18px rgba(0,0,0,.4);';
+        b.onclick = () => { removeNativeBack(); try { showPage('home'); } catch (e) {} if (window.__znReopen) window.__znReopen(); };
+        document.body.appendChild(b);
+        const nav = document.getElementById('bottom-nav');
+        if (nav && !nav.__znBound) { nav.__znBound = true; nav.addEventListener('click', removeNativeBack, true); }
+    }
+    function startNativeWatch() {
+        if (window.__znWatch) return;
+        window.__znWatch = setInterval(() => {
+            try {
+                if (document.hidden || !nativeHomeOn() || window.__znFallback) return;
+                if (Date.now() - lastOpenAt < 2500) return;
+                const b = document.getElementById('zn-reopen');
+                if (!b) return;
+                const r = b.getBoundingClientRect();
+                if (!r.width || !r.height) return;
+                const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+                if (el === b || b.contains(el)) { if (window.__znReopen) window.__znReopen(); }
+            } catch (e) {}
+        }, 800);
+    }
+
     async function openNativeHome() {
+        lastOpenAt = Date.now();
+        removeNativeBack();
         const P = nativePlugin();
         const c = db();
         const ses = (await c.auth.getSession()).data.session;
@@ -3365,6 +3398,8 @@
             });
             const btn = document.getElementById('zn-reopen');
             if (btn) btn.onclick = reopen;
+            window.__znReopen = reopen;
+            startNativeWatch();
             reopen();
             return;
         }
