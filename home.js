@@ -1563,9 +1563,9 @@
                     <button class="img-remove" onclick="window.removeEditImage(${id})">✕</button>
                 </div>` : ''}
             <div class="tool-row">
-                <button type="button" class="tool-btn" style="margin:0;" onclick="window.openEditImagePicker(${id})">
+                ${p.video_url ? '<span></span>' : `<button type="button" class="tool-btn" style="margin:0;" onclick="window.openEditImagePicker(${id})">
                     📷 ${window.zT('تغيير الصورة', 'Change image')}
-                </button>
+                </button>`}
                 <div style="display:flex; gap:8px;">
                     <button class="act-btn" style="padding:7px 14px;" onclick="window.cancelEditPost(${id})">${window.zT('إلغاء', 'Cancel')}</button>
                     <button class="save-mini" onclick="window.saveEditPost(${id})">${window.zT('حفظ', 'Save')}</button>
