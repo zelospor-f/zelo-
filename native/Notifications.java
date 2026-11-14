@@ -283,9 +283,9 @@ abstract class Notifications extends NftMarket {
         if (kind.equals("room")) joinRoomByCode(arg);
         else if (kind.equals("match")) openMatchRoom(arg);
         else if (kind.equals("user")) openProfile(arg);
-        else if (kind.equals("post")) goWeb("post:" + arg);
+        else if (kind.equals("post")) openPostById(arg);
         else if (kind.equals("challenge")) openFriendChallenges(arg);
-        else if (kind.equals("followers")) goWeb("follow:" + uid);
+        else if (kind.equals("followers")) openFollowList("followers");
         else if (kind.equals("admin_reports")) openReportsPanel();
     }
 }

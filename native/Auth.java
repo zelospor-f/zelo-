@@ -66,6 +66,7 @@ import org.json.JSONObject;
 
 
 abstract class Auth extends Badges {
+    protected abstract void showLoginScreen(Runnable done);
     // ===== من auth.js: تسجيل الدخول (كلمة سر + بريد/اسم مستخدم + رمز تحقق + Google) =====
     // الشاشات: login | email (تسجيل جديد) | forgot | code | newpass | setup
     protected static final String LOGO_URL = "https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png";
@@ -575,7 +576,7 @@ abstract class Auth extends Badges {
         JSONArray clubs = row == null ? null : row.optJSONArray("selected_clubs");
         closeAuth();
         if (clubs != null && clubs.length() > 0) { if (aDone != null) aDone.run(); }
-        else goWeb("clubs"); // شاشة اختيار الأندية (login.js) لم تُحوَّل بعد
+        else showLoginScreen(aDone); // شاشة اختيار الأندية (Login.java)
     }
 
     // ---------- إكمال الحساب ----------
@@ -752,6 +753,17 @@ abstract class Auth extends Badges {
     }
 
     // تسجيل الخروج
+    protected static final String SB_URL = "https://mvbolnxjiqhlphxkuogn.supabase.co";
+    protected static final String SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12Ym9sbnhqaXFobHBoeGt1b2duIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5ODMxNzQsImV4cCI6MjEwNzU1OTE3NH0.xDZgXGmoXe9Qt7U3vDp2BoyeLGsoMLRegXNbh_M4sfY";
+    protected void signOutThen(final Runnable after) {
+        final String t = token;
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                try { authCall("POST", "/auth/v1/logout", "{}", t); } catch (Exception ignore) {}
+                runOnUiThread(new Runnable() { @Override public void run() { clearSession(); after.run(); } });
+            }
+        });
+    }
     protected void signOut() {
         pool.execute(new Runnable() {
             @Override public void run() {

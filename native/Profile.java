@@ -66,6 +66,7 @@ import org.json.JSONObject;
 
 
 abstract class Profile extends WeeklyMatchRankings {
+    protected abstract void openEditProfile();
     // ---------------- الملف الشخصي ----------------
 
     @Override protected void onAvatarChanged(String photo) {
@@ -196,7 +197,7 @@ abstract class Profile extends WeeklyMatchRankings {
         l.setGravity(Gravity.CENTER);
         c.addView(l);
         if (action != null) c.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { goWeb(action); }
+            @Override public void onClick(View v) { openFollowList(action.startsWith("follow:") ? action.substring(7) : "followers"); }
         });
         return c;
     }
@@ -367,7 +368,7 @@ abstract class Profile extends WeeklyMatchRankings {
             eg.setCornerRadius(dp(14));
             edit.setBackground(eg);
             edit.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { goWeb("edit"); }
+                @Override public void onClick(View v) { openEditProfile(); }
             });
             btns.addView(edit, new LinearLayout.LayoutParams(0, dp(46), 1f));
             TextView mb = new TextView(this);

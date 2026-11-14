@@ -69,7 +69,7 @@ import org.json.JSONObject;
 // Store.java — محوَّل من store.js (متجر Zelo Coin)
 // الواجهة والباقات كما هي. الشراء عبر Google Play Billing يُربط في آخر مرحلة:
 // دالة buyCoinPack(gid) هي نقطة الربط، وحالياً تفتح المتجر القديم لإتمام الشراء.
-// الأسعار تظهر بالدولار (السعر المحلي يأتي من Google بعد ربط Billing).
+// الأسعار المحلية تأتي من Google Play (bpPrice) وإلا تظهر بالدولار.
 // ============================================================
 abstract class Store extends Rooms {
     // { id, tier, coins, price, gid, عربي, English, شارة عربي, شارة English }
@@ -85,8 +85,7 @@ abstract class Store extends Rooms {
 
     // نقطة ربط Google Play Billing (تُستبدل في المرحلة الأخيرة)
     protected void buyCoinPack(String gid) {
-        if (stDlg != null) { try { stDlg.dismiss(); } catch (Exception ignore) {} }
-        goWeb("store");
+        bpBuy(gid, false, false);
     }
 
     protected void openStorePage() {
@@ -220,7 +219,7 @@ abstract class Store extends Rooms {
         TextView nm = txt(L(p[5], p[6]), gold ? 0xBF0A1033 : MUTED, 14, true);
         nm.setPadding(0, dp(14), 0, dp(14));
         c.addView(nm);
-        TextView price = txt("$" + p[3], gold ? GOLD : NAVY, 16, true);
+        TextView price = txt(bpPrice(p[4]) != null ? bpPrice(p[4]) : "$" + p[3], gold ? GOLD : NAVY, 16, true);
         price.setGravity(Gravity.CENTER);
         price.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         price.setPadding(dp(10), dp(12), dp(10), dp(12));

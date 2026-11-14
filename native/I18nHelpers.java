@@ -64,7 +64,7 @@ import java.util.concurrent.Executors;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-abstract class I18nHelpers extends GoogleVerify {
+abstract class I18nHelpers extends Billing {
     // ===== من i18n-helpers.js: نظام الترجمة (ملف لكل لغة في locales/<lang>.json على موقع الويب) =====
     protected static final String WEB_BASE = "https://zelospor-f.github.io/zelo-/";
     // الرمز، العلم، الاسم، RTL

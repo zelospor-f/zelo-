@@ -619,7 +619,7 @@ abstract class AdminReports extends Boost {
         al.setMargins(0, dp(20), 0, 0);
         b.addView(ap, al);
         TextView lo = admBtn("تسجيل الخروج", Color.WHITE, 0x00000000, 0x40FFFFFF);
-        lo.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); goWeb("logout"); } });
+        lo.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); doLogout(); } });
         LinearLayout.LayoutParams ll = new LinearLayout.LayoutParams(dp(220), ViewGroup.LayoutParams.WRAP_CONTENT);
         ll.setMargins(0, dp(12), 0, 0);
         b.addView(lo, ll);

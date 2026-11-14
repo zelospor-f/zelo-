@@ -90,6 +90,13 @@ abstract class Base extends Activity {
     protected abstract void openMessagesPage();
     protected abstract void openNotificationsPage();
     protected abstract void openRoomsHub();
+    protected abstract void bpBuy(String productId, boolean sub, boolean upgrade);
+    protected abstract void bpRestore();
+    protected abstract String bpPrice(String id);
+    protected abstract void bpPreload();
+    protected abstract void doLogout();
+    protected abstract void openFollowList(String tab);
+    protected abstract void openPostById(String arg);
     protected abstract void openPointsPage();
     protected abstract void joinRoomByCode(String code);
     protected abstract void acceptRoomInvite(String roomId);

@@ -178,7 +178,7 @@ abstract class Subscriptions extends Support {
             box.addView(n);
         }
         TextView rs = pill("استعادة مشترياتي", GOLD, 0x00000000, 0x73F5C35A);
-        rs.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); goWeb("restore"); } });
+        rs.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); bpRestore(); } });
         LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         rl.setMargins(0, dp(14), 0, 0);
         box.addView(rs, rl);
@@ -217,12 +217,12 @@ abstract class Subscriptions extends Support {
         t.setPadding(0, 0, 0, dp(12));
         box.addView(t);
         final String up = cur > 0 ? "1" : "0";
-        TextView m = pill("شهري  ·  $" + p[2] + " / شهر", GOLD, 0x00000000, 0x73F5C35A);
-        m.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); parent.dismiss(); goWeb("pay:" + p[4] + ":" + up); } });
+        TextView m = pill("شهري  ·  " + (bpPrice(p[4]) != null ? bpPrice(p[4]) : "$" + p[2]) + " / شهر", GOLD, 0x00000000, 0x73F5C35A);
+        m.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); parent.dismiss(); bpBuy(p[4], true, "1".equals(up)); } });
         box.addView(m);
         int save = (int) Math.round((1 - Double.parseDouble(p[3]) / (Double.parseDouble(p[2]) * 12)) * 100);
-        TextView y = pill("سنوي (وفّر " + save + "٪)  ·  $" + p[3] + " / سنة", NAVY, GOLD, 0);
-        y.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); parent.dismiss(); goWeb("pay:" + p[5] + ":" + up); } });
+        TextView y = pill("سنوي (وفّر " + save + "٪)  ·  " + (bpPrice(p[5]) != null ? bpPrice(p[5]) : "$" + p[3]) + " / سنة", NAVY, GOLD, 0);
+        y.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); parent.dismiss(); bpBuy(p[5], true, "1".equals(up)); } });
         LinearLayout.LayoutParams yl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         yl.setMargins(0, dp(10), 0, 0);
         box.addView(y, yl);

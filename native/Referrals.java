@@ -94,6 +94,28 @@ abstract class Referrals extends Notifications {
         } catch (Exception ignore) {}
     }
 
+    // من إضافة InstallReferrer القديمة: يحفظ كود الدعوة القادم عبر رابط Google Play (ref_<user>&post_<id>) مرة واحدة
+    protected void captureInstallReferrer() {
+        final SharedPreferences sp = refPrefs();
+        if (sp.getBoolean("irDone", false)) return;
+        try {
+            final com.android.installreferrer.api.InstallReferrerClient c = com.android.installreferrer.api.InstallReferrerClient.newBuilder(this).build();
+            c.startConnection(new com.android.installreferrer.api.InstallReferrerStateListener() {
+                @Override public void onInstallReferrerSetupFinished(int code) {
+                    try {
+                        if (code == com.android.installreferrer.api.InstallReferrerClient.InstallReferrerResponse.OK) {
+                            String r = c.getInstallReferrer().getInstallReferrer();
+                            sp.edit().putBoolean("irDone", true).apply();
+                            if (r != null) for (String kv : r.split("&")) if (kv.startsWith("ref_")) { saveRefCode(kv.substring(4)); break; }
+                        } else if (code == com.android.installreferrer.api.InstallReferrerClient.InstallReferrerResponse.FEATURE_NOT_SUPPORTED) sp.edit().putBoolean("irDone", true).apply();
+                    } catch (Exception ignore) {}
+                    try { c.endConnection(); } catch (Exception ignore) {}
+                }
+                @Override public void onInstallReferrerServiceDisconnected() {}
+            });
+        } catch (Throwable ignore) {}
+    }
+
     // رابط الدعوة (كود الإحالة = اسم المستخدم)
     protected String referralLink() {
         String u = cleanCode(uname);

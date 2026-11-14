@@ -274,7 +274,7 @@ abstract class Settings extends ShareCard {
         out.setBackground(rbg(0x14F5C35A, 0x80F5C35A, 16));
         out.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
             new AlertDialog.Builder(Settings.this).setMessage(L("هل تريد تسجيل الخروج؟", "Log out?"))
-                .setPositiveButton(L("خروج", "Log out"), new DialogInterface.OnClickListener() { @Override public void onClick(DialogInterface d, int w) { signOut(); goWeb("logout"); } })
+                .setPositiveButton(L("خروج", "Log out"), new DialogInterface.OnClickListener() { @Override public void onClick(DialogInterface d, int w) { doLogout(); } })
                 .setNegativeButton(L("إلغاء", "Cancel"), null).show();
         } });
         b.addView(out, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50)));
@@ -699,8 +699,7 @@ abstract class Settings extends ShareCard {
                         toast(fe.contains("pending_withdrawal") ? L("عندك سحب معلّق، انتظر حتى ينتهي ثم احذف حسابك", "You have a pending withdrawal. Wait until it finishes, then delete your account") : L("تعذر حذف الحساب، حاول لاحقاً", "Could not delete the account, try later"));
                         return;
                     }
-                    clearSession();
-                    goWeb("logout");
+                    doLogout();
                 } });
             } });
         } });
