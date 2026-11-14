@@ -1693,7 +1693,7 @@ public class Home extends Profile {
         t.setLayoutParams(lp);
         if (action != null) {
             t.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { if ("notifications".equals(action)) showPage(action); else goWeb(action); }
+                @Override public void onClick(View v) { if ("notifications".equals(action)) showPage(action); else if ("search".equals(action)) openSearchScreen(); else goWeb(action); }
             });
         }
         return t;
@@ -1766,7 +1766,7 @@ public class Home extends Profile {
         bg.setStroke(dp(1), 0x55F5C35A);
         balance.setBackground(bg);
         balance.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { goWeb("points"); }
+            @Override public void onClick(View v) { openPointsPage(); }
         });
         LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(46));
         blp.setMargins(0, 0, dp(10), 0);

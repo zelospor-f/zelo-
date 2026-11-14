@@ -65,7 +65,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 
-abstract class Profile extends Store {
+abstract class Profile extends WeeklyMatchRankings {
     // ---------------- الملف الشخصي ----------------
 
     @Override protected void onAvatarChanged(String photo) {
@@ -220,7 +220,7 @@ abstract class Profile extends Store {
         l.setPadding(0, dp(6), 0, 0);
         c.addView(l);
         c.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if ("store".equals(action)) openStorePage(); else if ("subs".equals(action)) openSubscriptions(); else if ("nft".equals(action)) openNftMarket(); else goWeb(action); }
+            @Override public void onClick(View v) { if ("store".equals(action)) openStorePage(); else if ("wallet".equals(action)) openWithdrawWallet(); else if ("subs".equals(action)) openSubscriptions(); else if ("nft".equals(action)) openNftMarket(); else goWeb(action); }
         });
         return c;
     }

@@ -79,7 +79,7 @@ abstract class Base extends Activity {
         if ("matches".equals(pageId)) { openMatchesPage(); return; }
         if ("messages".equals(pageId)) { openMessagesPage(); return; }
         if ("notifications".equals(pageId)) { openNotificationsPage(); return; }
-        if ("points".equals(pageId)) { goWeb(pageId); return; }
+        if ("points".equals(pageId)) { openPointsPage(); return; }
         goWeb("nav:" + pageId);
     }
 
@@ -90,6 +90,7 @@ abstract class Base extends Activity {
     protected abstract void openMessagesPage();
     protected abstract void openNotificationsPage();
     protected abstract void openRoomsHub();
+    protected abstract void openPointsPage();
     protected abstract void joinRoomByCode(String code);
     protected abstract void acceptRoomInvite(String roomId);
     protected abstract void openVideosTab();
