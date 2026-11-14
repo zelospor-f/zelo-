@@ -153,6 +153,7 @@ jobs:
               public void onCreate(Bundle savedInstanceState) {
                   registerPlugin(InstallReferrerPlugin.class);
                   registerPlugin(VideoTrimPlugin.class);
+                  registerPlugin(NativeFeedPlugin.class);
                   super.onCreate(savedInstanceState);
               }
 
@@ -424,6 +425,232 @@ jobs:
           if 'media3-transformer' not in s:
               s = s.replace('dependencies {', "dependencies {\n    implementation 'androidx.media3:media3-transformer:1.3.1'\n    implementation 'androidx.media3:media3-effect:1.3.1'\n    implementation 'androidx.media3:media3-common:1.3.1'", 1)
           assert 'media3-transformer' in s, 'media3 dependency not added'
+          open(p, 'w', encoding='utf-8').write(s)
+          EOF
+
+      - name: Add Native Feed experiment (native Android screen, test only)
+        run: |
+          f=$(find android/app/src/main/java -name MainActivity.java | head -1)
+          dir=$(dirname "$f")
+          pkg=$(grep -m1 '^package ' "$f" | sed 's/package \(.*\);/\1/')
+          cat > "$dir/NativeFeedActivity.java" <<'JAVA'
+          package PKG;
+
+          import android.app.Activity;
+          import android.graphics.Color;
+          import android.graphics.Typeface;
+          import android.graphics.drawable.GradientDrawable;
+          import android.os.Bundle;
+          import android.view.Gravity;
+          import android.view.View;
+          import android.view.ViewGroup;
+          import android.view.WindowInsets;
+          import android.widget.BaseAdapter;
+          import android.widget.LinearLayout;
+          import android.widget.ListView;
+          import android.widget.TextView;
+          import java.io.BufferedReader;
+          import java.io.InputStreamReader;
+          import java.net.HttpURLConnection;
+          import java.net.URL;
+          import java.util.ArrayList;
+          import java.util.List;
+          import org.json.JSONArray;
+          import org.json.JSONObject;
+
+          public class NativeFeedActivity extends Activity {
+              private final List<JSONObject> items = new ArrayList<JSONObject>();
+              private BaseAdapter adapter;
+              private TextView status;
+
+              private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density); }
+
+              @Override
+              protected void onCreate(Bundle b) {
+                  super.onCreate(b);
+                  final String url = getIntent().getStringExtra("url");
+                  final String key = getIntent().getStringExtra("key");
+                  final String token = getIntent().getStringExtra("token");
+
+                  LinearLayout root = new LinearLayout(this);
+                  root.setOrientation(LinearLayout.VERTICAL);
+                  root.setBackgroundColor(0xFF0A1033);
+                  root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                  root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+                      @Override
+                      public WindowInsets onApplyWindowInsets(View v, WindowInsets ins) {
+                          v.setPadding(0, ins.getSystemWindowInsetTop(), 0, ins.getSystemWindowInsetBottom());
+                          return ins;
+                      }
+                  });
+
+                  LinearLayout bar = new LinearLayout(this);
+                  bar.setOrientation(LinearLayout.HORIZONTAL);
+                  bar.setGravity(Gravity.CENTER_VERTICAL);
+                  bar.setPadding(dp(16), dp(12), dp(16), dp(12));
+                  TextView title = new TextView(this);
+                  title.setText("تجربة الرئيسية الأصلية");
+                  title.setTextColor(0xFFF5C35A);
+                  title.setTextSize(18);
+                  title.setTypeface(Typeface.DEFAULT_BOLD);
+                  bar.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  TextView close = new TextView(this);
+                  close.setText("✕");
+                  close.setTextColor(Color.WHITE);
+                  close.setTextSize(22);
+                  close.setPadding(dp(12), 0, dp(4), 0);
+                  close.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { finish(); }
+                  });
+                  bar.addView(close);
+                  root.addView(bar);
+
+                  status = new TextView(this);
+                  status.setTextColor(0xFF9AA6D8);
+                  status.setTextSize(13);
+                  status.setPadding(dp(16), 0, dp(16), dp(8));
+                  status.setText("جارٍ التحميل...");
+                  root.addView(status);
+
+                  ListView lv = new ListView(this);
+                  lv.setDivider(null);
+                  lv.setSelector(new android.graphics.drawable.ColorDrawable(Color.TRANSPARENT));
+                  lv.setClipToPadding(false);
+                  adapter = new BaseAdapter() {
+                      @Override public int getCount() { return items.size(); }
+                      @Override public Object getItem(int i) { return items.get(i); }
+                      @Override public long getItemId(int i) { return i; }
+                      @Override public View getView(int i, View cv, ViewGroup parent) {
+                          LinearLayout row;
+                          TextView name, body, meta;
+                          if (cv == null) {
+                              row = new LinearLayout(NativeFeedActivity.this);
+                              row.setOrientation(LinearLayout.VERTICAL);
+                              row.setPadding(dp(16), dp(14), dp(16), dp(14));
+                              GradientDrawable g = new GradientDrawable();
+                              g.setColor(0xFF111A4A);
+                              g.setCornerRadius(dp(18));
+                              g.setStroke(dp(1), 0x33F5C35A);
+                              row.setBackground(g);
+                              name = new TextView(NativeFeedActivity.this);
+                              name.setTextColor(Color.WHITE);
+                              name.setTextSize(16);
+                              name.setTypeface(Typeface.DEFAULT_BOLD);
+                              body = new TextView(NativeFeedActivity.this);
+                              body.setTextColor(0xFFE6E9FF);
+                              body.setTextSize(15);
+                              body.setPadding(0, dp(8), 0, dp(8));
+                              meta = new TextView(NativeFeedActivity.this);
+                              meta.setTextColor(0xFF9AA6D8);
+                              meta.setTextSize(12);
+                              row.addView(name);
+                              row.addView(body);
+                              row.addView(meta);
+                              row.setTag(new TextView[] { name, body, meta });
+                              FrameWrap w = new FrameWrap(NativeFeedActivity.this, row, dp(16), dp(6));
+                              cv = w;
+                          }
+                          FrameWrap fw = (FrameWrap) cv;
+                          TextView[] t = (TextView[]) fw.inner.getTag();
+                          JSONObject o = items.get(i);
+                          t[0].setText(o.optString("author_name", ""));
+                          String c = o.optString("content", "");
+                          boolean vid = o.optString("video_url", "").length() > 4 && !"null".equals(o.optString("video_url", ""));
+                          t[1].setText(vid ? (c.length() > 0 ? c + "\n🎬 فيديو" : "🎬 فيديو") : c);
+                          t[2].setText(o.optString("created_at", "").replace("T", " ").replaceAll("\\..*$", ""));
+                          return cv;
+                      }
+                  };
+                  lv.setAdapter(adapter);
+                  root.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+                  setContentView(root);
+
+                  final long t0 = System.currentTimeMillis();
+                  new Thread(new Runnable() {
+                      @Override public void run() {
+                          String err = null;
+                          final List<JSONObject> got = new ArrayList<JSONObject>();
+                          try {
+                              URL u = new URL(url + "/rest/v1/posts?select=id,author_name,content,created_at,video_url&order=created_at.desc&limit=40");
+                              HttpURLConnection c = (HttpURLConnection) u.openConnection();
+                              c.setRequestProperty("apikey", key);
+                              c.setRequestProperty("Authorization", "Bearer " + token);
+                              c.setConnectTimeout(15000);
+                              c.setReadTimeout(20000);
+                              int code = c.getResponseCode();
+                              BufferedReader r = new BufferedReader(new InputStreamReader(code >= 400 ? c.getErrorStream() : c.getInputStream(), "UTF-8"));
+                              StringBuilder sb = new StringBuilder();
+                              String ln;
+                              while ((ln = r.readLine()) != null) sb.append(ln);
+                              r.close();
+                              if (code >= 400) throw new Exception("HTTP " + code + " " + sb);
+                              JSONArray a = new JSONArray(sb.toString());
+                              for (int k = 0; k < a.length(); k++) got.add(a.getJSONObject(k));
+                          } catch (Exception e) {
+                              err = String.valueOf(e.getMessage());
+                          }
+                          final String fe = err;
+                          final long ms = System.currentTimeMillis() - t0;
+                          runOnUiThread(new Runnable() {
+                              @Override public void run() {
+                                  if (fe != null) { status.setText("خطأ: " + fe); return; }
+                                  items.clear();
+                                  items.addAll(got);
+                                  adapter.notifyDataSetChanged();
+                                  status.setText("تم جلب " + got.size() + " منشور خلال " + ms + " ms");
+                              }
+                          });
+                      }
+                  }).start();
+              }
+
+              // غلاف يضيف هوامش حول بطاقة المنشور
+              static class FrameWrap extends android.widget.FrameLayout {
+                  final LinearLayout inner;
+                  FrameWrap(android.content.Context c, LinearLayout in, int h, int v) {
+                      super(c);
+                      inner = in;
+                      setPadding(h, v, h, v);
+                      addView(in, new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                  }
+              }
+          }
+          JAVA
+          cat > "$dir/NativeFeedPlugin.java" <<'JAVA'
+          package PKG;
+
+          import android.content.Intent;
+          import com.getcapacitor.Plugin;
+          import com.getcapacitor.PluginCall;
+          import com.getcapacitor.PluginMethod;
+          import com.getcapacitor.annotation.CapacitorPlugin;
+
+          @CapacitorPlugin(name = "NativeFeed")
+          public class NativeFeedPlugin extends Plugin {
+              @PluginMethod
+              public void open(PluginCall call) {
+                  try {
+                      Intent i = new Intent(getContext(), NativeFeedActivity.class);
+                      i.putExtra("url", call.getString("url"));
+                      i.putExtra("key", call.getString("key"));
+                      i.putExtra("token", call.getString("token"));
+                      getActivity().startActivity(i);
+                      call.resolve();
+                  } catch (Exception e) {
+                      call.reject(String.valueOf(e.getMessage()));
+                  }
+              }
+          }
+          JAVA
+          sed -i "1s/.*/package $pkg;/" "$dir/NativeFeedActivity.java"
+          sed -i "1s/.*/package $pkg;/" "$dir/NativeFeedPlugin.java"
+          head -3 "$dir/NativeFeedActivity.java"
+          python3 - <<'EOF'
+          p = 'android/app/src/main/AndroidManifest.xml'
+          s = open(p, encoding='utf-8').read()
+          if 'NativeFeedActivity' not in s:
+              s = s.replace('</application>', '    <activity android:name=".NativeFeedActivity" android:exported="false" android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />\n    </application>', 1)
+          assert 'NativeFeedActivity' in s, 'native feed activity not added'
           open(p, 'w', encoding='utf-8').write(s)
           EOF
 
