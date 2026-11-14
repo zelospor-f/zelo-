@@ -437,7 +437,11 @@ jobs:
           package PKG;
 
           import android.app.Activity;
+          import android.app.AlertDialog;
+          import android.app.Dialog;
           import android.content.Context;
+          import android.content.DialogInterface;
+          import android.content.Intent;
           import android.graphics.Bitmap;
           import android.graphics.BitmapFactory;
           import android.graphics.Color;
@@ -452,12 +456,19 @@ jobs:
           import android.view.ViewGroup;
           import android.view.ViewOutlineProvider;
           import android.view.WindowInsets;
+          import android.view.WindowManager;
+          import android.widget.AbsListView;
           import android.widget.BaseAdapter;
+          import android.widget.EditText;
           import android.widget.FrameLayout;
+          import android.widget.HorizontalScrollView;
           import android.widget.ImageView;
           import android.widget.LinearLayout;
           import android.widget.ListView;
           import android.widget.TextView;
+          import android.widget.Toast;
+          import android.widget.VideoView;
+          import android.widget.MediaController;
           import java.io.BufferedReader;
           import java.io.ByteArrayOutputStream;
           import java.io.InputStream;
@@ -468,8 +479,10 @@ jobs:
           import java.util.ArrayList;
           import java.util.Date;
           import java.util.HashMap;
+          import java.util.HashSet;
           import java.util.List;
           import java.util.Map;
+          import java.util.Set;
           import java.util.TimeZone;
           import java.util.concurrent.ExecutorService;
           import java.util.concurrent.Executors;
@@ -477,26 +490,35 @@ jobs:
           import org.json.JSONObject;
 
           public class NativeFeedActivity extends Activity {
+              // يضبطها هذا الشاشة عند الرجوع إلى صفحة من صفحات الويب (يقرؤها NativeFeedPlugin)
+              public static String pendingAction = null;
+
               private static final int GOLD = 0xFFF5C35A;
               private static final int NAVY = 0xFF0A1033;
               private static final int CARD = 0xFF111A4A;
               private static final int MUTED = 0xFF9AA6D8;
+              private static final int PAGE = 20;
 
               private final List<JSONObject> items = new ArrayList<JSONObject>();
               private final Map<String, int[]> stats = new HashMap<String, int[]>();
+              private final Map<String, String> photos = new HashMap<String, String>();
+              private final Set<String> liked = new HashSet<String>();
               private final ExecutorService pool = Executors.newFixedThreadPool(4);
               private final LruCache<String, Bitmap> cache = new LruCache<String, Bitmap>(24 * 1024 * 1024) {
                   @Override protected int sizeOf(String k, Bitmap v) { return v.getByteCount(); }
               };
               private BaseAdapter adapter;
-              private TextView status;
-              private String url, key, token;
+              private TextView status, balance;
+              private String url, key, token, uid, uname, uavatar, linkTpl;
+              private boolean loading = false, endReached = false;
+              private int offset = 0;
+              private long t0;
 
               private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density); }
 
               private static class Holder {
-                  TextView avatar, name, time, body, video, counts;
-                  ImageView img;
+                  TextView avatar, name, time, body, video, heart, cm, rp, vw, more;
+                  ImageView avImg, img;
               }
 
               private static class Wrap extends FrameLayout {
@@ -511,6 +533,16 @@ jobs:
                   if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
                   return t;
               }
+
+              private GradientDrawable oval(int fill, int stroke) {
+                  GradientDrawable g = new GradientDrawable();
+                  g.setShape(GradientDrawable.OVAL);
+                  g.setColor(fill);
+                  if (stroke != 0) g.setStroke(dp(2), stroke);
+                  return g;
+              }
+
+              private void toast(String m) { Toast.makeText(this, m, Toast.LENGTH_SHORT).show(); }
 
               private String ago(String iso) {
                   try {
@@ -527,6 +559,7 @@ jobs:
                   }
               }
 
+              // ---------------- الشبكة ----------------
               private String get(String path) throws Exception {
                   HttpURLConnection c = (HttpURLConnection) new URL(url + "/rest/v1/" + path).openConnection();
                   c.setRequestProperty("apikey", key);
@@ -543,6 +576,37 @@ jobs:
                   return sb.toString();
               }
 
+              private void send(String method, String path, String body) throws Exception {
+                  sendUrl(method, url + "/rest/v1/" + path, body);
+              }
+
+              private void sendUrl(String method, String full, String body) throws Exception {
+                  HttpURLConnection c = (HttpURLConnection) new URL(full).openConnection();
+                  c.setRequestMethod(method);
+                  c.setRequestProperty("apikey", key);
+                  c.setRequestProperty("Authorization", "Bearer " + token);
+                  c.setRequestProperty("Content-Type", "application/json");
+                  c.setRequestProperty("Prefer", "return=minimal");
+                  c.setConnectTimeout(15000);
+                  c.setReadTimeout(20000);
+                  if (body != null) {
+                      c.setDoOutput(true);
+                      c.getOutputStream().write(body.getBytes("UTF-8"));
+                  }
+                  int code = c.getResponseCode();
+                  if (code >= 300) {
+                      String msg = "";
+                      try {
+                          BufferedReader r = new BufferedReader(new InputStreamReader(c.getErrorStream(), "UTF-8"));
+                          StringBuilder sb = new StringBuilder();
+                          String ln;
+                          while ((ln = r.readLine()) != null) sb.append(ln);
+                          msg = sb.toString();
+                      } catch (Exception ignore) {}
+                      throw new Exception("HTTP " + code + " " + msg);
+                  }
+              }
+
               private void count(String table, String ids, int slot) {
                   try {
                       JSONArray a = new JSONArray(get(table + "?select=post_id&post_id=in.(" + ids + ")"));
@@ -554,6 +618,7 @@ jobs:
                   } catch (Exception ignore) {}
               }
 
+              // ---------------- الصور ----------------
               private void loadImage(final String u, final ImageView iv) {
                   iv.setTag(u);
                   Bitmap hit = cache.get(u);
@@ -592,6 +657,54 @@ jobs:
                   });
               }
 
+              private void showImage(String u) {
+                  Bitmap b = cache.get(u);
+                  if (b == null) return;
+                  final Dialog d = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                  ImageView iv = new ImageView(this);
+                  iv.setBackgroundColor(Color.BLACK);
+                  iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                  iv.setImageBitmap(b);
+                  iv.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { d.dismiss(); }
+                  });
+                  d.setContentView(iv);
+                  d.show();
+              }
+
+              private void playVideo(String u) {
+                  if (u == null || u.length() < 5) return;
+                  final Dialog d = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                  FrameLayout fl = new FrameLayout(this);
+                  fl.setBackgroundColor(Color.BLACK);
+                  final VideoView vv = new VideoView(this);
+                  fl.addView(vv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+                  vv.setMediaController(new MediaController(this));
+                  vv.setOnPreparedListener(new android.media.MediaPlayer.OnPreparedListener() {
+                      @Override public void onPrepared(android.media.MediaPlayer mp) { mp.setLooping(true); vv.start(); }
+                  });
+                  vv.setVideoURI(android.net.Uri.parse(u));
+                  TextView x = tv(Color.WHITE, 26, false);
+                  x.setText("✕");
+                  x.setPadding(dp(18), dp(36), dp(18), dp(18));
+                  x.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { d.dismiss(); }
+                  });
+                  fl.addView(x, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END));
+                  d.setContentView(fl);
+                  d.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                      @Override public void onDismiss(DialogInterface di) { vv.stopPlayback(); }
+                  });
+                  d.show();
+              }
+
+              // ---------------- الانتقال إلى صفحات الويب ----------------
+              private void goWeb(String action) {
+                  pendingAction = action;
+                  finish();
+              }
+
+              // ---------------- بطاقة المنشور ----------------
               private View makeRow() {
                   Wrap w = new Wrap(this);
                   w.setPadding(dp(14), dp(6), dp(14), dp(6));
@@ -603,18 +716,24 @@ jobs:
                   g.setCornerRadius(dp(20));
                   g.setStroke(dp(1), 0x33F5C35A);
                   row.setBackground(g);
+                  final Holder h = w.h;
 
                   LinearLayout head = new LinearLayout(this);
                   head.setOrientation(LinearLayout.HORIZONTAL);
                   head.setGravity(Gravity.CENTER_VERTICAL);
-                  Holder h = w.h;
+                  FrameLayout avBox = new FrameLayout(this);
                   h.avatar = tv(NAVY, 18, true);
                   h.avatar.setGravity(Gravity.CENTER);
-                  GradientDrawable ag = new GradientDrawable();
-                  ag.setShape(GradientDrawable.OVAL);
-                  ag.setColor(GOLD);
-                  h.avatar.setBackground(ag);
-                  head.addView(h.avatar, new LinearLayout.LayoutParams(dp(44), dp(44)));
+                  h.avatar.setBackground(oval(GOLD, 0));
+                  avBox.addView(h.avatar, new FrameLayout.LayoutParams(dp(44), dp(44)));
+                  h.avImg = new ImageView(this);
+                  h.avImg.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                  h.avImg.setOutlineProvider(new ViewOutlineProvider() {
+                      @Override public void getOutline(View v, Outline o) { o.setOval(0, 0, v.getWidth(), v.getHeight()); }
+                  });
+                  h.avImg.setClipToOutline(true);
+                  avBox.addView(h.avImg, new FrameLayout.LayoutParams(dp(44), dp(44)));
+                  head.addView(avBox, new LinearLayout.LayoutParams(dp(44), dp(44)));
                   LinearLayout names = new LinearLayout(this);
                   names.setOrientation(LinearLayout.VERTICAL);
                   names.setPadding(dp(10), 0, dp(10), 0);
@@ -623,6 +742,17 @@ jobs:
                   names.addView(h.name);
                   names.addView(h.time);
                   head.addView(names);
+                  head.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+                  h.more = tv(MUTED, 22, true);
+                  h.more.setText("⋮");
+                  h.more.setPadding(dp(14), dp(4), dp(6), dp(4));
+                  h.more.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          Object t = v.getTag();
+                          if (t instanceof Integer) showMenu((Integer) t);
+                      }
+                  });
+                  head.addView(h.more);
                   row.addView(head);
 
                   h.body = tv(0xFFE6E9FF, 15, false);
@@ -635,6 +765,12 @@ jobs:
                       @Override public void getOutline(View v, Outline o) { o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), dp(14)); }
                   });
                   h.img.setClipToOutline(true);
+                  h.img.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          Object t = v.getTag(R_TAG);
+                          if (t instanceof Integer) showImage(items.get((Integer) t).optString("image_url", ""));
+                      }
+                  });
                   row.addView(h.img, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
 
                   h.video = tv(Color.WHITE, 34, false);
@@ -644,14 +780,465 @@ jobs:
                   vg.setColor(0xFF050A26);
                   vg.setCornerRadius(dp(14));
                   h.video.setBackground(vg);
+                  h.video.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          Object t = v.getTag();
+                          if (t instanceof Integer) playVideo(items.get((Integer) t).optString("video_url", ""));
+                      }
+                  });
                   row.addView(h.video, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
 
-                  h.counts = tv(MUTED, 13, false);
-                  h.counts.setPadding(0, dp(10), 0, 0);
-                  row.addView(h.counts);
+                  LinearLayout acts = new LinearLayout(this);
+                  acts.setOrientation(LinearLayout.HORIZONTAL);
+                  acts.setPadding(0, dp(6), 0, 0);
+                  h.heart = tv(MUTED, 15, false);
+                  h.cm = tv(MUTED, 15, false);
+                  h.rp = tv(MUTED, 15, false);
+                  h.vw = tv(MUTED, 15, false);
+                  TextView[] all = new TextView[] { h.heart, h.cm, h.rp, h.vw };
+                  for (int q = 0; q < all.length; q++) {
+                      all[q].setPadding(dp(8), dp(10), dp(18), dp(10));
+                      acts.addView(all[q]);
+                  }
+                  h.heart.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          Object t = v.getTag();
+                          if (t instanceof Integer) toggleLike((Integer) t);
+                      }
+                  });
+                  h.cm.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          Object t = v.getTag();
+                          if (t instanceof Integer) openComments((Integer) t);
+                      }
+                  });
+                  row.addView(acts);
 
                   w.addView(row, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
                   return w;
+              }
+
+              private static final int R_TAG = 0x7f0a0000 + 7; // مفتاح وسم ثانٍ للصورة
+
+              // ---------------- القوائم والتفاعل ----------------
+              private void showMenu(final int idx) {
+                  final JSONObject o = items.get(idx);
+                  final boolean mine = uid != null && uid.equals(o.optString("user_id", ""));
+                  final List<String> labels = new ArrayList<String>();
+                  labels.add("🔗 مشاركة الرابط");
+                  if (mine) { labels.add("✏️ تعديل النص"); labels.add("🗑 حذف المنشور"); }
+                  new AlertDialog.Builder(this)
+                      .setItems(labels.toArray(new String[0]), new DialogInterface.OnClickListener() {
+                          @Override public void onClick(DialogInterface d, int which) {
+                              if (which == 0) shareLink(o);
+                              else if (which == 1) editPost(idx);
+                              else if (which == 2) deletePost(idx);
+                          }
+                      }).show();
+              }
+
+              private void shareLink(JSONObject o) {
+                  String link = (linkTpl == null || linkTpl.length() == 0) ? "" : linkTpl.replace("__ID__", String.valueOf(o.optLong("id")));
+                  String text = link.length() > 0 ? link : o.optString("content", "");
+                  Intent i = new Intent(Intent.ACTION_SEND);
+                  i.setType("text/plain");
+                  i.putExtra(Intent.EXTRA_TEXT, text);
+                  startActivity(Intent.createChooser(i, "مشاركة"));
+              }
+
+              private void editPost(final int idx) {
+                  final JSONObject o = items.get(idx);
+                  final EditText et = new EditText(this);
+                  et.setText(o.optString("content", ""));
+                  et.setMinLines(3);
+                  et.setGravity(Gravity.TOP | Gravity.START);
+                  new AlertDialog.Builder(this)
+                      .setTitle("تعديل المنشور")
+                      .setView(et)
+                      .setNegativeButton("إلغاء", null)
+                      .setPositiveButton("حفظ", new DialogInterface.OnClickListener() {
+                          @Override public void onClick(DialogInterface d, int w) {
+                              final String txt = et.getText().toString().trim();
+                              final long id = o.optLong("id");
+                              pool.execute(new Runnable() {
+                                  @Override public void run() {
+                                      String err = null;
+                                      try {
+                                          JSONObject b = new JSONObject();
+                                          b.put("p_id", id);
+                                          b.put("p_content", txt);
+                                          send("POST", "rpc/update_post_content", b.toString());
+                                          o.put("content", txt);
+                                      } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                                      final String fe = err;
+                                      runOnUiThread(new Runnable() {
+                                          @Override public void run() {
+                                              if (fe != null) toast("تعذّر التعديل: " + fe);
+                                              else adapter.notifyDataSetChanged();
+                                          }
+                                      });
+                                  }
+                              });
+                          }
+                      }).show();
+              }
+
+              private void deletePost(final int idx) {
+                  final JSONObject o = items.get(idx);
+                  new AlertDialog.Builder(this)
+                      .setMessage("هل تريد حذف هذا المنشور؟")
+                      .setNegativeButton("إلغاء", null)
+                      .setPositiveButton("حذف", new DialogInterface.OnClickListener() {
+                          @Override public void onClick(DialogInterface d, int w) {
+                              final String id = String.valueOf(o.optLong("id"));
+                              final String vp = o.isNull("video_path") ? "" : o.optString("video_path", "");
+                              pool.execute(new Runnable() {
+                                  @Override public void run() {
+                                      String err = null;
+                                      try {
+                                          send("DELETE", "posts?id=eq." + id + "&user_id=eq." + uid, null);
+                                          if (vp.length() > 3) {
+                                              try { sendUrl("DELETE", url + "/storage/v1/object/post-videos/" + vp, null); } catch (Exception ignore) {}
+                                          }
+                                      } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                                      final String fe = err;
+                                      runOnUiThread(new Runnable() {
+                                          @Override public void run() {
+                                              if (fe != null) { toast("تعذّر الحذف: " + fe); return; }
+                                              items.remove(o);
+                                              adapter.notifyDataSetChanged();
+                                          }
+                                      });
+                                  }
+                              });
+                          }
+                      }).show();
+              }
+
+              private void toggleLike(int idx) {
+                  final String k = String.valueOf(items.get(idx).optLong("id"));
+                  final int[] s = stats.get(k);
+                  if (s == null || uid == null) return;
+                  final boolean was = liked.contains(k);
+                  if (was) { liked.remove(k); s[0] = Math.max(0, s[0] - 1); } else { liked.add(k); s[0]++; }
+                  adapter.notifyDataSetChanged();
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              if (was) send("DELETE", "post_likes?post_id=eq." + k + "&user_id=eq." + uid, null);
+                              else send("POST", "post_likes", "{\"post_id\":" + k + ",\"user_id\":\"" + uid + "\"}");
+                          } catch (Exception e) {
+                              runOnUiThread(new Runnable() {
+                                  @Override public void run() {
+                                      if (was) { liked.add(k); s[0]++; } else { liked.remove(k); s[0] = Math.max(0, s[0] - 1); }
+                                      adapter.notifyDataSetChanged();
+                                      toast("تعذّر حفظ الإعجاب");
+                                  }
+                              });
+                          }
+                      }
+                  });
+              }
+
+              // ---------------- التعليقات ----------------
+              private void openComments(int idx) {
+                  final long pid = items.get(idx).optLong("id");
+                  final String pk = String.valueOf(pid);
+                  final List<JSONObject> cm = new ArrayList<JSONObject>();
+                  final Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
+                  d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+                  LinearLayout box = new LinearLayout(this);
+                  box.setOrientation(LinearLayout.VERTICAL);
+                  box.setBackgroundColor(NAVY);
+                  box.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                  box.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+                      @Override public WindowInsets onApplyWindowInsets(View v, WindowInsets ins) {
+                          v.setPadding(0, ins.getSystemWindowInsetTop(), 0, ins.getSystemWindowInsetBottom());
+                          return ins;
+                      }
+                  });
+                  LinearLayout bar = new LinearLayout(this);
+                  bar.setGravity(Gravity.CENTER_VERTICAL);
+                  bar.setPadding(dp(16), dp(12), dp(16), dp(8));
+                  TextView title = tv(GOLD, 18, true);
+                  title.setText("التعليقات");
+                  bar.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  TextView x = tv(Color.WHITE, 22, false);
+                  x.setText("✕");
+                  x.setPadding(dp(12), 0, dp(4), 0);
+                  x.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { d.dismiss(); }
+                  });
+                  bar.addView(x);
+                  box.addView(bar);
+
+                  final TextView empty = tv(MUTED, 14, false);
+                  empty.setText("جارٍ التحميل...");
+                  empty.setPadding(dp(16), dp(8), dp(16), dp(8));
+                  box.addView(empty);
+
+                  ListView lv = new ListView(this);
+                  lv.setDivider(null);
+                  lv.setSelector(new ColorDrawable(Color.TRANSPARENT));
+                  final BaseAdapter ca = new BaseAdapter() {
+                      @Override public int getCount() { return cm.size(); }
+                      @Override public Object getItem(int i) { return cm.get(i); }
+                      @Override public long getItemId(int i) { return i; }
+                      @Override public View getView(int i, View cv, ViewGroup p) {
+                          LinearLayout r;
+                          if (cv == null) {
+                              r = new LinearLayout(NativeFeedActivity.this);
+                              r.setOrientation(LinearLayout.VERTICAL);
+                              TextView n = tv(Color.WHITE, 14, true);
+                              TextView t = tv(0xFFE6E9FF, 15, false);
+                              TextView m = tv(MUTED, 11, false);
+                              r.addView(n); r.addView(t); r.addView(m);
+                              r.setTag(new TextView[] { n, t, m });
+                              cv = r;
+                          }
+                          r = (LinearLayout) cv;
+                          TextView[] tt = (TextView[]) r.getTag();
+                          JSONObject o = cm.get(i);
+                          boolean reply = !o.isNull("parent_id");
+                          r.setPadding(dp(reply ? 44 : 16), dp(10), dp(16), dp(10));
+                          tt[0].setText(o.optString("author_name", ""));
+                          String c = o.optString("content", "");
+                          tt[1].setText(c.startsWith("::sticker::") ? c.substring(11) : c);
+                          tt[2].setText(ago(o.optString("created_at", "")));
+                          return cv;
+                      }
+                  };
+                  lv.setAdapter(ca);
+                  box.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+                  LinearLayout in = new LinearLayout(this);
+                  in.setGravity(Gravity.CENTER_VERTICAL);
+                  in.setPadding(dp(12), dp(8), dp(12), dp(8));
+                  final EditText et = new EditText(this);
+                  et.setHint("اكتب تعليقًا...");
+                  et.setHintTextColor(MUTED);
+                  et.setTextColor(Color.WHITE);
+                  et.setMaxLines(4);
+                  in.addView(et, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                  final TextView sendBtn = tv(NAVY, 15, true);
+                  sendBtn.setText("إرسال");
+                  sendBtn.setGravity(Gravity.CENTER);
+                  GradientDrawable sg = new GradientDrawable();
+                  sg.setColor(GOLD);
+                  sg.setCornerRadius(dp(18));
+                  sendBtn.setBackground(sg);
+                  sendBtn.setPadding(dp(18), dp(10), dp(18), dp(10));
+                  in.addView(sendBtn);
+                  box.addView(in);
+
+                  final Runnable reload = new Runnable() {
+                      @Override public void run() {
+                          pool.execute(new Runnable() {
+                              @Override public void run() {
+                                  String err = null;
+                                  final List<JSONObject> got = new ArrayList<JSONObject>();
+                                  try {
+                                      JSONArray a = new JSONArray(get("post_comments?select=id,parent_id,user_id,author_name,content,created_at,hidden&post_id=eq." + pid + "&order=created_at.asc&limit=200"));
+                                      for (int k = 0; k < a.length(); k++) {
+                                          JSONObject o = a.getJSONObject(k);
+                                          if (!o.optBoolean("hidden", false)) got.add(o);
+                                      }
+                                  } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                                  final String fe = err;
+                                  runOnUiThread(new Runnable() {
+                                      @Override public void run() {
+                                          if (fe != null) { empty.setText("تعذّر التحميل: " + fe); return; }
+                                          cm.clear();
+                                          cm.addAll(got);
+                                          ca.notifyDataSetChanged();
+                                          empty.setVisibility(got.isEmpty() ? View.VISIBLE : View.GONE);
+                                          empty.setText("لا توجد تعليقات بعد");
+                                          int[] s = stats.get(pk);
+                                          if (s != null) { s[1] = got.size(); adapter.notifyDataSetChanged(); }
+                                      }
+                                  });
+                              }
+                          });
+                      }
+                  };
+                  sendBtn.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          final String txt = et.getText().toString().trim();
+                          if (txt.length() == 0 || uid == null) return;
+                          sendBtn.setEnabled(false);
+                          pool.execute(new Runnable() {
+                              @Override public void run() {
+                                  String err = null;
+                                  try {
+                                      JSONObject b = new JSONObject();
+                                      b.put("post_id", pid);
+                                      b.put("user_id", uid);
+                                      b.put("author_name", uname == null ? "" : uname);
+                                      b.put("author_avatar", uavatar == null ? "" : uavatar);
+                                      b.put("content", txt);
+                                      send("POST", "post_comments", b.toString());
+                                  } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                                  final String fe = err;
+                                  runOnUiThread(new Runnable() {
+                                      @Override public void run() {
+                                          sendBtn.setEnabled(true);
+                                          if (fe != null) { toast(fe.contains("premium_required") ? "هذه الميزة للمشتركين فقط" : "تعذّر الإرسال"); return; }
+                                          et.setText("");
+                                          reload.run();
+                                      }
+                                  });
+                              }
+                          });
+                      }
+                  });
+                  d.setContentView(box);
+                  d.show();
+                  reload.run();
+              }
+
+              // ---------------- تحميل الصفحات ----------------
+              private void loadBalance() {
+                  if (uid == null) return;
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          try {
+                              JSONArray a = new JSONArray(get("users?select=points&user_id=eq." + uid));
+                              if (a.length() > 0) {
+                                  final long p = a.getJSONObject(0).optLong("points", 0);
+                                  runOnUiThread(new Runnable() {
+                                      @Override public void run() { balance.setText(String.format(java.util.Locale.US, "%,d", p)); }
+                                  });
+                              }
+                          } catch (Exception ignore) {}
+                      }
+                  });
+              }
+
+              private void refresh() {
+                  if (loading) return;
+                  items.clear();
+                  stats.clear();
+                  offset = 0;
+                  endReached = false;
+                  adapter.notifyDataSetChanged();
+                  status.setText("جارٍ التحديث...");
+                  t0 = System.currentTimeMillis();
+                  loadBalance();
+                  loadPage();
+              }
+
+              private void loadPage() {
+                  if (loading || endReached) return;
+                  loading = true;
+                  final boolean first = offset == 0;
+                  new Thread(new Runnable() {
+                      @Override public void run() {
+                          String err = null;
+                          final List<JSONObject> got = new ArrayList<JSONObject>();
+                          try {
+                              JSONArray a = new JSONArray(get("posts?select=id,user_id,author_name,content,created_at,image_url,video_url,video_path&order=created_at.desc&limit=" + PAGE + "&offset=" + offset));
+                              StringBuilder ids = new StringBuilder();
+                              Set<String> users = new HashSet<String>();
+                              for (int k = 0; k < a.length(); k++) {
+                                  JSONObject p = a.getJSONObject(k);
+                                  got.add(p);
+                                  stats.put(String.valueOf(p.optLong("id")), new int[] { 0, 0, 0, 0 });
+                                  if (ids.length() > 0) ids.append(",");
+                                  ids.append(p.optLong("id"));
+                                  users.add(p.optString("user_id", ""));
+                              }
+                              final String fids = ids.toString();
+                              final long mid = System.currentTimeMillis() - t0;
+                              final int n = got.size();
+                              runOnUiThread(new Runnable() {
+                                  @Override public void run() {
+                                      items.addAll(got);
+                                      offset += n;
+                                      if (n < PAGE) endReached = true;
+                                      adapter.notifyDataSetChanged();
+                                      if (first) status.setText("المنشورات: " + n + " خلال " + mid + " ms");
+                                  }
+                              });
+                              if (fids.length() > 0) {
+                                  try {
+                                      StringBuilder us = new StringBuilder();
+                                      for (String u : users) { if (u.length() > 0) { if (us.length() > 0) us.append(","); us.append(u); } }
+                                      if (us.length() > 0) {
+                                          JSONArray pa = new JSONArray(get("public_profiles?select=user_id,photo_url&user_id=in.(" + us + ")"));
+                                          for (int q = 0; q < pa.length(); q++) {
+                                              JSONObject po = pa.getJSONObject(q);
+                                              String ph = po.isNull("photo_url") ? "" : po.optString("photo_url", "");
+                                              if (ph.startsWith("http")) photos.put(po.optString("user_id"), ph);
+                                          }
+                                          runOnUiThread(new Runnable() {
+                                              @Override public void run() { adapter.notifyDataSetChanged(); }
+                                          });
+                                      }
+                                  } catch (Exception ignore) {}
+                                  count("post_likes", fids, 0);
+                                  count("post_comments", fids, 1);
+                                  count("post_reposts", fids, 2);
+                                  count("post_views", fids, 3);
+                                  try {
+                                      JSONArray la = new JSONArray(get("post_likes?select=post_id&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
+                                      for (int q = 0; q < la.length(); q++) liked.add(String.valueOf(la.getJSONObject(q).optLong("post_id")));
+                                  } catch (Exception ignore) {}
+                              }
+                          } catch (Exception e) {
+                              err = String.valueOf(e.getMessage());
+                          }
+                          final String fe = err;
+                          runOnUiThread(new Runnable() {
+                              @Override public void run() {
+                                  loading = false;
+                                  if (fe != null) { if (items.isEmpty()) status.setText("خطأ: " + fe); return; }
+                                  adapter.notifyDataSetChanged();
+                              }
+                          });
+                      }
+                  }).start();
+              }
+
+              // ---------------- الواجهة ----------------
+              private View circleBtn(String glyph, String label, final String action, boolean live) {
+                  LinearLayout c = new LinearLayout(this);
+                  c.setOrientation(LinearLayout.VERTICAL);
+                  c.setGravity(Gravity.CENTER_HORIZONTAL);
+                  c.setPadding(dp(8), dp(4), dp(8), dp(4));
+                  TextView g = tv(live ? 0xFF14F195 : GOLD, live ? 14 : 24, true);
+                  g.setText(glyph);
+                  g.setGravity(Gravity.CENTER);
+                  g.setBackground(oval(0xFF101A55, live ? 0xFF14F195 : GOLD));
+                  c.addView(g, new LinearLayout.LayoutParams(dp(64), dp(64)));
+                  TextView l = tv(0xFFE6E9FF, 12, true);
+                  l.setText(label);
+                  l.setGravity(Gravity.CENTER);
+                  l.setPadding(0, dp(4), 0, 0);
+                  c.addView(l);
+                  c.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { goWeb(action); }
+                  });
+                  return c;
+              }
+
+              private TextView iconBtn(String glyph, final String action) {
+                  TextView t = tv(Color.WHITE, 20, false);
+                  t.setText(glyph);
+                  t.setGravity(Gravity.CENTER);
+                  GradientDrawable g = new GradientDrawable();
+                  g.setColor(0xFF101A55);
+                  g.setCornerRadius(dp(14));
+                  g.setStroke(dp(1), 0x55F5C35A);
+                  t.setBackground(g);
+                  LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(46), dp(46));
+                  lp.setMargins(dp(4), 0, dp(4), 0);
+                  t.setLayoutParams(lp);
+                  if (action != null) {
+                      t.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { goWeb(action); }
+                      });
+                  }
+                  return t;
               }
 
               @Override
@@ -660,42 +1247,91 @@ jobs:
                   url = getIntent().getStringExtra("url");
                   key = getIntent().getStringExtra("key");
                   token = getIntent().getStringExtra("token");
+                  uid = getIntent().getStringExtra("uid");
+                  uname = getIntent().getStringExtra("uname");
+                  uavatar = getIntent().getStringExtra("uavatar");
+                  linkTpl = getIntent().getStringExtra("linkTpl");
+
+                  FrameLayout outer = new FrameLayout(this);
+                  outer.setBackgroundColor(NAVY);
+                  outer.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
 
                   LinearLayout root = new LinearLayout(this);
                   root.setOrientation(LinearLayout.VERTICAL);
-                  root.setBackgroundColor(NAVY);
-                  root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
                   root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
                       @Override public WindowInsets onApplyWindowInsets(View v, WindowInsets ins) {
                           v.setPadding(0, ins.getSystemWindowInsetTop(), 0, ins.getSystemWindowInsetBottom());
                           return ins;
                       }
                   });
+                  outer.addView(root, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-                  LinearLayout bar = new LinearLayout(this);
-                  bar.setOrientation(LinearLayout.HORIZONTAL);
-                  bar.setGravity(Gravity.CENTER_VERTICAL);
-                  bar.setPadding(dp(16), dp(12), dp(16), dp(8));
-                  TextView title = tv(GOLD, 18, true);
-                  title.setText("تجربة الرئيسية الأصلية");
-                  bar.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-                  TextView close = tv(Color.WHITE, 22, false);
-                  close.setText("✕");
-                  close.setPadding(dp(12), 0, dp(4), 0);
+                  // الشريط العلوي: صورتي + الرصيد ... تحديث + بحث + إشعارات + إغلاق
+                  LinearLayout top = new LinearLayout(this);
+                  top.setGravity(Gravity.CENTER_VERTICAL);
+                  top.setPadding(dp(12), dp(10), dp(12), dp(6));
+                  TextView me = tv(NAVY, 20, true);
+                  String nm = uname == null ? "" : uname;
+                  me.setText(nm.length() > 0 ? nm.substring(0, 1).toUpperCase() : "؟");
+                  me.setGravity(Gravity.CENTER);
+                  me.setBackground(oval(GOLD, 0xFFFFE7AD));
+                  me.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { goWeb("profile"); }
+                  });
+                  top.addView(me, new LinearLayout.LayoutParams(dp(46), dp(46)));
+                  balance = tv(GOLD, 20, true);
+                  balance.setText("…");
+                  balance.setGravity(Gravity.CENTER);
+                  balance.setPadding(dp(16), 0, dp(16), 0);
+                  GradientDrawable bg = new GradientDrawable();
+                  bg.setColor(0xFF0D1440);
+                  bg.setCornerRadius(dp(23));
+                  bg.setStroke(dp(1), 0x55F5C35A);
+                  balance.setBackground(bg);
+                  balance.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { goWeb("points"); }
+                  });
+                  LinearLayout.LayoutParams blp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(46));
+                  blp.setMargins(dp(10), 0, 0, 0);
+                  top.addView(balance, blp);
+                  top.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+                  TextView rf = iconBtn("↻", null);
+                  rf.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { refresh(); }
+                  });
+                  top.addView(rf);
+                  top.addView(iconBtn("🔍", "search"));
+                  top.addView(iconBtn("🔔", "notifications"));
+                  TextView close = iconBtn("✕", null);
                   close.setOnClickListener(new View.OnClickListener() {
                       @Override public void onClick(View v) { finish(); }
                   });
-                  bar.addView(close);
-                  root.addView(bar);
+                  top.addView(close);
+                  root.addView(top);
 
-                  status = tv(MUTED, 13, false);
-                  status.setPadding(dp(16), 0, dp(16), dp(8));
+                  // دوائر الاختصارات
+                  HorizontalScrollView hs = new HorizontalScrollView(this);
+                  hs.setHorizontalScrollBarEnabled(false);
+                  LinearLayout shortcuts = new LinearLayout(this);
+                  shortcuts.setPadding(dp(8), dp(4), dp(8), dp(4));
+                  shortcuts.addView(circleBtn("🕐", "الليلة", "tonight", false));
+                  shortcuts.addView(circleBtn("LIVE", "مباشر", "live", true));
+                  shortcuts.addView(circleBtn("⬆", "كيف تكسب", "earn", false));
+                  shortcuts.addView(circleBtn("🏆", "الترتيب", "ranking", false));
+                  shortcuts.addView(circleBtn("🎯", "الرادار", "radar", false));
+                  hs.addView(shortcuts);
+                  root.addView(hs);
+
+                  status = tv(MUTED, 12, false);
+                  status.setPadding(dp(16), dp(4), dp(16), dp(6));
                   status.setText("جارٍ التحميل...");
                   root.addView(status);
 
                   ListView lv = new ListView(this);
                   lv.setDivider(null);
                   lv.setSelector(new ColorDrawable(Color.TRANSPARENT));
+                  lv.setClipToPadding(false);
+                  lv.setPadding(0, 0, 0, dp(90));
                   adapter = new BaseAdapter() {
                       @Override public int getCount() { return items.size(); }
                       @Override public Object getItem(int i) { return items.get(i); }
@@ -704,73 +1340,66 @@ jobs:
                           if (cv == null) cv = makeRow();
                           Holder h = ((Wrap) cv).h;
                           JSONObject o = items.get(i);
-                          String nm = o.optString("author_name", "");
-                          h.avatar.setText(nm.length() > 0 ? nm.substring(0, 1).toUpperCase() : "?");
-                          h.name.setText(nm);
+                          String nm2 = o.optString("author_name", "");
+                          h.avatar.setText(nm2.length() > 0 ? nm2.substring(0, 1).toUpperCase() : "?");
+                          String ph = photos.get(o.optString("user_id", ""));
+                          if (ph != null) { h.avImg.setVisibility(View.VISIBLE); loadImage(ph, h.avImg); }
+                          else { h.avImg.setTag(null); h.avImg.setVisibility(View.GONE); }
+                          h.name.setText(nm2);
                           h.time.setText(ago(o.optString("created_at", "")));
                           String c = o.optString("content", "");
                           h.body.setText(c);
                           h.body.setVisibility(c.length() > 0 ? View.VISIBLE : View.GONE);
                           String im = o.isNull("image_url") ? "" : o.optString("image_url", "");
                           String vd = o.isNull("video_url") ? "" : o.optString("video_url", "");
-                          if (im.length() > 4) { h.img.setVisibility(View.VISIBLE); loadImage(im, h.img); }
-                          else { h.img.setTag(null); h.img.setVisibility(View.GONE); }
+                          if (im.length() > 4) {
+                              h.img.setVisibility(View.VISIBLE);
+                              loadImage(im, h.img);
+                              h.img.setTag(R_TAG, Integer.valueOf(i));
+                          } else { h.img.setTag(null); h.img.setVisibility(View.GONE); }
                           h.video.setVisibility(vd.length() > 4 ? View.VISIBLE : View.GONE);
                           int[] s = stats.get(String.valueOf(o.optLong("id")));
                           if (s == null) s = new int[] { 0, 0, 0, 0 };
-                          h.counts.setText("♥ " + s[0] + "     💬 " + s[1] + "     🔁 " + s[2] + "     👁 " + s[3]);
+                          boolean lk = liked.contains(String.valueOf(o.optLong("id")));
+                          h.heart.setText((lk ? "❤️ " : "🤍 ") + s[0]);
+                          h.heart.setTextColor(lk ? 0xFFFF4D6D : MUTED);
+                          Integer ti = Integer.valueOf(i);
+                          h.heart.setTag(ti);
+                          h.more.setTag(ti);
+                          h.video.setTag(ti);
+                          h.cm.setTag(ti);
+                          h.cm.setText("💬 " + s[1]);
+                          h.rp.setText("🔁 " + s[2]);
+                          h.vw.setText("👁 " + s[3]);
                           return cv;
                       }
                   };
                   lv.setAdapter(adapter);
-                  root.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
-                  setContentView(root);
-
-                  final long t0 = System.currentTimeMillis();
-                  new Thread(new Runnable() {
-                      @Override public void run() {
-                          String err = null;
-                          final List<JSONObject> got = new ArrayList<JSONObject>();
-                          try {
-                              JSONArray a = new JSONArray(get("posts?select=id,author_name,content,created_at,image_url,video_url&order=created_at.desc&limit=60"));
-                              StringBuilder ids = new StringBuilder();
-                              for (int k = 0; k < a.length(); k++) {
-                                  JSONObject p = a.getJSONObject(k);
-                                  got.add(p);
-                                  stats.put(String.valueOf(p.optLong("id")), new int[] { 0, 0, 0, 0 });
-                                  if (ids.length() > 0) ids.append(",");
-                                  ids.append(p.optLong("id"));
-                              }
-                              final long mid = System.currentTimeMillis() - t0;
-                              final String fids = ids.toString();
-                              runOnUiThread(new Runnable() {
-                                  @Override public void run() {
-                                      items.clear();
-                                      items.addAll(got);
-                                      adapter.notifyDataSetChanged();
-                                      status.setText("المنشورات: " + got.size() + " خلال " + mid + " ms");
-                                  }
-                              });
-                              if (fids.length() > 0) {
-                                  count("post_likes", fids, 0);
-                                  count("post_comments", fids, 1);
-                                  count("post_reposts", fids, 2);
-                                  count("post_views", fids, 3);
-                              }
-                          } catch (Exception e) {
-                              err = String.valueOf(e.getMessage());
-                          }
-                          final String fe = err;
-                          final long ms = System.currentTimeMillis() - t0;
-                          runOnUiThread(new Runnable() {
-                              @Override public void run() {
-                                  if (fe != null) { status.setText("خطأ: " + fe); return; }
-                                  adapter.notifyDataSetChanged();
-                                  status.setText("المنشورات: " + got.size() + "، والأعداد خلال " + ms + " ms");
-                              }
-                          });
+                  lv.setOnScrollListener(new AbsListView.OnScrollListener() {
+                      @Override public void onScrollStateChanged(AbsListView v, int st) {}
+                      @Override public void onScroll(AbsListView v, int first, int visible, int total) {
+                          if (total > 0 && first + visible >= total - 4) loadPage();
                       }
-                  }).start();
+                  });
+                  root.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+                  // زر "+" لكتابة منشور (يفتح نافذة الكتابة في الويب)
+                  TextView fab = tv(Color.WHITE, 30, false);
+                  fab.setText("+");
+                  fab.setGravity(Gravity.CENTER);
+                  fab.setBackground(oval(0xFF2C4BB5, 0));
+                  fab.setElevation(dp(6));
+                  fab.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { goWeb("compose"); }
+                  });
+                  FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.BOTTOM | Gravity.LEFT);
+                  flp.setMargins(dp(18), 0, 0, dp(28));
+                  outer.addView(fab, flp);
+
+                  setContentView(outer);
+                  t0 = System.currentTimeMillis();
+                  loadBalance();
+                  loadPage();
               }
 
               @Override
@@ -784,6 +1413,7 @@ jobs:
           package PKG;
 
           import android.content.Intent;
+          import com.getcapacitor.JSObject;
           import com.getcapacitor.Plugin;
           import com.getcapacitor.PluginCall;
           import com.getcapacitor.PluginMethod;
@@ -798,10 +1428,26 @@ jobs:
                       i.putExtra("url", call.getString("url"));
                       i.putExtra("key", call.getString("key"));
                       i.putExtra("token", call.getString("token"));
+                      i.putExtra("uid", call.getString("uid"));
+                      i.putExtra("uname", call.getString("uname"));
+                      i.putExtra("uavatar", call.getString("uavatar"));
+                      i.putExtra("linkTpl", call.getString("linkTpl"));
                       getActivity().startActivity(i);
                       call.resolve();
                   } catch (Exception e) {
                       call.reject(String.valueOf(e.getMessage()));
+                  }
+              }
+
+              // عند الرجوع من الشاشة الأصلية إلى صفحة ويب: نُبلغ الويب بالإجراء المطلوب
+              @Override
+              protected void handleOnResume() {
+                  String a = NativeFeedActivity.pendingAction;
+                  if (a != null) {
+                      NativeFeedActivity.pendingAction = null;
+                      JSObject o = new JSObject();
+                      o.put("name", a);
+                      notifyListeners("action", o);
                   }
               }
           }
