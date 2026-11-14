@@ -1503,9 +1503,50 @@
         if (typeof window.closePostPage === 'function') window.closePostPage();
         const p = postCache[id];
         if (!p) return;
+        // خارج الصفحة الرئيسية (مثل عارض الفيديو) لا يوجد عنصر المنشور، فنفتح نافذة تعديل مستقلة
+        if (!document.getElementById(`post-body-${id}`)) { openEditModal(id); return; }
         editState[id] = { newImage: null, removed: false };
         renderEdit(id, p.content);
     };
+
+    // نافذة تعديل نص المنشور (تعمل من أي شاشة)
+    function openEditModal(id) {
+        const p = postCache[id];
+        if (!p) return;
+        document.getElementById('zedit-ov')?.remove();
+        const ov = document.createElement('div');
+        ov.id = 'zedit-ov';
+        ov.dir = window.zA('rtl', 'ltr');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:2147483000;background:rgba(3,6,24,.78);display:flex;align-items:flex-end;justify-content:center;';
+        ov.innerHTML = `
+            <div style="width:100%;max-width:520px;background:#111a4a;border-radius:22px 22px 0 0;border:1px solid rgba(245,195,90,.25);padding:16px 16px calc(18px + env(safe-area-inset-bottom,0px));box-sizing:border-box;">
+                <div style="font-weight:900;font-size:1.02rem;color:#f5c35a;margin-bottom:10px;">✏️ ${window.zT('تعديل المنشور', 'Edit post')}</div>
+                <textarea id="zedit-text" maxlength="${postLimit()}" style="width:100%;min-height:130px;box-sizing:border-box;background:#0a1033;border:1px solid rgba(245,195,90,.35);border-radius:14px;color:#fff;padding:12px;font-size:1rem;font-family:inherit;resize:vertical;">${esc(p.content || '')}</textarea>
+                <div style="display:flex;gap:10px;margin-top:12px;">
+                    <button id="zedit-cancel" style="flex:1;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);color:#fff;font-weight:800;font-family:inherit;">${window.zT('إلغاء', 'Cancel')}</button>
+                    <button id="zedit-save" style="flex:1;padding:12px;border-radius:14px;border:0;background:linear-gradient(135deg,#ffe7ad,#f5c35a);color:#0a1033;font-weight:900;font-family:inherit;">${window.zT('حفظ', 'Save')}</button>
+                </div>
+            </div>`;
+        document.body.appendChild(ov);
+        const close = () => ov.remove();
+        ov.addEventListener('click', e => { if (e.target === ov) close(); });
+        document.getElementById('zedit-cancel').onclick = close;
+        const save = document.getElementById('zedit-save');
+        save.onclick = async () => {
+            const content = document.getElementById('zedit-text').value.trim();
+            if (!content && !p.image_url && !p.video_url) { alert(window.zT('لا يمكن ترك المنشور فارغاً.', 'Post cannot be empty.')); return; }
+            save.disabled = true; save.style.opacity = '.6';
+            const now = new Date().toISOString();
+            const { error } = await db().from('posts').update({ content: content, updated_at: now }).eq('id', id).eq('user_id', me().id);
+            if (error) { save.disabled = false; save.style.opacity = ''; alert(postErrText(error) || error.message); return; }
+            Object.assign(p, { content: content, updated_at: now });
+            close();
+            try { if (document.getElementById(`post-body-${id}`)) renderPostBody(id); } catch (e) {}
+            try { window.dispatchEvent(new CustomEvent('zelo-post-edited', { detail: { id: id, content: content } })); } catch (e) {}
+            toast(window.zT('تم حفظ التعديل', 'Saved'));
+        };
+        setTimeout(() => { const t = document.getElementById('zedit-text'); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }, 120);
+    }
 
     function renderEdit(id, content) {
         const p = postCache[id];
