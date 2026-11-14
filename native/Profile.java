@@ -65,7 +65,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 
-abstract class Profile extends NftMarket {
+abstract class Profile extends Push {
     // ---------------- الملف الشخصي ----------------
     protected String pjson = "";
 

@@ -78,7 +78,8 @@ abstract class Base extends Activity {
         if ("profile".equals(pageId)) { openProfile(null); return; }
         if ("matches".equals(pageId)) { openMatchesPage(); return; }
         if ("messages".equals(pageId)) { openMessagesPage(); return; }
-        if ("points".equals(pageId) || "notifications".equals(pageId)) { goWeb(pageId); return; }
+        if ("notifications".equals(pageId)) { openNotificationsPage(); return; }
+        if ("points".equals(pageId)) { goWeb(pageId); return; }
         goWeb("nav:" + pageId);
     }
 
@@ -87,6 +88,7 @@ abstract class Base extends Activity {
     protected abstract void goWeb(String action);
     protected abstract void openMatchesPage();
     protected abstract void openMessagesPage();
+    protected abstract void openNotificationsPage();
     protected abstract void openVideosTab();
     protected abstract View makeRow();
     protected abstract void toggleFollowUser(final String target);

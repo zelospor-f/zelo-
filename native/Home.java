@@ -1649,7 +1649,7 @@ public class Home extends Profile {
         l.setPadding(0, dp(4), 0, 0);
         c.addView(l);
         c.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else if ("tonight".equals(action) || "live".equals(action)) openTodayMatches(action); else goWeb(action); }
+            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else if ("radar".equals(action)) openFanRadar(); else if ("tonight".equals(action) || "live".equals(action)) openTodayMatches(action); else goWeb(action); }
         });
         return c;
     }
@@ -1693,7 +1693,7 @@ public class Home extends Profile {
         t.setLayoutParams(lp);
         if (action != null) {
             t.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { goWeb(action); }
+                @Override public void onClick(View v) { if ("notifications".equals(action)) showPage(action); else goWeb(action); }
             });
         }
         return t;
@@ -1711,6 +1711,9 @@ public class Home extends Profile {
         linkTpl = getIntent().getStringExtra("linkTpl");
         String pj0 = getIntent().getStringExtra("pjson");
         pjson = pj0 == null ? "" : pj0;
+        captureReferral(getIntent());
+        startNotifBadge();
+        timerH.postDelayed(new Runnable() { @Override public void run() { startPush(); } }, 3000);
 
         getSharedPreferences("zn", MODE_PRIVATE).edit().putInt("boot", 1).apply();
 
