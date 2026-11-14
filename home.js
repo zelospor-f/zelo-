@@ -1224,6 +1224,7 @@
         if (pv) pv.innerHTML = '';
     };
 
+    let _setStage = () => {};   // يغيّر نص زر النشر أثناء العملية
     const _createPostInner = async function() {
         const textEl = document.getElementById('new-post-text');
         const content = (textEl?.value || '').trim();
@@ -1269,13 +1270,33 @@
         let videoUrl = null, videoPath = null;
         if (pendingVideo) {
             try {
+                _setStage(window.zT('جارٍ رفع الفيديو...', 'Uploading video...'));
                 videoPath = `${u.id}/${Date.now()}.mp4`;
-                const { error: upErr } = await c.storage.from('post-videos')
-                    .upload(videoPath, pendingVideo, { contentType: 'video/mp4', upsert: false });
-                if (upErr) throw upErr;
+                // الاتصال البطيء قد يقطع الرد بعد وصول الملف؛ نعيد المحاولة حتى 3 مرات،
+                // وإن قال الخادم "الملف موجود" فهذا يعني أن الرفع نجح فعلاً.
+                let lastErr = null;
+                for (let attempt = 1; attempt <= 3; attempt++) {
+                    try {
+                        const { error: upErr } = await c.storage.from('post-videos')
+                            .upload(videoPath, pendingVideo, { contentType: 'video/mp4', upsert: false });
+                        if (upErr) throw upErr;
+                        lastErr = null; break;
+                    } catch (e) {
+                        const m = String((e && (e.message || e.error)) || '') + ' ' + String((e && (e.statusCode || e.status)) || '');
+                        if (/already exists|duplicate|409/i.test(m)) { lastErr = null; break; }
+                        lastErr = e;
+                        console.error('[ZELO] video upload attempt ' + attempt + ':', e);
+                        if (attempt < 3) {
+                            _setStage(window.zT('إعادة محاولة الرفع (' + (attempt + 1) + '/3)...', 'Retrying upload (' + (attempt + 1) + '/3)...'));
+                            await new Promise(r => setTimeout(r, 1500 * attempt));
+                        }
+                    }
+                }
+                if (lastErr) throw lastErr;
                 videoUrl = c.storage.from('post-videos').getPublicUrl(videoPath).data.publicUrl;
+                _setStage(window.zT('جارٍ إنشاء المنشور...', 'Creating the post...'));
             } catch (e) {
-                alert((window.zT('فشل رفع الفيديو: ', 'Video upload failed: ')) + (e.message || ''));
+                alert((window.zT('فشل رفع الفيديو: ', 'Video upload failed: ')) + (e.message || e));
                 return;
             }
         }
@@ -1331,12 +1352,15 @@
         const btn = document.querySelector('.compose-post-btn');
         const oldTxt = btn ? btn.textContent : '';
         if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = window.zT('جارٍ النشر...', 'Posting...'); }
-        const slow = setTimeout(() => {
-            if (btn && btn.isConnected) btn.textContent = window.zT('جارٍ الرفع، انتظر...', 'Uploading, please wait...');
-        }, 4000);
+        _setStage = txt => { if (btn && btn.isConnected) btn.textContent = txt; };
         try { await _createPostInner(); }
+        catch (e) {
+            // أي خطأ غير متوقع كان يضيع بصمت؛ نعرضه الآن
+            console.error('[ZELO] createPost:', e);
+            alert(window.zT('تعذّر النشر: ', 'Could not post: ') + ((e && e.message) || e));
+        }
         finally {
-            clearTimeout(slow);
+            _setStage = () => {};
             _posting = false;
             if (btn && btn.isConnected) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = oldTxt; }
         }
