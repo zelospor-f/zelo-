@@ -544,7 +544,7 @@
         mountPromo,
         openSubscriptions,
         closeSubscriptions,
-        subscribe: planId => startPay(planId),
+        subscribe: (planId, upgrade) => startPay(planId, null, !!upgrade),
         SKUS,
         restore: restorePurchases,
         has: uid => !!(known.get(String(uid)) || {}).pro,

@@ -768,7 +768,7 @@
         `<svg viewBox="0 0 24 24" width="19" height="19" fill="${filled ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
     const ICONS = {
         reply:  svgIcon('<path d="M21 11.5c0 4.14-3.8 7.5-8.5 7.5-.9 0-1.8-.12-2.6-.35L5 21l1.4-3.6C5.5 16.3 4.5 14.5 4.5 12.5 4.5 8.36 8.3 5 13 5s8 3.36 8 6.5z"/>'),
-        repost: svgIcon('<circle cx="6" cy="12" r="3"/><path d="M11.5 12H21"/><path d="M17 7.5l4.5 4.5-4.5 4.5"/>'),   // تمريرة
+        repost: svgIcon('<path d="M4 12a8 8 0 0 1 13.5-5.8"/><path d="M18 3v4h-4"/><circle cx="12" cy="12" r="2.6"/><path d="M20 12a8 8 0 0 1-13.5 5.8"/><path d="M6 21v-4h4"/>'),   // تمريرة
         heart:  on => `<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="${on ? 'currentColor' : 'none'}"/><g stroke="${on ? '#0a1033' : 'currentColor'}"><path d="M12 8.2l3.2 2.3-1.2 3.7h-4l-1.2-3.7z"/><path d="M12 8.2V3.2M15.2 10.5l4.6-1.5M14 14.2l2.8 3.9M10 14.2l-2.8 3.9M8.8 10.5L4.2 9"/></g></svg>`,   // هدف
         views:  svgIcon('<path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>'),
         save:   on => svgIcon('<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>', on),
@@ -1594,7 +1594,7 @@
                 </div>` : ''}
             <div class="tool-row">
                 ${p.video_url ? '<span></span>' : `<button type="button" class="tool-btn" style="margin:0;" onclick="window.openEditImagePicker(${id})">
-                    📷 ${window.zT('تغيير الصورة', 'Change image')}
+                    📷 ${shownImage ? window.zT('تغيير الصورة', 'Change image') : window.zT('إضافة صورة', 'Add image')}
                 </button>`}
                 <div style="display:flex; gap:8px;">
                     <button class="act-btn" style="padding:7px 14px;" onclick="window.cancelEditPost(${id})">${window.zT('إلغاء', 'Cancel')}</button>
@@ -2261,6 +2261,7 @@
         if (!document.querySelector('.post-card')) loadFeed();
     }
 
+    window.zeloOpenReport = (t, i) => openReport(t, i);
     function openReport(type, id) {
         const reasons = [
             ['spam',     '📢', 'محتوى مزعج أو إعلاني',      'Spam'],
@@ -3296,57 +3297,79 @@
         paintHomeHeader();
         loadFeed();
         setupFab();
-        addNativeTestBtn();
         if (timeTimer) clearInterval(timeTimer);
         timeTimer = setInterval(refreshTimes, 30000);
         setupPullToRefresh();
     };
 
-    // زر تجربة الشاشة الأصلية (للمطوّر فقط، ويظهر فقط في نسخة التطبيق التي فيها الإضافة)
-    function addNativeTestBtn() {
-        try {
-            const P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeFeed;
-            if (!P || me().id !== 'eb880283-f32e-4fb5-a84a-e6007b633352') return;
-            // الشاشة الأصلية تطلب فتح صفحة ويب عند الضغط على اختصار فيها
-            if (!window.__znBound && typeof P.addListener === 'function') {
-                window.__znBound = true;
-                P.addListener('action', ev => {
-                    const n = ev && ev.name;
-                    try {
-                        if (n === 'profile') showPage('profile');
-                        else if (n === 'points') showPage('points');
-                        else if (n === 'notifications') showPage('notifications');
-                        else if (n === 'search') window.zhOpenSearch();
-                        else if (n === 'tonight') window.openTodayMatches('tonight');
-                        else if (n === 'live') window.openTodayMatches('live');
-                        else if (n === 'earn') window.openLegendaryRankingScreen && window.openLegendaryRankingScreen();
-                        else if (n === 'ranking') window.openLeagueTable && window.openLeagueTable();
-                        else if (n === 'radar') window.openFanRadar && window.openFanRadar();
-                        else if (n === 'compose') window.openCompose();
-                    } catch (e) { console.error('[ZELO] native action', e); }
-                });
-            }
-            if (document.getElementById('zn-test')) return;
-            const b = document.createElement('button');
-            b.id = 'zn-test';
-            b.textContent = '⚡ أصلي';
-            b.style.cssText = 'position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:9999;background:#f5c35a;color:#0a1033;border:0;border-radius:999px;padding:4px 12px;font-weight:900;font-size:.75rem;';
-            b.onclick = async () => {
-                try {
-                    const c = db(); const ses = (await c.auth.getSession()).data.session;
-                    const av = me().avatar || '';
-                    await P.open({
-                        url: c.supabaseUrl, key: c.supabaseKey, token: ses.access_token, uid: me().id,
-                        uname: me().name || '', uavatar: /^https?:/.test(av) ? av : '',
-                        linkTpl: (window.zeloPostLink ? window.zeloPostLink('__ID__') : '')
-                    });
-                } catch (e) { alert('native: ' + (e && e.message || e)); }
-            };
-            document.body.appendChild(b);
-        } catch (e) {}
+    // ===== الرئيسية الأصلية (تجريبية لحساب المطوّر فقط حالياً) =====
+    const NATIVE_DEV_ID = 'eb880283-f32e-4fb5-a84a-e6007b633352';
+    const nativePlugin = () => (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeFeed) || null;
+    const nativeHomeOn = () => !!nativePlugin() && me().id === NATIVE_DEV_ID;
+
+    function bindNativeActions() {
+        const P = nativePlugin();
+        if (!P || window.__znBound || typeof P.addListener !== 'function') return;
+        window.__znBound = true;
+        P.addListener('notify', ev => {
+            try { if (ev && ev.kind && ev.target) notifyUser(ev.target, ev.kind, { postId: ev.postId || undefined, text: ev.text || '', amount: Number(ev.amount) || 0 }); }
+            catch (e) { console.error('[ZELO] native notify', e); }
+        });
+        P.addListener('action', ev => {
+            const n = String((ev && ev.name) || '');
+            try {
+                if (n.indexOf('nav:') === 0) showPage(n.slice(4));
+                else if (n === 'profile') showPage('profile');
+                else if (n === 'points') showPage('points');
+                else if (n === 'notifications') showPage('notifications');
+                else if (n === 'search') window.zhOpenSearch();
+                else if (n === 'tonight') window.openTodayMatches('tonight');
+                else if (n === 'live') window.openTodayMatches('live');
+                else if (n === 'earn') window.openLegendaryRankingScreen && window.openLegendaryRankingScreen();
+                else if (n === 'ranking') window.openLeagueTable && window.openLeagueTable();
+                else if (n === 'radar') window.openFanRadar && window.openFanRadar();
+                else if (n === 'compose') window.openCompose();
+                else if (n.indexOf('boost:') === 0) {
+                    const bid = n.slice(6);
+                    if (!isPro()) { if (window.openSubscriptions) window.openSubscriptions(); }
+                    else if (window.zeloOpenBoost) window.zeloOpenBoost(bid);
+                }
+                else if (n.indexOf('pay:') === 0) { const pr = n.split(':'); if (window.ZeloPremium) window.ZeloPremium.subscribe(pr[1], pr[2] === '1'); }
+                else if (n === 'restore') { if (window.ZeloPremium) window.ZeloPremium.restore(); }
+                else if (n.indexOf('report:') === 0) { if (window.zeloOpenReport) window.zeloOpenReport('post', n.slice(7)); }
+            } catch (e) { console.error('[ZELO] native action', e); }
+        });
     }
 
-    // أسماء بديلة قديمة تبقى تعمل مع app.js
+    async function openNativeHome() {
+        const P = nativePlugin();
+        const c = db();
+        const ses = (await c.auth.getSession()).data.session;
+        const av = me().avatar || '';
+        await P.open({
+            url: c.supabaseUrl, key: c.supabaseKey, token: ses.access_token, uid: me().id,
+            uname: me().name || '', uavatar: /^https?:/.test(av) ? av : '',
+            linkTpl: (window.zeloPostLink ? window.zeloPostLink('__ID__') : '')
+        });
+    }
+
+    const _renderHomeWeb = window.renderHomePage;
+    window.renderHomePage = function (container) {
+        if (container && nativeHomeOn() && !window.__znFallback) {
+            bindNativeActions();
+            container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:#9aa6d6;"><button id="zn-reopen" style="background:#f5c35a;color:#0a1033;border:0;border-radius:999px;padding:12px 26px;font-weight:900;font-size:1rem;">' + window.zT('فتح الرئيسية', 'Open Home') + '</button></div>';
+            const reopen = () => openNativeHome().catch(err => {
+                console.warn('[ZELO] native home unavailable, using web home', err);
+                window.__znFallback = true;
+                _renderHomeWeb(container);
+            });
+            const btn = document.getElementById('zn-reopen');
+            if (btn) btn.onclick = reopen;
+            reopen();
+            return;
+        }
+        return _renderHomeWeb(container);
+    };
     window.renderCommunityPage = window.renderHomePage;
     window.renderNewsPage = window.renderHomePage;
 })();
