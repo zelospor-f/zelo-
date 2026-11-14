@@ -1649,7 +1649,7 @@ public class Home extends Profile {
         l.setPadding(0, dp(4), 0, 0);
         c.addView(l);
         c.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else goWeb(action); }
+            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else goWeb(action); }
         });
         return c;
     }
@@ -1675,6 +1675,7 @@ public class Home extends Profile {
                 @Override public void onClick(View v) { if (action.startsWith("nav:")) showPage(action.substring(4)); else goWeb(action); }
             });
         }
+        if ("nav:messages".equals(action)) return withMsgBadge(c);
         return c;
     }
 

@@ -65,7 +65,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 
-abstract class Profile extends GoogleVerify {
+abstract class Profile extends Leaderboard {
     // ---------------- الملف الشخصي ----------------
     protected String pjson = "";
 
