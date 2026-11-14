@@ -65,7 +65,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 
-abstract class Profile extends AdminReports {
+abstract class Profile extends Auth {
     // ---------------- الملف الشخصي ----------------
     protected String pjson = "";
 
