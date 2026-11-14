@@ -1277,9 +1277,10 @@
                 let lastErr = null;
                 for (let attempt = 1; attempt <= 3; attempt++) {
                     try {
-                        const { error: upErr } = await c.storage.from('post-videos')
-                            .upload(videoPath, pendingVideo, { contentType: 'video/mp4', upsert: false });
-                        if (upErr) throw upErr;
+                        await uploadWithProgress(c, videoPath, pendingVideo, pct => {
+                            const mb = (pendingVideo.size / 1048576).toFixed(1);
+                            _setStage(window.zT('جارٍ رفع الفيديو ' + pct + '% (' + mb + ' MB)', 'Uploading ' + pct + '% (' + mb + ' MB)'));
+                        });
                         lastErr = null; break;
                     } catch (e) {
                         const m = String((e && (e.message || e.error)) || '') + ' ' + String((e && (e.statusCode || e.status)) || '');
@@ -1345,6 +1346,34 @@
     };
 
     // غلاف النشر: يمنع تكرار الضغط (كل ضغطة كانت تبدأ رفعاً جديداً) ويُظهر أن النشر جارٍ
+    // رفع الفيديو مع نسبة مئوية (XHR يعطي تقدّم الرفع، بينما مكتبة supabase لا تعطيه)
+    async function uploadWithProgress(c, path, file, onPct) {
+        let token = null;
+        try { token = (await c.auth.getSession()).data.session.access_token; } catch (e) {}
+        const base = c.supabaseUrl, key = c.supabaseKey;
+        if (!token || !base || !key) {
+            const { error } = await c.storage.from('post-videos').upload(path, file, { contentType: 'video/mp4', upsert: false });
+            if (error) throw error;
+            return;
+        }
+        await new Promise((resolve, reject) => {
+            const x = new XMLHttpRequest();
+            x.open('POST', base + '/storage/v1/object/post-videos/' + path.split('/').map(encodeURIComponent).join('/'));
+            x.setRequestHeader('apikey', key);
+            x.setRequestHeader('Authorization', 'Bearer ' + token);
+            x.setRequestHeader('Content-Type', 'video/mp4');
+            x.setRequestHeader('x-upsert', 'false');
+            x.upload.onprogress = e => { if (e.lengthComputable) onPct(Math.min(99, Math.floor(e.loaded / e.total * 100))); };
+            x.onload = () => {
+                if (x.status >= 200 && x.status < 300) { onPct(100); resolve(); }
+                else reject(new Error(x.responseText || ('HTTP ' + x.status)));
+            };
+            x.onerror = () => reject(new Error('network'));
+            x.ontimeout = () => reject(new Error('timeout'));
+            x.send(file);
+        });
+    }
+
     let _posting = false;
     window.createPost = async function() {
         if (_posting) return;
@@ -1503,6 +1532,7 @@
         if (typeof window.closePostPage === 'function') window.closePostPage();
         const p = postCache[id];
         if (!p) return;
+        { const t = document.getElementById(`edit-text-${id}`); if (t) { t.focus(); return; } }
         // خارج الصفحة الرئيسية (مثل عارض الفيديو) لا يوجد عنصر المنشور، فنفتح نافذة تعديل مستقلة
         if (!document.getElementById(`post-body-${id}`)) { openEditModal(id); return; }
         editState[id] = { newImage: null, removed: false };
