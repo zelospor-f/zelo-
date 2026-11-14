@@ -1,5 +1,6 @@
 package PKG;
 
+import com.android.billingclient.api.QueryProductDetailsResult;
 import com.android.billingclient.api.AcknowledgePurchaseParams;
 import com.android.billingclient.api.AcknowledgePurchaseResponseListener;
 import com.android.billingclient.api.BillingClient;
@@ -131,7 +132,8 @@ abstract class Billing extends GoogleVerify {
         List<QueryProductDetailsParams.Product> ps = new ArrayList<QueryProductDetailsParams.Product>();
         for (String id : ids) ps.add(QueryProductDetailsParams.Product.newBuilder().setProductId(id).setProductType(type).build());
         bpClient.queryProductDetailsAsync(QueryProductDetailsParams.newBuilder().setProductList(ps).build(), new ProductDetailsResponseListener() {
-            @Override public void onProductDetailsResponse(BillingResult r, List<ProductDetails> list) {
+            @Override public void onProductDetailsResponse(BillingResult r, QueryProductDetailsResult qr) {
+                List<ProductDetails> list = qr == null ? null : qr.getProductDetailsList();
                 if (list != null) for (ProductDetails pd : list) {
                     bpDetails.put(pd.getProductId(), pd);
                     String price = null;
