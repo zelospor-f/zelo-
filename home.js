@@ -1224,7 +1224,7 @@
         if (pv) pv.innerHTML = '';
     };
 
-    window.createPost = async function() {
+    const _createPostInner = async function() {
         const textEl = document.getElementById('new-post-text');
         const content = (textEl?.value || '').trim();
 
@@ -1321,6 +1321,25 @@
         window.clearPostImage();
         window.closeCompose();
         await loadFeed();
+    };
+
+    // غلاف النشر: يمنع تكرار الضغط (كل ضغطة كانت تبدأ رفعاً جديداً) ويُظهر أن النشر جارٍ
+    let _posting = false;
+    window.createPost = async function() {
+        if (_posting) return;
+        _posting = true;
+        const btn = document.querySelector('.compose-post-btn');
+        const oldTxt = btn ? btn.textContent : '';
+        if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = window.zT('جارٍ النشر...', 'Posting...'); }
+        const slow = setTimeout(() => {
+            if (btn && btn.isConnected) btn.textContent = window.zT('جارٍ الرفع، انتظر...', 'Uploading, please wait...');
+        }, 4000);
+        try { await _createPostInner(); }
+        finally {
+            clearTimeout(slow);
+            _posting = false;
+            if (btn && btn.isConnected) { btn.disabled = false; btn.style.opacity = ''; btn.textContent = oldTxt; }
+        }
     };
 
     // ===== إرسال إشعار لمستخدم آخر (إعجاب / تعليق / إعادة نشر / متابعة) =====
