@@ -299,7 +299,7 @@ jobs:
       - name: Build Debug APK
         run: |
           cd $APP_DIR
-          gradle assembleDebug --no-daemon --stacktrace
+          gradle assembleDebug --no-daemon --console=plain
 
       - name: Fetch upload key (signing branch)
         if: github.event_name == 'workflow_dispatch' && env.KS_PASS != ''
@@ -315,7 +315,7 @@ jobs:
           test -f signing/upload-keystore.p12 || { echo "::error::upload keystore not found. Run 'Create Upload Keystore' once first."; exit 1; }
           export KS_FILE="$GITHUB_WORKSPACE/signing/upload-keystore.p12"
           cd $APP_DIR
-          gradle bundleRelease --no-daemon --stacktrace
+          gradle bundleRelease --no-daemon --console=plain
         env:
           RUN_NUMBER: ${{ github.run_number }}
 
