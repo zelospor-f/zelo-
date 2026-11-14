@@ -1649,7 +1649,7 @@ public class Home extends Profile {
         l.setPadding(0, dp(4), 0, 0);
         c.addView(l);
         c.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else goWeb(action); }
+            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else if ("tonight".equals(action) || "live".equals(action)) openTodayMatches(action); else goWeb(action); }
         });
         return c;
     }

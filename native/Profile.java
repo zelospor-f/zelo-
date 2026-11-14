@@ -65,9 +65,13 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 
-abstract class Profile extends Leaderboard {
+abstract class Profile extends NftMarket {
     // ---------------- الملف الشخصي ----------------
     protected String pjson = "";
+
+    @Override protected void onAvatarChanged(String photo) {
+        try { JSONObject o = pjson.length() > 0 ? new JSONObject(pjson) : new JSONObject(); o.put("photo_url", photo); pjson = o.toString(); } catch (Exception ignore) {}
+    }
 
     protected void loadMetaFor(String fids, Set<String> users, List<JSONObject> got) {
         if (fids.length() == 0) return;
@@ -217,7 +221,7 @@ abstract class Profile extends Leaderboard {
         l.setPadding(0, dp(6), 0, 0);
         c.addView(l);
         c.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else goWeb(action); }
+            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("nft".equals(action)) openNftMarket(); else goWeb(action); }
         });
         return c;
     }
@@ -375,7 +379,7 @@ abstract class Profile extends Leaderboard {
             mg.setColor(CARD); mg.setCornerRadius(dp(14)); mg.setStroke(dp(1), 0x55F5C35A);
             mb.setBackground(mg);
             mb.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { goWeb("nav:messages"); }
+                @Override public void onClick(View v) { openMessagesPage(); }
             });
             LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(dp(54), dp(46));
             mlp.setMargins(dp(8), 0, 0, 0);
@@ -417,7 +421,7 @@ abstract class Profile extends Leaderboard {
             mg2.setColor(CARD); mg2.setCornerRadius(dp(14)); mg2.setStroke(dp(1), 0x55F5C35A);
             msg.setBackground(mg2);
             msg.setOnClickListener(new View.OnClickListener() {
-                @Override public void onClick(View v) { goWeb("dm:" + target); }
+                @Override public void onClick(View v) { openChat(target); }
             });
             btns.addView(msg, new LinearLayout.LayoutParams(0, dp(46), 1f));
             LinearLayout.LayoutParams fl2 = new LinearLayout.LayoutParams(0, dp(46), 1f);
