@@ -571,7 +571,8 @@ window.openPredictionHistoryScreen = function() {};
                 rows = (r.data || []).filter(isLive);
             } else {
                 const a = new Date(); a.setHours(0, 0, 0, 0);
-                const b = new Date(a); b.setDate(b.getDate() + 1);
+                // "الليلة" تشمل مباريات ما بعد منتصف الليل حتى السادسة صباحًا
+                const b = new Date(a); b.setDate(b.getDate() + 1); b.setHours(6, 0, 0, 0);
                 const r = await c.from('matches').select('*').gte('match_date', a.toISOString()).lt('match_date', b.toISOString()).order('match_date', { ascending: true });
                 rows = r.data || [];
             }
