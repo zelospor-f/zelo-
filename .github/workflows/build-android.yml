@@ -555,6 +555,18 @@ jobs:
               private int offset = 0;
               private long t0;
 
+              private int navH() {
+                  int id = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
+                  int h = id > 0 ? getResources().getDimensionPixelSize(id) : dp(48);
+                  return h + dp(8);
+              }
+
+              private Runnable vRefresh = null;
+              private void refreshUi() {
+                  if (adapter != null) adapter.notifyDataSetChanged();
+                  if (vRefresh != null) vRefresh.run();
+              }
+
               private int dp(int v) { return (int) (v * getResources().getDisplayMetrics().density); }
 
               // أيقونات مرسومة بنفس أشكال الصفحة القديمة (0 تعليق، 1 تمريرة، 2 هدف، 3 مشاهدات، 4 حفظ، 5 مشاركة)
@@ -615,6 +627,76 @@ jobs:
                           a.moveTo(19, 21); a.lineTo(12, 16); a.lineTo(5, 21); a.lineTo(5, 5); a.quadTo(5, 3, 7, 3);
                           a.lineTo(17, 3); a.quadTo(19, 3, 19, 5); a.close();
                           if (on) p.setStyle(Paint.Style.FILL_AND_STROKE);
+                          c.drawPath(a, p);
+                      } else if (type == 6) {
+                          a.moveTo(3, 10.5f); a.lineTo(12, 3); a.lineTo(21, 10.5f); a.lineTo(21, 20); a.quadTo(21, 21, 20, 21);
+                          a.lineTo(15, 21); a.lineTo(15, 15); a.lineTo(9, 15); a.lineTo(9, 21); a.lineTo(4, 21); a.quadTo(3, 21, 3, 20); a.close();
+                          c.drawPath(a, p);
+                      } else if (type == 7) {
+                          c.drawCircle(12, 12, 9, p);
+                          a.moveTo(12, 8.2f); a.lineTo(15.2f, 10.5f); a.lineTo(14, 14.2f); a.lineTo(10, 14.2f); a.lineTo(8.8f, 10.5f); a.close();
+                          c.drawPath(a, p);
+                          c.drawLine(12, 8.2f, 12, 3.2f, p); c.drawLine(15.2f, 10.5f, 19.8f, 9, p);
+                          c.drawLine(14, 14.2f, 16.8f, 18.1f, p); c.drawLine(10, 14.2f, 7.2f, 18.1f, p);
+                          c.drawLine(8.8f, 10.5f, 4.2f, 9, p);
+                      } else if (type == 8) {
+                          c.drawRoundRect(new RectF(3, 5, 21, 19), 4, 4, p);
+                          a.moveTo(10.2f, 9.4f); a.lineTo(10.2f, 14.6f); a.lineTo(14.6f, 12); a.close();
+                          c.drawPath(a, p);
+                      } else if (type == 9) {
+                          c.drawRoundRect(new RectF(3, 5, 21, 19), 2.5f, 2.5f, p);
+                          a.moveTo(3.8f, 7.2f); a.lineTo(12, 13.5f); a.lineTo(20.2f, 7.2f);
+                          c.drawPath(a, p);
+                      } else if (type == 10) {
+                          c.drawCircle(12, 8, 3.6f, p);
+                          a.moveTo(4.5f, 20); a.cubicTo(5.1f, 16, 8.1f, 14, 12, 14); a.cubicTo(15.9f, 14, 18.9f, 16, 19.5f, 20); a.close();
+                          c.drawPath(a, p);
+                      } else if (type == 11) {
+                          p.setStyle(Paint.Style.FILL);
+                          a.moveTo(7, 4); a.lineTo(17, 4); a.lineTo(21.5f, 9.2f); a.lineTo(12, 20.5f); a.lineTo(2.5f, 9.2f); a.close();
+                          c.drawPath(a, p);
+                      } else if (type == 14) {
+                          a.moveTo(4, 20); a.lineTo(8, 19); a.lineTo(19, 8); a.lineTo(16, 5); a.lineTo(5, 16); a.close();
+                          c.drawPath(a, p);
+                          c.drawLine(14, 7, 17, 10, p);
+                      } else if (type == 15) {
+                          c.drawLine(4, 7, 20, 7, p);
+                          a.moveTo(6, 7); a.lineTo(7, 20); a.lineTo(17, 20); a.lineTo(18, 7);
+                          c.drawPath(a, p);
+                          Path hd = new Path();
+                          hd.moveTo(9, 7); hd.lineTo(9, 4); hd.lineTo(15, 4); hd.lineTo(15, 7);
+                          c.drawPath(hd, p);
+                          c.drawLine(10, 11, 10, 16, p); c.drawLine(14, 11, 14, 16, p);
+                      } else if (type == 16) {
+                          c.drawLine(5, 21, 5, 4, p);
+                          a.moveTo(5, 4); a.lineTo(18, 4); a.lineTo(15, 8); a.lineTo(18, 12); a.lineTo(5, 12);
+                          c.drawPath(a, p);
+                      } else if (type == 17) {
+                          a.moveTo(13, 2); a.lineTo(5, 13); a.lineTo(11, 13); a.lineTo(10, 22); a.lineTo(19, 10); a.lineTo(13, 10); a.close();
+                          c.drawPath(a, p);
+                      } else if (type == 18 || type == 19) {
+                          c.drawCircle(9, 8, 3.5f, p);
+                          a.moveTo(3, 20); a.cubicTo(3.5f, 16, 6, 14, 9, 14); a.cubicTo(12, 14, 14.5f, 16, 15, 20);
+                          c.drawPath(a, p);
+                          c.drawLine(16, 10, 22, 10, p);
+                          if (type == 18) c.drawLine(19, 7, 19, 13, p);
+                      } else if (type == 20) {
+                          a.moveTo(4, 9); a.lineTo(8, 9); a.lineTo(13, 5); a.lineTo(13, 19); a.lineTo(8, 15); a.lineTo(4, 15); a.close();
+                          c.drawPath(a, p);
+                          c.drawLine(17, 9, 22, 15, p); c.drawLine(22, 9, 17, 15, p);
+                      } else if (type == 21) {
+                          c.drawCircle(12, 12, 9, p);
+                          c.drawLine(5.6f, 5.6f, 18.4f, 18.4f, p);
+                      } else if (type == 22) {
+                          c.drawCircle(12, 12, 9, p);
+                          c.drawLine(9, 9, 15, 15, p); c.drawLine(15, 9, 9, 15, p);
+                      } else if (type == 12) {
+                          p.setStyle(Paint.Style.FILL);
+                          c.drawRoundRect(new RectF(6, 4, 10, 20), 1, 1, p);
+                          c.drawRoundRect(new RectF(14, 4, 18, 20), 1, 1, p);
+                      } else if (type == 13) {
+                          p.setStyle(Paint.Style.FILL);
+                          a.moveTo(7, 4); a.lineTo(20, 12); a.lineTo(7, 20); a.close();
                           c.drawPath(a, p);
                       } else {
                           a.moveTo(4, 12); a.lineTo(4, 20); a.quadTo(4, 22, 6, 22); a.lineTo(18, 22); a.quadTo(20, 22, 20, 20); a.lineTo(20, 12);
@@ -842,6 +924,349 @@ jobs:
                   d.show();
               }
 
+              // ---------------- شاشة الفيديو الواحدة ----------------
+              private Dialog vDlg;
+              private List<JSONObject> vList = new ArrayList<JSONObject>();
+              private int vPos = 0;
+              private VideoView vVv;
+              private android.media.MediaPlayer vMp;
+              private boolean vMuted = false, vPaused = false;
+              private final android.os.Handler vH = new android.os.Handler();
+              private Runnable vTick;
+              private ImageView vAvImg;
+              private TextView vAvLetter, vName, vCap, vTime, vPlay, vMute;
+              private View vFill;
+              private FrameLayout vTrack;
+              private ImageView[] vIc = new ImageView[6];
+              private TextView[] vCt = new TextView[6];
+              private int vTrackW = 0;
+
+              private void openViewerFromFeed(int idx) {
+                  List<JSONObject> l = new ArrayList<JSONObject>();
+                  int start = 0;
+                  JSONObject cur = items.get(idx);
+                  for (JSONObject p : items) {
+                      String vu = p.isNull("video_url") ? "" : p.optString("video_url", "");
+                      if (vu.length() > 4) { if (p == cur) start = l.size(); l.add(p); }
+                  }
+                  openViewer(l, start);
+              }
+
+              private void openVideosTab() {
+                  toast("جارٍ تحميل الفيديوهات...");
+                  pool.execute(new Runnable() {
+                      @Override public void run() {
+                          final List<JSONObject> l = new ArrayList<JSONObject>();
+                          try {
+                              if (!metaLoaded) { /* القوائم تُحمَّل عند أول تحميل للمنشورات */ }
+                              JSONArray a = new JSONArray(get("posts?select=id,user_id,author_name,content,created_at,image_url,video_url,video_path,topic_type,topic_name,topic_name_b&video_url=not.is.null&order=created_at.desc&limit=30"));
+                              StringBuilder ids = new StringBuilder();
+                              for (int i = 0; i < a.length(); i++) {
+                                  JSONObject p = a.getJSONObject(i);
+                                  String au = p.optString("user_id", "");
+                                  if (muteSet.contains(au) || blockSet.contains(au)) continue;
+                                  if (p.optString("video_url", "").length() < 5) continue;
+                                  String k = String.valueOf(p.optLong("id"));
+                                  l.add(p);
+                                  if (!stats.containsKey(k)) stats.put(k, new int[] { 0, 0, 0, 0 });
+                                  if (ids.length() > 0) ids.append(",");
+                                  ids.append(k);
+                              }
+                              String fids = ids.toString();
+                              if (fids.length() > 0) {
+                                  count("post_likes", fids, 0); count("post_comments", fids, 1); count("post_reposts", fids, 2); count("post_views", fids, 3);
+                                  try {
+                                      JSONArray x = new JSONArray(get("post_likes?select=post_id&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
+                                      for (int q = 0; q < x.length(); q++) liked.add(String.valueOf(x.getJSONObject(q).optLong("post_id")));
+                                  } catch (Exception ignore) {}
+                                  try {
+                                      JSONArray x = new JSONArray(get("post_reposts?select=post_id&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
+                                      for (int q = 0; q < x.length(); q++) reposted.add(String.valueOf(x.getJSONObject(q).optLong("post_id")));
+                                  } catch (Exception ignore) {}
+                                  try {
+                                      JSONArray x = new JSONArray(get("post_bookmarks?select=post_id&user_id=eq." + uid + "&post_id=in.(" + fids + ")"));
+                                      for (int q = 0; q < x.length(); q++) saved.add(String.valueOf(x.getJSONObject(q).optLong("post_id")));
+                                  } catch (Exception ignore) {}
+                                  loadSupportStats(fids);
+                                  try {
+                                      Set<String> us = new HashSet<String>();
+                                      for (JSONObject p : l) us.add(p.optString("user_id", ""));
+                                      StringBuilder u2 = new StringBuilder();
+                                      for (String u : us) { if (u.length() > 0 && !photos.containsKey(u)) { if (u2.length() > 0) u2.append(","); u2.append(u); } }
+                                      if (u2.length() > 0) {
+                                          JSONArray pa = new JSONArray(get("public_profiles?select=user_id,photo_url&user_id=in.(" + u2 + ")"));
+                                          for (int q = 0; q < pa.length(); q++) {
+                                              JSONObject po = pa.getJSONObject(q);
+                                              String ph = po.isNull("photo_url") ? "" : po.optString("photo_url", "");
+                                              if (ph.startsWith("http")) photos.put(po.optString("user_id"), ph);
+                                          }
+                                      }
+                                  } catch (Exception ignore) {}
+                              }
+                          } catch (Exception e) {}
+                          runOnUiThread(new Runnable() {
+                              @Override public void run() {
+                                  if (l.isEmpty()) { toast("لا توجد فيديوهات بعد"); return; }
+                                  openViewer(l, 0);
+                              }
+                          });
+                      }
+                  });
+              }
+
+              private View sideBtn(final int slot, int icon, final Runnable click) {
+                  LinearLayout c = new LinearLayout(this);
+                  c.setOrientation(LinearLayout.VERTICAL);
+                  c.setGravity(Gravity.CENTER_HORIZONTAL);
+                  c.setPadding(0, dp(5), 0, dp(5));
+                  ImageView iv = new ImageView(this);
+                  iv.setScaleType(ImageView.ScaleType.CENTER);
+                  iv.setBackground(oval(slot == 0 ? GOLD : 0xD91E2846, 0x00000000));
+                  c.addView(iv, new LinearLayout.LayoutParams(dp(slot == 0 ? 52 : 46), dp(slot == 0 ? 52 : 46)));
+                  TextView t = tv(slot == 0 ? GOLD : Color.WHITE, 13, true);
+                  t.setGravity(Gravity.CENTER);
+                  c.addView(t);
+                  vIc[slot] = iv;
+                  vCt[slot] = t;
+                  c.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { click.run(); }
+                  });
+                  return c;
+              }
+
+              private void vBindCounts() {
+                  if (vDlg == null || vPos < 0 || vPos >= vList.size()) return;
+                  JSONObject o = vList.get(vPos);
+                  String k = String.valueOf(o.optLong("id"));
+                  int[] s = stats.get(k);
+                  if (s == null) s = new int[] { 0, 0, 0, 0 };
+                  long[] sp = sup.get(k);
+                  boolean lk = liked.contains(k), rp = reposted.contains(k), sv = saved.contains(k);
+                  int d = dp(22);
+                  vIc[0].setImageDrawable(new Ic(11, NAVY, false, d));
+                  vCt[0].setText(sp == null ? "0" : kfmt(sp[0]));
+                  vIc[1].setImageDrawable(new Ic(2, lk ? 0xFFFF4D6D : Color.WHITE, lk, d));
+                  vCt[1].setText(String.valueOf(s[0]));
+                  vIc[2].setImageDrawable(new Ic(0, Color.WHITE, false, d));
+                  vCt[2].setText(String.valueOf(s[1]));
+                  vIc[3].setImageDrawable(new Ic(1, rp ? 0xFF14F195 : Color.WHITE, false, d));
+                  vCt[3].setText(String.valueOf(s[2]));
+                  vIc[4].setImageDrawable(new Ic(4, sv ? GOLD : Color.WHITE, sv, d));
+                  vCt[4].setText("");
+                  vIc[5].setImageDrawable(new Ic(5, Color.WHITE, false, d));
+                  vCt[5].setText("");
+              }
+
+              private void vLoad() {
+                  if (vPos < 0 || vPos >= vList.size()) return;
+                  JSONObject o = vList.get(vPos);
+                  String nm = o.optString("author_name", "");
+                  vName.setText(nm);
+                  vAvLetter.setText(nm.length() > 0 ? nm.substring(0, 1).toUpperCase() : "?");
+                  String ph = photos.get(o.optString("user_id", ""));
+                  if (ph != null) { vAvImg.setVisibility(View.VISIBLE); loadImage(ph, vAvImg); } else { vAvImg.setTag(null); vAvImg.setVisibility(View.GONE); }
+                  vCap.setText(o.optString("content", ""));
+                  vBindCounts();
+                  vPaused = false;
+                  vPlay.setText("❚❚");
+                  vFill.getLayoutParams().width = 0;
+                  vFill.requestLayout();
+                  vTime.setText("");
+                  vMp = null;
+                  vVv.stopPlayback();
+                  vVv.setVideoURI(android.net.Uri.parse(o.optString("video_url", "")));
+                  vH.removeCallbacks(vTick);
+                  vH.postDelayed(vTick, 400);
+                  recordView(o, stats.get(String.valueOf(o.optLong("id"))) == null ? new int[] { 0, 0, 0, 0 } : stats.get(String.valueOf(o.optLong("id"))));
+              }
+
+              private void openViewer(List<JSONObject> list, int start) {
+                  vList = list;
+                  vPos = start;
+                  vMuted = false;
+                  final Dialog d = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                  vDlg = d;
+                  FrameLayout fl = new FrameLayout(this);
+                  fl.setBackgroundColor(Color.BLACK);
+                  fl.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+                  vVv = new VideoView(this);
+                  fl.addView(vVv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+                  vVv.setOnPreparedListener(new android.media.MediaPlayer.OnPreparedListener() {
+                      @Override public void onPrepared(android.media.MediaPlayer mp) {
+                          vMp = mp;
+                          mp.setLooping(true);
+                          mp.setVolume(vMuted ? 0f : 1f, vMuted ? 0f : 1f);
+                          if (!vPaused) vVv.start();
+                      }
+                  });
+                  vVv.setOnErrorListener(new android.media.MediaPlayer.OnErrorListener() {
+                      @Override public boolean onError(android.media.MediaPlayer mp, int w, int e) { toast("تعذّر تشغيل الفيديو"); return true; }
+                  });
+
+                  // طبقة اللمس: نقرة = إيقاف/تشغيل، سحب = الفيديو التالي/السابق
+                  View touch = new View(this);
+                  final float[] y0 = new float[1];
+                  touch.setOnTouchListener(new View.OnTouchListener() {
+                      @Override public boolean onTouch(View v, android.view.MotionEvent e) {
+                          if (e.getAction() == android.view.MotionEvent.ACTION_DOWN) { y0[0] = e.getY(); return true; }
+                          if (e.getAction() == android.view.MotionEvent.ACTION_UP) {
+                              float dy = e.getY() - y0[0];
+                              if (dy < -dp(80) && vPos < vList.size() - 1) { vPos++; vLoad(); }
+                              else if (dy > dp(80) && vPos > 0) { vPos--; vLoad(); }
+                              else if (Math.abs(dy) < dp(12)) vTogglePause();
+                              return true;
+                          }
+                          return true;
+                      }
+                  });
+                  fl.addView(touch, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+                  // الأعلى: رجوع + قائمة
+                  TextView back = tv(GOLD, 24, true);
+                  back.setText("‹");
+                  back.setGravity(Gravity.CENTER);
+                  GradientDrawable bgk = new GradientDrawable();
+                  bgk.setColor(0xFF101A55); bgk.setCornerRadius(dp(12)); bgk.setStroke(dp(1), 0x66F5C35A);
+                  back.setBackground(bgk);
+                  back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
+                  FrameLayout.LayoutParams bl = new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP | Gravity.LEFT);
+                  bl.setMargins(dp(14), dp(40), 0, 0);
+                  fl.addView(back, bl);
+                  TextView more = tv(Color.WHITE, 22, true);
+                  more.setText("⋮");
+                  more.setGravity(Gravity.CENTER);
+                  more.setBackground(oval(0xCC2A2A2A, 0x00000000));
+                  more.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) { if (vPos < vList.size()) showMenu(vList.get(vPos)); }
+                  });
+                  FrameLayout.LayoutParams ml = new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP | Gravity.RIGHT);
+                  ml.setMargins(0, dp(40), dp(14), 0);
+                  fl.addView(more, ml);
+
+                  // الجنب: الدعم، هدف، تعليق، تمريرة، حفظ، مشاركة
+                  LinearLayout side = new LinearLayout(this);
+                  side.setOrientation(LinearLayout.VERTICAL);
+                  side.setGravity(Gravity.CENTER_HORIZONTAL);
+                  side.addView(sideBtn(0, 11, new Runnable() { public void run() {
+                      JSONObject o = vList.get(vPos); String pk = String.valueOf(o.optLong("id")); String ow = o.optString("user_id", "");
+                      if (ow.equals(uid)) { long[] sp = sup.get(pk); if (sp != null && sp[1] > 0) openSupporters(pk, ow); else toast("لا يوجد دعم بعد"); }
+                      else openSupportSheet(pk, ow);
+                  } }));
+                  side.addView(sideBtn(1, 2, new Runnable() { public void run() { toggleLike(vList.get(vPos)); } }));
+                  side.addView(sideBtn(2, 0, new Runnable() { public void run() { openComments(vList.get(vPos)); } }));
+                  side.addView(sideBtn(3, 1, new Runnable() { public void run() { toggleRepost(vList.get(vPos)); } }));
+                  side.addView(sideBtn(4, 4, new Runnable() { public void run() { toggleSave(vList.get(vPos)); } }));
+                  side.addView(sideBtn(5, 5, new Runnable() { public void run() { shareLink(vList.get(vPos)); } }));
+                  FrameLayout.LayoutParams sl = new FrameLayout.LayoutParams(dp(64), ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL);
+                  sl.setMargins(dp(6), dp(30), 0, navH());
+                  fl.addView(side, sl);
+
+                  // الأسفل: الناشر والوصف
+                  LinearLayout info = new LinearLayout(this);
+                  info.setOrientation(LinearLayout.VERTICAL);
+                  info.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                  LinearLayout who = new LinearLayout(this);
+                  who.setGravity(Gravity.CENTER_VERTICAL);
+                  FrameLayout av = new FrameLayout(this);
+                  vAvLetter = tv(NAVY, 16, true);
+                  vAvLetter.setGravity(Gravity.CENTER);
+                  vAvLetter.setBackground(oval(GOLD, 0xFFFFE7AD));
+                  av.addView(vAvLetter, new FrameLayout.LayoutParams(dp(44), dp(44)));
+                  vAvImg = new ImageView(this);
+                  vAvImg.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                  vAvImg.setOutlineProvider(new ViewOutlineProvider() {
+                      @Override public void getOutline(View v, Outline o) { o.setOval(0, 0, v.getWidth(), v.getHeight()); }
+                  });
+                  vAvImg.setClipToOutline(true);
+                  av.addView(vAvImg, new FrameLayout.LayoutParams(dp(44), dp(44)));
+                  who.addView(av, new LinearLayout.LayoutParams(dp(44), dp(44)));
+                  vName = tv(Color.WHITE, 16, true);
+                  vName.setPadding(dp(10), 0, 0, 0);
+                  who.addView(vName);
+                  info.addView(who);
+                  vCap = tv(0xFFE6E9FF, 14, false);
+                  vCap.setMaxLines(3);
+                  vCap.setPadding(0, dp(8), 0, 0);
+                  info.addView(vCap);
+                  FrameLayout.LayoutParams il = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
+                  il.setMargins(dp(80), 0, dp(14), navH() + dp(54));
+                  fl.addView(info, il);
+
+                  // شريط التحكم
+                  LinearLayout ctl = new LinearLayout(this);
+                  ctl.setGravity(Gravity.CENTER_VERTICAL);
+                  ctl.setPadding(dp(14), 0, dp(14), 0);
+                  vPlay = tv(NAVY, 14, true);
+                  vPlay.setText("❚❚");
+                  vPlay.setGravity(Gravity.CENTER);
+                  GradientDrawable pg = new GradientDrawable();
+                  pg.setColor(0xFFF5A623); pg.setCornerRadius(dp(6));
+                  vPlay.setBackground(pg);
+                  vPlay.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { vTogglePause(); } });
+                  ctl.addView(vPlay, new LinearLayout.LayoutParams(dp(34), dp(34)));
+                  vMute = tv(Color.WHITE, 20, false);
+                  vMute.setText("🔊");
+                  vMute.setGravity(Gravity.CENTER);
+                  vMute.setOnClickListener(new View.OnClickListener() {
+                      @Override public void onClick(View v) {
+                          vMuted = !vMuted;
+                          vMute.setText(vMuted ? "🔇" : "🔊");
+                          if (vMp != null) { try { vMp.setVolume(vMuted ? 0f : 1f, vMuted ? 0f : 1f); } catch (Exception ignore) {} }
+                      }
+                  });
+                  ctl.addView(vMute, new LinearLayout.LayoutParams(dp(44), dp(34)));
+                  vTrack = new FrameLayout(this);
+                  vTrack.setBackgroundColor(0x55FFFFFF);
+                  vFill = new View(this);
+                  vFill.setBackgroundColor(0xFFF5A623);
+                  vTrack.addView(vFill, new FrameLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT));
+                  LinearLayout.LayoutParams trl = new LinearLayout.LayoutParams(0, dp(3), 1f);
+                  trl.setMargins(dp(8), 0, dp(8), 0);
+                  ctl.addView(vTrack, trl);
+                  vTime = tv(Color.WHITE, 12, false);
+                  ctl.addView(vTime);
+                  FrameLayout.LayoutParams cl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(44), Gravity.BOTTOM);
+                  cl.setMargins(0, 0, 0, navH());
+                  fl.addView(ctl, cl);
+                  vTrack.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                      @Override public void onLayoutChange(View v, int l, int t, int r, int b, int ol, int ot, int or2, int ob) { vTrackW = r - l; }
+                  });
+
+                  vTick = new Runnable() {
+                      @Override public void run() {
+                          try {
+                              int dur = vVv.getDuration(), pos = vVv.getCurrentPosition();
+                              if (dur > 0 && vTrackW > 0) {
+                                  vFill.getLayoutParams().width = (int) ((long) vTrackW * pos / dur);
+                                  vFill.requestLayout();
+                                  int rem = (dur - pos) / 1000;
+                                  vTime.setText("-" + (rem / 60) + ":" + (rem % 60 < 10 ? "0" : "") + (rem % 60));
+                              }
+                          } catch (Exception ignore) {}
+                          if (vDlg != null && vDlg.isShowing()) vH.postDelayed(this, 400);
+                      }
+                  };
+                  vRefresh = new Runnable() { @Override public void run() { vBindCounts(); } };
+                  d.setContentView(fl);
+                  d.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                      @Override public void onDismiss(DialogInterface di) {
+                          try { vVv.stopPlayback(); } catch (Exception ignore) {}
+                          vH.removeCallbacks(vTick);
+                          vRefresh = null;
+                          vDlg = null;
+                          refreshUi();
+                      }
+                  });
+                  d.show();
+                  vLoad();
+              }
+
+              private void vTogglePause() {
+                  vPaused = !vPaused;
+                  try { if (vPaused) vVv.pause(); else vVv.start(); } catch (Exception ignore) {}
+                  vPlay.setText(vPaused ? "▶" : "❚❚");
+              }
+
               // ---------------- الانتقال إلى صفحات الويب ----------------
               private void goWeb(String action) {
                   pendingAction = action;
@@ -927,7 +1352,7 @@ jobs:
                   h.video.setOnClickListener(new View.OnClickListener() {
                       @Override public void onClick(View v) {
                           Object t = v.getTag();
-                          if (t instanceof Integer) playVideo(items.get((Integer) t).optString("video_url", ""));
+                          if (t instanceof Integer) openViewerFromFeed((Integer) t);
                       }
                   });
                   row.addView(h.video, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
@@ -952,8 +1377,9 @@ jobs:
                   h.sh = tv(MUTED, 15, false);
                   TextView[] all = new TextView[] { h.cm, h.rp, h.heart, h.vw, h.sv, h.sh };
                   for (int q = 0; q < all.length; q++) {
-                      all[q].setPadding(dp(6), dp(10), dp(12), dp(10));
-                      acts.addView(all[q]);
+                      all[q].setPadding(dp(2), dp(10), dp(2), dp(10));
+                      all[q].setGravity(Gravity.CENTER);
+                      acts.addView(all[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                   }
                   h.rp.setOnClickListener(new View.OnClickListener() {
                       @Override public void onClick(View v) {
@@ -1005,36 +1431,84 @@ jobs:
               private static final int R_TAG = 0x7f0a0000 + 7; // مفتاح وسم ثانٍ للصورة
 
               // ---------------- القوائم والتفاعل ----------------
-              private void showMenu(final int idx) {
-                  final JSONObject o = items.get(idx);
+              private void showMenu(final int idxIn) { showMenu(items.get(idxIn)); }
+
+              private void showMenu(final JSONObject o) {
+                  final int idx = items.indexOf(o);
                   final String author = o.optString("user_id", "");
                   final boolean mine = uid != null && uid.equals(author);
                   final String tag = o.optString("author_name", "هذا المستخدم");
                   final String pid = String.valueOf(o.optLong("id"));
                   final List<String> labels = new ArrayList<String>();
+                  final List<Integer> icons = new ArrayList<Integer>();
+                  final List<Boolean> danger = new ArrayList<Boolean>();
                   final List<Runnable> acts = new ArrayList<Runnable>();
+                  final boolean sv = saved.contains(pid);
                   if (mine) {
-                      labels.add("✏️ تعديل النص"); acts.add(new Runnable() { public void run() { editPost(idx); } });
-                      labels.add("🚀 تعزيز المنشور"); acts.add(new Runnable() { public void run() { openBoost(pid); } });
-                      labels.add("📊 التفاعلات"); acts.add(new Runnable() { public void run() { showEngagements(o); } });
-                      labels.add(saved.contains(pid) ? "🔖 إزالة من المحفوظات" : "🔖 حفظ المنشور"); acts.add(new Runnable() { public void run() { toggleSave(idx); } });
-                      labels.add("🔗 مشاركة الرابط"); acts.add(new Runnable() { public void run() { shareLink(o); } });
-                      labels.add("🗑 حذف المنشور"); acts.add(new Runnable() { public void run() { deletePost(idx); } });
+                      if (idx >= 0) { labels.add("تعديل النص"); icons.add(14); danger.add(false); acts.add(new Runnable() { public void run() { editPost(idx); } }); }
+                      labels.add("تعزيز المنشور"); icons.add(17); danger.add(false); acts.add(new Runnable() { public void run() { openBoost(pid); } });
+                      labels.add("التفاعلات"); icons.add(3); danger.add(false); acts.add(new Runnable() { public void run() { showEngagements(o); } });
+                      labels.add(sv ? "إزالة من المحفوظات" : "حفظ المنشور"); icons.add(4); danger.add(false); acts.add(new Runnable() { public void run() { toggleSave(o); } });
+                      labels.add("مشاركة الرابط"); icons.add(5); danger.add(false); acts.add(new Runnable() { public void run() { shareLink(o); } });
+                      if (idx >= 0) { labels.add("حذف المنشور"); icons.add(15); danger.add(true); acts.add(new Runnable() { public void run() { deletePost(idx); } }); }
                   } else {
-                      labels.add("🙈 لا أريد رؤية هذا"); acts.add(new Runnable() { public void run() { hidePost(o); } });
                       final boolean fl = followSet.contains(author);
-                      labels.add(fl ? "➖ إلغاء متابعة " + tag : "➕ متابعة " + tag); acts.add(new Runnable() { public void run() { toggleFollowUser(author); } });
-                      labels.add("🔇 كتم " + tag); acts.add(new Runnable() { public void run() { muteUser(author); } });
-                      labels.add("⛔ حظر " + tag); acts.add(new Runnable() { public void run() { blockUser(author, tag); } });
-                      labels.add("🚩 إبلاغ"); acts.add(new Runnable() { public void run() { goWeb("report:" + pid); } });
-                      labels.add("📊 التفاعلات"); acts.add(new Runnable() { public void run() { showEngagements(o); } });
-                      labels.add(saved.contains(pid) ? "🔖 إزالة من المحفوظات" : "🔖 حفظ المنشور"); acts.add(new Runnable() { public void run() { toggleSave(idx); } });
-                      labels.add("🔗 مشاركة الرابط"); acts.add(new Runnable() { public void run() { shareLink(o); } });
+                      labels.add("لا أريد رؤية هذا"); icons.add(22); danger.add(false); acts.add(new Runnable() { public void run() { hidePost(o); } });
+                      labels.add(fl ? "إلغاء متابعة " + tag : "متابعة " + tag); icons.add(fl ? 19 : 18); danger.add(false); acts.add(new Runnable() { public void run() { toggleFollowUser(author); } });
+                      labels.add("كتم " + tag); icons.add(20); danger.add(false); acts.add(new Runnable() { public void run() { muteUser(author); } });
+                      labels.add("حظر " + tag); icons.add(21); danger.add(true); acts.add(new Runnable() { public void run() { blockUser(author, tag); } });
+                      labels.add("إبلاغ"); icons.add(16); danger.add(true); acts.add(new Runnable() { public void run() { goWeb("report:" + pid); } });
+                      labels.add("التفاعلات"); icons.add(3); danger.add(false); acts.add(new Runnable() { public void run() { showEngagements(o); } });
+                      labels.add(sv ? "إزالة من المحفوظات" : "حفظ المنشور"); icons.add(4); danger.add(false); acts.add(new Runnable() { public void run() { toggleSave(o); } });
+                      labels.add("مشاركة الرابط"); icons.add(5); danger.add(false); acts.add(new Runnable() { public void run() { shareLink(o); } });
                   }
-                  new AlertDialog.Builder(this)
-                      .setItems(labels.toArray(new String[0]), new DialogInterface.OnClickListener() {
-                          @Override public void onClick(DialogInterface d, int which) { acts.get(which).run(); }
-                      }).show();
+                  final Dialog d = sheetDialog(false);
+                  ScrollView sc = new ScrollView(this);
+                  LinearLayout box = new LinearLayout(this);
+                  box.setOrientation(LinearLayout.VERTICAL);
+                  box.setPadding(dp(8), dp(10), dp(8), navH() + dp(6));
+                  GradientDrawable pbg = new GradientDrawable();
+                  pbg.setColor(0xFF111A4A);
+                  pbg.setCornerRadii(new float[] { dp(24), dp(24), dp(24), dp(24), 0, 0, 0, 0 });
+                  pbg.setStroke(dp(1), 0x33F5C35A);
+                  box.setBackground(pbg);
+                  View gr = new View(this);
+                  gr.setBackground(oval(0x33FFFFFF, 0x00000000));
+                  GradientDrawable grg = new GradientDrawable();
+                  grg.setColor(0x33FFFFFF); grg.setCornerRadius(dp(3));
+                  gr.setBackground(grg);
+                  LinearLayout.LayoutParams grl = new LinearLayout.LayoutParams(dp(40), dp(5));
+                  grl.gravity = Gravity.CENTER_HORIZONTAL;
+                  grl.setMargins(0, 0, 0, dp(8));
+                  box.addView(gr, grl);
+                  for (int i = 0; i < labels.size(); i++) {
+                      final int fi = i;
+                      boolean dg = danger.get(i);
+                      LinearLayout rw = new LinearLayout(this);
+                      rw.setGravity(Gravity.CENTER_VERTICAL);
+                      rw.setPadding(dp(14), dp(13), dp(14), dp(13));
+                      ImageView ic = new ImageView(this);
+                      ic.setImageDrawable(new Ic(icons.get(i), dg ? 0xFFFF6B86 : GOLD, false, dp(22)));
+                      rw.addView(ic, new LinearLayout.LayoutParams(dp(22), dp(22)));
+                      TextView t = tv(dg ? 0xFFFF6B86 : Color.WHITE, 16, true);
+                      t.setText(labels.get(i));
+                      t.setPadding(dp(14), 0, 0, 0);
+                      rw.addView(t);
+                      rw.setOnClickListener(new View.OnClickListener() {
+                          @Override public void onClick(View v) { d.dismiss(); acts.get(fi).run(); }
+                      });
+                      box.addView(rw);
+                      if (i < labels.size() - 1) {
+                          View dv = new View(this);
+                          dv.setBackgroundColor(0x14FFFFFF);
+                          LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1);
+                          dl.setMargins(dp(14), 0, dp(14), 0);
+                          box.addView(dv, dl);
+                      }
+                  }
+                  sc.addView(box);
+                  d.setContentView(sc);
+                  d.show();
               }
 
               private void shareLink(JSONObject o) {
@@ -1074,7 +1548,7 @@ jobs:
                                       runOnUiThread(new Runnable() {
                                           @Override public void run() {
                                               if (fe != null) toast("تعذّر التعديل: " + fe);
-                                              else adapter.notifyDataSetChanged();
+                                              else refreshUi();
                                           }
                                       });
                                   }
@@ -1106,7 +1580,7 @@ jobs:
                                           @Override public void run() {
                                               if (fe != null) { toast("تعذّر الحذف: " + fe); return; }
                                               items.remove(o);
-                                              adapter.notifyDataSetChanged();
+                                              refreshUi();
                                           }
                                       });
                                   }
@@ -1184,7 +1658,7 @@ jobs:
                   if (prev == 0 || prev == 1) r[prev] = Math.max(0, r[prev] - 1);
                   if (next != -1) r[next]++;
                   r[2] = next;
-                  adapter.notifyDataSetChanged();
+                  refreshUi();
                   final int fn = next;
                   pool.execute(new Runnable() {
                       @Override public void run() {
@@ -1194,7 +1668,7 @@ jobs:
                               runOnUiThread(new Runnable() {
                                   @Override public void run() {
                                       r[0] = old[0]; r[1] = old[1]; r[2] = old[2];
-                                      adapter.notifyDataSetChanged();
+                                      refreshUi();
                                       toast("تعذّر تسجيل صوتك");
                                   }
                               });
@@ -1431,7 +1905,7 @@ jobs:
                           runOnUiThread(new Runnable() {
                               @Override public void run() {
                                   if (fe != null) toast(fe.contains("voting_closed") ? "أُغلق التصويت: المباراة بدأت." : "تعذّر تسجيل صوتك");
-                                  adapter.notifyDataSetChanged();
+                                  refreshUi();
                               }
                           });
                       }
@@ -1454,13 +1928,15 @@ jobs:
                   });
               }
 
-              private void toggleRepost(int idx) {
-                  final String k = String.valueOf(items.get(idx).optLong("id"));
+              private void toggleRepost(int idx) { toggleRepost(items.get(idx)); }
+
+              private void toggleRepost(JSONObject post) {
+                  final String k = String.valueOf(post.optLong("id"));
                   final int[] s = stats.get(k);
                   if (s == null || uid == null) return;
                   final boolean was = reposted.contains(k);
                   if (was) { reposted.remove(k); s[2] = Math.max(0, s[2] - 1); } else { reposted.add(k); s[2]++; }
-                  adapter.notifyDataSetChanged();
+                  refreshUi();
                   pool.execute(new Runnable() {
                       @Override public void run() {
                           try {
@@ -1470,7 +1946,7 @@ jobs:
                               runOnUiThread(new Runnable() {
                                   @Override public void run() {
                                       if (was) { reposted.add(k); s[2]++; } else { reposted.remove(k); s[2] = Math.max(0, s[2] - 1); }
-                                      adapter.notifyDataSetChanged();
+                                      refreshUi();
                                       toast("تعذّرت إعادة النشر");
                                   }
                               });
@@ -1479,12 +1955,14 @@ jobs:
                   });
               }
 
-              private void toggleSave(int idx) {
-                  final String k = String.valueOf(items.get(idx).optLong("id"));
+              private void toggleSave(int idx) { toggleSave(items.get(idx)); }
+
+              private void toggleSave(JSONObject post) {
+                  final String k = String.valueOf(post.optLong("id"));
                   if (uid == null) return;
                   final boolean was = saved.contains(k);
                   if (was) saved.remove(k); else saved.add(k);
-                  adapter.notifyDataSetChanged();
+                  refreshUi();
                   toast(was ? "أُزيل من المحفوظات" : "تم حفظ المنشور 🔖");
                   pool.execute(new Runnable() {
                       @Override public void run() {
@@ -1495,7 +1973,7 @@ jobs:
                               runOnUiThread(new Runnable() {
                                   @Override public void run() {
                                       if (was) saved.add(k); else saved.remove(k);
-                                      adapter.notifyDataSetChanged();
+                                      refreshUi();
                                       toast("تعذّر الحفظ");
                                   }
                               });
@@ -1540,7 +2018,7 @@ jobs:
                   List<JSONObject> rm = new ArrayList<JSONObject>();
                   for (JSONObject p : items) if (target.equals(p.optString("user_id", ""))) rm.add(p);
                   items.removeAll(rm);
-                  adapter.notifyDataSetChanged();
+                  refreshUi();
               }
 
               private void muteUser(final String target) {
@@ -1584,7 +2062,7 @@ jobs:
                   SharedPreferences sp = getSharedPreferences("zn", MODE_PRIVATE);
                   sp.edit().putString("hidden", android.text.TextUtils.join(",", hiddenSet)).apply();
                   items.remove(o);
-                  adapter.notifyDataSetChanged();
+                  refreshUi();
                   toast("تم إخفاء المنشور");
               }
 
@@ -1601,13 +2079,15 @@ jobs:
                   return "";
               }
 
-              private void toggleLike(int idx) {
-                  final String k = String.valueOf(items.get(idx).optLong("id"));
+              private void toggleLike(int idx) { toggleLike(items.get(idx)); }
+
+              private void toggleLike(JSONObject post) {
+                  final String k = String.valueOf(post.optLong("id"));
                   final int[] s = stats.get(k);
                   if (s == null || uid == null) return;
                   final boolean was = liked.contains(k);
                   if (was) { liked.remove(k); s[0] = Math.max(0, s[0] - 1); } else { liked.add(k); s[0]++; }
-                  adapter.notifyDataSetChanged();
+                  refreshUi();
                   pool.execute(new Runnable() {
                       @Override public void run() {
                           try {
@@ -1617,7 +2097,7 @@ jobs:
                               runOnUiThread(new Runnable() {
                                   @Override public void run() {
                                       if (was) { liked.add(k); s[0]++; } else { liked.remove(k); s[0] = Math.max(0, s[0] - 1); }
-                                      adapter.notifyDataSetChanged();
+                                      refreshUi();
                                       toast("تعذّر حفظ الإعجاب");
                                   }
                               });
@@ -1655,7 +2135,7 @@ jobs:
                           JSONObject r = x.getJSONObject(q);
                           sup.put(String.valueOf(r.optLong("post_id")), new long[] { r.optLong("total_net", 0), r.optLong("supporters", 0) });
                       }
-                      runOnUiThread(new Runnable() { @Override public void run() { adapter.notifyDataSetChanged(); } });
+                      runOnUiThread(new Runnable() { @Override public void run() { refreshUi(); } });
                   } catch (Exception ignore) {}
               }
 
@@ -1753,7 +2233,7 @@ jobs:
                   ScrollView sc = new ScrollView(this);
                   LinearLayout box = new LinearLayout(this);
                   box.setOrientation(LinearLayout.VERTICAL);
-                  box.setPadding(dp(18), dp(14), dp(18), dp(22));
+                  box.setPadding(dp(18), dp(14), dp(18), navH() + dp(14));
                   GradientDrawable pbg = new GradientDrawable();
                   pbg.setColor(0xFF16161C);
                   pbg.setCornerRadii(new float[] { dp(26), dp(26), dp(26), dp(26), 0, 0, 0, 0 });
@@ -1986,7 +2466,7 @@ jobs:
                   d.getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
                   LinearLayout box = new LinearLayout(this);
                   box.setOrientation(LinearLayout.VERTICAL);
-                  box.setPadding(dp(18), dp(14), dp(18), dp(18));
+                  box.setPadding(dp(18), dp(14), dp(18), navH() + dp(10));
                   GradientDrawable pbg = new GradientDrawable();
                   pbg.setColor(0xFF16161C);
                   pbg.setCornerRadii(new float[] { dp(26), dp(26), dp(26), dp(26), 0, 0, 0, 0 });
@@ -2156,7 +2636,7 @@ jobs:
                   ScrollView sc = new ScrollView(this);
                   final LinearLayout box = new LinearLayout(this);
                   box.setOrientation(LinearLayout.VERTICAL);
-                  box.setPadding(dp(16), dp(14), dp(16), dp(24));
+                  box.setPadding(dp(16), dp(14), dp(16), navH() + dp(20));
                   TextView x = tv(GOLD, 22, true);
                   x.setText("‹ رجوع");
                   x.setPadding(0, dp(6), 0, dp(10));
@@ -2264,7 +2744,7 @@ jobs:
                   final Dialog d = sheetDialog(false);
                   LinearLayout box = new LinearLayout(this);
                   box.setOrientation(LinearLayout.VERTICAL);
-                  box.setPadding(dp(16), dp(16), dp(16), dp(24));
+                  box.setPadding(dp(16), dp(16), dp(16), navH() + dp(14));
                   GradientDrawable pbg = new GradientDrawable();
                   pbg.setColor(CARD);
                   pbg.setCornerRadii(new float[] { dp(22), dp(22), dp(22), dp(22), 0, 0, 0, 0 });
@@ -2314,7 +2794,7 @@ jobs:
                   ScrollView sc = new ScrollView(this);
                   LinearLayout box = new LinearLayout(this);
                   box.setOrientation(LinearLayout.VERTICAL);
-                  box.setPadding(dp(18), dp(16), dp(18), dp(22));
+                  box.setPadding(dp(18), dp(16), dp(18), navH() + dp(14));
                   GradientDrawable pbg = new GradientDrawable();
                   pbg.setColor(0xFF121215);
                   pbg.setCornerRadii(new float[] { dp(24), dp(24), dp(24), dp(24), 0, 0, 0, 0 });
@@ -2456,8 +2936,10 @@ jobs:
               }
 
               // ---------------- التعليقات ----------------
-              private void openComments(int idx) {
-                  final long pid = items.get(idx).optLong("id");
+              private void openComments(int idx) { openComments(items.get(idx)); }
+
+              private void openComments(JSONObject post) {
+                  final long pid = post.optLong("id");
                   final String pk = String.valueOf(pid);
                   final List<JSONObject> cm = new ArrayList<JSONObject>();
                   final Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
@@ -2569,7 +3051,7 @@ jobs:
                                           empty.setVisibility(got.isEmpty() ? View.VISIBLE : View.GONE);
                                           empty.setText("لا توجد تعليقات بعد");
                                           int[] s = stats.get(pk);
-                                          if (s != null) { s[1] = got.size(); adapter.notifyDataSetChanged(); }
+                                          if (s != null) { s[1] = got.size(); refreshUi(); }
                                       }
                                   });
                               }
@@ -2636,7 +3118,7 @@ jobs:
                   stats.clear();
                   offset = 0;
                   endReached = false;
-                  adapter.notifyDataSetChanged();
+                  refreshUi();
                   status.setText("جارٍ التحديث...");
                   t0 = System.currentTimeMillis();
                   loadBalance();
@@ -2691,7 +3173,7 @@ jobs:
                                       items.addAll(got);
                                       offset += n;
                                       if (n < PAGE) endReached = true;
-                                      adapter.notifyDataSetChanged();
+                                      refreshUi();
                                       if (first) status.setText("المنشورات: " + n + " خلال " + mid + " ms");
                                   }
                               });
@@ -2707,7 +3189,7 @@ jobs:
                                               if (ph.startsWith("http")) photos.put(po.optString("user_id"), ph);
                                           }
                                           runOnUiThread(new Runnable() {
-                                              @Override public void run() { adapter.notifyDataSetChanged(); }
+                                              @Override public void run() { refreshUi(); }
                                           });
                                       }
                                   } catch (Exception ignore) {}
@@ -2768,7 +3250,7 @@ jobs:
                                   loading = false;
                                   getSharedPreferences("zn", MODE_PRIVATE).edit().putInt("boot", 0).apply();
                                   if (fe != null) { if (items.isEmpty()) status.setText("خطأ: " + fe); return; }
-                                  adapter.notifyDataSetChanged();
+                                  refreshUi();
                               }
                           });
                       }
@@ -2797,21 +3279,25 @@ jobs:
                   return c;
               }
 
-              private View navItem(String glyph, String label, final String action, boolean active) {
+              private View navItem(int icon, String label, final String action, boolean active) {
                   LinearLayout c = new LinearLayout(this);
                   c.setOrientation(LinearLayout.VERTICAL);
                   c.setGravity(Gravity.CENTER);
-                  TextView g = tv(active ? GOLD : MUTED, 20, false);
-                  g.setText(glyph);
-                  g.setGravity(Gravity.CENTER);
-                  c.addView(g);
-                  TextView l = tv(active ? GOLD : MUTED, 11, active);
+                  int colr = active ? GOLD : MUTED;
+                  ImageView g = new ImageView(this);
+                  g.setImageDrawable(new Ic(icon, colr, false, dp(26)));
+                  c.addView(g, new LinearLayout.LayoutParams(dp(26), dp(26)));
+                  TextView l = tv(colr, 11, active);
                   l.setText(label);
                   l.setGravity(Gravity.CENTER);
+                  l.setPadding(0, dp(3), 0, dp(3));
                   c.addView(l);
+                  View dot = new View(this);
+                  dot.setBackground(oval(active ? GOLD : 0x00000000, 0x00000000));
+                  c.addView(dot, new LinearLayout.LayoutParams(dp(5), dp(5)));
                   if (action != null) {
                       c.setOnClickListener(new View.OnClickListener() {
-                          @Override public void onClick(View v) { goWeb(action); }
+                          @Override public void onClick(View v) { if ("nav:videos".equals(action)) openVideosTab(); else goWeb(action); }
                       });
                   }
                   return c;
@@ -3014,11 +3500,11 @@ jobs:
                   root.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
                   LinearLayout nav = new LinearLayout(this);
                   nav.setBackgroundColor(NAVY);
-                  nav.addView(navItem("🏠", "الرئيسية", null, true), new LinearLayout.LayoutParams(0, dp(64), 1f));
-                  nav.addView(navItem("⚽", "المباريات", "nav:matches", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
-                  nav.addView(navItem("▶️", "فيديو", "nav:videos", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
-                  nav.addView(navItem("✉️", "الرسائل", "nav:messages", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
-                  nav.addView(navItem("👤", "الملف الشخصي", "nav:profile", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem(6, "الرئيسية", null, true), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem(7, "المباريات", "nav:matches", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem(8, "فيديو", "nav:videos", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem(9, "الرسائل", "nav:messages", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+                  nav.addView(navItem(10, "الملف الشخصي", "nav:profile", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
                   root.addView(nav);
 
                   setContentView(outer);
