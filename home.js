@@ -3296,10 +3296,31 @@
         paintHomeHeader();
         loadFeed();
         setupFab();
+        addNativeTestBtn();
         if (timeTimer) clearInterval(timeTimer);
         timeTimer = setInterval(refreshTimes, 30000);
         setupPullToRefresh();
     };
+
+    // زر تجربة الشاشة الأصلية (للمطوّر فقط، ويظهر فقط في نسخة التطبيق التي فيها الإضافة)
+    function addNativeTestBtn() {
+        try {
+            const P = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.NativeFeed;
+            if (!P || me().id !== 'eb880283-f32e-4fb5-a84a-e6007b633352') return;
+            if (document.getElementById('zn-test')) return;
+            const b = document.createElement('button');
+            b.id = 'zn-test';
+            b.textContent = '⚡ أصلي';
+            b.style.cssText = 'position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:9999;background:#f5c35a;color:#0a1033;border:0;border-radius:999px;padding:4px 12px;font-weight:900;font-size:.75rem;';
+            b.onclick = async () => {
+                try {
+                    const c = db(); const ses = (await c.auth.getSession()).data.session;
+                    await P.open({ url: c.supabaseUrl, key: c.supabaseKey, token: ses.access_token });
+                } catch (e) { alert('native: ' + (e && e.message || e)); }
+            };
+            document.body.appendChild(b);
+        } catch (e) {}
+    }
 
     // أسماء بديلة قديمة تبقى تعمل مع app.js
     window.renderCommunityPage = window.renderHomePage;
