@@ -244,6 +244,7 @@ abstract class I18nHelpers extends Billing {
         getSharedPreferences("zelo_lang", MODE_PRIVATE).edit().putString("app_lang", c).apply();
         pool.execute(new Runnable() {
             @Override public void run() {
+                loadLanguageFile(c);
                 try {
                     if (uid != null && token != null) send("PATCH", "users?user_id=eq." + uid, new JSONObject().put("lang", c).toString());
                 } catch (Exception ignore) {}
@@ -254,6 +255,26 @@ abstract class I18nHelpers extends Billing {
 
     // zeloOpenLangPicker: نافذة من أسفل الشاشة بكل اللغات الجاهزة
     protected void openLangPicker(final LangPick onPick) {
+        // اقرأ قائمة اللغات الجاهزة من الموقع أولًا (locales/index.json) ثم افتح النافذة
+        pool.execute(new Runnable() { @Override public void run() {
+            loadReadyLangs();
+            runOnUiThread(new Runnable() { @Override public void run() { openLangPickerNow(onPick); } });
+        } });
+    }
+
+    // عند تشغيل التطبيق بلغة غير العربية/الإنجليزية: حمّل ملفها ثم أعد بناء الشاشة مرة واحدة
+    protected void ensureLangLoaded() {
+        final String cur = getCurrentLang();
+        if (cur.equals("ar") || cur.equals("en")) return;
+        synchronized (i18n) { if (i18n.containsKey(cur)) return; }
+        pool.execute(new Runnable() { @Override public void run() {
+            loadLanguageFile(cur);
+            boolean ok; synchronized (i18n) { ok = i18n.containsKey(cur); }
+            if (ok) runOnUiThread(new Runnable() { @Override public void run() { recreate(); } });
+        } });
+    }
+
+    private void openLangPickerNow(final LangPick onPick) {
         final String cur = getCurrentLang();
         final Dialog d = sheetDialog(false);
         d.getWindow().getDecorView().setLayoutDirection(View.LAYOUT_DIRECTION_LTR);

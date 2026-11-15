@@ -1728,6 +1728,7 @@ public class Home extends FollowList {
         if (url == null || key == null) { url = SB_URL; key = SB_KEY; }
         if (linkTpl == null) linkTpl = "https://zelospor-f.github.io/zelo-/?post={id}";
         getWindow().setBackgroundDrawable(new android.graphics.drawable.ColorDrawable(NAVY));
+        ensureLangLoaded();
         if (uid != null && token != null) { buildHome(); return; }
         // بدون ويب: الجلسة من التخزين المحلي أو شاشة الدخول
         if (restoreSession()) {
