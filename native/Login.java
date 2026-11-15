@@ -289,7 +289,7 @@ abstract class Login extends Leagues {
 
     protected void loginConfirm(final TextView btn) {
         if (loginSel.isEmpty()) { toast(tr("selectAtLeastOne", "اختر نادياً واحداً على الأقل للمتابعة", "Please select at least one club to continue.")); return; }
-        btn.setText("⏳...");
+        btn.setText("…");
         btn.setEnabled(false);
         final List<String> sel = new ArrayList<String>(loginSel);
         pool.execute(new Runnable() {
@@ -297,7 +297,6 @@ abstract class Login extends Leagues {
                 String err = null;
                 try {
                     JSONObject row = new JSONObject().put("user_id", uid).put("selected_clubs", new JSONArray(sel)).put("lang", getCurrentLang());
-                    if (uname != null && uname.length() > 0) row.put("username", uname);
                     upsertUser(row);
                     rpc("join_clubs", new JSONObject().put("p_clubs", new JSONArray(sel)).toString());
                 } catch (Exception e) { err = String.valueOf(e.getMessage()); }

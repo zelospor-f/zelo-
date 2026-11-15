@@ -736,7 +736,8 @@ abstract class Auth extends Badges {
                     p.put("email", mail);
                     p.put("username", username);
                     p.put("dob", dob);
-                    p.put("lang", "ar");
+                    String lg0 = getSharedPreferences("zelo_lang", MODE_PRIVATE).getString("app_lang", "ar");
+                    p.put("lang", lg0 == null || lg0.length() < 2 ? "ar" : lg0.substring(0, 2));
                     if (ar) p.put("nickname_ar", name); else p.put("nickname_en", name);
                     sendUrl("POST", url + "/rest/v1/users?on_conflict=user_id", p.toString(), "resolution=merge-duplicates,return=minimal");
                 } catch (final Exception e) {

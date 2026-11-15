@@ -82,6 +82,7 @@ abstract class Notifications extends NftMarket {
         if ("social".equals(t)) return new String[] { "👥", "#5a7de8" };
         if ("rank".equals(t)) return new String[] { "🏆", "#7f9bff" };
         if ("wallet".equals(t)) return new String[] { "🔖", "#14F195" };
+        if ("verified".equals(t)) return new String[] { "✔", "#1DA1F2" };
         return new String[] { "📢", "#9aa6d6" };
     }
 
@@ -130,7 +131,7 @@ abstract class Notifications extends NftMarket {
         ntList = new LinearLayout(this);
         ntList.setOrientation(LinearLayout.VERTICAL);
         ntList.setPadding(0, 0, 0, navH() + dp(30));
-        ntList.addView(uEmpty(L("⏳ جاري تحميل الإشعارات...", "⏳ Loading notifications...")));
+        ntList.addView(uEmpty(""));
         ScrollView sc = new ScrollView(this);
         sc.addView(ntList);
         root.addView(sc, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
@@ -232,7 +233,7 @@ abstract class Notifications extends NftMarket {
             String ph = photos.get(n.optString("id"));
             if (ph != null) row.addView(lbAvatar(ph, "?", 42, 0x00000000, false, 1), new LinearLayout.LayoutParams(dp(42), dp(42)));
             else {
-                TextView ic = txt(ty[0], Color.WHITE, 21, false);
+                TextView ic = txt(ty[0], "verified".equals(n.optString("type")) ? 0xFF1DA1F2 : Color.WHITE, 21, "verified".equals(n.optString("type")));
                 ic.setGravity(Gravity.CENTER);
                 ic.setBackground(rbg(0x0FFFFFFF, 0x1AFFFFFF, 14));
                 row.addView(ic, new LinearLayout.LayoutParams(dp(42), dp(42)));
