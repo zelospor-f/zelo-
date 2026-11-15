@@ -87,7 +87,7 @@ import org.json.JSONObject;
 // الغرف الفورية Realtime صارت استطلاعاً كل 3 ثوانٍ، وPresence صار عدد الأعضاء.
 // لوحة الاقتراحات الجانبية وتبويب مركز الغرف كانا معطَّلين في الويب (أُلغيا) فلم يُحوَّلا.
 // ============================================================
-abstract class Rooms extends SideDrawer {
+abstract class Rooms extends Settings {
     protected static final int RM_OPEN_BEFORE = 60, RM_CLOSE_AFTER = 300, RM_MAX_LEN = 500, RM_GAP = 2000, RM_PAGE = 60, RM_MAX_DOM = 200, RM_MAX_VOICE = 60, RM_MIN_VOICE = 700;
     protected static final String RM_COLS = "id,name,code,owner_id,emoji,expires_at,is_public,requires_code,match_id";
     protected static final String RM_MSG = "id,user_id,username,body,created_at,kind,audio_path,audio_ms,expires_at";
@@ -1664,8 +1664,8 @@ abstract class Rooms extends SideDrawer {
         if (rmHub == null || rmHubMine == null || rmHubPub == null) return;
         final LinearLayout mineEl = rmHubMine, pubEl = rmHubPub;
         mineEl.removeAllViews(); pubEl.removeAllViews();
-        mineEl.addView(uEmpty(L("جاري التحميل...", "Loading...")));
-        pubEl.addView(uEmpty(L("جاري التحميل...", "Loading...")));
+        mineEl.addView(uEmpty(""));
+        pubEl.addView(uEmpty(""));
         pool.execute(new Runnable() { @Override public void run() {
             List<JSONObject> mine = null, pub = null;
             try { mine = rmLoadMine(); } catch (Exception ignore) {}
