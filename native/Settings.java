@@ -133,7 +133,9 @@ abstract class Settings extends ShareCard {
         return p;
     }
     protected LinearLayout stBody() { LinearLayout b = new LinearLayout(this); b.setOrientation(LinearLayout.VERTICAL); return b; }
-    protected Runnable stBackMain = new Runnable() { @Override public void run() { stMain(); } };
+    protected boolean stInAccount = false;
+    protected void stAccount() { stInAccount = false; stMain(); }
+    protected Runnable stBackMain = new Runnable() { @Override public void run() { if (stInAccount) stAccount(); else stMain(); } };
     protected LinearLayout stFoot(View... btns) {
         LinearLayout f = new LinearLayout(this);
         f.setGravity(Gravity.END);

@@ -285,10 +285,25 @@ abstract class Profile extends WeeklyMatchRankings {
         cLeft.setGravity(Gravity.CENTER);
         cLeft.setBackground(oval(0x66000000, 0));
         cLeft.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if (mine) openSideDrawer(); else d.dismiss(); }
+            @Override public void onClick(View v) { d.dismiss(); }
         });
         FrameLayout.LayoutParams l1 = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.START);
         l1.setMargins(dp(12), statusH() + dp(8), dp(12), 0);
+        if (mine) {
+            // زر الإعدادات ⚙ على اليسار بجانب المشاركة (يحلّ محل ☰ والقائمة الجانبية)
+            cLeft.setVisibility(View.GONE);
+            TextView gear = tv(Color.WHITE, 22, true);
+            gear.setText("\u2699");
+            gear.setGravity(Gravity.CENTER);
+            gear.setBackground(oval(0x66000000, 0));
+            gear.setContentDescription("الإعدادات");
+            gear.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openSettings(); } });
+            FrameLayout.LayoutParams gl = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.END);
+            gl.setMargins(0, statusH() + dp(8), 0, 0);
+            gl.setMarginStart(dp(12));
+            gl.setMarginEnd(dp(12) + dp(42) + dp(10));
+            cov.addView(gear, gl);
+        }
         cov.addView(cLeft, l1);
         final String[] shareName = { P.optString("username", "") };
         TextView cRight = new TextView(this);
