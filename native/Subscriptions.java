@@ -79,12 +79,13 @@ abstract class Subscriptions extends Support {
     };
 
     protected interface TierCb { void on(int tier); }
-    protected void fetchTier(final TierCb cb) {
+    protected void fetchTier(final TierCb cb) { fetchTierOf(uid, cb); }
+    protected void fetchTierOf(final String who, final TierCb cb) {
         pool.execute(new Runnable() {
             @Override public void run() {
                 int t = 0;
                 try {
-                    JSONArray a = new JSONArray(rpc("tier_among", "{\"p_ids\":[\"" + uid + "\"]}"));
+                    JSONArray a = new JSONArray(rpc("tier_among", "{\"p_ids\":[\"" + who + "\"]}"));
                     if (a.length() > 0) t = a.getJSONObject(0).optInt("tier", 0);
                 } catch (Exception ignore) {}
                 final int ft = t;

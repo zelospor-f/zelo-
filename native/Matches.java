@@ -99,7 +99,7 @@ abstract class Matches extends Leaderboard {
     protected LinearLayout uRoot() {
         LinearLayout r = new LinearLayout(this);
         r.setOrientation(LinearLayout.VERTICAL);
-        r.setPadding(dp(14), dp(24), dp(14), navH() + dp(24));
+        r.setPadding(dp(14), statusH() + dp(6), dp(14), navH() + dp(24));
         return r;
     }
     protected View uHeader(String title, int color, Runnable back) {
@@ -804,7 +804,7 @@ abstract class Matches extends Leaderboard {
         pool.execute(new Runnable() {
             @Override public void run() {
                 List<JSONObject> rows = new ArrayList<JSONObject>();
-                boolean ok = true;
+                boolean ok = true; String er = "";
                 try {
                     if (mode.equals("live")) {
                         JSONArray a = new JSONArray(get("matches?select=*&status=neq.FINISHED&order=match_date.asc"));
@@ -820,15 +820,16 @@ abstract class Matches extends Leaderboard {
                         JSONArray a = new JSONArray(get("matches?select=*&match_date=gte." + f.format(new Date(a0)) + "&match_date=lt." + f.format(new Date(b0)) + "&order=match_date.asc"));
                         for (int i = 0; i < a.length(); i++) rows.add(a.getJSONObject(i));
                     }
-                } catch (Exception e) { ok = false; }
-                final boolean fok = ok;
+                } catch (Exception e) { ok = false; er = String.valueOf(e.getMessage()); }
+                final boolean fok = ok; final String fer = er;
                 final List<JSONObject> fr = rows;
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
-                        if (tmDialog == null || tmBody == null || !fok) return;
+                        if (tmDialog == null || tmBody == null) return;
                         tmBody.removeAllViews();
                         boolean live = tmMode.equals("live");
                         tmBody.addView(uHeader(live ? L("المباريات المباشرة", "Live matches") : L("مباريات الليلة", "Tonight's matches"), GOLD, new Runnable() { @Override public void run() { if (tmDialog != null) tmDialog.dismiss(); } }));
+                        if (!fok) { tmBody.addView(uEmpty(L("تعذّر تحميل المباريات", "Could not load matches") + "\n" + (fer.length() > 90 ? fer.substring(0, 90) : fer))); return; }
                         if (fr.isEmpty()) tmBody.addView(uEmpty(live ? L("لا توجد مباريات مباشرة الآن", "No live matches right now") : L("لا توجد مباريات اليوم", "No matches today")));
                         for (JSONObject m : fr) tmBody.addView(tmCard(m));
                     }

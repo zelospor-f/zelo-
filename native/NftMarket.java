@@ -282,14 +282,10 @@ abstract class NftMarket extends Messages {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(12), dp(24), dp(12), 0);
+        root.setPadding(dp(12), statusH() + dp(6), dp(12), 0);
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        TextView back = txt(isRtlLang() ? "→" : "←", GOLD, 22, true);
-        back.setGravity(Gravity.CENTER);
-        back.setBackground(rbg(0x14FFFFFF, 0x40F5C35A, 20));
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        top.addView(back, new LinearLayout.LayoutParams(dp(64), dp(36)));
+        top.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         TextView ti = txt("👑 " + L("سوق بطاقات NFT", "NFT Market"), GOLD, 16, true);
         ti.setGravity(Gravity.CENTER);
         top.addView(ti, lpw(1f));

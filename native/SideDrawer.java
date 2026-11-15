@@ -83,7 +83,7 @@ abstract class SideDrawer extends Settings {
         box.setOrientation(LinearLayout.VERTICAL);
         GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { 0xFF0F1A5C, 0xFF0A1033, 0xFF080D2A });
         box.setBackground(bg);
-        box.setPadding(0, dp(46), 0, navH() + dp(16));
+        box.setPadding(0, statusH() + dp(6), 0, navH() + dp(16));
         d.getWindow().getDecorView().setLayoutDirection(rtl ? View.LAYOUT_DIRECTION_RTL : View.LAYOUT_DIRECTION_LTR);
         ScrollView sc = new ScrollView(this);
         LinearLayout in = new LinearLayout(this);
@@ -169,15 +169,11 @@ abstract class SideDrawer extends Settings {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(0, dp(24), 0, 0);
+        root.setPadding(0, statusH() + dp(6), 0, 0);
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(14), dp(12), dp(14), dp(12));
-        TextView back = txt(isRtlLang() ? "›" : "‹", GOLD, 24, true);
-        back.setGravity(Gravity.CENTER);
-        back.setBackground(rbg(0x12FFFFFF, 0x00000000, 12));
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        bar.addView(back, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        bar.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         TextView ti = txt(L("مركز المساعدة", "Help center"), Color.WHITE, 18, true);
         ti.setPadding(dp(10), 0, 0, 0);
         bar.addView(ti);

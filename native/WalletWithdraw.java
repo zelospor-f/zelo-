@@ -113,7 +113,7 @@ abstract class WalletWithdraw extends Ads {
         lbDirection(d);
         wwBox = new LinearLayout(this);
         wwBox.setOrientation(LinearLayout.VERTICAL);
-        wwBox.setPadding(dp(16), dp(36), dp(16), navH() + dp(40));
+        wwBox.setPadding(dp(16), statusH() + dp(6), dp(16), navH() + dp(40));
         wwScroll = new ScrollView(this);
         wwScroll.addView(wwBox);
         d.setContentView(wwScroll);
@@ -195,11 +195,7 @@ abstract class WalletWithdraw extends Ads {
         // الرأس
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        TextView x = txt(isRtlLang() ? "›" : "‹", 0xFFE8ECFF, 22, true);
-        x.setGravity(Gravity.CENTER);
-        x.setBackground(rbg(0x382C4BB5, 0x59F5C35A, 14));
-        x.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { if (wwDlg != null) wwDlg.dismiss(); } });
-        top.addView(x, new LinearLayout.LayoutParams(dp(42), dp(42)));
+        top.addView(backBtn(new Runnable() { @Override public void run() { if (wwDlg != null) wwDlg.dismiss(); } }));
         TextView h2 = txt(L("محفظتي", "My wallet"), 0xFFF4F6FF, 19, true);
         h2.setPadding(dp(12), 0, 0, 0);
         top.addView(h2);

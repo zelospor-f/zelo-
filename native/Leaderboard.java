@@ -175,7 +175,7 @@ abstract class Leaderboard extends GuessPlayer {
         ScrollView sc = new ScrollView(this);
         ldRoot = new LinearLayout(this);
         ldRoot.setOrientation(LinearLayout.VERTICAL);
-        ldRoot.setPadding(dp(14), dp(24), dp(14), navH() + dp(110));
+        ldRoot.setPadding(dp(14), statusH() + dp(6), dp(14), navH() + dp(110));
         sc.addView(ldRoot);
         ldHolder.addView(sc, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         ldDialog.setContentView(ldHolder);
@@ -531,7 +531,7 @@ abstract class Leaderboard extends GuessPlayer {
         ScrollView sc = new ScrollView(this);
         final LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(15), dp(24), dp(15), navH() + dp(24));
+        root.setPadding(dp(15), statusH() + dp(6), dp(15), navH() + dp(24));
         root.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         LinearLayout hero = new LinearLayout(this);
         hero.setGravity(Gravity.CENTER_VERTICAL);
@@ -733,7 +733,7 @@ abstract class Leaderboard extends GuessPlayer {
         ScrollView sc = new ScrollView(this);
         lgRoot = new LinearLayout(this);
         lgRoot.setOrientation(LinearLayout.VERTICAL);
-        lgRoot.setPadding(dp(14), dp(24), dp(14), navH() + dp(24));
+        lgRoot.setPadding(dp(14), statusH() + dp(6), dp(14), navH() + dp(24));
         sc.addView(lgRoot);
         lgDialog.setContentView(sc);
         lgDialog.show();

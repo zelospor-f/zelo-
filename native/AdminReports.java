@@ -125,13 +125,9 @@ abstract class AdminReports extends Boost {
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(14), dp(12), dp(14), dp(12));
-        TextView back = tv(GOLD, 24, true);
-        back.setText("‹");
-        back.setPadding(0, 0, dp(14), 0);
-        back.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { d.dismiss(); }
-        });
-        bar.addView(back);
+        bar.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
+        View bsp = new View(this);
+        bar.addView(bsp, new LinearLayout.LayoutParams(dp(12), 1));
         TextView title = tv(GOLD, 18, true);
         title.setText("🚩 الإدارة");
         bar.addView(title);

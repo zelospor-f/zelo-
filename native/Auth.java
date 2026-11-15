@@ -248,7 +248,7 @@ abstract class Auth extends Badges {
         sc.setFillViewport(true);
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.setPadding(dp(20), dp(24), dp(20), navH() + dp(16));
+        col.setPadding(dp(20), statusH() + dp(6), dp(20), navH() + dp(16));
         sc.addView(col, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         authRoot.addView(sc);
         aMsg = tv(MUTED, 13, true);

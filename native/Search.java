@@ -93,14 +93,10 @@ abstract class Search extends Push {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(18), dp(24), dp(18), 0);
+        root.setPadding(dp(18), statusH() + dp(6), dp(18), 0);
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        TextView back = txt(isRtlLang() ? "→" : "←", 0xFFE8ECFF, 20, true);
-        back.setGravity(Gravity.CENTER);
-        back.setBackground(rbg(0x382C4BB5, 0x59F5C35A, 14));
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        top.addView(back, new LinearLayout.LayoutParams(dp(42), dp(42)));
+        top.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         final EditText in = new EditText(this);
         in.setHint(L("ابحث عن فريق أو لاعب…", "Search teams or players…"));
         in.setHintTextColor(MUTED); in.setTextColor(Color.WHITE); in.setTextSize(14);

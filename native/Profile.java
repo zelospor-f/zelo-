@@ -269,13 +269,17 @@ abstract class Profile extends WeeklyMatchRankings {
         View covBg = new View(this);
         GradientDrawable cg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] { 0xFF24348F, 0xFF0F1850, NAVY });
         covBg.setBackground(cg);
-        cov.addView(covBg, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(150)));
+        cov.addView(covBg, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(150) + statusH()));
         final ImageView wm = new ImageView(this);
         wm.setAlpha(0.16f);
         wm.setScaleType(ImageView.ScaleType.FIT_CENTER);
         FrameLayout.LayoutParams wlp = new FrameLayout.LayoutParams(dp(150), dp(150), Gravity.TOP | Gravity.END);
-        wlp.setMargins(dp(14), 0, dp(14), 0);
+        wlp.setMargins(dp(14), statusH(), dp(14), 0);
         cov.addView(wm, wlp);
+        try {
+            int lgId = getResources().getIdentifier("ic_launcher", "mipmap", getPackageName());
+            if (lgId > 0) wm.setImageResource(lgId);
+        } catch (Exception ignore) {}
         TextView cLeft = tv(Color.WHITE, 24, true);
         cLeft.setText(mine ? "☰" : "‹");
         cLeft.setGravity(Gravity.CENTER);
@@ -284,7 +288,7 @@ abstract class Profile extends WeeklyMatchRankings {
             @Override public void onClick(View v) { if (mine) openSideDrawer(); else d.dismiss(); }
         });
         FrameLayout.LayoutParams l1 = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.START);
-        l1.setMargins(dp(12), dp(12), dp(12), 0);
+        l1.setMargins(dp(12), statusH() + dp(8), dp(12), 0);
         cov.addView(cLeft, l1);
         final String[] shareName = { P.optString("username", "") };
         TextView cRight = new TextView(this);
@@ -295,7 +299,7 @@ abstract class Profile extends WeeklyMatchRankings {
             @Override public void onClick(View v) { shareProfile(shareName[0]); }
         });
         FrameLayout.LayoutParams l2 = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.END);
-        l2.setMargins(dp(12), dp(12), dp(12), 0);
+        l2.setMargins(dp(12), statusH() + dp(8), dp(12), 0);
         cov.addView(cRight, l2);
         FrameLayout avBox = new FrameLayout(this);
         avBox.setBackground(oval(NAVY, GOLD));
@@ -309,7 +313,7 @@ abstract class Profile extends WeeklyMatchRankings {
         FrameLayout.LayoutParams alp = new FrameLayout.LayoutParams(dp(92), dp(92), Gravity.BOTTOM | Gravity.START);
         alp.setMargins(dp(18), 0, dp(18), 0);
         cov.addView(avBox, alp);
-        hdr.addView(cov, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(196)));
+        hdr.addView(cov, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(196) + statusH()));
 
         // الاسم + الشارة + اليوزر + الأندية
         LinearLayout idb = new LinearLayout(this);
@@ -324,9 +328,15 @@ abstract class Profile extends WeeklyMatchRankings {
         LinearLayout.LayoutParams blp2 = new LinearLayout.LayoutParams(dp(22), dp(22));
         blp2.setMargins(dp(6), 0, dp(6), 0);
         nameRow.addView(badgeV, blp2);
+        final TextView verV = tv(0xFF14B8FF, 18, true);
+        verV.setText("\u2714");
+        verV.setVisibility(View.GONE);
+        nameRow.addView(verV);
         idb.addView(nameRow);
         final TextView userV = tv(MUTED, 14, false);
-        idb.addView(userV);
+        userV.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        userV.setGravity(Gravity.START);
+        idb.addView(userV, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         final LinearLayout chipsBox = new LinearLayout(this);
         chipsBox.setPadding(0, dp(8), 0, 0);
         idb.addView(chipsBox);
@@ -442,19 +452,30 @@ abstract class Profile extends WeeklyMatchRankings {
                 tiles.addView(profTile(ti[q], tl[q], ta[q]), tlp);
             }
             hdr.addView(tiles);
-            if (isAdmin()) {
-                TextView adm = tv(GOLD, 14, true);
-                adm.setText("🚩 الإدارة — البلاغات والحظر");
-                adm.setGravity(Gravity.CENTER);
-                adm.setBackground(box(0x26F5C35A, 0x80F5C35A, 14));
-                adm.setPadding(dp(10), dp(12), dp(10), dp(12));
-                adm.setOnClickListener(new View.OnClickListener() {
-                    @Override public void onClick(View v) { openReportsPanel(); }
-                });
-                LinearLayout.LayoutParams admLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                admLp.setMargins(dp(14), dp(8), dp(14), 0);
-                hdr.addView(adm, admLp);
-            }
+            final LinearLayout vfCard = new LinearLayout(this);
+            vfCard.setGravity(Gravity.CENTER_VERTICAL);
+            vfCard.setBackground(box(0x2614B8FF, 0x8014B8FF, 14));
+            vfCard.setPadding(dp(14), dp(12), dp(14), dp(12));
+            TextView vfIc = tv(0xFF14B8FF, 22, true);
+            vfIc.setText("\u2714");
+            vfCard.addView(vfIc);
+            LinearLayout vfTx = new LinearLayout(this);
+            vfTx.setOrientation(LinearLayout.VERTICAL);
+            vfTx.setPadding(dp(12), 0, dp(8), 0);
+            TextView vfT = tv(Color.WHITE, 14, true);
+            vfT.setText(L("وثّق حسابك", "Verify your account"));
+            TextView vfS = tv(MUTED, 12, false);
+            vfS.setText(L("اشترك لتحصل على علامة التوثيق بجانب اسمك", "Subscribe to get the verified badge next to your name"));
+            vfTx.addView(vfT); vfTx.addView(vfS);
+            vfCard.addView(vfTx, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            vfCard.setVisibility(View.GONE);
+            vfCard.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openSubscriptions(); } });
+            LinearLayout.LayoutParams vfLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            vfLp.setMargins(dp(14), dp(8), dp(14), 0);
+            hdr.addView(vfCard, vfLp);
+            fetchTier(new TierCb() { @Override public void on(int tier) {
+                if (tier >= 1) verV.setVisibility(View.VISIBLE); else vfCard.setVisibility(View.VISIBLE);
+            } });
         }
 
         // التبويبات
@@ -635,6 +656,7 @@ abstract class Profile extends WeeklyMatchRankings {
             }
         } catch (Exception ignore) {}
 
+        if (!mine) fetchTierOf(target, new TierCb() { @Override public void on(int tier) { if (tier >= 1) verV.setVisibility(View.VISIBLE); } });
         reload[0].run();
         pool.execute(new Runnable() {
             @Override public void run() {

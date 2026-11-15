@@ -844,16 +844,13 @@ abstract class Rooms extends SideDrawer {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(0, dp(20), 0, 0);
+        root.setPadding(0, statusH() + dp(6), 0, 0);
         // --- الرأس ---
         LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
         head.setPadding(dp(12), dp(10), dp(12), dp(10));
         head.setBackgroundColor(0xF20A1033);
-        TextView back = txt(isRtlLang() ? "→" : "←", Color.WHITE, 22, false);
-        back.setGravity(Gravity.CENTER);
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { closeRoom(); } });
-        head.addView(back, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        head.addView(backBtn(new Runnable() { @Override public void run() { closeRoom(); } }));
         LinearLayout tb = new LinearLayout(this);
         tb.setOrientation(LinearLayout.VERTICAL);
         tb.setPadding(dp(8), 0, dp(8), 0);
@@ -1613,14 +1610,11 @@ abstract class Rooms extends SideDrawer {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(0, dp(20), 0, 0);
+        root.setPadding(0, statusH() + dp(6), 0, 0);
         LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
         head.setPadding(dp(12), dp(10), dp(12), dp(10));
-        TextView back = txt(isRtlLang() ? "→" : "←", Color.WHITE, 22, false);
-        back.setGravity(Gravity.CENTER);
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        head.addView(back, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        head.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         TextView t = txt("💬 " + L("الغرف", "Rooms"), Color.WHITE, 18, true);
         t.setPadding(dp(10), 0, dp(10), 0);
         head.addView(t, lpw(1f));

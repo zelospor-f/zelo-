@@ -88,12 +88,8 @@ abstract class FollowList extends EditProfile {
 
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setPadding(dp(12), dp(36), dp(12), dp(8));
-        TextView back = tv(Color.WHITE, 22, false);
-        back.setText("→");
-        back.setPadding(dp(8), dp(4), dp(8), dp(4));
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { flDlg.dismiss(); } });
-        top.addView(back);
+        top.setPadding(dp(12), statusH() + dp(6), dp(12), dp(8));
+        top.addView(backBtn(new Runnable() { @Override public void run() { flDlg.dismiss(); } }));
         LinearLayout nm = new LinearLayout(this);
         nm.setOrientation(LinearLayout.VERTICAL);
         nm.setPadding(dp(8), 0, 0, 0);

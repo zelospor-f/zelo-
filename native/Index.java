@@ -147,24 +147,6 @@ abstract class Index extends I18nHelpers {
         return fl;
     }
 
-    // زر الرجوع الموحّد: مربع مدوّر بسهم ذهبي (zeloBackBtn)
-    protected TextView backBtn(final Runnable onClick) {
-        TextView b = tv(GOLD, 20, false);
-        b.setText(isRtlLang() ? "›" : "‹");
-        b.setGravity(Gravity.CENTER);
-        GradientDrawable g = new GradientDrawable();
-        g.setColor(0x332C4BB5);
-        g.setCornerRadius(dp(12));
-        g.setStroke(dp(1), 0x59F5C35A);
-        b.setBackground(g);
-        b.setLayoutParams(new LinearLayout.LayoutParams(dp(40), dp(40)));
-        b.setContentDescription(L("رجوع", "Back"));
-        b.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if (onClick != null) onClick.run(); }
-        });
-        return b;
-    }
-
     protected void shellStart() {
         if (shellOn) return;
         shellOn = true;

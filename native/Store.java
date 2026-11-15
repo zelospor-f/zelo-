@@ -96,16 +96,12 @@ abstract class Store extends Rooms {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(0, dp(20), 0, 0);
+        root.setPadding(0, statusH() + dp(6), 0, 0);
         // الرأس
         LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
         head.setPadding(dp(14), dp(10), dp(14), dp(10));
-        TextView back = txt(isRtlLang() ? "›" : "‹", GOLD, 22, true);
-        back.setGravity(Gravity.CENTER);
-        back.setBackground(rbg(0x332C4BB5, 0x59F5C35A, 12));
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        head.addView(back, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        head.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         TextView title = txt(L("المتجر", "Store"), Color.WHITE, 18, true);
         title.setGravity(Gravity.CENTER);
         head.addView(title, lpw(1f));

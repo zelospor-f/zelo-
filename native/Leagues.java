@@ -121,7 +121,7 @@ abstract class Leagues extends Matches {
         lqScroll = new ScrollView(this);
         lqBox = new LinearLayout(this);
         lqBox.setOrientation(LinearLayout.VERTICAL);
-        lqBox.setPadding(dp(14), dp(24), dp(14), dp(24));
+        lqBox.setPadding(dp(14), statusH() + dp(6), dp(14), dp(24));
         lqScroll.addView(lqBox);
         lqCode = null;
         pgOpen(lqScroll, 7);

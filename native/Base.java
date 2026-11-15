@@ -165,6 +165,34 @@ abstract class Base extends Activity {
     protected int offset = 0;
     protected long t0;
 
+    protected abstract boolean isRtlLang();
+    protected abstract String L(String ar, String en);
+
+    // ارتفاع شريط الحالة (يُستعمل لهامش أعلى كل شاشة بسبب العرض حتى حافة الشاشة)
+    protected int statusH() {
+        int id = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        int h = id > 0 ? getResources().getDimensionPixelSize(id) : dp(28);
+        return h;
+    }
+
+    // زر الرجوع الموحّد: مربع مدوّر بسهم ذهبي، نفسه في كل الصفحات
+    protected TextView backBtn(final Runnable onClick) {
+        TextView b = tv(GOLD, 20, false);
+        b.setText(isRtlLang() ? "›" : "‹");
+        b.setGravity(Gravity.CENTER);
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(0x332C4BB5);
+        g.setCornerRadius(dp(12));
+        g.setStroke(dp(1), 0x59F5C35A);
+        b.setBackground(g);
+        b.setLayoutParams(new LinearLayout.LayoutParams(dp(40), dp(40)));
+        b.setContentDescription(L("رجوع", "Back"));
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { if (onClick != null) onClick.run(); }
+        });
+        return b;
+    }
+
     protected int navH() {
         int id = getResources().getIdentifier("navigation_bar_height", "dimen", "android");
         int h = id > 0 ? getResources().getDimensionPixelSize(id) : dp(48);
@@ -339,8 +367,11 @@ abstract class Base extends Activity {
     }
 
     protected void setIc(TextView t, int type, int color, boolean on) {
-        t.setCompoundDrawablesRelativeWithIntrinsicBounds(new Ic(type, color, on, dp(19)), null, null, null);
-        t.setCompoundDrawablePadding(dp(5));
+        // أيقونة فوق والرقم تحتها: كل الخلايا بنفس الشكل والارتفاع والمحاذاة
+        t.setCompoundDrawablesRelativeWithIntrinsicBounds(null, new Ic(type, color, on, dp(20)), null, null);
+        t.setCompoundDrawablePadding(dp(3));
+        t.setTextSize(12);
+        t.setGravity(Gravity.CENTER);
         t.setTextColor(color);
     }
 
@@ -550,7 +581,7 @@ abstract class Base extends Activity {
         vv.setVideoURI(android.net.Uri.parse(u));
         TextView x = tv(Color.WHITE, 26, false);
         x.setText("✕");
-        x.setPadding(dp(18), dp(36), dp(18), dp(18));
+        x.setPadding(dp(18), statusH() + dp(6), dp(18), dp(18));
         x.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { d.dismiss(); }
         });

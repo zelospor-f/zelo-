@@ -114,13 +114,10 @@ abstract class Notifications extends NftMarket {
         lbDirection(d);
         final LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(14), dp(24), dp(14), 0);
+        root.setPadding(dp(14), statusH() + dp(6), dp(14), 0);
         final LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
-        TextView back = txt(isRtlLang() ? "→" : "←", GOLD, 22, true);
-        back.setGravity(Gravity.CENTER);
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        head.addView(back, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        head.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         TextView ti = txt("🔔 " + L("الإشعارات", "Notifications"), GOLD, 20, true);
         head.addView(ti, lpw(1f));
         final TextView readAll = ntBtn(L("قراءة الكل", "Mark all read"), false);

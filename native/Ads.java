@@ -128,12 +128,8 @@ abstract class Ads extends Store {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(18), dp(40), dp(18), navH() + dp(20));
-        TextView back = txt(isRtlLang() ? "›" : "‹", Color.WHITE, 22, false);
-        back.setGravity(Gravity.CENTER);
-        back.setBackground(rbg(0x00000000, 0x33FFFFFF, 12));
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        root.addView(back, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        root.setPadding(dp(18), statusH() + dp(6), dp(18), navH() + dp(20));
+        root.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
         c.setGravity(Gravity.CENTER_HORIZONTAL);

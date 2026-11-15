@@ -101,12 +101,8 @@ abstract class EditProfile extends Compose {
 
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setPadding(dp(12), dp(36), dp(12), dp(10));
-        TextView back = tv(Color.WHITE, 22, false);
-        back.setText("→");
-        back.setPadding(dp(8), dp(4), dp(8), dp(4));
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epDlg.dismiss(); } });
-        top.addView(back);
+        top.setPadding(dp(12), statusH() + dp(6), dp(12), dp(10));
+        top.addView(backBtn(new Runnable() { @Override public void run() { epDlg.dismiss(); } }));
         TextView title = tv(Color.WHITE, 17, true);
         title.setText(L("تعديل الملف الشخصي", "Edit profile"));
         title.setPadding(dp(8), 0, 0, 0);

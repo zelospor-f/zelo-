@@ -120,7 +120,7 @@ abstract class Compose extends Profile {
 
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        top.setPadding(dp(12), dp(36), dp(12), dp(10));
+        top.setPadding(dp(12), statusH() + dp(6), dp(12), dp(10));
         TextView close = tv(Color.WHITE, 22, false);
         close.setText("✕");
         close.setPadding(dp(8), dp(4), dp(8), dp(4));

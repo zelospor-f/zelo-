@@ -76,7 +76,7 @@ public class Home extends FollowList {
     protected final android.os.Handler vH = new android.os.Handler();
     protected Runnable vTick;
     protected ImageView vAvImg;
-    protected TextView vAvLetter, vName, vCap, vTime, vPlay, vMute;
+    protected TextView vAvLetter, vName, vUser, vCap, vTime, vPlay, vMute;
     protected View vFill;
     protected FrameLayout vTrack;
     protected ImageView[] vIc = new ImageView[6];
@@ -95,7 +95,6 @@ public class Home extends FollowList {
     }
 
     protected void openVideosTab() {
-        toast("جارٍ تحميل الفيديوهات...");
         pool.execute(new Runnable() {
             @Override public void run() {
                 final List<JSONObject> l = new ArrayList<JSONObject>();
@@ -205,6 +204,8 @@ public class Home extends FollowList {
         JSONObject o = vList.get(vPos);
         String nm = o.optString("author_name", "");
         vName.setText(nm);
+        String vun = unames.get(o.optString("user_id", ""));
+        vUser.setText(vun != null && vun.length() > 0 ? "@" + vun : "");
         vAvLetter.setText(nm.length() > 0 ? nm.substring(0, 1).toUpperCase() : "?");
         String ph = photos.get(o.optString("user_id", ""));
         if (ph != null) { vAvImg.setVisibility(View.VISIBLE); loadImage(ph, vAvImg); } else { vAvImg.setTag(null); vAvImg.setVisibility(View.GONE); }
@@ -265,15 +266,9 @@ public class Home extends FollowList {
         fl.addView(touch, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         // الأعلى: رجوع + قائمة
-        TextView back = tv(GOLD, 24, true);
-        back.setText("‹");
-        back.setGravity(Gravity.CENTER);
-        GradientDrawable bgk = new GradientDrawable();
-        bgk.setColor(0xFF101A55); bgk.setCornerRadius(dp(12)); bgk.setStroke(dp(1), 0x66F5C35A);
-        back.setBackground(bgk);
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        FrameLayout.LayoutParams bl = new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP | Gravity.LEFT);
-        bl.setMargins(dp(14), dp(40), 0, 0);
+        TextView back = backBtn(new Runnable() { @Override public void run() { d.dismiss(); } });
+        FrameLayout.LayoutParams bl = new FrameLayout.LayoutParams(dp(40), dp(40), Gravity.TOP | Gravity.LEFT);
+        bl.setMargins(dp(14), statusH() + dp(8), 0, 0);
         fl.addView(back, bl);
         TextView more = tv(Color.WHITE, 22, true);
         more.setText("⋮");
@@ -283,7 +278,7 @@ public class Home extends FollowList {
             @Override public void onClick(View v) { if (vPos < vList.size()) showMenu(vList.get(vPos)); }
         });
         FrameLayout.LayoutParams ml = new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP | Gravity.RIGHT);
-        ml.setMargins(0, dp(40), dp(14), 0);
+        ml.setMargins(0, statusH() + dp(8), dp(14), 0);
         fl.addView(more, ml);
 
         // الجنب: الدعم، هدف، تعليق، تمريرة، حفظ، مشاركة
@@ -323,9 +318,16 @@ public class Home extends FollowList {
         vAvImg.setClipToOutline(true);
         av.addView(vAvImg, new FrameLayout.LayoutParams(dp(44), dp(44)));
         who.addView(av, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        LinearLayout nmCol = new LinearLayout(this);
+        nmCol.setOrientation(LinearLayout.VERTICAL);
+        nmCol.setPadding(dp(10), 0, 0, 0);
         vName = tv(Color.WHITE, 16, true);
-        vName.setPadding(dp(10), 0, 0, 0);
-        who.addView(vName);
+        nmCol.addView(vName);
+        vUser = tv(0xFFB9C2F0, 12, false);
+        vUser.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        vUser.setGravity(Gravity.START);
+        nmCol.addView(vUser);
+        who.addView(nmCol);
         info.addView(who);
         vCap = tv(0xFFE6E9FF, 14, false);
         vCap.setMaxLines(3);
@@ -1292,10 +1294,10 @@ public class Home extends FollowList {
         h.vw.setText(String.valueOf(s[3]));
         setIc(h.vw, 3, MUTED, false);
         boolean svd = saved.contains(pk2);
-        h.sv.setText("");
+        h.sv.setText(" ");
         setIc(h.sv, 4, svd ? GOLD : MUTED, svd);
         h.sv.setTag(ti);
-        h.sh.setText("");
+        h.sh.setText(" ");
         setIc(h.sh, 5, MUTED, false);
         h.sh.setTag(ti);
         bindRope(h, o);

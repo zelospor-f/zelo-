@@ -451,14 +451,10 @@ abstract class Radar extends Referrals {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(18), dp(24), dp(18), navH() + dp(30));
+        root.setPadding(dp(18), statusH() + dp(6), dp(18), navH() + dp(30));
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
-        TextView back = txt(isRtlLang() ? "→" : "←", 0xFFE8ECFF, 20, true);
-        back.setGravity(Gravity.CENTER);
-        back.setBackground(rbg(0x382C4BB5, 0x59F5C35A, 14));
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        top.addView(back, new LinearLayout.LayoutParams(dp(42), dp(42)));
+        top.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         LinearLayout tt = new LinearLayout(this);
         tt.setOrientation(LinearLayout.VERTICAL);
         tt.setPadding(dp(12), 0, 0, 0);

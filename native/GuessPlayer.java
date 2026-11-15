@@ -96,7 +96,7 @@ abstract class GuessPlayer extends Index {
         ScrollView sc = new ScrollView(this);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(16), dp(24), dp(16), navH() + dp(40));
+        root.setPadding(dp(16), statusH() + dp(6), dp(16), navH() + dp(40));
         root.addView(backBtn(new Runnable() { @Override public void run() { closeGuessPlayer(); } }));
         TextView h = tv(GOLD, 22, true);
         h.setText("🕵️ " + L("خمّن اللاعب", "Guess the Player"));

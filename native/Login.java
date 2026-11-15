@@ -125,7 +125,7 @@ abstract class Login extends Leagues {
         loginHolder.removeAllViews();
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.setPadding(dp(12), dp(24), dp(12), navH() + dp(12));
+        col.setPadding(dp(12), statusH() + dp(6), dp(12), navH() + dp(12));
         if (top != null) col.addView(top);
         final ScrollView sc = new ScrollView(this);
         sc.addView(list);

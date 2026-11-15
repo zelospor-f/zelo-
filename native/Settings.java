@@ -110,16 +110,12 @@ abstract class Settings extends ShareCard {
     protected LinearLayout stPage(String title, String sub, final Runnable back, boolean line, LinearLayout body, View foot) {
         LinearLayout p = new LinearLayout(this);
         p.setOrientation(LinearLayout.VERTICAL);
-        p.setPadding(0, dp(24), 0, 0);
+        p.setPadding(0, statusH() + dp(6), 0, 0);
         LinearLayout h = new LinearLayout(this);
         h.setGravity(Gravity.CENTER_VERTICAL);
         h.setPadding(dp(16), dp(14), dp(16), dp(14));
         if (line) h.setBackground(rbg(0xB3111A4A, 0x00000000, 0));
-        TextView b = txt(isRtlLang() ? "›" : "‹", GOLD, 24, true);
-        b.setGravity(Gravity.CENTER);
-        b.setBackground(rbg(0x332C4BB5, 0x59F5C35A, 12));
-        b.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { back.run(); } });
-        h.addView(b, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        h.addView(backBtn(new Runnable() { @Override public void run() { back.run(); } }));
         if (title != null) {
             LinearLayout t = new LinearLayout(this);
             t.setOrientation(LinearLayout.VERTICAL);

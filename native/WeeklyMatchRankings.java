@@ -98,7 +98,7 @@ abstract class WeeklyMatchRankings extends WalletWithdraw {
         sv.addView(body);
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
-        page.setPadding(0, dp(24), 0, 0);
+        page.setPadding(0, statusH() + dp(6), 0, 0);
         TextView t = txt(L("نقاطي", "My Points"), Color.WHITE, 24, true);
         t.setGravity(Gravity.CENTER);
         t.setPadding(0, dp(16), 0, dp(12));
@@ -319,13 +319,10 @@ abstract class WeeklyMatchRankings extends WalletWithdraw {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(20), dp(40), dp(20), 0);
+        root.setPadding(dp(20), statusH() + dp(6), dp(20), 0);
         LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
-        TextView back = txt(isRtlLang() ? "→" : "←", Color.WHITE, 22, false);
-        back.setGravity(Gravity.CENTER);
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
-        head.addView(back, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        head.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
         TextView ti = txt("🏆 " + L("ترتيب التحديات", "Challenges Ranking"), GOLD, 20, true);
         ti.setPadding(dp(10), 0, 0, 0);
         head.addView(ti, lpw(1f));

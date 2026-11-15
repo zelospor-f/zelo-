@@ -250,7 +250,7 @@ abstract class Messages extends Login {
     protected void openMessagesPage() {
         final LinearLayout wrap = new LinearLayout(this);
         wrap.setOrientation(LinearLayout.VERTICAL);
-        wrap.setPadding(dp(12), dp(24), dp(12), dp(90));
+        wrap.setPadding(dp(12), statusH() + dp(6), dp(12), dp(90));
         wrap.addView(txt(L("الرسائل", "Messages"), Color.WHITE, 26, true), lpm(0, 6, 0, 12));
         LinearLayout pills = new LinearLayout(this);
         final TextView p1 = txt(L("رسائل", "Messages"), Color.WHITE, 14, true), p2 = txt(L("غرف", "Rooms"), Color.WHITE, 14, true);
@@ -468,7 +468,7 @@ abstract class Messages extends Login {
         lbDirection(d);
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(dp(14), dp(24), dp(14), navH() + dp(10));
+        root.setPadding(dp(14), statusH() + dp(6), dp(14), navH() + dp(10));
         LinearLayout hd = new LinearLayout(this);
         hd.setGravity(Gravity.CENTER_VERTICAL);
         TextView cancel = txt(L("إلغاء", "Cancel"), Color.WHITE, 15, true);
@@ -559,14 +559,11 @@ abstract class Messages extends Login {
         lbDirection(chatDlg);
         final LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setPadding(0, dp(20), 0, 0);
+        root.setPadding(0, statusH() + dp(6), 0, 0);
         final LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
         head.setPadding(dp(12), dp(10), dp(12), dp(10));
-        TextView back = txt(isRtlLang() ? "→" : "←", Color.WHITE, 22, false);
-        back.setGravity(Gravity.CENTER);
-        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { closeChat(true); } });
-        head.addView(back, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        head.addView(backBtn(new Runnable() { @Override public void run() { closeChat(true); } }));
         root.addView(head);
         View line = new View(this);
         line.setBackgroundColor(0x14FFFFFF);
