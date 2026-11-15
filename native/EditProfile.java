@@ -120,6 +120,9 @@ abstract class EditProfile extends Compose {
         sc.addView(epBox);
         root.addView(sc, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
+        epHero = new LinearLayout(this);
+        epHero.setOrientation(LinearLayout.VERTICAL);
+        epBox.addView(epHero);
         epNick = epField(L("الاسم المستعار", "Nickname"), epOrigNick, 30, false);
         epBio = epField(L("النبذة التعريفية", "Bio"), epS(r, "bio"), 160, true);
         epBio.setHint(L("اكتب نبذة قصيرة عنك...", "Write something about yourself..."));
@@ -130,90 +133,157 @@ abstract class EditProfile extends Compose {
     }
 
     // يعيد رسم الأجزاء المتغيرة (الصورة / التاريخ / الشارة) دون فقدان النص المكتوب
-    private LinearLayout epDyn;
+    private LinearLayout epDyn, epHero;
+
+    private LinearLayout epCard() {
+        LinearLayout c = new LinearLayout(this);
+        c.setOrientation(LinearLayout.VERTICAL);
+        c.setPadding(dp(16), dp(12), dp(16), dp(12));
+        c.setBackground(rbg(CARD, 18, 0x33FFFFFF));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(12));
+        c.setLayoutParams(lp);
+        return c;
+    }
+
     private void epDraw() {
         if (epDyn != null) epBox.removeView(epDyn);
+        epHero.removeAllViews();
         epDyn = new LinearLayout(this);
         epDyn.setOrientation(LinearLayout.VERTICAL);
 
+        // ---- الصورة (أعلى الصفحة) ----
         LinearLayout avRow = new LinearLayout(this);
-        avRow.setGravity(Gravity.CENTER);
+        avRow.setGravity(Gravity.CENTER_HORIZONTAL);
         avRow.setOrientation(LinearLayout.VERTICAL);
+        avRow.setPadding(0, dp(4), 0, dp(14));
         FrameLayout avf = new FrameLayout(this);
         ImageView av = new ImageView(this);
         av.setScaleType(ImageView.ScaleType.CENTER_CROP);
         av.setBackground(oval(CARD, GOLD));
         av.setClipToOutline(true);
         av.setOutlineProvider(new ViewOutlineProvider() { @Override public void getOutline(View v, Outline o) { o.setOval(0, 0, v.getWidth(), v.getHeight()); } });
+        avf.addView(av, new FrameLayout.LayoutParams(dp(104), dp(104)));
         if (epPhoto.length() > 0) loadImage(epPhoto, av);
-        avf.addView(av, new FrameLayout.LayoutParams(dp(92), dp(92)));
+        else {
+            String nn = epNick == null ? epOrigNick : epNick.getText().toString();
+            TextView letter = tv(GOLD, 42, true);
+            letter.setText(nn.length() > 0 ? nn.substring(0, 1).toUpperCase() : "؟");
+            letter.setGravity(Gravity.CENTER);
+            avf.addView(letter, new FrameLayout.LayoutParams(dp(104), dp(104)));
+        }
         TextView cam = tv(Color.WHITE, 16, false);
         cam.setText("📷");
         cam.setGravity(Gravity.CENTER);
         cam.setBackground(oval(0xFF2C4BB5, 0));
         cam.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epDlg.dismiss(); openNftMarket(); } });
         avf.addView(cam, new FrameLayout.LayoutParams(dp(34), dp(34), Gravity.BOTTOM | Gravity.END));
-        avRow.addView(avf, new LinearLayout.LayoutParams(dp(92), dp(92)));
+        avRow.addView(avf, new LinearLayout.LayoutParams(dp(104), dp(104)));
         if (epPhoto.length() > 0) {
             TextView rm = tv(0xFFFF8A8A, 13, true);
             rm.setText(L("إزالة الصورة", "Remove photo"));
-            rm.setPadding(dp(10), dp(10), dp(10), dp(4));
+            rm.setPadding(dp(10), dp(10), dp(10), dp(2));
             rm.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epPhoto = ""; epDraw(); } });
             avRow.addView(rm);
         }
         TextView note = tv(MUTED, 12, false);
         note.setGravity(Gravity.CENTER);
         note.setText(L("الصورة تأتي من بطاقة NFT: اضغط 📷 لفتح السوق.", "Your photo comes from an NFT card: tap 📷 to open the market."));
-        note.setPadding(0, dp(6), 0, dp(10));
+        note.setPadding(0, dp(6), 0, 0);
         avRow.addView(note);
-        epDyn.addView(avRow);
+        epHero.addView(avRow);
 
-        // تاريخ الميلاد
-        TextView dl = tv(MUTED, 13, true);
+        // ---- تاريخ الميلاد + مفتاح الإظهار ----
+        LinearLayout dc = epCard();
+        TextView dl = tv(MUTED, 12, true);
         dl.setText(L("تاريخ الميلاد", "Date of Birth"));
-        dl.setPadding(0, dp(12), 0, dp(4));
-        epDyn.addView(dl);
-        TextView dv = tv(Color.WHITE, 15, true);
+        dc.addView(dl);
+        TextView dv = tv(Color.WHITE, 17, true);
         dv.setText(epDob.length() > 0 ? epDob : L("اختر التاريخ", "Pick a date"));
-        dv.setPadding(dp(12), dp(12), dp(12), dp(12));
-        dv.setBackground(rbg(CARD, 12, 0x33FFFFFF));
+        dv.setPadding(0, dp(6), 0, dp(10));
         dv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epPickDate(); } });
-        epDyn.addView(dv);
-        final TextView vis = tv(Color.WHITE, 13, true);
-        vis.setText((epDobVis ? "☑  " : "☐  ") + L("إظهار تاريخ الميلاد للآخرين في ملفي", "Show my birth date to others on my profile"));
-        vis.setPadding(0, dp(12), 0, dp(4));
-        vis.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epDobVis = !epDobVis; epDraw(); } });
-        epDyn.addView(vis);
+        dc.addView(dv);
+        View line = new View(this);
+        line.setBackgroundColor(0x33FFFFFF);
+        dc.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        LinearLayout vr = new LinearLayout(this);
+        vr.setGravity(Gravity.CENTER_VERTICAL);
+        vr.setPadding(0, dp(10), 0, 0);
+        TextView vt = tv(Color.WHITE, 14, false);
+        vt.setText(L("إظهار تاريخ الميلاد للآخرين", "Show my birth date to others"));
+        vr.addView(vt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        FrameLayout sw = new FrameLayout(this);
+        sw.setBackground(rbg(epDobVis ? 0xFF2C4BB5 : 0xFF2A3470, 13, 0));
+        View th = new View(this);
+        th.setBackground(oval(epDobVis ? GOLD : MUTED, 0));
+        FrameLayout.LayoutParams tlp = new FrameLayout.LayoutParams(dp(20), dp(20), (epDobVis ? Gravity.END : Gravity.START) | Gravity.CENTER_VERTICAL);
+        tlp.setMargins(dp(3), 0, dp(3), 0);
+        sw.addView(th, tlp);
+        sw.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epDobVis = !epDobVis; epDraw(); } });
+        vr.addView(sw, new LinearLayout.LayoutParams(dp(46), dp(26)));
+        dc.addView(vr);
+        epDyn.addView(dc);
 
-        // شارة التوثيق
-        TextView bl = tv(MUTED, 13, true);
+        // ---- شارة التوثيق ----
+        LinearLayout bc = epCard();
+        TextView bl = tv(MUTED, 12, true);
         bl.setText(L("شارة التوثيق", "Verified badge"));
-        bl.setPadding(0, dp(14), 0, dp(4));
-        epDyn.addView(bl);
-        TextView bv = tv(Color.WHITE, 15, true);
-        bv.setText((epBadge.length() > 0 ? "✔️ " + ClubsData.name(epBadge, isAr()) : L("بدون شارة", "No badge")) + "      ›");
-        bv.setPadding(dp(12), dp(12), dp(12), dp(12));
-        bv.setBackground(rbg(CARD, 12, 0x33FFFFFF));
-        bv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epBadgePicker(); } });
-        epDyn.addView(bv);
+        bc.addView(bl);
+        LinearLayout br = new LinearLayout(this);
+        br.setGravity(Gravity.CENTER_VERTICAL);
+        br.setPadding(0, dp(8), 0, dp(4));
+        String blogo = epBadge.length() > 0 ? ClubsData.logo(epBadge) : "";
+        if (blogo.startsWith("http")) {
+            ImageView bi = new ImageView(this);
+            bi.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            loadImage(blogo, bi);
+            LinearLayout.LayoutParams bil = new LinearLayout.LayoutParams(dp(30), dp(30));
+            bil.setMargins(0, 0, dp(10), 0);
+            br.addView(bi, bil);
+        }
+        TextView bt = tv(Color.WHITE, 16, true);
+        bt.setText(epBadge.length() > 0 ? ClubsData.name(epBadge, isAr()) : L("بدون شارة", "No badge"));
+        br.addView(bt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView ch = tv(GOLD, 22, true);
+        ch.setText("\u2039");
+        br.addView(ch);
+        bc.addView(br);
+        TextView bh = tv(MUTED, 11, false);
+        bh.setText(L("تظهر بجانب اسمك وعلى حائط ملفك للمشتركين فقط", "Shown next to your name and on your profile cover (subscribers only)"));
+        bc.addView(bh);
+        bc.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epBadgePicker(); } });
+        epDyn.addView(bc);
         epBox.addView(epDyn);
     }
 
-    private EditText epField(String label, String val, int max, boolean multi) {
-        TextView l = tv(MUTED, 13, true);
+    private EditText epField(String label, String val, int max, final boolean multi) {
+        LinearLayout card = epCard();
+        LinearLayout head = new LinearLayout(this);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        TextView l = tv(MUTED, 12, true);
         l.setText(label);
-        l.setPadding(0, dp(10), 0, dp(4));
-        epBox.addView(l);
+        head.addView(l, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        final TextView cnt = tv(MUTED, 12, false);
+        head.addView(cnt);
+        card.addView(head);
         EditText e = new EditText(this);
         e.setText(val);
         e.setTextColor(Color.WHITE);
         e.setHintTextColor(MUTED);
-        e.setTextSize(15);
+        e.setTextSize(17);
+        e.setBackground(null);
         e.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(max) });
         if (multi) { e.setMinLines(3); e.setGravity(Gravity.TOP | Gravity.START); } else e.setSingleLine(true);
-        e.setPadding(dp(12), dp(10), dp(12), dp(10));
-        e.setBackground(rbg(CARD, 12, 0x33FFFFFF));
-        epBox.addView(e, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        e.setPadding(0, dp(6), 0, dp(4));
+        final int fmax = max;
+        cnt.setText(val.length() + "/" + fmax);
+        e.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence c, int a, int b, int d) {}
+            @Override public void onTextChanged(CharSequence c, int a, int b, int d) { cnt.setText(c.length() + "/" + fmax); }
+            @Override public void afterTextChanged(android.text.Editable ed) {}
+        });
+        card.addView(e, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        epBox.addView(card);
         return e;
     }
 

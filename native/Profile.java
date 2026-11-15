@@ -332,6 +332,12 @@ abstract class Profile extends WeeklyMatchRankings {
         verV.setText("\u2714");
         verV.setVisibility(View.GONE);
         nameRow.addView(verV);
+        final int[] tierV = { 0 };
+        final boolean[] bset = { false };
+        final Runnable refreshVer = new Runnable() { @Override public void run() {
+            verV.setVisibility(tierV[0] >= 1 && !bset[0] ? View.VISIBLE : View.GONE);
+            badgeV.setVisibility(tierV[0] >= 1 && bset[0] ? View.VISIBLE : View.GONE);
+        } };
         idb.addView(nameRow);
         final TextView userV = tv(MUTED, 14, false);
         userV.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
@@ -474,7 +480,7 @@ abstract class Profile extends WeeklyMatchRankings {
             vfLp.setMargins(dp(14), dp(8), dp(14), 0);
             hdr.addView(vfCard, vfLp);
             fetchTier(new TierCb() { @Override public void on(int tier) {
-                if (tier >= 1) verV.setVisibility(View.VISIBLE); else vfCard.setVisibility(View.VISIBLE);
+                tierV[0] = tier; refreshVer.run(); if (tier < 1) vfCard.setVisibility(View.VISIBLE);
             } });
         }
 
@@ -623,8 +629,8 @@ abstract class Profile extends WeeklyMatchRankings {
         String ph0 = P.optString("photoUrl", "");
         if (mine && ph0.startsWith("http")) { loadImage(ph0, avImg); avLetter.setVisibility(View.GONE); }
         else if (mine && uavatar != null && uavatar.startsWith("http")) { loadImage(uavatar, avImg); avLetter.setVisibility(View.GONE); }
-        String bl = P.optString("badgeLogo", "");
-        if (bl.startsWith("http")) { badgeV.setVisibility(View.VISIBLE); loadImage(bl, badgeV); }
+        String bl = mine ? ClubsData.logo(P.optString("badgeClub", "")) : "";
+        if (bl.startsWith("http")) { bset[0] = true; loadImage(bl, badgeV); wm.setAlpha(0.38f); fillCover(wm); loadImage(bl, wm); refreshVer.run(); }
         try {
             JSONArray cl = P.optJSONArray("clubs");
             if (cl != null) {
@@ -644,7 +650,7 @@ abstract class Profile extends WeeklyMatchRankings {
                         LinearLayout.LayoutParams cil = new LinearLayout.LayoutParams(dp(18), dp(18));
                         cil.setMargins(0, 0, dp(6), 0);
                         chip.addView(ci, cil);
-                        if (q == 0) { wm.setVisibility(View.VISIBLE); loadImage(lg, wm); }
+                        if (q == 0 && !bset[0]) { wm.setVisibility(View.VISIBLE); loadImage(lg, wm); }
                     }
                     TextView ct = tv(0xFFE6E9FF, 12, true);
                     ct.setText(co.optString("name", ""));
@@ -656,12 +662,12 @@ abstract class Profile extends WeeklyMatchRankings {
             }
         } catch (Exception ignore) {}
 
-        if (!mine) fetchTierOf(target, new TierCb() { @Override public void on(int tier) { if (tier >= 1) verV.setVisibility(View.VISIBLE); } });
+        if (!mine) fetchTierOf(target, new TierCb() { @Override public void on(int tier) { tierV[0] = tier; refreshVer.run(); } });
         reload[0].run();
         pool.execute(new Runnable() {
             @Override public void run() {
                 final String[] v = { "–", "–", "–", "–" };
-                final String[] ex = { "", "", "", "" }; // name, username, photo, bio
+                final String[] ex = { "", "", "", "", "" }; // name, username, photo, bio, badge_club
                 try {
                     if (!mine) {
                         JSONArray pa = new JSONArray(get("public_profiles?select=*&user_id=eq." + target + "&limit=1"));
@@ -677,6 +683,7 @@ abstract class Profile extends WeeklyMatchRankings {
                             ex[2] = ph;
                             String bi = po.isNull("bio") ? "" : po.optString("bio", "");
                             ex[3] = bi;
+                            ex[4] = po.isNull("badge_club") ? "" : po.optString("badge_club", "");
                         }
                     }
                 } catch (Exception ignore) {}
@@ -707,11 +714,22 @@ abstract class Profile extends WeeklyMatchRankings {
                             if (ex[1].length() > 0) { userV.setText("@" + ex[1]); shareName[0] = ex[1]; }
                             if (ex[2].startsWith("http")) { loadImage(ex[2], avImg); avLetter.setVisibility(View.GONE); }
                             if (ex[3].length() > 0 && !"null".equals(ex[3])) { bioV.setText(ex[3]); bioV.setVisibility(View.VISIBLE); }
+                            String bl2 = ClubsData.logo(ex[4]);
+                            if (bl2.startsWith("http")) { bset[0] = true; loadImage(bl2, badgeV); wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(bl2, wm); refreshVer.run(); }
                         }
                     }
                 });
             }
         });
+    }
+
+    // شعار النادي يملأ الحائط كاملًا
+    private void fillCover(ImageView wm) {
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(150) + statusH(), Gravity.TOP);
+        lp.setMargins(0, 0, 0, 0);
+        wm.setLayoutParams(lp);
+        wm.setPadding(dp(16), statusH() + dp(8), dp(16), dp(8));
+        wm.setScaleType(ImageView.ScaleType.FIT_CENTER);
     }
 
     protected View replyRow(View cv, JSONObject o) {
