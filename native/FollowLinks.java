@@ -71,7 +71,7 @@ abstract class FollowLinks extends Countries {
 
     protected void openExternal(String u) {
         try { startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(u))); }
-        catch (Exception e) { toast("تعذر فتح الرابط"); }
+        catch (Exception e) { toast(L("تعذر فتح الرابط", "Could not open the link")); }
     }
 
     // صفّ الزرّين: يوضع أسفل القائمة الجانبية عند تحويلها
@@ -79,8 +79,8 @@ abstract class FollowLinks extends Countries {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER);
         row.setPadding(0, dp(10), 0, dp(2));
-        row.addView(followBtn("𝕏 تابعنا", LINK_X), followLp(0));
-        row.addView(followBtn("✈️ تيليجرام", LINK_TG), followLp(dp(8)));
+        row.addView(followBtn(L("𝕏 تابعنا", "𝕏 Follow us"), LINK_X), followLp(0));
+        row.addView(followBtn(L("✈️ تيليجرام", "✈️ Telegram"), LINK_TG), followLp(dp(8)));
         return row;
     }
 

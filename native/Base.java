@@ -410,10 +410,10 @@ abstract class Base extends Activity {
             f.setTimeZone(TimeZone.getTimeZone("UTC"));
             Date d = f.parse(iso.substring(0, 19));
             long s = (System.currentTimeMillis() - d.getTime()) / 1000;
-            if (s < 60) return "الآن";
-            if (s < 3600) return "منذ " + (s / 60) + " د";
-            if (s < 86400) return "منذ " + (s / 3600) + " س";
-            return "منذ " + (s / 86400) + " يوم";
+            if (s < 60) return L("الآن", "Now");
+            if (s < 3600) return L("منذ ", " ago ") + (s / 60) + " د";
+            if (s < 86400) return L("منذ ", " ago ") + (s / 3600) + " س";
+            return L("منذ ", " ago ") + (s / 86400) + " يوم";
         } catch (Exception e) {
             return "";
         }
@@ -449,7 +449,7 @@ abstract class Base extends Activity {
     protected void banCheck(final String t) {
         if (t != null && t.indexOf("account_banned") >= 0) {
             runOnUiThread(new Runnable() {
-                @Override public void run() { Toast.makeText(Base.this, "حسابك موقوف حاليًا عن النشر والتفاعل، يمكنك التصفح فقط. تفاصيل الإيقاف في ملفك الشخصي.", Toast.LENGTH_LONG).show(); }
+                @Override public void run() { Toast.makeText(Base.this, L("حسابك موقوف حاليًا عن النشر والتفاعل، يمكنك التصفح فقط. تفاصيل الإيقاف في ملفك الشخصي.", "Your account is currently suspended from posting and interacting; you can only browse. Details are in your profile."), Toast.LENGTH_LONG).show(); }
             });
         }
     }

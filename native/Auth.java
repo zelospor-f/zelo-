@@ -264,12 +264,12 @@ abstract class Auth extends Badges {
             lgp.gravity = Gravity.CENTER_HORIZONTAL;
             lgp.setMargins(0, dp(30), 0, dp(12));
             col.addView(lg, lgp);
-            aTitle(col, "سجّل الدخول إلى Zelo Sport", "أدخل اسم المستخدم أو البريد الإلكتروني وكلمة السر.");
-            fId = aField(col, "اسم المستخدم أو البريد الإلكتروني", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, true);
+            aTitle(col, L("سجّل الدخول إلى Zelo Sport", "Sign in to Zelo Sport"), L("أدخل اسم المستخدم أو البريد الإلكتروني وكلمة السر.", "Enter your username or email and password."));
+            fId = aField(col, L("اسم المستخدم أو البريد الإلكتروني", "Username or email"), android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, true);
             fId.setText(getSharedPreferences("zn_auth", MODE_PRIVATE).getString("last_id", ""));
-            fPass = aField(col, "كلمة السر", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
+            fPass = aField(col, L("كلمة السر", "Password"), android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
             TextView fg = tv(GOLD, 13, true);
-            fg.setText("هل نسيت كلمة السر؟");
+            fg.setText(L("هل نسيت كلمة السر؟", "Forgot your password?"));
             fg.setPadding(0, 0, 0, dp(10));
             fg.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) {
@@ -282,19 +282,19 @@ abstract class Auth extends Badges {
             col.addView(fg);
             col.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
             col.addView(aMsg);
-            aNext = aButton("تسجيل الدخول", true);
+            aNext = aButton(L("تسجيل الدخول", "Sign in"), true);
             col.addView(aNext, aBtnLp());
-            TextView su = aButton("إنشاء حساب عبر البريد الإلكتروني", false);
+            TextView su = aButton(L("إنشاء حساب عبر البريد الإلكتروني", "Create account with email"), false);
             su.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { aFlow = "signup"; aStep = "email"; authDraw(); }
             });
             col.addView(su, aBtnLp());
             TextView or = tv(MUTED, 12, true);
-            or.setText("— أو —");
+            or.setText(L("— أو —", "— or —"));
             or.setGravity(Gravity.CENTER);
             or.setPadding(0, dp(4), 0, dp(10));
             col.addView(or);
-            TextView gg = aButton("G   المتابعة عبر Google", false);
+            TextView gg = aButton(L("G   المتابعة عبر Google", "G   Continue with Google"), false);
             gg.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { authGoogle(); } });
             col.addView(gg, aBtnLp());
             Runnable chk = new Runnable() { @Override public void run() { aEnable(fId.getText().toString().trim().length() > 0 && fPass.getText().length() > 0); } };
@@ -304,12 +304,12 @@ abstract class Auth extends Badges {
             chk.run();
         } else if ("email".equals(aStep) || "forgot".equals(aStep)) {
             boolean reset = "forgot".equals(aStep);
-            aTitle(col, reset ? "إعادة تعيين كلمة السر" : "إنشاء حساب جديد",
-                reset ? "أدخل بريدك الإلكتروني وسنرسل لك رمز تحقق لتعيين كلمة سر جديدة." : "أدخل بريدك الإلكتروني وسنرسل لك رمز تحقق.");
+            aTitle(col, reset ? L("إعادة تعيين كلمة السر", "Reset password") : L("إنشاء حساب جديد", "Create a new account"),
+                reset ? L("أدخل بريدك الإلكتروني وسنرسل لك رمز تحقق لتعيين كلمة سر جديدة.", "Enter your email and we'll send you a verification code to set a new password.") : L("أدخل بريدك الإلكتروني وسنرسل لك رمز تحقق.", "Enter your email and we'll send you a verification code."));
             fEmail = aField(col, "البريد الإلكتروني", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, true);
             fEmail.setText(aEmail);
             col.addView(aMsg);
-            TextView back = aLink("لديّ حساب – تسجيل الدخول");
+            TextView back = aLink(L("لديّ حساب – تسجيل الدخول", "I have an account – Sign in"));
             back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { aFlow = "signup"; aStep = "login"; authDraw(); } });
             col.addView(back);
             col.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
@@ -325,8 +325,8 @@ abstract class Auth extends Badges {
             aNext.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { if (aNext.isEnabled()) authSendCode(); } });
             chk.run();
         } else if ("code".equals(aStep)) {
-            aTitle(col, "أدخل رمز التحقق", "أرسلنا رمزًا إلى " + aEmail);
-            fCode = aField(col, "الرمز", android.text.InputType.TYPE_CLASS_NUMBER, true);
+            aTitle(col, L("أدخل رمز التحقق", "Enter the verification code"), L("أرسلنا رمزًا إلى ", "We sent a code to ") + aEmail);
+            fCode = aField(col, L("الرمز", "Code"), android.text.InputType.TYPE_CLASS_NUMBER, true);
             fCode.setGravity(Gravity.CENTER);
             fCode.setTextSize(24);
             fCode.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(8) });
@@ -334,13 +334,13 @@ abstract class Auth extends Badges {
             aResendV = aLink("");
             aResendV.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { authResend(); } });
             col.addView(aResendV);
-            TextView ch = aLink("تغيير البريد");
+            TextView ch = aLink(L("تغيير البريد", "Change email"));
             ch.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { aStep = "reset".equals(aFlow) ? "forgot" : "email"; if (aResendTick != null) aH.removeCallbacks(aResendTick); authDraw(); }
             });
             col.addView(ch);
             col.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
-            aNext = aButton("تحقق", true);
+            aNext = aButton(L("تحقق", "Verify"), true);
             col.addView(aNext, aBtnLp());
             Runnable chk = new Runnable() { @Override public void run() { aEnable(fCode.getText().toString().trim().length() >= 6); } };
             fCode.addTextChangedListener(aWatch(chk));
@@ -348,9 +348,9 @@ abstract class Auth extends Badges {
             chk.run();
             updateResend();
         } else if ("newpass".equals(aStep)) {
-            aTitle(col, "كلمة سر جديدة", "اختر كلمة سر لا تقل عن " + MIN_PASS + " أحرف.");
-            fPass = aField(col, "كلمة السر الجديدة", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
-            fPass2 = aField(col, "تأكيد كلمة السر", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
+            aTitle(col, L("كلمة سر جديدة", "New password"), L("اختر كلمة سر لا تقل عن ", "Choose a password of at least ") + MIN_PASS + L(" أحرف.", " characters."));
+            fPass = aField(col, L("كلمة السر الجديدة", "New password"), android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
+            fPass2 = aField(col, L("تأكيد كلمة السر", "Confirm password"), android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
             col.addView(aMsg);
             col.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
             aNext = aButton("حفظ", true);
@@ -358,7 +358,7 @@ abstract class Auth extends Badges {
             Runnable chk = new Runnable() {
                 @Override public void run() {
                     String p1 = fPass.getText().toString(), p2 = fPass2.getText().toString();
-                    if (p1.length() > 0 && p1.length() < MIN_PASS) aSetMsg(MIN_PASS + " أحرف على الأقل", true, false);
+                    if (p1.length() > 0 && p1.length() < MIN_PASS) aSetMsg(MIN_PASS + L(" أحرف على الأقل", " characters minimum"), true, false);
                     else if (p2.length() > 0 && !p1.equals(p2)) aSetMsg("كلمتا السر غير متطابقتين", true, false);
                     else aSetMsg("", false, false);
                     aEnable(p1.length() >= MIN_PASS && p1.equals(p2));
@@ -394,7 +394,7 @@ abstract class Auth extends Badges {
     protected void authLogin() {
         final String id = fId.getText().toString().trim();
         final String pass = fPass.getText().toString();
-        aBusy = true; aEnable(false); aSetMsg("جارٍ تسجيل الدخول...", false, false);
+        aBusy = true; aEnable(false); aSetMsg(L("جارٍ تسجيل الدخول...", "Signing in..."), false, false);
         pool.execute(new Runnable() {
             @Override public void run() {
                 try {
@@ -415,7 +415,7 @@ abstract class Auth extends Badges {
                     afterSession();
                 } catch (Exception e) {
                     runOnUiThread(new Runnable() {
-                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg("البريد/اسم المستخدم أو كلمة السر غير صحيحة", true, false); }
+                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg(L("البريد/اسم المستخدم أو كلمة السر غير صحيحة", "Email/username or password is incorrect"), true, false); }
                     });
                 }
             }
@@ -435,7 +435,7 @@ abstract class Auth extends Badges {
                     });
                 } catch (final Exception e) {
                     runOnUiThread(new Runnable() {
-                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg("تعذر إرسال الرمز: " + e.getMessage(), true, false); }
+                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg(L("تعذر إرسال الرمز: ", "Could not send the code: ") + e.getMessage(), true, false); }
                     });
                 }
             }
@@ -457,8 +457,8 @@ abstract class Auth extends Badges {
 
     protected void updateResend() {
         if (aResendV == null) return;
-        if (aResendLeft > 0) { aResendV.setText("إعادة الإرسال بعد " + aResendLeft + "ث"); aResendV.setTextColor(MUTED); }
-        else { aResendV.setText("إعادة إرسال الرمز"); aResendV.setTextColor(GOLD); }
+        if (aResendLeft > 0) { aResendV.setText(L("إعادة الإرسال بعد ", "Resend in ") + aResendLeft + L("ث", "s")); aResendV.setTextColor(MUTED); }
+        else { aResendV.setText(L("إعادة إرسال الرمز", "Resend code")); aResendV.setTextColor(GOLD); }
     }
 
     protected void authResend() {
@@ -493,7 +493,7 @@ abstract class Auth extends Badges {
                     afterSession();
                 } catch (final Exception e) {
                     runOnUiThread(new Runnable() {
-                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg("الرمز غير صحيح أو منتهي (" + e.getMessage() + ")", true, false); }
+                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg(L("الرمز غير صحيح أو منتهي (", "The code is incorrect or expired (") + e.getMessage() + ")", true, false); }
                     });
                 }
             }
@@ -502,7 +502,7 @@ abstract class Auth extends Badges {
 
     protected void authSaveNewPass() {
         final String p = fPass.getText().toString();
-        aBusy = true; aEnable(false); aSetMsg("جارٍ الحفظ...", false, false);
+        aBusy = true; aEnable(false); aSetMsg(L("جارٍ الحفظ...", "Saving..."), false, false);
         pool.execute(new Runnable() {
             @Override public void run() {
                 try {
@@ -511,7 +511,7 @@ abstract class Auth extends Badges {
                     afterSession();
                 } catch (final Exception e) {
                     runOnUiThread(new Runnable() {
-                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg("تعذر الحفظ: " + e.getMessage(), true, false); }
+                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg(L("تعذر الحفظ: ", "Could not save: ") + e.getMessage(), true, false); }
                     });
                 }
             }
@@ -523,7 +523,7 @@ abstract class Auth extends Badges {
         try {
             String u = url + "/auth/v1/authorize?provider=google&redirect_to=" + java.net.URLEncoder.encode(AUTH_REDIRECT, "UTF-8") + "&prompt=select_account";
             startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(u)));
-        } catch (Exception e) { aSetMsg("تعذر فتح المتصفح: " + e.getMessage(), true, false); }
+        } catch (Exception e) { aSetMsg(L("تعذر فتح المتصفح: ", "Could not open the browser: ") + e.getMessage(), true, false); }
     }
 
     // يُستدعى عند الرجوع من المتصفح بعد موافقة Google (الرابط العميق com.zelosport.app://login-callback#access_token=...)
@@ -551,7 +551,7 @@ abstract class Auth extends Badges {
                     saveSession(fa, fr, u.optString("id"), u.optString("email", ""));
                     afterSession();
                 } catch (Exception e) {
-                    runOnUiThread(new Runnable() { @Override public void run() { aSetMsg("تعذر تسجيل الدخول", true, false); } });
+                    runOnUiThread(new Runnable() { @Override public void run() { aSetMsg(L("تعذر تسجيل الدخول", "Could not sign in"), true, false); } });
                 }
             }
         });
@@ -581,8 +581,8 @@ abstract class Auth extends Badges {
 
     // ---------- إكمال الحساب ----------
     protected void drawSetup(LinearLayout col) {
-        aTitle(col, "أنشئ حسابك", "اختر اسم مستخدم فريدًا وكلمة سر وأدخل تاريخ ميلادك. يمكنك تغيير اسمك المستعار لاحقًا من ملفك الشخصي.");
-        fUser = aField(col, "اسم المستخدم (إنجليزي، أرقام و_)", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, true);
+        aTitle(col, L("أنشئ حسابك", "Create your account"), L("اختر اسم مستخدم فريدًا وكلمة سر وأدخل تاريخ ميلادك. يمكنك تغيير اسمك المستعار لاحقًا من ملفك الشخصي.", "Choose a unique username and password and enter your date of birth. You can change your nickname later from your profile."));
+        fUser = aField(col, L("اسم المستخدم (إنجليزي، أرقام و_)", "Username (English letters, numbers, _)"), android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD, true);
         fUser.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(20), new android.text.InputFilter() {
             @Override public CharSequence filter(CharSequence src, int s, int e, android.text.Spanned d, int ds, int de) {
                 StringBuilder sb = new StringBuilder();
@@ -592,9 +592,9 @@ abstract class Auth extends Badges {
         } });
         aUMsg = tv(MUTED, 12, true);
         col.addView(aUMsg);
-        fPass = aField(col, "كلمة السر", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
+        fPass = aField(col, L("كلمة السر", "Password"), android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
         aPMsg = tv(MUTED, 12, true);
-        aPMsg.setText(MIN_PASS + " أحرف على الأقل");
+        aPMsg.setText(MIN_PASS + L(" أحرف على الأقل", " characters minimum"));
         col.addView(aPMsg);
         TextView dl = tv(MUTED, 11, true);
         dl.setText("تاريخ الميلاد");
@@ -605,12 +605,12 @@ abstract class Auth extends Badges {
         spD = new android.widget.Spinner(this);
         spM = new android.widget.Spinner(this);
         spY = new android.widget.Spinner(this);
-        List<String> days = new ArrayList<String>(); days.add("اليوم");
+        List<String> days = new ArrayList<String>(); days.add(L("اليوم", "Day"));
         for (int i = 1; i <= 31; i++) days.add(String.valueOf(i));
-        String[] ms = { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
-        List<String> mons = new ArrayList<String>(); mons.add("الشهر");
+        String[] ms = { L("يناير", "January"), L("فبراير", "February"), L("مارس", "March"), L("أبريل", "April"), L("مايو", "May"), L("يونيو", "June"), L("يوليو", "July"), L("أغسطس", "August"), L("سبتمبر", "September"), L("أكتوبر", "October"), L("نوفمبر", "November"), L("ديسمبر", "December") };
+        List<String> mons = new ArrayList<String>(); mons.add(L("الشهر", "Month"));
         for (String m : ms) mons.add(m);
-        List<String> yrs = new ArrayList<String>(); yrs.add("السنة");
+        List<String> yrs = new ArrayList<String>(); yrs.add(L("السنة", "Year"));
         int thisYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
         for (int y = thisYear - MIN_AGE; y >= 1930; y--) yrs.add(String.valueOf(y));
         spD.setAdapter(new android.widget.ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, days));
@@ -625,10 +625,10 @@ abstract class Auth extends Badges {
         }
         col.addView(dr);
         aDMsg = tv(MUTED, 12, true);
-        aDMsg.setText("يجب ألا يقل العمر عن " + MIN_AGE + " سنة");
+        aDMsg.setText(L("يجب ألا يقل العمر عن ", "You must be at least ") + MIN_AGE + L(" سنة", " years old"));
         col.addView(aDMsg);
         col.addView(aMsg);
-        TextView back = aLink("لديّ حساب – رجوع لتسجيل الدخول");
+        TextView back = aLink(L("لديّ حساب – رجوع لتسجيل الدخول", "I have an account – Back to sign in"));
         back.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 pool.execute(new Runnable() {
@@ -684,7 +684,7 @@ abstract class Auth extends Badges {
                             @Override public void run() {
                                 if (!fUser.getText().toString().trim().equals(u)) return;
                                 aUserOk = !tk;
-                                aUMsg.setText(tk ? "اسم المستخدم محجوز، جرّب اسمًا آخر" : "✅ اسم المستخدم متاح");
+                                aUMsg.setText(tk ? L("اسم المستخدم محجوز، جرّب اسمًا آخر", "Username is taken, try another") : L("✅ اسم المستخدم متاح", "✅ Username is available"));
                                 aUMsg.setTextColor(tk ? 0xFFFF6B6B : 0xFF14F195);
                                 chk.run();
                             }
@@ -722,7 +722,7 @@ abstract class Auth extends Badges {
                 try {
                     authCall("PUT", "/auth/v1/user", new JSONObject().put("password", pass).toString(), token);
                 } catch (final Exception e) {
-                    runOnUiThread(new Runnable() { @Override public void run() { aBusy = false; aEnable(true); aSetMsg("تعذر حفظ كلمة السر: " + e.getMessage(), true, false); } });
+                    runOnUiThread(new Runnable() { @Override public void run() { aBusy = false; aEnable(true); aSetMsg(L("تعذر حفظ كلمة السر: ", "Could not save the password: ") + e.getMessage(), true, false); } });
                     return;
                 }
                 String mail = getSharedPreferences("zn_auth", MODE_PRIVATE).getString("email", aEmail);
@@ -743,7 +743,7 @@ abstract class Auth extends Badges {
                 } catch (final Exception e) {
                     final boolean dup = String.valueOf(e.getMessage()).toLowerCase().matches("(?s).*(duplicate|unique).*");
                     runOnUiThread(new Runnable() {
-                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg(dup ? "اسم المستخدم محجوز" : "تعذر الحفظ: " + e.getMessage(), true, false); }
+                        @Override public void run() { aBusy = false; aEnable(true); aSetMsg(dup ? L("اسم المستخدم محجوز", "Username is taken") : L("تعذر الحفظ: ", "Could not save: ") + e.getMessage(), true, false); }
                     });
                     return;
                 }

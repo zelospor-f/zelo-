@@ -127,8 +127,8 @@ abstract class Badges extends AdminReports {
         g.setStroke(dp(1), 0x14FFFFFF);
         c.setBackground(g);
         LinearLayout top = new LinearLayout(this);
-        top.addView(streakCell("🔥 السلسلة الحالية", String.valueOf(s[0])), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        top.addView(streakCell("🏅 أفضل سلسلة", String.valueOf(s[1])), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        top.addView(streakCell(L("🔥 السلسلة الحالية", "🔥 Current streak"), String.valueOf(s[0])), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        top.addView(streakCell(L("🏅 أفضل سلسلة", "🏅 Best streak"), String.valueOf(s[1])), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         c.addView(top);
         LinearLayout row = new LinearLayout(this);
         row.setPadding(0, dp(12), 0, 0);
@@ -153,7 +153,7 @@ abstract class Badges extends AdminReports {
         }
         if (!any) {
             TextView n = tv(0xFF888888, 13, false);
-            n.setText("لا توجد شارات بعد");
+            n.setText(L("لا توجد شارات بعد", "No badges yet"));
             row.addView(n);
         }
         HorizontalScrollView hs = new HorizontalScrollView(this);
@@ -163,7 +163,7 @@ abstract class Badges extends AdminReports {
         if (next != null) {
             TextView nx = tv(0xFF888888, 12, false);
             nx.setPadding(0, dp(8), 0, 0);
-            nx.setText("التالي: " + next[2] + " (" + next[1] + " توقعات صحيحة متتالية)");
+            nx.setText(L("التالي: ", "Next: ") + next[2] + " (" + next[1] + L(" توقعات صحيحة متتالية)", " correct predictions in a row)"));
             c.addView(nx);
         }
         return c;

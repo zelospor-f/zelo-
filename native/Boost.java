@@ -75,7 +75,7 @@ abstract class Boost extends Subscriptions {
         if (uid == null) return;
         fetchTier(new TierCb() {
             @Override public void on(int t) {
-                if (t <= 0) { toast("التعزيز للمشتركين فقط"); openSubscriptions(); return; }
+                if (t <= 0) { toast(L("التعزيز للمشتركين فقط", "Boost is for subscribers only")); openSubscriptions(); return; }
                 showBoost(pk);
             }
         });
@@ -94,16 +94,16 @@ abstract class Boost extends Subscriptions {
         pbg.setStroke(dp(1), 0x40F5C35A);
         box.setBackground(pbg);
         TextView title = tv(Color.WHITE, 18, true);
-        title.setText("تعزيز المنشور");
+        title.setText(L("تعزيز المنشور", "Boost post"));
         title.setGravity(Gravity.CENTER);
         box.addView(title);
         TextView ds = tv(MUTED, 13, false);
-        ds.setText("اختر الميزانية اليومية والمدة. تُخصم النقاط حسب الظهور الفعلي فقط.");
+        ds.setText(L("اختر الميزانية اليومية والمدة. تُخصم النقاط حسب الظهور الفعلي فقط.", "Choose the daily budget and duration. Points are deducted only for actual impressions."));
         ds.setPadding(0, dp(8), 0, dp(14));
         box.addView(ds);
 
         LinearLayout r1 = new LinearLayout(this);
-        TextView l1 = tv(MUTED, 13, false); l1.setText("الميزانية اليومية");
+        TextView l1 = tv(MUTED, 13, false); l1.setText(L("الميزانية اليومية", "Daily budget"));
         bDailyV = tv(Color.WHITE, 15, true);
         r1.addView(l1, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         r1.addView(bDailyV);
@@ -117,7 +117,7 @@ abstract class Boost extends Subscriptions {
 
         LinearLayout r2 = new LinearLayout(this);
         r2.setPadding(0, dp(14), 0, 0);
-        TextView l2 = tv(MUTED, 13, false); l2.setText("المدة");
+        TextView l2 = tv(MUTED, 13, false); l2.setText(L("المدة", "Duration"));
         bDaysV = tv(Color.WHITE, 15, true);
         r2.addView(l2, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         r2.addView(bDaysV);
@@ -131,14 +131,14 @@ abstract class Boost extends Subscriptions {
 
         LinearLayout r3 = new LinearLayout(this);
         r3.setPadding(0, dp(16), 0, 0);
-        TextView l3 = tv(MUTED, 13, false); l3.setText("الإجمالي");
+        TextView l3 = tv(MUTED, 13, false); l3.setText(L("الإجمالي", "Total"));
         bTotal = tv(Color.WHITE, 15, true);
         r3.addView(l3, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         r3.addView(bTotal);
         box.addView(r3);
         LinearLayout r4 = new LinearLayout(this);
         r4.setPadding(0, dp(8), 0, 0);
-        TextView l4 = tv(MUTED, 13, false); l4.setText("الوصول اليومي المتوقع");
+        TextView l4 = tv(MUTED, 13, false); l4.setText(L("الوصول اليومي المتوقع", "Expected daily reach"));
         bReach = tv(Color.WHITE, 13, true);
         r4.addView(l4, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         r4.addView(bReach);
@@ -149,7 +149,7 @@ abstract class Boost extends Subscriptions {
         bMsg = tv(0xFFFF6B6B, 12, false);
         bMsg.setPadding(0, dp(8), 0, dp(6));
         box.addView(bMsg);
-        bBtn = pill("تعزيز المنشور", NAVY, GOLD, 0);
+        bBtn = pill(L("تعزيز المنشور", "Boost post"), NAVY, GOLD, 0);
         box.addView(bBtn);
 
         SeekBar.OnSeekBarChangeListener ch = new SeekBar.OnSeekBarChangeListener() {
@@ -186,12 +186,12 @@ abstract class Boost extends Subscriptions {
         long daily = bDaily * 1000L;
         boolean enough = bBalance >= daily;
         bDailyV.setText(nfmt(daily) + " ZELO");
-        bDaysV.setText(bDays + " يومًا");
+        bDaysV.setText(bDays + L(" يومًا", " days"));
         bTotal.setText(nfmt(daily * bDays) + " ZELO");
         if (bAudience < 0) bReach.setText("—");
-        else bReach.setText("حتى " + nfmt(Math.min(daily * 10, bAudience * 3)) + " ظهور يوميًا (تقديري)");
-        bBal.setText("رصيدك: " + nfmt(bBalance) + " ZELO");
-        bMsg.setText(enough ? "" : "رصيدك لا يكفي لميزانية يوم واحد. اربح نقاطًا أولًا.");
+        else bReach.setText(L("حتى ", "Up to ") + nfmt(Math.min(daily * 10, bAudience * 3)) + L(" ظهور يوميًا (تقديري)", " impressions per day (estimate)"));
+        bBal.setText(L("رصيدك: ", "Your balance: ") + nfmt(bBalance) + " ZELO");
+        bMsg.setText(enough ? "" : L("رصيدك لا يكفي لميزانية يوم واحد. اربح نقاطًا أولًا.", "Your balance isn't enough for one day's budget. Earn points first."));
         bBtn.setAlpha(!enough || bBusy ? 0.5f : 1f);
     }
 
@@ -214,8 +214,8 @@ abstract class Boost extends Subscriptions {
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         bBusy = false;
-                        if (fe == null) { d.dismiss(); toast("تم تعزيز المنشور ✅"); loadBalance(); return; }
-                        String m = "تعذّر التعزيز، حاول لاحقًا";
+                        if (fe == null) { d.dismiss(); toast(L("تم تعزيز المنشور ✅", "Post boosted ✅")); loadBalance(); return; }
+                        String m = L("تعذّر التعزيز، حاول لاحقًا", "Boost failed, try again later");
                         if (fe.contains("premium_required")) m = "التعزيز للمشتركين فقط";
                         else if (fe.contains("insufficient_balance")) m = "رصيدك لا يكفي";
                         else if (fe.contains("already_active")) m = "هذا المنشور معزّز حاليًا";
@@ -227,4 +227,4 @@ abstract class Boost extends Subscriptions {
             }
         });
     }
-          }
+}
