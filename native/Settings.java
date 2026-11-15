@@ -126,7 +126,7 @@ abstract class Settings extends ShareCard {
         }
         p.addView(h);
         ScrollView sc = new ScrollView(this);
-        body.setPadding(dp(16), dp(14), dp(16), dp(20));
+        body.setPadding(dp(16), dp(14), dp(16), navH() + dp(40));
         sc.addView(body);
         p.addView(sc, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         if (foot != null) p.addView(foot);
@@ -246,7 +246,7 @@ abstract class Settings extends ShareCard {
         pg.setCornerRadius(dp(20)); pg.setStroke(dp(1), 0x4DF5C35A);
         prof.setBackground(pg);
         String ph = stJs("photo_url");
-        prof.addView(lbAvatar(ph.startsWith("http") ? ph : "", initial(stNick()), 58, GOLD, false, 3), new LinearLayout.LayoutParams(dp(58), dp(58)));
+        prof.addView(lbAvatar(isImg(ph) ? ph : "", initial(stNick()), 58, GOLD, false, 3), new LinearLayout.LayoutParams(dp(58), dp(58)));
         LinearLayout t = new LinearLayout(this);
         t.setOrientation(LinearLayout.VERTICAL);
         t.setPadding(dp(14), 0, 0, 0);
@@ -297,7 +297,7 @@ abstract class Settings extends ShareCard {
     // ---------- المحظورون ----------
     protected void stBlocked() {
         final LinearLayout b = stBody();
-        b.addView(txt(L("جارٍ التحميل…", "Loading…"), MUTED, 13, true));
+        b.addView(txt("", MUTED, 13, true));
         stShow(stPage("🚫 " + L("المحظورون", "Blocked users"), null, stBackMain, true, b, null));
         stBg(new Runnable() { @Override public void run() {
             final List<String[]> list = new ArrayList<String[]>();
