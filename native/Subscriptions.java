@@ -107,7 +107,7 @@ abstract class Subscriptions extends Support {
         x.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
         box.addView(x);
         TextView h1 = tv(Color.WHITE, 24, true);
-        h1.setText("الاشتراكات");
+        h1.setText(T("الاشتراكات"));
         box.addView(h1);
         TextView sub = tv(MUTED, 13, false);
         sub.setText(L("شارك ناديك المفضل واحصل على مزايا إضافية.", "Share your favorite club and get extra perks."));
@@ -135,7 +135,7 @@ abstract class Subscriptions extends Support {
             LinearLayout head = new LinearLayout(this);
             head.setGravity(Gravity.CENTER_VERTICAL);
             TextView nm = tv(Color.WHITE, 18, true);
-            nm.setText(p[1] + (tier == 3 ? L("  ★ الأفضل قيمة", "  ★ Best value") : ""));
+            nm.setText(T(p[1]) + (tier == 3 ? L("  ★ الأفضل قيمة", "  ★ Best value") : ""));
             head.addView(nm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             TextView pr = tv(GOLD, 20, true);
             pr.setText("$" + p[2] + L(" / شهريًا", " / monthly"));
@@ -147,7 +147,7 @@ abstract class Subscriptions extends Support {
                 rw.setGravity(Gravity.CENTER_VERTICAL);
                 rw.setPadding(0, dp(7), 0, dp(7));
                 TextView lb = tv(on ? Color.WHITE : 0xFF6F7AA8, 14, false);
-                lb.setText(MATRIX[m][1]);
+                lb.setText(T(MATRIX[m][1]));
                 rw.addView(lb, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                 TextView mk = tv(on ? 0xFF2DE2C4 : 0xFFFF6B86, 16, true);
                 mk.setText(on ? "✓" : "✗");
@@ -190,7 +190,7 @@ abstract class Subscriptions extends Support {
             @Override public void on(int t) {
                 box.setTag(Integer.valueOf(t));
                 if (t > 0) {
-                    active.setText(L("✅ اشتراكك فعّال: ", "✅ Your subscription is active: ") + PLANS[Math.min(t, 3) - 1][1]);
+                    active.setText(L("✅ اشتراكك فعّال: ", "✅ Your subscription is active: ") + T(PLANS[Math.min(t, 3) - 1][1]));
                     active.setVisibility(View.VISIBLE);
                 }
                 for (TextView b : btns) {
@@ -214,7 +214,7 @@ abstract class Subscriptions extends Support {
         pbg.setCornerRadii(new float[] { dp(22), dp(22), dp(22), dp(22), 0, 0, 0, 0 });
         box.setBackground(pbg);
         TextView t = tv(Color.WHITE, 18, true);
-        t.setText((cur > 0 ? L("ترقية إلى ", "Upgrade to ") : "") + p[1]);
+        t.setText((cur > 0 ? L("ترقية إلى ", "Upgrade to ") : "") + T(p[1]));
         t.setPadding(0, 0, 0, dp(12));
         box.addView(t);
         final String up = cur > 0 ? "1" : "0";

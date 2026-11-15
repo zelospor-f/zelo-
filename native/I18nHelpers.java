@@ -104,6 +104,20 @@ abstract class I18nHelpers extends Billing {
         if (n != null) { String v = n.optString(ar, ""); if (v.length() > 0) return v; }
         return en;
     }
+    // ترجمة نص عربي ثابت عند العرض: من ملف اللغة الحالية، ثم الإنجليزية (en_ui)، ثم النص الأصلي
+    protected String T(String ar) {
+        if (ar == null || ar.length() == 0) return ar;
+        String lg = getCurrentLang();
+        if (lg.equals("ar")) return ar;
+        JSONObject n;
+        if (!lg.equals("en")) {
+            synchronized (i18n) { n = i18n.get(lg); }
+            if (n != null) { String v = n.optString(ar, ""); if (v.length() > 0) return v; }
+        }
+        synchronized (i18n) { n = i18n.get("en_ui"); }
+        if (n != null) { String v = n.optString(ar, ""); if (v.length() > 0) return v; }
+        return ar;
+    }
     protected String nGet(String k) {
         String lg = getCurrentLang();
         JSONObject n;
@@ -173,6 +187,7 @@ abstract class I18nHelpers extends Billing {
                 String cur = getCurrentLang();
                 loadLanguageFile("ar");
                 loadLanguageFile("en");
+                loadLanguageFile("en_ui");
                 if (!cur.equals("ar") && !cur.equals("en")) loadLanguageFile(cur);
                 loadReadyLangs();
                 if (done != null) runOnUiThread(done);

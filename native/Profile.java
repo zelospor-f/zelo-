@@ -165,7 +165,7 @@ abstract class Profile extends WeeklyMatchRankings {
                     loadMetaFor(ids.toString(), users, got);
                 } catch (Exception e) {
                     runOnUiThread(new Runnable() {
-                        @Override public void run() { plist.clear(); done.run(); toast("تعذّر التحميل"); }
+                        @Override public void run() { plist.clear(); done.run(); toast(T("تعذّر التحميل")); }
                     });
                     return;
                 }
@@ -180,7 +180,7 @@ abstract class Profile extends WeeklyMatchRankings {
         Intent i = new Intent(Intent.ACTION_SEND);
         i.setType("text/plain");
         i.putExtra(Intent.EXTRA_TEXT, "ZELO Sport — @" + uname2);
-        startActivity(Intent.createChooser(i, "مشاركة"));
+        startActivity(Intent.createChooser(i, T("مشاركة")));
     }
 
     protected View profStat(final TextView[] numRef, int idx, String label, final String action) {
@@ -296,7 +296,7 @@ abstract class Profile extends WeeklyMatchRankings {
             gear.setText("\u2699");
             gear.setGravity(Gravity.CENTER);
             gear.setBackground(oval(0x66000000, 0));
-            gear.setContentDescription("الإعدادات");
+            gear.setContentDescription(T("الإعدادات"));
             gear.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openSettings(); } });
             FrameLayout.LayoutParams gl = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.END);
             gl.setMargins(0, statusH() + dp(8), 0, 0);
@@ -446,7 +446,7 @@ abstract class Profile extends WeeklyMatchRankings {
                 @Override public void onClick(View v) { toggleFollowUser(target); paintFollow.run(); }
             });
             TextView msg = tv(GOLD, 15, true);
-            msg.setText("رسالة");
+            msg.setText(T("رسالة"));
             msg.setGravity(Gravity.CENTER);
             GradientDrawable mg2 = new GradientDrawable();
             mg2.setColor(CARD); mg2.setCornerRadius(dp(14)); mg2.setStroke(dp(1), 0x55F5C35A);
@@ -464,7 +464,7 @@ abstract class Profile extends WeeklyMatchRankings {
         if (mine) {
             LinearLayout tiles = new LinearLayout(this);
             tiles.setPadding(dp(14), dp(8), dp(14), dp(4));
-            String[] tl = { "المتجر", "محفظتي", "الاشتراك", L("بطاقات NFT", "NFT cards") };
+            String[] tl = { T("المتجر"), T("محفظتي"), T("الاشتراك"), L("بطاقات NFT", "NFT cards") };
             int[] ti = { 23, 24, 25, 26 };
             String[] ta = { "store", "wallet", "subs", "nft" };
             for (int q = 0; q < 4; q++) {

@@ -515,7 +515,7 @@ abstract class Matches extends Leaderboard {
                         final TextView send = gpBtn(L("أرسل التحدي", "Send challenge"), false, false);
                         final Runnable sync = new Runnable() {
                             @Override public void run() {
-                                cnt.setText(L("اخترت " + chosen.size() + " من 9", chosen.size() + " of 9 selected"));
+                                cnt.setText(L("اخترت " + chosen.size() + T(" من 9"), chosen.size() + " of 9 selected"));
                                 send.setEnabled(chosen.size() > 0);
                                 send.setAlpha(chosen.size() > 0 ? 1f : 0.5f);
                             }
