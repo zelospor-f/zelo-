@@ -95,7 +95,23 @@ abstract class I18nHelpers extends Billing {
     }
 
     protected boolean isAr() { return "ar".equals(getCurrentLang()); }
-    protected String L(String ar, String en) { return isAr() ? ar : en; }
+    protected String L(String ar, String en) {
+        String lg = getCurrentLang();
+        if (lg.equals("ar")) return ar;
+        if (lg.equals("en")) return en;
+        JSONObject n;
+        synchronized (i18n) { n = i18n.get("n_" + lg); }
+        if (n != null) { String v = n.optString(ar, ""); if (v.length() > 0) return v; }
+        return en;
+    }
+    protected String nGet(String k) {
+        String lg = getCurrentLang();
+        JSONObject n;
+        synchronized (i18n) { n = i18n.get("n_" + lg); }
+        if (n == null) return null;
+        String v = n.optString(k, "");
+        return v.length() > 0 ? v : null;
+    }
     protected boolean isRtlLang() { return langMeta(getCurrentLang())[3].equals("1"); }
 
     protected String[] langMeta(String code) {
@@ -116,6 +132,20 @@ abstract class I18nHelpers extends Billing {
             while ((ln = r.readLine()) != null) sb.append(ln);
             r.close();
             synchronized (i18n) { i18n.put(lang, new JSONObject(sb.toString())); }
+        } catch (Exception ignore) {}
+        // نصوص الواجهة الأصلية: locales/n_<lang>.json (مفتاحها النص العربي)
+        try {
+            HttpURLConnection c2 = (HttpURLConnection) new URL(WEB_BASE + "locales/n_" + lang + ".json?v=" + System.currentTimeMillis()).openConnection();
+            c2.setConnectTimeout(15000);
+            c2.setReadTimeout(20000);
+            if (c2.getResponseCode() < 400) {
+                BufferedReader r2 = new BufferedReader(new InputStreamReader(c2.getInputStream(), "UTF-8"));
+                StringBuilder sb2 = new StringBuilder();
+                String ln2;
+                while ((ln2 = r2.readLine()) != null) sb2.append(ln2);
+                r2.close();
+                synchronized (i18n) { i18n.put("n_" + lang, new JSONObject(sb2.toString())); }
+            }
         } catch (Exception ignore) {}
     }
 
@@ -212,6 +242,7 @@ abstract class I18nHelpers extends Billing {
     // tr(key, ar, en, params)
     protected String tr(String key, String ar, String en, Map<String, String> params) {
         String text = dictGet(getCurrentLang(), key);
+        if (text == null && !isAr() && !"en".equals(getCurrentLang())) text = nGet("k:" + key);
         if (text == null) text = zT(ar, en);
         if (text == null) text = key;
         return param(text, params);
