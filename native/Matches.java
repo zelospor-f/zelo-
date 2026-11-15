@@ -166,8 +166,9 @@ abstract class Matches extends Leaderboard {
         root.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         LinearLayout nav = new LinearLayout(this);
         nav.setBackgroundColor(NAVY);
+        nav.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         nav.setPadding(0, 0, 0, navH() - dp(8));
-        String[] lb = { "الرئيسية", "المباريات", "فيديو", "الرسائل", "الملف الشخصي" };
+        String[] lb = { L("الرئيسية", "Home"), L("المباريات", "Matches"), L("فيديو", "Video"), L("الرسائل", "Messages"), L("الملف الشخصي", "Profile") };
         for (int i = 0; i < 5; i++) {
             final int k = i;
             View it = navItem(6 + i, lb[i], null, (6 + i) == active);
