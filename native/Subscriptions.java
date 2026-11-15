@@ -102,7 +102,7 @@ abstract class Subscriptions extends Support {
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(16), dp(14), dp(16), navH() + dp(20));
         TextView x = tv(GOLD, 22, true);
-        x.setText("‹ رجوع");
+        x.setText(L("‹ رجوع", "‹ Back"));
         x.setPadding(0, dp(6), 0, dp(10));
         x.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
         box.addView(x);
@@ -110,7 +110,7 @@ abstract class Subscriptions extends Support {
         h1.setText("الاشتراكات");
         box.addView(h1);
         TextView sub = tv(MUTED, 13, false);
-        sub.setText("شارك ناديك المفضل واحصل على مزايا إضافية.");
+        sub.setText(L("شارك ناديك المفضل واحصل على مزايا إضافية.", "Share your favorite club and get extra perks."));
         sub.setPadding(0, dp(2), 0, dp(8));
         box.addView(sub);
         final TextView active = tv(GOLD, 14, true);
@@ -135,10 +135,10 @@ abstract class Subscriptions extends Support {
             LinearLayout head = new LinearLayout(this);
             head.setGravity(Gravity.CENTER_VERTICAL);
             TextView nm = tv(Color.WHITE, 18, true);
-            nm.setText(p[1] + (tier == 3 ? "  ★ الأفضل قيمة" : ""));
+            nm.setText(p[1] + (tier == 3 ? L("  ★ الأفضل قيمة", "  ★ Best value") : ""));
             head.addView(nm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             TextView pr = tv(GOLD, 20, true);
-            pr.setText("$" + p[2] + " / شهريًا");
+            pr.setText("$" + p[2] + L(" / شهريًا", " / monthly"));
             head.addView(pr);
             card.addView(head);
             for (int m = 0; m < MATRIX.length; m++) {
@@ -154,7 +154,7 @@ abstract class Subscriptions extends Support {
                 rw.addView(mk);
                 card.addView(rw);
             }
-            TextView btn = pill("اشترك", tier == 3 ? NAVY : GOLD, tier == 3 ? GOLD : 0x00000000, tier == 3 ? 0 : 0x73F5C35A);
+            TextView btn = pill(L("اشترك", "Subscribe"), tier == 3 ? NAVY : GOLD, tier == 3 ? GOLD : 0x00000000, tier == 3 ? 0 : 0x73F5C35A);
             btn.setTag(Integer.valueOf(tier));
             btns.add(btn);
             LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -168,9 +168,9 @@ abstract class Subscriptions extends Support {
             box.addView(card, cl);
         }
         String[] notes = new String[] {
-            "الدفع عبر Google Play. يتجدد الاشتراك تلقائيًا ويمكنك إلغاؤه في أي وقت من إعدادات الاشتراكات في Google Play. السعر النهائي بعملتك يظهر في نافذة الدفع.",
-            "ZELO Sport تطبيق مستقل وغير تابع لأي نادٍ أو رابطة. أسماء الأندية وشعاراتها ملك لأصحابها وتُعرض للتعريف بالنادي المفضّل فقط.",
-            "تحذير: أي تلاعب في الكورة أو المكافآت أو الإعلانات يعرّض الحساب للحذف وخسارة كل شيء، بما في ذلك الاشتراك والرصيد، دون تعويض."
+            L("الدفع عبر Google Play. يتجدد الاشتراك تلقائيًا ويمكنك إلغاؤه في أي وقت من إعدادات الاشتراكات في Google Play. السعر النهائي بعملتك يظهر في نافذة الدفع.", "Payment via Google Play. The subscription renews automatically and you can cancel anytime from subscription settings in Google Play. The final price in your currency appears in the payment window."),
+            L("ZELO Sport تطبيق مستقل وغير تابع لأي نادٍ أو رابطة. أسماء الأندية وشعاراتها ملك لأصحابها وتُعرض للتعريف بالنادي المفضّل فقط.", "ZELO Sport is an independent app, not affiliated with any club or league. Club names and logos belong to their owners and are shown only to identify your favorite club."),
+            L("تحذير: أي تلاعب في الكورة أو المكافآت أو الإعلانات يعرّض الحساب للحذف وخسارة كل شيء، بما في ذلك الاشتراك والرصيد، دون تعويض.", "Warning: any manipulation of balls, rewards or ads may get the account deleted and everything lost, including the subscription and balance, without compensation.")
         };
         for (int i = 0; i < notes.length; i++) {
             TextView n = tv(i == 2 ? 0xFFFFB4A8 : MUTED, 11, false);
@@ -178,7 +178,7 @@ abstract class Subscriptions extends Support {
             n.setPadding(0, dp(10), 0, 0);
             box.addView(n);
         }
-        TextView rs = pill("استعادة مشترياتي", GOLD, 0x00000000, 0x73F5C35A);
+        TextView rs = pill(L("استعادة مشترياتي", "Restore my purchases"), GOLD, 0x00000000, 0x73F5C35A);
         rs.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); bpRestore(); } });
         LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         rl.setMargins(0, dp(14), 0, 0);
@@ -190,12 +190,12 @@ abstract class Subscriptions extends Support {
             @Override public void on(int t) {
                 box.setTag(Integer.valueOf(t));
                 if (t > 0) {
-                    active.setText("✅ اشتراكك فعّال: " + PLANS[Math.min(t, 3) - 1][1]);
+                    active.setText(L("✅ اشتراكك فعّال: ", "✅ Your subscription is active: ") + PLANS[Math.min(t, 3) - 1][1]);
                     active.setVisibility(View.VISIBLE);
                 }
                 for (TextView b : btns) {
                     int pt = (Integer) b.getTag();
-                    b.setText(t == 0 ? "اشترك" : pt > t ? "ترقية" : pt == t ? "باقتك الحالية" : "باقتك أعلى من هذه");
+                    b.setText(t == 0 ? L("اشترك", "Subscribe") : pt > t ? L("ترقية", "Upgrade") : pt == t ? L("باقتك الحالية", "Your current plan") : L("باقتك أعلى من هذه", "Your plan is higher than this"));
                     b.setAlpha(pt <= t && t > 0 ? 0.55f : 1f);
                 }
             }
@@ -203,8 +203,8 @@ abstract class Subscriptions extends Support {
     }
 
     protected void planClick(final Dialog parent, final String[] p, int tier, final int cur) {
-        if (cur > 0 && tier == cur) { toast("هذه باقتك الحالية"); return; }
-        if (cur > 0 && tier < cur) { toast("لا يمكن النزول إلى باقة أقل أثناء اشتراكك الحالي"); return; }
+        if (cur > 0 && tier == cur) { toast(L("هذه باقتك الحالية", "This is your current plan")); return; }
+        if (cur > 0 && tier < cur) { toast(L("لا يمكن النزول إلى باقة أقل أثناء اشتراكك الحالي", "You can't downgrade to a lower plan during your current subscription")); return; }
         final Dialog d = sheetDialog(false);
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
@@ -214,22 +214,22 @@ abstract class Subscriptions extends Support {
         pbg.setCornerRadii(new float[] { dp(22), dp(22), dp(22), dp(22), 0, 0, 0, 0 });
         box.setBackground(pbg);
         TextView t = tv(Color.WHITE, 18, true);
-        t.setText((cur > 0 ? "ترقية إلى " : "") + p[1]);
+        t.setText((cur > 0 ? L("ترقية إلى ", "Upgrade to ") : "") + p[1]);
         t.setPadding(0, 0, 0, dp(12));
         box.addView(t);
         final String up = cur > 0 ? "1" : "0";
-        TextView m = pill("شهري  ·  " + (bpPrice(p[4]) != null ? bpPrice(p[4]) : "$" + p[2]) + " / شهر", GOLD, 0x00000000, 0x73F5C35A);
+        TextView m = pill(L("شهري  ·  ", "Monthly  ·  ") + (bpPrice(p[4]) != null ? bpPrice(p[4]) : "$" + p[2]) + L(" / شهر", " / month"), GOLD, 0x00000000, 0x73F5C35A);
         m.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); parent.dismiss(); bpBuy(p[4], true, "1".equals(up)); } });
         box.addView(m);
         int save = (int) Math.round((1 - Double.parseDouble(p[3]) / (Double.parseDouble(p[2]) * 12)) * 100);
-        TextView y = pill("سنوي (وفّر " + save + "٪)  ·  " + (bpPrice(p[5]) != null ? bpPrice(p[5]) : "$" + p[3]) + " / سنة", NAVY, GOLD, 0);
+        TextView y = pill(L("سنوي (وفّر ", "Yearly (save ") + save + L("٪)  ·  ", "%)  ·  ") + (bpPrice(p[5]) != null ? bpPrice(p[5]) : "$" + p[3]) + L(" / سنة", " / year"), NAVY, GOLD, 0);
         y.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); parent.dismiss(); bpBuy(p[5], true, "1".equals(up)); } });
         LinearLayout.LayoutParams yl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         yl.setMargins(0, dp(10), 0, 0);
         box.addView(y, yl);
         if (cur > 0) {
             TextView n = tv(MUTED, 11, false);
-            n.setText("الترقية فورية. تُحسب لك المدة المتبقية من باقتك الحالية.");
+            n.setText(L("الترقية فورية. تُحسب لك المدة المتبقية من باقتك الحالية.", "Upgrade is immediate. The remaining time on your current plan is credited to you."));
             n.setPadding(0, dp(10), 0, 0);
             box.addView(n);
         }

@@ -120,7 +120,7 @@ abstract class WalletWithdraw extends Ads {
         d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface di) { if (wwDlg == d) { wwDlg = null; wwBox = null; wwScroll = null; } } });
         d.show();
         wwAmount = 0; wwMsg = ""; wwEditAddr = false; wwShowAll = false; wwShowHist = false;
-        wwBox.addView(txt(L("جارٍ التحميل...", "Loading..."), MUTED, 14, true));
+        wwBox.addView(txt("", MUTED, 14, true));
         wwLoad(true);
     }
 
@@ -303,7 +303,7 @@ abstract class WalletWithdraw extends Ads {
             cl.addView(dots, lpm(0, 12, 0, 0));
             if (!miss.isEmpty()) {
                 int n = miss.size();
-                String lt = isAr() ? (n == 1 ? "متبقٍّ لك شرط واحد فقط:" : n == 2 ? "متبقٍّ لك شرطان فقط:" : "متبقٍّ لك " + n + " شروط:") : n + (n == 1 ? " condition left:" : " conditions left:");
+                String lt = isAr() ? (n == 1 ? L("متبقٍّ لك شرط واحد فقط:", "Only one requirement left:") : n == 2 ? L("متبقٍّ لك شرطان فقط:", "Only two requirements left:") : L("متبقٍّ لك ", "You have ") + n + L(" شروط:", " requirements left:")) : n + (n == 1 ? " condition left:" : " conditions left:");
                 cl.addView(txt(lt, MUTED, 12, false), lpm(0, 14, 0, 0));
                 for (JSONObject c : miss) {
                     LinearLayout p = new LinearLayout(this);
@@ -473,7 +473,7 @@ abstract class WalletWithdraw extends Ads {
                     }
                     wwMsg = m; wwRender(); return;
                 }
-                String q = isAr() ? "سحب " + amt + " كورة (" + wwUsd(amt) + " USDT) إلى:\n" + wwAddr + "\nشبكة BEP20"
+                String q = isAr() ? L("سحب ", "Withdraw ") + amt + L(" كورة (", " balls (") + wwUsd(amt) + L(" USDT) إلى:\n", " USDT) to:\n") + wwAddr + L("\nشبكة BEP20", "\nBEP20 network")
                                   : "Withdraw " + amt + " Kora (" + wwUsd(amt) + " USDT) to:\n" + wwAddr + "\nBEP20 network";
                 rmConfirm(q, L("تأكيد", "Confirm"), new Runnable() { @Override public void run() { wwSubmit(amt); } });
             } });

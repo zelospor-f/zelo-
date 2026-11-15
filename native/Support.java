@@ -179,7 +179,7 @@ abstract class Support extends Base {
             t.setText("  " + nfmt(net) + " ZELO");
             left.addView(t);
             TextView c2 = tv(MUTED, 12, true);
-            c2.setText("  ·  " + kfmt(cnt) + (cnt == 1 ? " داعم" : " داعمين") + "  ›");
+            c2.setText("  ·  " + kfmt(cnt) + (cnt == 1 ? L(" داعم", " supporter") : L(" داعمين", " supporters")) + "  ›");
             left.addView(c2);
             left.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { openSupporters(pk, owner); }
@@ -212,9 +212,9 @@ abstract class Support extends Base {
     protected String[] curItem() {
         // {id, price, name, glyphOrNum, color, sub}
         if (!sShirts) { String[] g = GIFTS[Math.min(sSel, GIFTS.length - 1)]; return new String[] { g[0], g[1], g[2], g[3], g[4], "" }; }
-        if (sSel == 0) return new String[] { "custom", "100", "قميصك", sNum, "#C0392B", uname == null ? "" : uname };
+        if (sSel == 0) return new String[] { "custom", "100", L("قميصك", "Your jersey"), sNum, "#C0392B", uname == null ? "" : uname };
         String[] x = SHIRTS[Math.min(sSel - 1, SHIRTS.length - 1)];
-        return new String[] { x[0], x[1], "قميص " + x[2], x[2], x[4], x[3] };
+        return new String[] { x[0], x[1], L("قميص ", "Jersey ") + x[2], x[2], x[4], x[3] };
     }
 
     protected void flushSupportNotify() {
@@ -245,14 +245,14 @@ abstract class Support extends Base {
         box.setBackground(pbg);
 
         TextView title = tv(Color.WHITE, 17, true);
-        title.setText("أرسل هدية للكاتب");
+        title.setText(L("أرسل هدية للكاتب", "Send a gift to the author"));
         title.setGravity(Gravity.CENTER);
         title.setPadding(0, 0, 0, dp(12));
         box.addView(title);
 
         LinearLayout tabs = new LinearLayout(this);
-        sTabG = tv(GOLD, 14, true); sTabG.setText("الهدايا");
-        sTabS = tv(Color.WHITE, 14, true); sTabS.setText("القمصان");
+        sTabG = tv(GOLD, 14, true); sTabG.setText(L("الهدايا", "Gifts"));
+        sTabS = tv(Color.WHITE, 14, true); sTabS.setText(L("القمصان", "Jerseys"));
         TextView[] tb = new TextView[] { sTabG, sTabS };
         for (int i = 0; i < 2; i++) {
             final int ti2 = i;
@@ -279,7 +279,7 @@ abstract class Support extends Base {
         nbg.setColor(CARD); nbg.setCornerRadius(dp(14));
         sNumRow.setBackground(nbg);
         TextView nl = tv(MUTED, 13, false);
-        nl.setText("رقم قميصك (1 - 99)");
+        nl.setText(L("رقم قميصك (1 - 99)", "Your jersey number (1 - 99)"));
         sNumRow.addView(nl, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         sNumEt = new EditText(this);
         sNumEt.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
@@ -352,8 +352,8 @@ abstract class Support extends Base {
             final int idx = i;
             String[] it;
             if (!sShirts) { String[] g = GIFTS[i]; it = new String[] { g[0], g[1], g[2], g[3], g[4], "" }; }
-            else if (i == 0) it = new String[] { "custom", "100", "قميصك", sNum, "#C0392B", uname == null ? "باسمك" : uname };
-            else { String[] x = SHIRTS[i - 1]; it = new String[] { x[0], x[1], "قميص " + x[2], x[2], x[4], x[3] }; }
+            else if (i == 0) it = new String[] { "custom", "100", L("قميصك", "Your jersey"), sNum, "#C0392B", uname == null ? L("باسمك", "With your name") : uname };
+            else { String[] x = SHIRTS[i - 1]; it = new String[] { x[0], x[1], L("قميص ", "Jersey ") + x[2], x[2], x[4], x[3] }; }
             LinearLayout cell = new LinearLayout(this);
             cell.setOrientation(LinearLayout.VERTICAL);
             cell.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -409,8 +409,8 @@ abstract class Support extends Base {
         sTabG.setTextColor(!sShirts ? GOLD : Color.WHITE);
         sTabS.setTextColor(sShirts ? GOLD : Color.WHITE);
         sNumRow.setVisibility(sShirts && sSel == 0 ? View.VISIBLE : View.GONE);
-        sBal.setText("رصيدك الحالي: " + nfmt(sBalance) + " ZELO");
-        sMsg.setText(enough ? (sCombo > 1 ? "" : "اضغط أكثر من مرة لتكرار الهدية") : "رصيدك لا يكفي لهذه الهدية");
+        sBal.setText(L("رصيدك الحالي: ", "Your current balance: ") + nfmt(sBalance) + " ZELO");
+        sMsg.setText(enough ? (sCombo > 1 ? "" : L("اضغط أكثر من مرة لتكرار الهدية", "Tap multiple times to repeat the gift")) : L("رصيدك لا يكفي لهذه الهدية", "Your balance isn't enough for this gift"));
         sMsg.setTextColor(enough ? MUTED : 0xFFFF6B6B);
         sSend.setText("أرسل " + it[2] + ("custom".equals(it[0]) ? " " + it[3] : "") + (sCombo > 1 ? " ×" + sCombo : "") + " · " + it[1] + " ZELO");
         sSend.setAlpha(!enough || sBusy ? 0.45f : 1f);
@@ -446,7 +446,7 @@ abstract class Support extends Base {
                     @Override public void run() {
                         sBusy = false;
                         if (fe != null) {
-                            String m = "تعذّر الدعم، حاول لاحقًا";
+                            String m = L("تعذّر الدعم، حاول لاحقًا", "Could not support, try again later");
                             if (fe.contains("insufficient_balance")) m = "رصيدك لا يكفي";
                             else if (fe.contains("daily_limit")) m = "وصلت إلى حد الدعم اليومي";
                             else if (fe.contains("own_post")) m = "لا يمكنك دعم منشورك";
@@ -478,7 +478,7 @@ abstract class Support extends Base {
         pbg.setCornerRadii(new float[] { dp(26), dp(26), dp(26), dp(26), 0, 0, 0, 0 });
         box.setBackground(pbg);
         TextView title = tv(Color.WHITE, 18, true);
-        title.setText("الداعمون");
+        title.setText(L("الداعمون", "Supporters"));
         box.addView(title);
         final TextView count = tv(MUTED, 12, false);
         count.setText(" ");
@@ -498,7 +498,7 @@ abstract class Support extends Base {
         box.addView(sv2, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(320)));
         if (!owner.equals(uid)) {
             TextView go = tv(NAVY, 15, true);
-            go.setText("ادعم هذا المنشور");
+            go.setText(L("ادعم هذا المنشور", "Support this post"));
             go.setGravity(Gravity.CENTER);
             GradientDrawable gg = new GradientDrawable();
             gg.setColor(GOLD); gg.setCornerRadius(dp(16));
@@ -551,12 +551,12 @@ abstract class Support extends Base {
                             TextView e1 = tv(MUTED, 14, false); e1.setText("تعذّر التحميل"); e1.setGravity(Gravity.CENTER); e1.setPadding(0, dp(24), 0, dp(24)); list.addView(e1); return;
                         }
                         if (rows.isEmpty()) {
-                            TextView e1 = tv(MUTED, 14, false); e1.setText("لا يوجد داعمون بعد\nكن أول من يدعم"); e1.setGravity(Gravity.CENTER); e1.setPadding(0, dp(24), 0, dp(24)); list.addView(e1);
-                            count.setText("عدد الدعم 0");
+                            TextView e1 = tv(MUTED, 14, false); e1.setText(L("لا يوجد داعمون بعد\nكن أول من يدعم", "No supporters yet\nBe the first to support")); e1.setGravity(Gravity.CENTER); e1.setPadding(0, dp(24), 0, dp(24)); list.addView(e1);
+                            count.setText(L("عدد الدعم 0", "Support count 0"));
                             return;
                         }
-                        count.setText("عدد الدعم " + kfmt(cn));
-                        total.setText("إجمالي الدعم: " + nfmt(tn) + " ZELO");
+                        count.setText(L("عدد الدعم ", "Support count ") + kfmt(cn));
+                        total.setText(L("إجمالي الدعم: ", "Total support: ") + nfmt(tn) + " ZELO");
                         int[] rk = new int[] { 0xFFFFD978, 0xFFD9DEE7, 0xFFD9975B };
                         for (int i = 0; i < rows.size(); i++) {
                             String[] r = rows.get(i);
@@ -576,7 +576,7 @@ abstract class Support extends Base {
                             nm.setSingleLine(true);
                             mid.addView(nm);
                             TextView sb = tv(MUTED, 12, false);
-                            sb.setText(nfmt(Long.parseLong(r[1])) + " ZELO · " + r[2] + " مرة");
+                            sb.setText(nfmt(Long.parseLong(r[1])) + " ZELO · " + r[2] + L(" مرة", " times"));
                             mid.addView(sb);
                             line.addView(mid, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                             list.addView(line);
