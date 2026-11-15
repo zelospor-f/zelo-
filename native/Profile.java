@@ -646,6 +646,13 @@ abstract class Profile extends WeeklyMatchRankings {
         else if (mine && isImg(uavatar)) { loadImage(uavatar, avImg); avLetter.setVisibility(View.GONE); }
         String bl = mine ? ClubsData.logo(P.optString("badgeClub", "")) : "";
         if (bl.startsWith("http")) { bset[0] = true; loadImage(bl, badgeV); wm.setAlpha(0.38f); fillCover(wm); loadImage(bl, wm); refreshVer.run(); }
+        if (mine && !bset[0]) {
+            try {
+                JSONArray sc0 = P.optJSONArray("selected_clubs");
+                String l0 = sc0 != null && sc0.length() > 0 ? ClubsData.logo(sc0.optString(0, "")) : "";
+                if (l0.startsWith("http")) { wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(l0, wm); }
+            } catch (Exception ignore) {}
+        }
         try {
             JSONArray cl = P.optJSONArray("clubs");
             if (cl != null) {
@@ -665,7 +672,7 @@ abstract class Profile extends WeeklyMatchRankings {
                         LinearLayout.LayoutParams cil = new LinearLayout.LayoutParams(dp(18), dp(18));
                         cil.setMargins(0, 0, dp(6), 0);
                         chip.addView(ci, cil);
-                        if (q == 0 && !bset[0]) { wm.setVisibility(View.VISIBLE); loadImage(lg, wm); }
+                        if (q == 0 && !bset[0]) { wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(lg, wm); }
                     }
                     TextView ct = tv(0xFFE6E9FF, 12, true);
                     ct.setText(co.optString("name", ""));

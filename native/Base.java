@@ -129,7 +129,7 @@ abstract class Base extends Activity {
     protected final Map<String, String> unames = new HashMap<String, String>();
     protected final Map<String, String> photos = new HashMap<String, String>();
     protected final Set<String> liked = new HashSet<String>();
-    protected final ExecutorService pool = Executors.newFixedThreadPool(4);
+    protected final ExecutorService pool = new java.util.concurrent.ThreadPoolExecutor(4, 4, 0L, java.util.concurrent.TimeUnit.MILLISECONDS, new java.util.concurrent.LinkedBlockingQueue<Runnable>(), new java.util.concurrent.ThreadPoolExecutor.DiscardPolicy());
     protected final LruCache<String, Bitmap> cache = new LruCache<String, Bitmap>(24 * 1024 * 1024) {
         @Override protected int sizeOf(String k, Bitmap v) { return v.getByteCount(); }
     };

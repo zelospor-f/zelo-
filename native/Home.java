@@ -473,10 +473,12 @@ public class Home extends FollowList {
         h.supBtn.setBackground(sbBg);
         h.supBtn.setPadding(dp(16), dp(6), dp(16), dp(6));
         h.supBtn.setVisibility(View.GONE);
-        head.addView(h.supBtn);
+        LinearLayout.LayoutParams sblp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        sblp.setMarginEnd(dp(34));
+        head.addView(h.supBtn, sblp);
         h.more = tv(MUTED, 22, true);
         h.more.setText("⋮");
-        h.more.setPadding(dp(14), dp(4), dp(6), dp(4));
+        h.more.setPadding(dp(12), dp(8), dp(6), dp(8));
         h.more.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag();
