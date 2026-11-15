@@ -167,6 +167,7 @@ abstract class Base extends Activity {
 
     protected abstract boolean isRtlLang();
     protected abstract String L(String ar, String en);
+    protected abstract String T(String ar);
 
     // ارتفاع شريط الحالة (يُستعمل لهامش أعلى كل شاشة بسبب العرض حتى حافة الشاشة)
     protected int statusH() {
@@ -411,9 +412,9 @@ abstract class Base extends Activity {
             Date d = f.parse(iso.substring(0, 19));
             long s = (System.currentTimeMillis() - d.getTime()) / 1000;
             if (s < 60) return L("الآن", "Now");
-            if (s < 3600) return L("منذ ", " ago ") + (s / 60) + " د";
-            if (s < 86400) return L("منذ ", " ago ") + (s / 3600) + " س";
-            return L("منذ ", " ago ") + (s / 86400) + " يوم";
+            if (s < 3600) return L("منذ ", " ago ") + (s / 60) + T(" د");
+            if (s < 86400) return L("منذ ", " ago ") + (s / 3600) + T(" س");
+            return L("منذ ", " ago ") + (s / 86400) + T(" يوم");
         } catch (Exception e) {
             return "";
         }
