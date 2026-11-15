@@ -134,15 +134,15 @@ abstract class NftMarket extends Messages {
     protected String fmtLeft(long ms) {
         long s = Math.max(0, ms / 1000), d = s / 86400, h = s % 86400 / 3600, m = s % 3600 / 60, sec = s % 60;
         if (d > 0) return isAr() ? d + "ي " + h + "س " + m + "د" : d + "d " + h + "h " + m + "m";
-        return isAr() ? h + "س " + m + "د " + sec + "ث" : h + "h " + m + "m " + sec + "s";
+        return isAr() ? h + "س " + m + "د " + sec + L("ث", "s") : h + "h " + m + "m " + sec + "s";
     }
     protected String nftErr(String code) {
         String c = code == null ? "" : code;
         String[][] M = {
-            { "already_owned", "تملك هذه البطاقة بالفعل", "You already own this card" }, { "sold_out", "نفدت الكمية", "Sold out" },
+            { "already_owned", L("تملك هذه البطاقة بالفعل", "You already own this card"), "You already own this card" }, { "sold_out", "نفدت الكمية", "Sold out" },
             { "ended", "انتهى العرض", "Offer ended" }, { "unauthorized", "سجّل الدخول أولاً", "Please sign in first" },
-            { "unknown_nft", "البطاقة غير متاحة", "Card not available" }, { "insufficient_points", "رصيدك من الكورة غير كافٍ", "Not enough Kora" },
-            { "user_not_found", "تعذّر العثور على حسابك", "Account not found" } };
+            { "unknown_nft", L("البطاقة غير متاحة", "Card unavailable"), "Card not available" }, { "insufficient_points", L("رصيدك من الكورة غير كافٍ", "Your ball balance is not enough"), "Not enough Kora" },
+            { "user_not_found", L("تعذّر العثور على حسابك", "Could not find your account"), "Account not found" } };
         for (String[] m : M) if (c.indexOf(m[0]) >= 0) return L(m[1], m[2]);
         return L("تعذّر تنفيذ الطلب", "Could not complete the request") + (c.length() > 0 ? " [" + c + "]" : "");
     }
@@ -516,7 +516,7 @@ abstract class NftMarket extends Messages {
         final String name = isAr() ? n.ar : n.en;
         final String pts = String.format(java.util.Locale.US, "%,d", nftPoints(n));
         new AlertDialog.Builder(this)
-            .setMessage(isAr() ? "شراء «" + name + "» مقابل " + pts + " كورة؟" : "Buy \"" + name + "\" for " + pts + " points?")
+            .setMessage(isAr() ? L("شراء «", "Buy \"") + name + L("» مقابل ", "\" for ") + pts + L(" كورة؟", " balls?") : "Buy \"" + name + "\" for " + pts + " points?")
             .setPositiveButton(L("شراء", "Buy"), new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface di, int w) {
                     nftBuying = true;

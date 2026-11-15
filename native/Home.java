@@ -114,7 +114,7 @@ public class Home extends FollowList {
                         ids.append(k);
                     }
                     String fids = ids.toString();
-                    if (l.isEmpty()) { runOnUiThread(new Runnable() { @Override public void run() { toast("لا توجد فيديوهات بعد"); } }); return; }
+                    if (l.isEmpty()) { runOnUiThread(new Runnable() { @Override public void run() { toast(L("لا توجد فيديوهات بعد", "No videos yet")); } }); return; }
                     runOnUiThread(new Runnable() { @Override public void run() { openViewer(l, 0); } });
                     if (fids.length() > 0) {
                         count("post_likes", fids, 0); count("post_comments", fids, 1); count("post_reposts", fids, 2); count("post_views", fids, 3);
@@ -251,7 +251,7 @@ public class Home extends FollowList {
             }
         });
         vVv.setOnErrorListener(new android.media.MediaPlayer.OnErrorListener() {
-            @Override public boolean onError(android.media.MediaPlayer mp, int w, int e) { toast("تعذّر تشغيل الفيديو"); return true; }
+            @Override public boolean onError(android.media.MediaPlayer mp, int w, int e) { toast(L("تعذّر تشغيل الفيديو", "Could not play the video")); return true; }
         });
 
         // طبقة اللمس: نقرة = إيقاف/تشغيل، سحب = الفيديو التالي/السابق
@@ -465,7 +465,7 @@ public class Home extends FollowList {
         head.addView(names);
         head.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         h.supBtn = tv(NAVY, 13, true);
-        h.supBtn.setText("ادعم");
+        h.supBtn.setText(L("ادعم", "Support"));
         h.supBtn.setGravity(Gravity.CENTER);
         GradientDrawable sbBg = new GradientDrawable();
         sbBg.setColor(GOLD);
@@ -603,22 +603,22 @@ public class Home extends FollowList {
         final List<Runnable> acts = new ArrayList<Runnable>();
         final boolean sv = saved.contains(pid);
         if (mine) {
-            if (idx >= 0) { labels.add("تعديل النص"); icons.add(14); danger.add(false); acts.add(new Runnable() { public void run() { editPost(idx); } }); }
-            labels.add("تعزيز المنشور"); icons.add(17); danger.add(false); acts.add(new Runnable() { public void run() { openBoost(pid); } });
-            labels.add("التفاعلات"); icons.add(3); danger.add(false); acts.add(new Runnable() { public void run() { showEngagements(o); } });
-            labels.add(sv ? "إزالة من المحفوظات" : "حفظ المنشور"); icons.add(4); danger.add(false); acts.add(new Runnable() { public void run() { toggleSave(o); } });
-            labels.add("مشاركة الرابط"); icons.add(5); danger.add(false); acts.add(new Runnable() { public void run() { shareLink(o); } });
-            if (idx >= 0) { labels.add("حذف المنشور"); icons.add(15); danger.add(true); acts.add(new Runnable() { public void run() { deletePost(idx); } }); }
+            if (idx >= 0) { labels.add(L("تعديل النص", "Edit text")); icons.add(14); danger.add(false); acts.add(new Runnable() { public void run() { editPost(idx); } }); }
+            labels.add(L("تعزيز المنشور", "Boost post")); icons.add(17); danger.add(false); acts.add(new Runnable() { public void run() { openBoost(pid); } });
+            labels.add(L("التفاعلات", "Interactions")); icons.add(3); danger.add(false); acts.add(new Runnable() { public void run() { showEngagements(o); } });
+            labels.add(sv ? L("إزالة من المحفوظات", "Remove from saved") : L("حفظ المنشور", "Save post")); icons.add(4); danger.add(false); acts.add(new Runnable() { public void run() { toggleSave(o); } });
+            labels.add(L("مشاركة الرابط", "Share link")); icons.add(5); danger.add(false); acts.add(new Runnable() { public void run() { shareLink(o); } });
+            if (idx >= 0) { labels.add(L("حذف المنشور", "Delete post")); icons.add(15); danger.add(true); acts.add(new Runnable() { public void run() { deletePost(idx); } }); }
         } else {
             final boolean fl = followSet.contains(author);
-            labels.add("لا أريد رؤية هذا"); icons.add(22); danger.add(false); acts.add(new Runnable() { public void run() { hidePost(o); } });
-            labels.add(fl ? "إلغاء متابعة " + tag : "متابعة " + tag); icons.add(fl ? 19 : 18); danger.add(false); acts.add(new Runnable() { public void run() { toggleFollowUser(author); } });
-            labels.add("كتم " + tag); icons.add(20); danger.add(false); acts.add(new Runnable() { public void run() { muteUser(author); } });
-            labels.add("حظر " + tag); icons.add(21); danger.add(true); acts.add(new Runnable() { public void run() { blockUser(author, tag); } });
-            labels.add("إبلاغ"); icons.add(16); danger.add(true); acts.add(new Runnable() { public void run() { openReport("post", String.valueOf(pid)); } });
-            labels.add("التفاعلات"); icons.add(3); danger.add(false); acts.add(new Runnable() { public void run() { showEngagements(o); } });
-            labels.add(sv ? "إزالة من المحفوظات" : "حفظ المنشور"); icons.add(4); danger.add(false); acts.add(new Runnable() { public void run() { toggleSave(o); } });
-            labels.add("مشاركة الرابط"); icons.add(5); danger.add(false); acts.add(new Runnable() { public void run() { shareLink(o); } });
+            labels.add(L("لا أريد رؤية هذا", "I don't want to see this")); icons.add(22); danger.add(false); acts.add(new Runnable() { public void run() { hidePost(o); } });
+            labels.add(fl ? L("إلغاء متابعة ", "Unfollow ") + tag : L("متابعة ", "Follow ") + tag); icons.add(fl ? 19 : 18); danger.add(false); acts.add(new Runnable() { public void run() { toggleFollowUser(author); } });
+            labels.add(L("كتم ", "Mute ") + tag); icons.add(20); danger.add(false); acts.add(new Runnable() { public void run() { muteUser(author); } });
+            labels.add(L("حظر ", "Block ") + tag); icons.add(21); danger.add(true); acts.add(new Runnable() { public void run() { blockUser(author, tag); } });
+            labels.add(L("إبلاغ", "Report")); icons.add(16); danger.add(true); acts.add(new Runnable() { public void run() { openReport("post", String.valueOf(pid)); } });
+            labels.add(L("التفاعلات", "Interactions")); icons.add(3); danger.add(false); acts.add(new Runnable() { public void run() { showEngagements(o); } });
+            labels.add(sv ? L("إزالة من المحفوظات", "Remove from saved") : L("حفظ المنشور", "Save post")); icons.add(4); danger.add(false); acts.add(new Runnable() { public void run() { toggleSave(o); } });
+            labels.add(L("مشاركة الرابط", "Share link")); icons.add(5); danger.add(false); acts.add(new Runnable() { public void run() { shareLink(o); } });
         }
         final Dialog d = sheetDialog(false);
         ScrollView sc = new ScrollView(this);
@@ -685,7 +685,7 @@ public class Home extends FollowList {
         et.setMinLines(3);
         et.setGravity(Gravity.TOP | Gravity.START);
         new AlertDialog.Builder(this)
-            .setTitle("تعديل المنشور")
+            .setTitle(L("تعديل المنشور", "Edit post"))
             .setView(et)
             .setNegativeButton("إلغاء", null)
             .setPositiveButton("حفظ", new DialogInterface.OnClickListener() {
@@ -705,7 +705,7 @@ public class Home extends FollowList {
                             final String fe = err;
                             runOnUiThread(new Runnable() {
                                 @Override public void run() {
-                                    if (fe != null) toast("تعذّر التعديل: " + fe);
+                                    if (fe != null) toast(L("تعذّر التعديل: ", "Could not edit: ") + fe);
                                     else refreshUi();
                                 }
                             });
@@ -718,7 +718,7 @@ public class Home extends FollowList {
     protected void deletePost(final int idx) {
         final JSONObject o = items.get(idx);
         new AlertDialog.Builder(this)
-            .setMessage("هل تريد حذف هذا المنشور؟")
+            .setMessage(L("هل تريد حذف هذا المنشور؟", "Do you want to delete this post?"))
             .setNegativeButton("إلغاء", null)
             .setPositiveButton("حذف", new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) {
@@ -736,7 +736,7 @@ public class Home extends FollowList {
                             final String fe = err;
                             runOnUiThread(new Runnable() {
                                 @Override public void run() {
-                                    if (fe != null) { toast("تعذّر الحذف: " + fe); return; }
+                                    if (fe != null) { toast(L("تعذّر الحذف: ", "Could not delete: ") + fe); return; }
                                     items.remove(o);
                                     refreshUi();
                                 }
@@ -778,7 +778,7 @@ public class Home extends FollowList {
         head.addView(nm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         if (tot > 0) {
             TextView tv2 = tv(MUTED, 11, false);
-            tv2.setText(tot + " صوت");
+            tv2.setText(tot + L(" صوت", " votes"));
             head.addView(tv2);
         }
         h.rope.addView(head);
@@ -827,7 +827,7 @@ public class Home extends FollowList {
                         @Override public void run() {
                             r[0] = old[0]; r[1] = old[1]; r[2] = old[2];
                             refreshUi();
-                            toast("تعذّر تسجيل صوتك");
+                            toast(L("تعذّر تسجيل صوتك", "Could not record your vote"));
                         }
                     });
                 }
@@ -901,7 +901,7 @@ public class Home extends FollowList {
         LinearLayout top = new LinearLayout(this);
         top.setGravity(Gravity.CENTER_VERTICAL);
         TextView pill = tv(fin ? (outcome == pick ? 0xFF2DE2C4 : 0xFFFF8FA1) : GOLD, 12, true);
-        pill.setText(fin ? (outcome == pick ? "صحّ ✓" : "خطأ ✗") : "توقّع");
+        pill.setText(fin ? (outcome == pick ? L("صحّ ✓", "Correct ✓") : L("خطأ ✗", "Wrong ✗")) : L("توقّع", "Predict"));
         pill.setPadding(dp(11), dp(3), dp(11), dp(3));
         GradientDrawable pg = new GradientDrawable();
         pg.setCornerRadius(dp(14));
@@ -961,7 +961,7 @@ public class Home extends FollowList {
         TextView mine = tv(0xFFCDD6FF, 13, true);
         mine.setGravity(Gravity.CENTER);
         mine.setPadding(0, dp(9), 0, 0);
-        mine.setText("📌 توقّع صاحب المنشور: " + (pick == 1 ? lab[1] : ("فوز " + lab[Math.max(0, Math.min(2, pick))])));
+        mine.setText(L("📌 توقّع صاحب المنشور: ", "📌 Author's prediction: ") + (pick == 1 ? lab[1] : ("فوز " + lab[Math.max(0, Math.min(2, pick))])));
         box.addView(mine);
 
         boolean open = !fin && !started;
@@ -991,7 +991,7 @@ public class Home extends FollowList {
             TextView note = tv(0xFF8F9BD1, 11, false);
             note.setGravity(Gravity.CENTER);
             note.setPadding(0, dp(7), 0, 0);
-            note.setText("صوّت لترى نسب الجمهور");
+            note.setText(L("صوّت لترى نسب الجمهور", "Vote to see audience results"));
             box.addView(note);
         } else {
             long[] n = new long[] { r.optLong("n0"), r.optLong("n1"), r.optLong("n2") };
@@ -1024,7 +1024,7 @@ public class Home extends FollowList {
                 line.setGravity(Gravity.CENTER_VERTICAL);
                 line.setPadding(dp(10), 0, dp(10), 0);
                 TextView t1 = tv(Color.WHITE, 12, true);
-                t1.setText((i == 1 ? lab[1] : lab[i]) + (pick == i ? " 📌" : "") + (mineSel == i ? " · صوتك" : ""));
+                t1.setText((i == 1 ? lab[1] : lab[i]) + (pick == i ? " 📌" : "") + (mineSel == i ? L(" · صوتك", " · your vote") : ""));
                 line.addView(t1, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                 TextView t2 = tv(Color.WHITE, 12, true);
                 t2.setText(pc + "%");
@@ -1042,7 +1042,7 @@ public class Home extends FollowList {
             box.addView(bars);
             TextView note = tv(0xFF8F9BD1, 11, false);
             note.setGravity(Gravity.CENTER);
-            note.setText(tot + " صوت");
+            note.setText(tot + L(" صوت", " votes"));
             box.addView(note);
         }
         h.pred.addView(box);
@@ -1105,7 +1105,7 @@ public class Home extends FollowList {
                         @Override public void run() {
                             if (was) { reposted.add(k); s[2]++; } else { reposted.remove(k); s[2] = Math.max(0, s[2] - 1); }
                             refreshUi();
-                            toast("تعذّرت إعادة النشر");
+                            toast(L("تعذّرت إعادة النشر", "Could not repost"));
                         }
                     });
                 }
@@ -1121,7 +1121,7 @@ public class Home extends FollowList {
         final boolean was = saved.contains(k);
         if (was) saved.remove(k); else saved.add(k);
         refreshUi();
-        toast(was ? "أُزيل من المحفوظات" : "تم حفظ المنشور 🔖");
+        toast(was ? L("أُزيل من المحفوظات", "Removed from saved") : L("تم حفظ المنشور 🔖", "Post saved 🔖"));
         pool.execute(new Runnable() {
             @Override public void run() {
                 try {
@@ -1132,7 +1132,7 @@ public class Home extends FollowList {
                         @Override public void run() {
                             if (was) saved.add(k); else saved.remove(k);
                             refreshUi();
-                            toast("تعذّر الحفظ");
+                            toast(L("تعذّر الحفظ", "Could not save"));
                         }
                     });
                 }
@@ -1144,9 +1144,9 @@ public class Home extends FollowList {
         int[] s = stats.get(String.valueOf(o.optLong("id")));
         if (s == null) s = new int[] { 0, 0, 0, 0 };
         new AlertDialog.Builder(this)
-            .setTitle("التفاعلات مع المنشور")
-            .setMessage("المشاهدات: " + s[3] + "\nالأهداف: " + s[0] + "\nالتمريرات: " + s[2] + "\nالردود: " + s[1])
-            .setPositiveButton("حسنًا", null)
+            .setTitle(L("التفاعلات مع المنشور", "Post interactions"))
+            .setMessage(L("المشاهدات: ", "Views: ") + s[3] + L("\nالأهداف: ", "\nGoals: ") + s[0] + L("\nالتمريرات: ", "\nPasses: ") + s[2] + L("\nالردود: ", "\nReplies: ") + s[1])
+            .setPositiveButton(L("حسنًا", "OK"), null)
             .show();
     }
 
@@ -1154,7 +1154,7 @@ public class Home extends FollowList {
         if (uid == null || target.equals(uid)) return;
         final boolean was = followSet.contains(target);
         if (was) followSet.remove(target); else followSet.add(target);
-        toast(was ? "تم إلغاء المتابعة" : "تمت المتابعة ✅");
+        toast(was ? L("تم إلغاء المتابعة", "Unfollowed") : L("تمت المتابعة ✅", "Following ✅"));
         pool.execute(new Runnable() {
             @Override public void run() {
                 try {
@@ -1183,7 +1183,7 @@ public class Home extends FollowList {
         if (uid == null || target.equals(uid)) return;
         muteSet.add(target);
         dropUser(target);
-        toast("تم الكتم");
+        toast(L("تم الكتم", "Muted"));
         pool.execute(new Runnable() {
             @Override public void run() {
                 try { send("POST", "user_mutes", "{\"user_id\":\"" + uid + "\",\"muted_id\":\"" + target + "\"}"); } catch (Exception ignore) {}
@@ -1194,14 +1194,14 @@ public class Home extends FollowList {
     protected void blockUser(final String target, String tag) {
         if (uid == null || target.equals(uid)) return;
         new AlertDialog.Builder(this)
-            .setMessage("هل تريد حظر " + tag + "؟ لن ترى منشوراته وردوده.")
+            .setMessage(L("هل تريد حظر ", "Do you want to block ") + tag + L("؟ لن ترى منشوراته وردوده.", "? You won't see their posts or replies."))
             .setNegativeButton("إلغاء", null)
             .setPositiveButton("حظر", new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) {
                     blockSet.add(target);
                     followSet.remove(target);
                     dropUser(target);
-                    toast("تم الحظر");
+                    toast(L("تم الحظر", "Blocked"));
                     pool.execute(new Runnable() {
                         @Override public void run() {
                             try {
@@ -1221,7 +1221,7 @@ public class Home extends FollowList {
         sp.edit().putString("hidden", android.text.TextUtils.join(",", hiddenSet)).apply();
         items.remove(o);
         refreshUi();
-        toast("تم إخفاء المنشور");
+        toast(L("تم إخفاء المنشور", "Post hidden"));
     }
 
     protected String ownerOf(String pk) {
@@ -1256,7 +1256,7 @@ public class Home extends FollowList {
                         @Override public void run() {
                             if (was) { liked.add(k); s[0]++; } else { liked.remove(k); s[0] = Math.max(0, s[0] - 1); }
                             refreshUi();
-                            toast("تعذّر حفظ الإعجاب");
+                            toast(L("تعذّر حفظ الإعجاب", "Could not save the like"));
                         }
                     });
                 }
@@ -1345,7 +1345,7 @@ public class Home extends FollowList {
         bar.setGravity(Gravity.CENTER_VERTICAL);
         bar.setPadding(dp(16), dp(12), dp(16), dp(8));
         TextView title = tv(GOLD, 18, true);
-        title.setText("التعليقات");
+        title.setText(L("التعليقات", "Comments"));
         bar.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         TextView x = tv(Color.WHITE, 22, false);
         x.setText("✕");
@@ -1399,7 +1399,7 @@ public class Home extends FollowList {
         in.setGravity(Gravity.CENTER_VERTICAL);
         in.setPadding(dp(12), dp(8), dp(12), dp(8));
         final EditText et = new EditText(this);
-        et.setHint("اكتب تعليقًا...");
+        et.setHint(L("اكتب تعليقًا...", "Write a comment..."));
         et.setHintTextColor(MUTED);
         et.setTextColor(Color.WHITE);
         et.setMaxLines(4);
@@ -1431,12 +1431,12 @@ public class Home extends FollowList {
                         final String fe = err;
                         runOnUiThread(new Runnable() {
                             @Override public void run() {
-                                if (fe != null) { empty.setText("تعذّر التحميل: " + fe); return; }
+                                if (fe != null) { empty.setText(L("تعذّر التحميل: ", "Could not load: ") + fe); return; }
                                 cm.clear();
                                 cm.addAll(got);
                                 ca.notifyDataSetChanged();
                                 empty.setVisibility(got.isEmpty() ? View.VISIBLE : View.GONE);
-                                empty.setText("لا توجد تعليقات بعد");
+                                empty.setText(L("لا توجد تعليقات بعد", "No comments yet"));
                                 int[] s = stats.get(pk);
                                 if (s != null) { s[1] = got.size(); refreshUi(); }
                             }
@@ -1639,7 +1639,7 @@ public class Home extends FollowList {
                     @Override public void run() {
                         loading = false;
                         getSharedPreferences("zn", MODE_PRIVATE).edit().putInt("boot", 0).apply();
-                        if (fe != null) { if (items.isEmpty()) status.setText("خطأ: " + fe); return; }
+                        if (fe != null) { if (items.isEmpty()) status.setText(L("خطأ: ", "Error: ") + fe); return; }
                         refreshUi();
                     }
                 });
@@ -1883,12 +1883,12 @@ public class Home extends FollowList {
         hs.setHorizontalScrollBarEnabled(false);
         LinearLayout shortcuts = new LinearLayout(this);
         shortcuts.setPadding(dp(8), dp(4), dp(8), dp(4));
-        shortcuts.addView(circleBtn("🕐", "الليلة", "tonight", false));
-        shortcuts.addView(circleBtn("LIVE", "مباشر", "live", true));
-        shortcuts.addView(circleBtn("⬆", "كيف تكسب", "earn", false));
-        shortcuts.addView(circleBtn("🏆", "الترتيب", "ranking", false));
-        shortcuts.addView(circleBtn("🎯", "الرادار", "radar", false));
-        shortcuts.addView(circleBtn("⭐", "الاشتراكات", "subs", false));
+        shortcuts.addView(circleBtn("🕐", L("الليلة", "Tonight"), "tonight", false));
+        shortcuts.addView(circleBtn("LIVE", L("مباشر", "Live"), "live", true));
+        shortcuts.addView(circleBtn("⬆", L("كيف تكسب", "How to earn"), "earn", false));
+        shortcuts.addView(circleBtn("🏆", L("الترتيب", "Ranking"), "ranking", false));
+        shortcuts.addView(circleBtn("🎯", L("الرادار", "Radar"), "radar", false));
+        shortcuts.addView(circleBtn("⭐", L("الاشتراكات", "Plans"), "subs", false));
         hs.addView(shortcuts);
         root.addView(hs);
 
@@ -1957,11 +1957,11 @@ public class Home extends FollowList {
         root.addView(line, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         LinearLayout nav = new LinearLayout(this);
         nav.setBackgroundColor(NAVY);
-        nav.addView(navItem(6, "الرئيسية", null, true), new LinearLayout.LayoutParams(0, dp(64), 1f));
-        nav.addView(navItem(7, "المباريات", "nav:matches", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
-        nav.addView(navItem(8, "فيديو", "nav:videos", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
-        nav.addView(navItem(9, "الرسائل", "nav:messages", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
-        nav.addView(navItem(10, "الملف الشخصي", "nav:profile", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+        nav.addView(navItem(6, L("الرئيسية", "Home"), null, true), new LinearLayout.LayoutParams(0, dp(64), 1f));
+        nav.addView(navItem(7, L("المباريات", "Matches"), "nav:matches", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+        nav.addView(navItem(8, L("فيديو", "Video"), "nav:videos", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+        nav.addView(navItem(9, L("الرسائل", "Messages"), "nav:messages", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+        nav.addView(navItem(10, L("الملف الشخصي", "Profile"), "nav:profile", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
         root.addView(nav);
 
         setContentView(outer);
@@ -1984,10 +1984,10 @@ public class Home extends FollowList {
     // ===== من home.js: الإبلاغ عن منشور/رد + فتح منشور من إشعار =====
     protected void openReport(final String type, final String id) {
         final String[][] rs = {
-            { "spam", "📢 محتوى مزعج أو إعلاني", "📢 Spam" }, { "abuse", "😡 إساءة أو تحرّش", "😡 Abuse or harassment" },
-            { "hate", "⚠️ خطاب كراهية", "⚠️ Hateful content" }, { "violence", "🩸 عنف أو محتوى صادم", "🩸 Violent or graphic content" },
-            { "adult", "🔞 محتوى للبالغين", "🔞 Adult content" }, { "misinfo", "❓ معلومات مضللة", "❓ Misinformation" },
-            { "other", "… سبب آخر", "… Something else" }
+            { "spam", L("📢 محتوى مزعج أو إعلاني", "📢 Spam or advertising"), "📢 Spam" }, { "abuse", L("😡 إساءة أو تحرّش", "😡 Abuse or harassment"), "😡 Abuse or harassment" },
+            { "hate", L("⚠️ خطاب كراهية", "⚠️ Hate speech"), "⚠️ Hateful content" }, { "violence", L("🩸 عنف أو محتوى صادم", "🩸 Violence or graphic content"), "🩸 Violent or graphic content" },
+            { "adult", L("🔞 محتوى للبالغين", "🔞 Adult content"), "🔞 Adult content" }, { "misinfo", L("❓ معلومات مضللة", "❓ Misinformation"), "❓ Misinformation" },
+            { "other", L("… سبب آخر", "… Another reason"), "… Something else" }
         };
         String[] labels = new String[rs.length];
         for (int i = 0; i < rs.length; i++) labels[i] = L(rs[i][1], rs[i][2]);

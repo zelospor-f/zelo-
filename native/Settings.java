@@ -527,7 +527,7 @@ abstract class Settings extends ShareCard {
         stOnText(code, new Runnable() { @Override public void run() { stEnable(ok, code.getText().length() >= 6); if (code.getText().length() > 0) stSetNote("", ""); } });
         final int[] left = { 60 };
         stCountdown = new Runnable() { @Override public void run() {
-            if (left[0] > 0) { rs.setTextColor(MUTED); rs.setText(L("ألم تستلم الرمز؟ أعد المحاولة بعد " + left[0] + "ث", "Didn't get a code? Retry in " + left[0] + "s")); left[0]--; stH.postDelayed(this, 1000); }
+            if (left[0] > 0) { rs.setTextColor(MUTED); rs.setText(L("ألم تستلم الرمز؟ أعد المحاولة بعد " + left[0] + L("ث", "s"), "Didn't get a code? Retry in " + left[0] + "s")); left[0]--; stH.postDelayed(this, 1000); }
             else { rs.setTextColor(GOLD); rs.setText(L("ألم تستلم الرمز؟", "Didn't receive the code?")); }
         } };
         stH.post(stCountdown);

@@ -103,10 +103,10 @@ abstract class GoogleVerify extends FollowLinks {
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         if (err == null) {
-                            toast(inList(COINS, productId) ? "تم شحن النقاط ✅" : "تم تفعيل الاشتراك ✅");
+                            toast(inList(COINS, productId) ? L("تم شحن النقاط ✅", "Points added ✅") : L("تم تفعيل الاشتراك ✅", "Subscription activated ✅"));
                             if (onOk != null) onOk.run();
                             loadBalance();
-                        } else toast("تعذّر التحقق من الشراء: " + err);
+                        } else toast(L("تعذّر التحقق من الشراء: ", "Could not verify the purchase: ") + err);
                     }
                 });
             }

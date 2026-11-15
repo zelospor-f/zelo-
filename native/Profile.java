@@ -370,10 +370,10 @@ abstract class Profile extends WeeklyMatchRankings {
         sg.setCornerRadius(dp(18));
         sg.setStroke(dp(1), 0x33F5C35A);
         stats4.setBackground(sg);
-        stats4.addView(profStat(nums, 0, "يتابِع", mine ? "follow:following" : null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        stats4.addView(profStat(nums, 1, "متابِعون", mine ? "follow:followers" : null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        stats4.addView(profStat(nums, 2, mine ? "هدايا" : "منشور", null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        stats4.addView(profStat(nums, 3, "أهداف", null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        stats4.addView(profStat(nums, 0, L("يتابِع", "Following"), mine ? "follow:following" : null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        stats4.addView(profStat(nums, 1, L("متابِعون", "Followers"), mine ? "follow:followers" : null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        stats4.addView(profStat(nums, 2, mine ? L("هدايا", "Gifts") : L("منشور", "Post"), null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        stats4.addView(profStat(nums, 3, L("أهداف", "Goals"), null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         slp.setMargins(dp(14), dp(8), dp(14), dp(4));
         hdr.addView(stats4, slp);
@@ -392,7 +392,7 @@ abstract class Profile extends WeeklyMatchRankings {
         btns.setPadding(dp(14), dp(12), dp(14), dp(4));
         if (mine) {
             TextView edit = tv(NAVY, 15, true);
-            edit.setText("✎  تعديل الملف");
+            edit.setText(L("✎  تعديل الملف", "✎  Edit profile"));
             edit.setGravity(Gravity.CENTER);
             GradientDrawable eg = new GradientDrawable();
             eg.setColor(GOLD);
@@ -432,7 +432,7 @@ abstract class Profile extends WeeklyMatchRankings {
             final Runnable paintFollow = new Runnable() {
                 @Override public void run() {
                     boolean f = followSet.contains(target);
-                    fb.setText(f ? "إلغاء المتابعة" : "متابعة");
+                    fb.setText(f ? L("إلغاء المتابعة", "Unfollow") : L("متابعة", "Follow"));
                     fb.setTextColor(f ? GOLD : NAVY);
                     GradientDrawable fg = new GradientDrawable();
                     fg.setColor(f ? CARD : GOLD);
@@ -464,7 +464,7 @@ abstract class Profile extends WeeklyMatchRankings {
         if (mine) {
             LinearLayout tiles = new LinearLayout(this);
             tiles.setPadding(dp(14), dp(8), dp(14), dp(4));
-            String[] tl = { "المتجر", "محفظتي", "الاشتراك", "بطاقات NFT" };
+            String[] tl = { "المتجر", "محفظتي", "الاشتراك", L("بطاقات NFT", "NFT cards") };
             int[] ti = { 23, 24, 25, 26 };
             String[] ta = { "store", "wallet", "subs", "nft" };
             for (int q = 0; q < 4; q++) {
@@ -502,7 +502,7 @@ abstract class Profile extends WeeklyMatchRankings {
         // التبويبات
         LinearLayout tabs = new LinearLayout(this);
         tabs.setPadding(0, dp(10), 0, 0);
-        String[] tn = { "المنشورات", "الردود", "التمريرات", "" };
+        String[] tn = { L("المنشورات", "Posts"), L("الردود", "Replies"), L("التمريرات", "Passes"), "" };
         final BaseAdapter[] padRef = new BaseAdapter[1];
         final Runnable[] reload = new Runnable[1];
         reload[0] = new Runnable() {
@@ -519,7 +519,7 @@ abstract class Profile extends WeeklyMatchRankings {
                 profLoadTab(target, tab[0], plist, new Runnable() {
                     @Override public void run() {
                         if (padRef[0] != null) padRef[0].notifyDataSetChanged();
-                        emptyV.setText("لا يوجد شيء هنا بعد");
+                        emptyV.setText(L("لا يوجد شيء هنا بعد", "Nothing here yet"));
                         emptyV.setVisibility(plist.isEmpty() ? View.VISIBLE : View.GONE);
                     }
                 });
@@ -600,19 +600,19 @@ abstract class Profile extends WeeklyMatchRankings {
             LinearLayout nav = new LinearLayout(this);
             nav.setBackgroundColor(NAVY);
             nav.setPadding(0, 0, 0, navH() - dp(8));
-            View hm = navItem(6, "الرئيسية", null, false);
+            View hm = navItem(6, L("الرئيسية", "Home"), null, false);
             hm.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { d.dismiss(); }
             });
             nav.addView(hm, new LinearLayout.LayoutParams(0, dp(64), 1f));
-            nav.addView(navItem(7, "المباريات", "nav:matches", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
-            View vd = navItem(8, "فيديو", null, false);
+            nav.addView(navItem(7, L("المباريات", "Matches"), "nav:matches", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+            View vd = navItem(8, L("فيديو", "Video"), null, false);
             vd.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { openVideosTab(); }
             });
             nav.addView(vd, new LinearLayout.LayoutParams(0, dp(64), 1f));
-            nav.addView(navItem(9, "الرسائل", "nav:messages", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
-            nav.addView(navItem(10, "الملف الشخصي", null, true), new LinearLayout.LayoutParams(0, dp(64), 1f));
+            nav.addView(navItem(9, L("الرسائل", "Messages"), "nav:messages", false), new LinearLayout.LayoutParams(0, dp(64), 1f));
+            nav.addView(navItem(10, L("الملف الشخصي", "Profile"), null, true), new LinearLayout.LayoutParams(0, dp(64), 1f));
             root.addView(nav);
         }
         d.setContentView(root);
@@ -638,7 +638,7 @@ abstract class Profile extends WeeklyMatchRankings {
         if (bio0.length() > 0) { bioV.setText(bio0); bioV.setVisibility(View.VISIBLE); }
         String dob0 = P.optString("dob", "");
         if (mine && dob0.length() > 0) {
-            dobV.setText("🎂 " + dob0 + (P.optBoolean("dobVisible", false) ? "" : "  ·  🔒 مخفي عن الآخرين"));
+            dobV.setText("🎂 " + dob0 + (P.optBoolean("dobVisible", false) ? "" : L("  ·  🔒 مخفي عن الآخرين", "  ·  🔒 Hidden from others")));
             dobV.setVisibility(View.VISIBLE);
         }
         String ph0 = P.optString("photoUrl", "");
@@ -768,7 +768,7 @@ abstract class Profile extends WeeklyMatchRankings {
             g.setColor(CARD); g.setCornerRadius(dp(18)); g.setStroke(dp(1), 0x33F5C35A);
             in.setBackground(g);
             TextView t1 = tv(MUTED, 11, false);
-            t1.setText("↩ رد على منشور");
+            t1.setText(L("↩ رد على منشور", "↩ Reply to a post"));
             in.addView(t1);
             TextView b1 = tv(Color.WHITE, 15, false);
             b1.setPadding(0, dp(4), 0, dp(4));
