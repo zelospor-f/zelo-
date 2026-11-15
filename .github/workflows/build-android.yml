@@ -301,6 +301,15 @@ jobs:
           cd $APP_DIR
           gradle assembleDebug --no-daemon --console=plain
 
+      - name: Inspect APK (diagnostics)
+        run: |
+          APK=$(find $APP_DIR -name "app-debug.apk" | head -1)
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          echo "== APK: $APK"; ls -l "$APK"
+          echo "== badging"; $BT/aapt2 dump badging "$APK" | grep -E "^package:|sdkVersion|targetSdkVersion|application-label:|testOnly|debuggable" || true
+          echo "== signature"; $BT/apksigner verify --print-certs "$APK" 2>&1 | head -5 || true
+          echo "== permissions"; $BT/aapt2 dump permissions "$APK" | head -30 || true
+
       - name: Fetch upload key (signing branch)
         if: github.event_name == 'workflow_dispatch' && env.KS_PASS != ''
         uses: actions/checkout@v4
