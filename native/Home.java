@@ -114,6 +114,8 @@ public class Home extends FollowList {
                         ids.append(k);
                     }
                     String fids = ids.toString();
+                    if (l.isEmpty()) { runOnUiThread(new Runnable() { @Override public void run() { toast("لا توجد فيديوهات بعد"); } }); return; }
+                    runOnUiThread(new Runnable() { @Override public void run() { openViewer(l, 0); } });
                     if (fids.length() > 0) {
                         count("post_likes", fids, 0); count("post_comments", fids, 1); count("post_reposts", fids, 2); count("post_views", fids, 3);
                         try {
@@ -148,8 +150,13 @@ public class Home extends FollowList {
                 } catch (Exception e) {}
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
-                        if (l.isEmpty()) { toast("لا توجد فيديوهات بعد"); return; }
-                        openViewer(l, 0);
+                        if (vDlg == null || vPos < 0 || vPos >= vList.size()) return;
+                        vBindCounts();
+                        JSONObject o = vList.get(vPos);
+                        String vun = unames.get(o.optString("user_id", ""));
+                        vUser.setText(vun != null && vun.length() > 0 ? "@" + vun : "");
+                        String ph = photos.get(o.optString("user_id", ""));
+                        if (ph != null) { vAvImg.setVisibility(View.VISIBLE); loadImage(ph, vAvImg); }
                     }
                 });
             }
@@ -1483,7 +1490,7 @@ public class Home extends FollowList {
                     if (a.length() > 0) {
                         final long p = a.getJSONObject(0).optLong("points", 0);
                         runOnUiThread(new Runnable() {
-                            @Override public void run() { balance.setText(String.format(java.util.Locale.US, "%,d", p)); }
+                            @Override public void run() { if (balance != null) balance.setText(String.format(java.util.Locale.US, "%,d", p)); }
                         });
                     }
                 } catch (Exception ignore) {}
