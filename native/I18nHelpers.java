@@ -119,49 +119,51 @@ abstract class I18nHelpers extends Billing {
         return LANGS[0];
     }
 
-    // تحميل ملف لغة (يُستدعى خارج خيط الواجهة)
-    protected void loadLanguageFile(String lang) {
+    // يقرأ ملف لغة: من داخل التطبيق (assets/locales) أولاً، ثم من الموقع إن لم يوجد
+    protected String fetchLocale(String name) {
         try {
-            HttpURLConnection c = (HttpURLConnection) new URL(WEB_BASE + "locales/" + lang + ".json?v=" + System.currentTimeMillis()).openConnection();
+            InputStream in = getAssets().open("locales/" + name);
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            byte[] buf = new byte[8192];
+            int n;
+            while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
+            in.close();
+            return bo.toString("UTF-8");
+        } catch (Exception ignore) {}
+        try {
+            HttpURLConnection c = (HttpURLConnection) new URL(WEB_BASE + "locales/" + name + "?v=" + System.currentTimeMillis()).openConnection();
             c.setConnectTimeout(15000);
             c.setReadTimeout(20000);
-            if (c.getResponseCode() >= 400) return;
+            if (c.getResponseCode() >= 400) return null;
             BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream(), "UTF-8"));
             StringBuilder sb = new StringBuilder();
             String ln;
-            while ((ln = r.readLine()) != null) sb.append(ln);
+            while ((ln = r.readLine()) != null) sb.append(ln).append('\n');
             r.close();
-            synchronized (i18n) { i18n.put(lang, new JSONObject(sb.toString())); }
+            return sb.toString();
         } catch (Exception ignore) {}
-        // نصوص الواجهة الأصلية: locales/n_<lang>.json (مفتاحها النص العربي)
+        return null;
+    }
+
+    // تحميل ملف لغة (يُستدعى خارج خيط الواجهة)
+    protected void loadLanguageFile(String lang) {
         try {
-            HttpURLConnection c2 = (HttpURLConnection) new URL(WEB_BASE + "locales/n_" + lang + ".json?v=" + System.currentTimeMillis()).openConnection();
-            c2.setConnectTimeout(15000);
-            c2.setReadTimeout(20000);
-            if (c2.getResponseCode() < 400) {
-                BufferedReader r2 = new BufferedReader(new InputStreamReader(c2.getInputStream(), "UTF-8"));
-                StringBuilder sb2 = new StringBuilder();
-                String ln2;
-                while ((ln2 = r2.readLine()) != null) sb2.append(ln2);
-                r2.close();
-                synchronized (i18n) { i18n.put("n_" + lang, new JSONObject(sb2.toString())); }
-            }
+            String t = fetchLocale(lang + ".json");
+            if (t != null) synchronized (i18n) { i18n.put(lang, new JSONObject(t)); }
+        } catch (Exception ignore) {}
+        // نصوص الواجهة الأصلية: n_<lang>.json (مفتاحها النص العربي)
+        try {
+            String t2 = fetchLocale("n_" + lang + ".json");
+            if (t2 != null) synchronized (i18n) { i18n.put("n_" + lang, new JSONObject(t2)); }
         } catch (Exception ignore) {}
     }
 
     // اللغات الجاهزة: locales/index.json → { "ready": ["ar","en",...] }
     protected void loadReadyLangs() {
         try {
-            HttpURLConnection c = (HttpURLConnection) new URL(WEB_BASE + "locales/index.json?v=" + System.currentTimeMillis()).openConnection();
-            c.setConnectTimeout(15000);
-            c.setReadTimeout(20000);
-            if (c.getResponseCode() >= 400) return;
-            BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream(), "UTF-8"));
-            StringBuilder sb = new StringBuilder();
-            String ln;
-            while ((ln = r.readLine()) != null) sb.append(ln);
-            r.close();
-            JSONArray a = new JSONObject(sb.toString()).optJSONArray("ready");
+            String t = fetchLocale("index.json");
+            if (t == null) return;
+            JSONArray a = new JSONObject(t).optJSONArray("ready");
             if (a == null) return;
             List<String> l = new ArrayList<String>();
             for (int i = 0; i < a.length(); i++) l.add(a.getString(i));
