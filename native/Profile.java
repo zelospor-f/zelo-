@@ -650,7 +650,7 @@ abstract class Profile extends WeeklyMatchRankings {
             try {
                 JSONArray sc0 = P.optJSONArray("selected_clubs");
                 String l0 = sc0 != null && sc0.length() > 0 ? ClubsData.logo(sc0.optString(0, "")) : "";
-                if (l0.startsWith("http")) { wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(l0, wm); }
+                if (l0.startsWith("http")) { bset[0] = true; loadImage(l0, badgeV); refreshVer.run(); wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(l0, wm); }
             } catch (Exception ignore) {}
         }
         try {
