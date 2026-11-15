@@ -67,6 +67,10 @@ import org.json.JSONObject;
 
 abstract class Settings extends ShareCard {
     // ===== من settings.js: شاشة الإعدادات =====
+    protected static final String SUPPORT_EMAIL = "support@zelosport.net";
+    protected static final String SITE = "https://zelosport.net/";
+    protected static final String APP_VERSION = "1.0";
+    protected Dialog helpDlg;
     protected Dialog stDlg;
     protected FrameLayout stRoot;
     protected final android.os.Handler stH = new android.os.Handler();
@@ -134,7 +138,6 @@ abstract class Settings extends ShareCard {
     }
     protected LinearLayout stBody() { LinearLayout b = new LinearLayout(this); b.setOrientation(LinearLayout.VERTICAL); return b; }
     protected boolean stInAccount = false;
-    protected void stAccount() { stInAccount = false; stMain(); }
     protected Runnable stBackMain = new Runnable() { @Override public void run() { if (stInAccount) stAccount(); else stMain(); } };
     protected LinearLayout stFoot(View... btns) {
         LinearLayout f = new LinearLayout(this);
@@ -239,34 +242,40 @@ abstract class Settings extends ShareCard {
     }
     protected LinearLayout stCard() { LinearLayout c = new LinearLayout(this); c.setOrientation(LinearLayout.VERTICAL); c.setBackground(rbg(0x0DFFFFFF, 0x17FFFFFF, 20)); return c; }
 
+    // ---------- الإعدادات الجديدة (تضم محتوى القائمة الجانبية) ----------
     protected void stMain() {
+        stInAccount = false;
         LinearLayout b = stBody();
-        LinearLayout prof = new LinearLayout(this);
-        prof.setGravity(Gravity.CENTER_VERTICAL);
-        prof.setPadding(dp(14), dp(14), dp(14), dp(14));
-        GradientDrawable pg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] { 0x732C4BB5, 0x24F5C35A });
-        pg.setCornerRadius(dp(20)); pg.setStroke(dp(1), 0x4DF5C35A);
-        prof.setBackground(pg);
-        String ph = stJs("photo_url");
-        prof.addView(lbAvatar(isImg(ph) ? ph : "", initial(stNick()), 58, GOLD, false, 3), new LinearLayout.LayoutParams(dp(58), dp(58)));
-        LinearLayout t = new LinearLayout(this);
-        t.setOrientation(LinearLayout.VERTICAL);
-        t.setPadding(dp(14), 0, 0, 0);
-        t.addView(txt(stNick(), Color.WHITE, 16, true));
-        if (stUser().length() > 0) t.addView(txt("@" + stUser(), 0xFFCFD8FF, 13, false));
-        prof.addView(t);
-        b.addView(prof);
+        TextView inv = txt("🔗  " + L("ادعُ أصدقاءك", "Invite friends"), NAVY, 16, true);
+        inv.setGravity(Gravity.CENTER);
+        GradientDrawable ig = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] { GOLD, 0xFFFDE9A8 });
+        ig.setCornerRadius(dp(18));
+        inv.setBackground(ig);
+        inv.setPadding(dp(16), dp(15), dp(16), dp(15));
+        inv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { drInvite(); } });
+        b.addView(inv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
         b.addView(txt(L("الحساب", "Account"), MUTED, 12, true), lpm(4, 18, 4, 8));
         LinearLayout c1 = stCard();
-        c1.addView(stRow("👤", L("الاسم المستعار", "Nickname"), stNick(), new View.OnClickListener() { @Override public void onClick(View v) { stNickScreen(); } }));
-        c1.addView(stRow("@", L("اسم المستخدم", "Username"), stUser().length() > 0 ? "@" + stUser() : "—", new View.OnClickListener() { @Override public void onClick(View v) { stUserScreen(); } }));
-        c1.addView(stRow("✉️", L("البريد الإلكتروني", "Email"), stEmail().length() > 0 ? stEmail() : "—", new View.OnClickListener() { @Override public void onClick(View v) { stStartEmail(); } }));
-        c1.addView(stRow("🔒", L("كلمة المرور", "Password"), "••••••••", new View.OnClickListener() { @Override public void onClick(View v) { stPassScreen(false); } }));
+        c1.addView(stRow("👤", L("الحساب", "Account"), L("الاسم، كلمة المرور، حذف الحساب", "Name, password, delete account"), new View.OnClickListener() { @Override public void onClick(View v) { stAccount(); } }));
+        c1.addView(stRow("⭐", L("الاشتراك", "Subscription"), L("باقاتك وإزالة الإعلانات", "Your plans and ad-free"), new View.OnClickListener() { @Override public void onClick(View v) { openSubscriptions(); } }));
         b.addView(c1);
-        b.addView(txt(L("الخصوصية", "Privacy"), MUTED, 12, true), lpm(4, 18, 4, 8));
+
+        b.addView(txt(L("التطبيق", "App"), MUTED, 12, true), lpm(4, 18, 4, 8));
         LinearLayout c2 = stCard();
+        c2.addView(stRow("🌍", L("اللغة", "Language"), langMeta(getCurrentLang())[2], new View.OnClickListener() { @Override public void onClick(View v) {
+            openLangPicker(new LangPick() { @Override public void on(String code) { zeloSetLang(code); } });
+        } }));
         c2.addView(stRow("🚫", L("المحظورون", "Blocked users"), L("إدارة من حظرتهم", "Manage people you blocked"), new View.OnClickListener() { @Override public void onClick(View v) { stBlocked(); } }));
         b.addView(c2);
+
+        b.addView(txt(L("المساعدة", "Help"), MUTED, 12, true), lpm(4, 18, 4, 8));
+        LinearLayout c3 = stCard();
+        c3.addView(stRow("❓", L("مركز المساعدة", "Help center"), "", new View.OnClickListener() { @Override public void onClick(View v) { openHelpCenter(); } }));
+        c3.addView(stRow("🌐", L("الموقع الرسمي", "Official website"), "", new View.OnClickListener() { @Override public void onClick(View v) { openExternal(SITE); } }));
+        if (isAdmin()) c3.addView(stRow("🚩", L("البلاغات (للإدارة)", "Reports (admin)"), L("تظهر لمشرفي التطبيق فقط", "Visible to app admins only"), new View.OnClickListener() { @Override public void onClick(View v) { openReportsPanel(); } }));
+        b.addView(c3);
+
         TextView out = txt("⎋  " + L("تسجيل الخروج", "Log out"), GOLD, 15, true);
         out.setGravity(Gravity.CENTER);
         out.setBackground(rbg(0x14F5C35A, 0x80F5C35A, 16));
@@ -277,6 +286,27 @@ abstract class Settings extends ShareCard {
         } });
         b.addView(out, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50)));
         ((LinearLayout.LayoutParams) out.getLayoutParams()).setMargins(0, dp(22), 0, 0);
+        TextView ver = txt("ZELO Sport v" + APP_VERSION, 0xFF5B6697, 12, false);
+        ver.setGravity(Gravity.CENTER);
+        b.addView(ver, lpm(0, 16, 0, 0));
+        stShow(stPage(L("الإعدادات", "Settings"), null, new Runnable() { @Override public void run() { if (stDlg != null) stDlg.dismiss(); } }, true, b, null));
+    }
+
+    // شاشة «الحساب»: الاسم، اسم المستخدم، البريد، كلمة المرور، وحذف الحساب
+    protected void stAccount() {
+        stInAccount = true;
+        LinearLayout b = stBody();
+        b.addView(txt(L("المعلومات", "Info"), MUTED, 12, true), lpm(4, 4, 4, 8));
+        LinearLayout c1 = stCard();
+        c1.addView(stRow("👤", L("تغيير الاسم المستعار", "Change nickname"), stNick(), new View.OnClickListener() { @Override public void onClick(View v) { stNickScreen(); } }));
+        c1.addView(stRow("@", L("اسم المستخدم", "Username"), stUser().length() > 0 ? "@" + stUser() : "—", new View.OnClickListener() { @Override public void onClick(View v) { stUserScreen(); } }));
+        c1.addView(stRow("✉️", L("البريد الإلكتروني", "Email"), stEmail().length() > 0 ? stEmail() : "—", new View.OnClickListener() { @Override public void onClick(View v) { stStartEmail(); } }));
+        b.addView(c1);
+        b.addView(txt(L("الأمان", "Security"), MUTED, 12, true), lpm(4, 18, 4, 8));
+        LinearLayout c2 = stCard();
+        c2.addView(stRow("🔒", L("تغيير كلمة المرور", "Change password"), "••••••••", new View.OnClickListener() { @Override public void onClick(View v) { stPassScreen(false); } }));
+        b.addView(c2);
+        b.addView(txt(L("منطقة الخطر", "Danger zone"), MUTED, 12, true), lpm(4, 18, 4, 8));
         LinearLayout del = new LinearLayout(this);
         del.setGravity(Gravity.CENTER_VERTICAL);
         del.setPadding(dp(14), dp(12), dp(14), dp(12));
@@ -285,16 +315,17 @@ abstract class Settings extends ShareCard {
         del.addView(dic, new LinearLayout.LayoutParams(dp(38), dp(38)));
         LinearLayout dt = new LinearLayout(this);
         dt.setOrientation(LinearLayout.VERTICAL);
-        dt.setPadding(dp(12), 0, 0, 0);
+        dt.setPadding(dp(12), 0, dp(12), 0);
         dt.addView(txt(L("حذف الحساب", "Delete account"), 0xFFFF9B9B, 14, true));
-        dt.addView(txt(L("منطقة الخطر · لا يمكن التراجع", "Danger zone · Cannot be undone"), MUTED, 12, false));
-        del.addView(dt);
+        dt.addView(txt(L("يحذف بياناتك نهائيًا · لا يمكن التراجع", "Deletes your data permanently · Cannot be undone"), MUTED, 12, false));
+        del.addView(dt, lpw(1f));
+        del.addView(txt(isRtlLang() ? "‹" : "›", 0xFFFF9B9B, 20, true));
         del.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { stDeleteScreen(); } });
-        LinearLayout.LayoutParams dl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        dl.setMargins(0, dp(26), 0, dp(20));
-        b.addView(del, dl);
-        stShow(stPage(L("الإعدادات", "Settings"), null, new Runnable() { @Override public void run() { if (stDlg != null) stDlg.dismiss(); } }, true, b, null));
+        b.addView(del, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        b.addView(txt(L("حذف الحساب لا يلغي اشتراكك في Google Play، فألغِه بنفسك من متجر Play.", "Deleting your account does not cancel your Google Play subscription. Cancel it yourself in Play Store."), MUTED, 12, false), lpm(4, 8, 4, 0));
+        stShow(stPage(L("الحساب", "Account"), null, new Runnable() { @Override public void run() { stInAccount = false; stMain(); } }, true, b, null));
     }
+
 
     // ---------- المحظورون ----------
     protected void stBlocked() {
@@ -702,5 +733,123 @@ abstract class Settings extends ShareCard {
             } });
         } });
         stShow(stPage("🗑️ " + L("حذف الحساب", "Delete account"), null, stBackMain, true, b, stFoot(btn)));
+    }
+
+    // دعوة الأصدقاء: نافذة المشاركة (share.js لم يُحوَّل بعد) ← نشارك رابط الدعوة نصياً
+    protected void drInvite() {
+        String link = referralLink();
+        if (link.length() == 0) { toast(L("أكمل إنشاء حسابك أولاً", "Finish creating your account first")); return; }
+        Intent it = new Intent(Intent.ACTION_SEND);
+        it.setType("text/plain");
+        it.putExtra(Intent.EXTRA_TEXT, L("انضم إليّ في ZELO Sport ⚽\n", "Join me on ZELO Sport ⚽\n") + link);
+        startActivity(Intent.createChooser(it, "ZELO Sport"));
+    }
+
+    // ---------- مركز المساعدة ----------
+    protected String[][] faqItems() {
+        return new String[][] {
+            { L("نسيت كلمة السر", "I forgot my password"), L("من شاشة تسجيل الدخول اختر «نسيت كلمة السر» وسيصلك رمز تحقق على بريدك. إن لم يصل خلال دقائق فافحص الرسائل غير المرغوب فيها.", "On the sign-in screen choose “Forgot password” and a verification code will be sent to your email. If it does not arrive within a few minutes, check your spam folder.") },
+            { L("كيف أحذف حسابي؟", "How do I delete my account?"), L("من الإعدادات ← حذف الحساب. الحذف لا يلغي اشتراك Google Play، فألغِه من المتجر بنفسك. وأنهِ أي طلب سحب معلّق قبل الحذف.", "Go to Settings → Delete account. Deleting does not cancel your Google Play subscription, so cancel it in the store yourself. Finish any pending withdrawal before deleting.") },
+            { L("كيف ألغي اشتراكي؟", "How do I cancel my subscription?"), L("افتح متجر Google Play ← الملف الشخصي ← المدفوعات والاشتراكات ← الاشتراكات ← ZELO Sport ← إلغاء.", "Open Google Play → Profile → Payments & subscriptions → Subscriptions → ZELO Sport → Cancel.") },
+            { L("كيف يعمل سحب الكورة؟", "How do Kora withdrawals work?"), L("من «محفظتي». السحب للمشتركين فقط، والحد الأدنى 1000 كورة (200 كورة = 1 USDT)، وتُعلَّق الكورة الجديدة 7 أيام. الحد الأدنى والرسوم ومدة المعالجة تظهر لك قبل تأكيد الطلب، وقد يُطلب منك تحقق إضافي. تأكد من عنوان المحفظة (USDT على شبكة BEP20) لأن العمليات لا تُلغى بعد التنفيذ.", "From “My Wallet”. Withdrawals are for subscribers only, the minimum is 1,000 Kora (200 Kora = 1 USDT), and new Kora is held for 7 days. The minimum, fees and processing time are shown before you confirm, and extra verification may be required. Double-check the wallet address (USDT on BEP20) because transactions cannot be reversed once sent.") },
+            { L("كيف أبلّغ عن منشور أو أحظر مستخدماً؟", "How do I report a post or block a user?"), L("من قائمة المنشور (النقاط الثلاث) اختر «بلاغ» أو «حظر».", "From the post menu (three dots) choose “Report” or “Block”.") }
+        };
+    }
+    protected void openHelpCenter() {
+        if (helpDlg != null) { try { helpDlg.dismiss(); } catch (Exception ignore) {} }
+        final Dialog d = sheetDialog(true);
+        helpDlg = d;
+        d.getWindow().setBackgroundDrawable(new ColorDrawable(0xFF0A1033));
+        lbDirection(d);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(0, statusH() + dp(6), 0, 0);
+        LinearLayout bar = new LinearLayout(this);
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        bar.setPadding(dp(14), dp(12), dp(14), dp(12));
+        bar.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
+        TextView ti = txt(L("مركز المساعدة", "Help center"), Color.WHITE, 18, true);
+        ti.setPadding(dp(10), 0, 0, 0);
+        bar.addView(ti);
+        root.addView(bar);
+        LinearLayout b = new LinearLayout(this);
+        b.setOrientation(LinearLayout.VERTICAL);
+        b.setPadding(dp(16), dp(10), dp(16), navH() + dp(28));
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(16), dp(16), dp(16), dp(16));
+        GradientDrawable cg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] { 0x4D2C4BB5, 0x8014206B });
+        cg.setCornerRadius(dp(18)); cg.setStroke(dp(1), 0x47F5C35A);
+        card.setBackground(cg);
+        card.addView(txt(L("تواصل مع الدعم", "Contact support"), GOLD, 17, true));
+        card.addView(txt(L("اكتب لنا مشكلتك أو اقتراحك وسنرد عليك على بريدك.", "Tell us about your problem or idea and we will reply by email."), 0xFFC9D1F5, 14, false), lpm(0, 4, 0, 10));
+        TextView em = txt(SUPPORT_EMAIL, Color.WHITE, 15, true);
+        em.setTextDirection(View.TEXT_DIRECTION_LTR);
+        card.addView(em, lpm(0, 0, 0, 12));
+        LinearLayout acts = new LinearLayout(this);
+        TextView mail = txt("✉️  " + L("راسلنا", "Email us"), NAVY, 15, true), copy = txt(L("نسخ البريد", "Copy email"), Color.WHITE, 15, true);
+        for (TextView t : new TextView[] { mail, copy }) { t.setGravity(Gravity.CENTER); t.setPadding(dp(8), dp(12), dp(8), dp(12)); }
+        GradientDrawable mg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] { GOLD, 0xFFFDE9A8 });
+        mg.setCornerRadius(dp(14));
+        mail.setBackground(mg);
+        copy.setBackground(rbg(0x14FFFFFF, 0x24FFFFFF, 14));
+        mail.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+            String who = (uname != null && uname.length() > 0 ? "@" + uname + "  " : "") + (uid != null ? "ID: " + uid : "");
+            String body = "\n\n---\n" + L("بيانات حسابي (لتسهيل المساعدة):", "My account info (to help us assist you):") + "\n" + who + "\nApp v" + APP_VERSION;
+            Intent it = new Intent(Intent.ACTION_SENDTO, android.net.Uri.parse("mailto:"));
+            it.putExtra(Intent.EXTRA_EMAIL, new String[] { SUPPORT_EMAIL });
+            it.putExtra(Intent.EXTRA_SUBJECT, L("دعم ZELO Sport", "ZELO Sport support"));
+            it.putExtra(Intent.EXTRA_TEXT, body);
+            try { startActivity(it); } catch (Exception e) { toast(SUPPORT_EMAIL); }
+        } });
+        copy.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+            ((android.content.ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE)).setPrimaryClip(android.content.ClipData.newPlainText("email", SUPPORT_EMAIL));
+            toast(L("تم نسخ البريد", "Email copied"));
+        } });
+        acts.addView(mail, lpw(1f));
+        LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        cl.setMargins(dp(10), 0, 0, 0);
+        acts.addView(copy, cl);
+        card.addView(acts);
+        b.addView(card, lpm(0, 0, 0, 18));
+        b.addView(txt(L("أسئلة شائعة", "FAQ"), 0xFF6F7BB3, 13, true), lpm(4, 6, 4, 8));
+        for (final String[] q : faqItems()) {
+            final LinearLayout item = new LinearLayout(this);
+            item.setOrientation(LinearLayout.VERTICAL);
+            item.setBackground(rbg(0x08FFFFFF, 0x17FFFFFF, 14));
+            LinearLayout hd = new LinearLayout(this);
+            hd.setGravity(Gravity.CENTER_VERTICAL);
+            hd.setPadding(dp(14), dp(14), dp(14), dp(14));
+            hd.addView(txt(q[0], Color.WHITE, 15, true), lpw(1f));
+            final TextView pl = txt("+", GOLD, 22, false);
+            hd.addView(pl);
+            final TextView ans = txt(q[1], 0xFFC9D1F5, 14, false);
+            ans.setPadding(dp(14), 0, dp(14), dp(14));
+            ans.setVisibility(View.GONE);
+            hd.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { boolean open = ans.getVisibility() == View.VISIBLE; ans.setVisibility(open ? View.GONE : View.VISIBLE); pl.setText(open ? "+" : "−"); } });
+            item.addView(hd); item.addView(ans);
+            b.addView(item, lpm(0, 0, 0, 8));
+        }
+        b.addView(txt(L("معلومات قانونية", "Legal"), 0xFF6F7BB3, 13, true), lpm(4, 18, 4, 8));
+        String[][] legal = { { "privacy", L("سياسة الخصوصية", "Privacy Policy") }, { "terms", L("شروط الاستخدام", "Terms of Use") }, { "refunds", L("الدفع والاسترداد", "Payments & Refunds") }, { "delete-account", L("حذف الحساب والبيانات", "Delete account & data") } };
+        for (final String[] l : legal) {
+            LinearLayout r = new LinearLayout(this);
+            r.setGravity(Gravity.CENTER_VERTICAL);
+            r.setPadding(dp(14), dp(13), dp(14), dp(13));
+            r.setBackground(rbg(0x08FFFFFF, 0x17FFFFFF, 14));
+            r.addView(txt(l[1], 0xFFE8ECFF, 15, true), lpw(1f));
+            r.addView(txt(isRtlLang() ? "‹" : "›", 0xFF55608F, 18, true));
+            r.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openExternal(SITE + l[0] + (isAr() ? ".html" : "-en.html")); } });
+            b.addView(r, lpm(0, 0, 0, 8));
+        }
+        TextView ft = txt("ZELO Sport v" + APP_VERSION, 0xFF5B6697, 12, false);
+        ft.setGravity(Gravity.CENTER);
+        b.addView(ft, lpm(0, 18, 0, 0));
+        ScrollView sc = new ScrollView(this);
+        sc.addView(b);
+        root.addView(sc, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        d.setContentView(root);
+        d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface di) { helpDlg = null; } });
+        d.show();
     }
 }
