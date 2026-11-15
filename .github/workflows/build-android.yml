@@ -265,6 +265,12 @@ jobs:
           ls "$dir"
           head -3 "$dir/Home.java"
 
+      - name: Copy language files into the app (assets/locales)
+        run: |
+          mkdir -p $APP_DIR/app/src/main/assets/locales
+          if [ -d locales ]; then cp locales/*.json $APP_DIR/app/src/main/assets/locales/; fi
+          ls $APP_DIR/app/src/main/assets/locales
+
       - name: Install ImageMagick
         run: |
           sudo apt-get update
