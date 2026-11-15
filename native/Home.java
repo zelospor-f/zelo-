@@ -457,6 +457,16 @@ public class Home extends FollowList {
         names.addView(h.time);
         head.addView(names);
         head.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        h.supBtn = tv(NAVY, 13, true);
+        h.supBtn.setText("ادعم");
+        h.supBtn.setGravity(Gravity.CENTER);
+        GradientDrawable sbBg = new GradientDrawable();
+        sbBg.setColor(GOLD);
+        sbBg.setCornerRadius(dp(18));
+        h.supBtn.setBackground(sbBg);
+        h.supBtn.setPadding(dp(16), dp(6), dp(16), dp(6));
+        h.supBtn.setVisibility(View.GONE);
+        head.addView(h.supBtn);
         h.more = tv(MUTED, 22, true);
         h.more.setText("⋮");
         h.more.setPadding(dp(14), dp(4), dp(6), dp(4));
@@ -556,18 +566,12 @@ public class Home extends FollowList {
                 if (t instanceof Integer) openComments((Integer) t);
             }
         });
-        row.addView(acts);
         h.supbar = new LinearLayout(this);
         h.supbar.setGravity(Gravity.CENTER_VERTICAL);
-        h.supbar.setPadding(dp(12), dp(8), dp(8), dp(8));
-        GradientDrawable sbg = new GradientDrawable();
-        sbg.setColor(0x14F5C35A);
-        sbg.setCornerRadius(dp(16));
-        sbg.setStroke(dp(1), 0x2EF5C35A);
-        h.supbar.setBackground(sbg);
-        LinearLayout.LayoutParams sbl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        sbl.setMargins(0, dp(6), 0, 0);
-        row.addView(h.supbar, sbl);
+        h.supbar.setPadding(dp(2), dp(4), dp(2), dp(2));
+        h.supbar.setVisibility(View.GONE);
+        row.addView(h.supbar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        row.addView(acts);
 
         w.addView(row, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return w;
@@ -1344,7 +1348,7 @@ public class Home extends FollowList {
         box.addView(bar);
 
         final TextView empty = tv(MUTED, 14, false);
-        empty.setText("جارٍ التحميل...");
+        empty.setText("");
         empty.setPadding(dp(16), dp(8), dp(16), dp(8));
         box.addView(empty);
 
@@ -1494,7 +1498,7 @@ public class Home extends FollowList {
         offset = 0;
         endReached = false;
         refreshUi();
-        status.setText("جارٍ التحديث...");
+        status.setText("");
         t0 = System.currentTimeMillis();
         loadBalance();
         loadPage();
@@ -1550,7 +1554,7 @@ public class Home extends FollowList {
                             offset += n;
                             if (n < PAGE) endReached = true;
                             refreshUi();
-                            if (first) status.setText("المنشورات: " + n + " خلال " + mid + " ms");
+                            if (first) status.setVisibility(View.GONE);
                         }
                     });
                     if (fids.length() > 0) {
@@ -1651,7 +1655,7 @@ public class Home extends FollowList {
         l.setPadding(0, dp(4), 0, 0);
         c.addView(l);
         c.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else if ("radar".equals(action)) openFanRadar(); else if ("earn".equals(action)) openChallengesRanking(); else if ("tonight".equals(action) || "live".equals(action)) openTodayMatches(action); else goWeb(action); }
+            @Override public void onClick(View v) { if ("subs".equals(action)) openSubscriptions(); else if ("ranking".equals(action)) openLeagueTable(); else if ("radar".equals(action)) openFanRadar(); else if ("earn".equals(action)) openPointsPage(); else if ("tonight".equals(action) || "live".equals(action)) openTodayMatches(action); else goWeb(action); }
         });
         return c;
     }
@@ -1880,7 +1884,7 @@ public class Home extends FollowList {
 
         status = tv(MUTED, 12, false);
         status.setPadding(dp(16), dp(4), dp(16), dp(6));
-        status.setText("جارٍ التحميل...");
+        status.setText("");
         root.addView(status);
 
         ListView lv = new ListView(this);
@@ -1888,16 +1892,30 @@ public class Home extends FollowList {
         lv.setSelector(new ColorDrawable(Color.TRANSPARENT));
         lv.setClipToPadding(false);
         lv.setPadding(0, 0, 0, dp(90));
+        // إعلان بانر بعد كل 7 منشورات (للمستخدم غير المشترك فقط)
+        final boolean[] feedAds = { false };
+        final HashMap<Integer, View> feedAdViews = new HashMap<Integer, View>();
         adapter = new BaseAdapter() {
-            @Override public int getCount() { return items.size(); }
-            @Override public Object getItem(int i) { return items.get(i); }
+            private boolean isAd(int p) { return feedAds[0] && p % 8 == 7; }
+            private int idx(int p) { return feedAds[0] ? p - p / 8 : p; }
+            @Override public int getCount() { int n = items.size(); return feedAds[0] ? n + n / 7 : n; }
+            @Override public Object getItem(int i) { return isAd(i) ? null : items.get(idx(i)); }
             @Override public long getItemId(int i) { return i; }
+            @Override public int getItemViewType(int i) { return isAd(i) ? -1 : 0; }
             @Override public View getView(int i, View cv, ViewGroup parent) {
+                if (isAd(i)) {
+                    View av = feedAdViews.get(i);
+                    if (av == null) { av = adFeedView(); feedAdViews.put(i, av); }
+                    return av;
+                }
                 if (cv == null) cv = makeRow();
-                bindPost(cv, i);
+                bindPost(cv, idx(i));
                 return cv;
             }
         };
+        if (uid != null) fetchTier(new TierCb() { @Override public void on(int tier) {
+            if (tier < 1) { feedAds[0] = true; adapter.notifyDataSetChanged(); }
+        } });
         lv.setAdapter(adapter);
         lv.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override public void onScrollStateChanged(AbsListView v, int st) {}
@@ -1919,6 +1937,8 @@ public class Home extends FollowList {
         FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.BOTTOM | Gravity.LEFT);
         flp.setMargins(dp(18), 0, 0, dp(18));
         listBox.addView(fab, flp);
+        adFab = fab;
+        adFabShift();
         root.addView(listBox, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         // الشريط السفلي الأصلي

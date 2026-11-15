@@ -122,7 +122,7 @@ abstract class Matches extends Leaderboard {
         return d;
     }
     protected View uEmpty(String s) { return lbEmpty(s); }
-    protected View uLoading() { return lbEmpty("⏳"); }
+    protected View uLoading() { View v = new View(this); v.setMinimumHeight(dp(80)); return v; } // لا علامة تحميل ظاهرة: مساحة فارغة حتى تصل البيانات
 
     protected long isoMs(String iso) {
         try {

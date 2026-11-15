@@ -490,7 +490,7 @@ abstract class Support extends Base {
         final LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
         TextView ld = tv(MUTED, 14, false);
-        ld.setText("جارٍ التحميل...");
+        ld.setText("");
         ld.setGravity(Gravity.CENTER);
         ld.setPadding(0, dp(24), 0, dp(24));
         list.addView(ld);

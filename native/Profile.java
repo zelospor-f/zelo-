@@ -499,7 +499,7 @@ abstract class Profile extends WeeklyMatchRankings {
                 }
                 plist.clear();
                 if (padRef[0] != null) padRef[0].notifyDataSetChanged();
-                emptyV.setText("جارٍ التحميل...");
+                emptyV.setText("");
                 emptyV.setVisibility(View.VISIBLE);
                 profLoadTab(target, tab[0], plist, new Runnable() {
                     @Override public void run() {
