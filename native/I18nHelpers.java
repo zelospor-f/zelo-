@@ -100,14 +100,14 @@ abstract class I18nHelpers extends Billing {
         if (lg.equals("ar")) return ar;
         if (lg.equals("en")) return en;
         JSONObject n;
-        synchronized (i18n) { n = i18n.get("n_" + lg); }
+        synchronized (i18n) { n = i18n.get(lg); }
         if (n != null) { String v = n.optString(ar, ""); if (v.length() > 0) return v; }
         return en;
     }
     protected String nGet(String k) {
         String lg = getCurrentLang();
         JSONObject n;
-        synchronized (i18n) { n = i18n.get("n_" + lg); }
+        synchronized (i18n) { n = i18n.get(lg); }
         if (n == null) return null;
         String v = n.optString(k, "");
         return v.length() > 0 ? v : null;
@@ -150,11 +150,6 @@ abstract class I18nHelpers extends Billing {
         try {
             String t = fetchLocale(lang + ".json");
             if (t != null) synchronized (i18n) { i18n.put(lang, new JSONObject(t)); }
-        } catch (Exception ignore) {}
-        // نصوص الواجهة الأصلية: n_<lang>.json (مفتاحها النص العربي)
-        try {
-            String t2 = fetchLocale("n_" + lang + ".json");
-            if (t2 != null) synchronized (i18n) { i18n.put("n_" + lang, new JSONObject(t2)); }
         } catch (Exception ignore) {}
     }
 
@@ -244,7 +239,6 @@ abstract class I18nHelpers extends Billing {
     // tr(key, ar, en, params)
     protected String tr(String key, String ar, String en, Map<String, String> params) {
         String text = dictGet(getCurrentLang(), key);
-        if (text == null && !isAr() && !"en".equals(getCurrentLang())) text = nGet("k:" + key);
         if (text == null) text = zT(ar, en);
         if (text == null) text = key;
         return param(text, params);
