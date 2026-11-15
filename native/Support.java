@@ -163,6 +163,8 @@ abstract class Support extends Base {
 
     protected void bindSupport(Holder h, JSONObject o) {
         h.supbar.removeAllViews();
+        h.supbar.setVisibility(View.GONE);
+        h.supBtn.setVisibility(View.GONE);
         final String pk = String.valueOf(o.optLong("id"));
         final String owner = o.optString("user_id", "");
         final boolean isOwner = owner.equals(uid);
@@ -182,25 +184,14 @@ abstract class Support extends Base {
             left.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { openSupporters(pk, owner); }
             });
-        } else {
-            TextView t = tv(MUTED, 13, true);
-            t.setText(isOwner ? "لا يوجد دعم بعد" : "كن أول من يدعم");
-            left.addView(t);
+            h.supbar.addView(left, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            h.supbar.setVisibility(View.VISIBLE);
         }
-        h.supbar.addView(left, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         if (!isOwner) {
-            TextView b = tv(NAVY, 13, true);
-            b.setText("ادعم");
-            b.setGravity(Gravity.CENTER);
-            GradientDrawable g = new GradientDrawable();
-            g.setColor(GOLD);
-            g.setCornerRadius(dp(18));
-            b.setBackground(g);
-            b.setPadding(dp(18), dp(8), dp(18), dp(8));
-            b.setOnClickListener(new View.OnClickListener() {
+            h.supBtn.setVisibility(View.VISIBLE);
+            h.supBtn.setOnClickListener(new View.OnClickListener() {
                 @Override public void onClick(View v) { openSupportSheet(pk, owner); }
             });
-            h.supbar.addView(b);
         }
     }
 

@@ -282,7 +282,43 @@ abstract class Ads extends Store {
         @Override public void run() { adShowBanner(); }
     };
 
+    // زر النشر العائم يرتفع فوق البانر كي لا يغطيه
+    protected View adFab;
+    protected void adFabShift() {
+        if (adFab == null || !(adFab.getLayoutParams() instanceof FrameLayout.LayoutParams)) return;
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) adFab.getLayoutParams();
+        lp.bottomMargin = dp(18) + (adBannerOn ? dp(80) : 0);
+        adFab.setLayoutParams(lp);
+    }
+
+    // بانر داخل الخلاصة (بين المنشورات): حاوية ثابتة لكل موضع، والإعلان يُحمَّل بعد تهيئة الـSDK
+    protected View adFeedView() {
+        final LinearLayout slot = new LinearLayout(this);
+        slot.setOrientation(LinearLayout.VERTICAL);
+        slot.setGravity(Gravity.CENTER_HORIZONTAL);
+        slot.setPadding(dp(14), dp(6), dp(14), dp(6));
+        TextView lab = txt(L("إعلان", "Ad"), MUTED, 11, true);
+        lab.setGravity(Gravity.CENTER);
+        slot.addView(lab);
+        adInitSdk(new Runnable() { @Override public void run() {
+            try {
+                AdView av = new AdView(Ads.this);
+                av.setAdSize(AdSize.BANNER);
+                av.setAdUnitId(AD_BANNER);
+                slot.addView(av, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                TextView sub = txt(L("اشترك لإزالة الإعلانات", "Subscribe to remove ads"), GOLD, 11, true);
+                sub.setGravity(Gravity.CENTER);
+                sub.setPadding(dp(10), dp(3), dp(10), dp(3));
+                sub.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openSubscriptions(); } });
+                slot.addView(sub);
+                av.loadAd(new AdRequest.Builder().build());
+            } catch (Throwable e) { slot.setVisibility(View.GONE); }
+        } });
+        return slot;
+    }
+
     protected void adShowBanner() {
+        if (true) return; // الإعلان صار بين المنشورات (adFeedView) بدل الشريط الثابت
         if (adBannerOn || uid == null) return;
         fetchTier(new TierCb() { @Override public void on(int tier) {
             if (tier >= 1 || adBannerOn) return;
@@ -305,6 +341,7 @@ abstract class Ads extends Store {
                     addContentView(slot, lp);
                     adSlot = slot;
                     adBannerOn = true;
+                    adFabShift();
                     av.loadAd(new AdRequest.Builder().build());
                 } catch (Throwable e) { adBannerOn = false; }
             } });
@@ -316,5 +353,6 @@ abstract class Ads extends Store {
         if (adSlot != null && adSlot.getParent() instanceof ViewGroup) ((ViewGroup) adSlot.getParent()).removeView(adSlot);
         adSlot = null;
         adBannerOn = false;
+        adFabShift();
     }
 }

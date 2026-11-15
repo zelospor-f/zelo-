@@ -367,16 +367,16 @@ abstract class Base extends Activity {
     }
 
     protected void setIc(TextView t, int type, int color, boolean on) {
-        // أيقونة فوق والرقم تحتها: كل الخلايا بنفس الشكل والارتفاع والمحاذاة
-        t.setCompoundDrawablesRelativeWithIntrinsicBounds(null, new Ic(type, color, on, dp(20)), null, null);
-        t.setCompoundDrawablePadding(dp(3));
-        t.setTextSize(12);
+        // الأيقونة والرقم بجانبها في صف واحد: كل الخلايا بنفس الشكل والمحاذاة
+        t.setCompoundDrawablesRelativeWithIntrinsicBounds(new Ic(type, color, on, dp(20)), null, null, null);
+        t.setCompoundDrawablePadding(dp(5));
+        t.setTextSize(13);
         t.setGravity(Gravity.CENTER);
         t.setTextColor(color);
     }
 
     protected static class Holder {
-        TextView avatar, name, time, body, video, heart, cm, rp, vw, sv, sh, more;
+        TextView avatar, name, time, body, video, heart, cm, rp, vw, sv, sh, more, supBtn;
         LinearLayout rope, pred, supbar;
         ImageView avImg, img;
     }
