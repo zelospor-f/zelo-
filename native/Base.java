@@ -514,11 +514,93 @@ abstract class Base extends Activity {
     }
 
     // ---------------- الصور ----------------
+    // رابط صورة صالح: http(s) أو بطاقة NFT مخزّنة كـ SVG داخل الرابط (data:image/svg+xml)
+    protected static boolean isImg(String u) {
+        return u != null && (u.startsWith("http") || u.startsWith("data:image/svg+xml"));
+    }
+
+    private static int svgColor(String s, int def) {
+        try {
+            if (s == null) return def;
+            s = s.trim();
+            if (s.startsWith("rgba")) {
+                String[] p = s.substring(s.indexOf('(') + 1, s.indexOf(')')).split(",");
+                int a = (int) Math.round(Float.parseFloat(p[3].trim()) * 255);
+                return Color.argb(a, Integer.parseInt(p[0].trim()), Integer.parseInt(p[1].trim()), Integer.parseInt(p[2].trim()));
+            }
+            if (s.startsWith("rgb")) {
+                String[] p = s.substring(s.indexOf('(') + 1, s.indexOf(')')).split(",");
+                return Color.rgb(Integer.parseInt(p[0].trim()), Integer.parseInt(p[1].trim()), Integer.parseInt(p[2].trim()));
+            }
+            return Color.parseColor(s);
+        } catch (Exception e) { return def; }
+    }
+
+    private static String svgAttr(String tag, String name) {
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("(?:^|\\s)" + name + "=\"([^\"]*)\"").matcher(tag);
+        return m.find() ? m.group(1) : null;
+    }
+
+    // يرسم بطاقة NFT (SVG بسيط: خلفية متدرجة + دائرة + نصوص) إلى صورة
+    protected Bitmap svgCardBitmap(String uri) {
+        try {
+            String svg = java.net.URLDecoder.decode(uri.substring(uri.indexOf(',') + 1), "UTF-8");
+            int W = 256;
+            Bitmap bm = Bitmap.createBitmap(W, W, Bitmap.Config.ARGB_8888);
+            Canvas cv = new Canvas(bm);
+            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            // الخلفية
+            java.util.regex.Matcher st = java.util.regex.Pattern.compile("stop-color=\"([^\"]*)\"").matcher(svg);
+            int c1 = 0xFF1B2766, c2 = 0xFF050A26;
+            if (st.find()) c1 = svgColor(st.group(1), c1);
+            if (st.find()) c2 = svgColor(st.group(1), c2);
+            java.util.regex.Matcher rc = java.util.regex.Pattern.compile("<rect ([^>]*)>").matcher(svg);
+            float rx = 28;
+            if (rc.find()) { String r = svgAttr(rc.group(1), "rx"); if (r != null) rx = Float.parseFloat(r); }
+            p.setShader(new android.graphics.LinearGradient(0, 0, W, W, c1, c2, android.graphics.Shader.TileMode.CLAMP));
+            cv.drawRoundRect(new RectF(0, 0, W, W), rx, rx, p);
+            p.setShader(null);
+            // الدوائر
+            java.util.regex.Matcher cm = java.util.regex.Pattern.compile("<circle ([^>]*)>").matcher(svg);
+            while (cm.find()) {
+                String t = cm.group(1);
+                p.setColor(svgColor(svgAttr(t, "fill"), 0x2E000000));
+                cv.drawCircle(Float.parseFloat(svgAttr(t, "cx")), Float.parseFloat(svgAttr(t, "cy")), Float.parseFloat(svgAttr(t, "r")), p);
+            }
+            // النصوص
+            java.util.regex.Matcher tm = java.util.regex.Pattern.compile("<text ([^>]*)>(.*?)</text>", java.util.regex.Pattern.DOTALL).matcher(svg);
+            while (tm.find()) {
+                String t = tm.group(1);
+                String txt = tm.group(2);
+                Paint tp = new Paint(Paint.ANTI_ALIAS_FLAG);
+                String fs = svgAttr(t, "font-size");
+                tp.setTextSize(fs == null ? 16 : Float.parseFloat(fs));
+                String fw = svgAttr(t, "font-weight");
+                tp.setTypeface(Typeface.create(Typeface.SANS_SERIF, fw != null && Integer.parseInt(fw) >= 600 ? Typeface.BOLD : Typeface.NORMAL));
+                int col = svgColor(svgAttr(t, "fill"), Color.WHITE);
+                String fo = svgAttr(t, "fill-opacity");
+                if (fo != null) col = Color.argb((int) Math.round(Float.parseFloat(fo) * 255), Color.red(col), Color.green(col), Color.blue(col));
+                tp.setColor(col);
+                if ("middle".equals(svgAttr(t, "text-anchor"))) tp.setTextAlign(Paint.Align.CENTER);
+                String ls = svgAttr(t, "letter-spacing");
+                if (ls != null && android.os.Build.VERSION.SDK_INT >= 21) tp.setLetterSpacing(Float.parseFloat(ls) / tp.getTextSize());
+                float x = Float.parseFloat(svgAttr(t, "x")), y = Float.parseFloat(svgAttr(t, "y"));
+                cv.drawText(android.text.Html.fromHtml(txt).toString(), x, y, tp);
+            }
+            return bm;
+        } catch (Throwable e) { return null; }
+    }
+
     protected void loadImage(final String u, final ImageView iv) {
         iv.setTag(u);
         Bitmap hit = cache.get(u);
         if (hit != null) { iv.setImageBitmap(hit); return; }
         iv.setImageDrawable(new ColorDrawable(0xFF1B2766));
+        if (u != null && u.startsWith("data:image/svg+xml")) {
+            final Bitmap sb = svgCardBitmap(u);
+            if (sb != null) { cache.put(u, sb); iv.setImageBitmap(sb); }
+            return;
+        }
         pool.execute(new Runnable() {
             @Override public void run() {
                 try {

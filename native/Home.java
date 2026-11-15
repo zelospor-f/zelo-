@@ -140,7 +140,7 @@ public class Home extends FollowList {
                                     JSONObject po = pa.getJSONObject(q);
                                     String ph = po.isNull("photo_url") ? "" : po.optString("photo_url", "");
                                     { String un9 = po.isNull("username") ? "" : po.optString("username", ""); if (un9.length() > 0) unames.put(po.optString("user_id"), un9); }
-                    if (ph.startsWith("http")) photos.put(po.optString("user_id"), ph);
+                    if (isImg(ph)) photos.put(po.optString("user_id"), ph);
                                 }
                             }
                         } catch (Exception ignore) {}
@@ -1567,7 +1567,7 @@ public class Home extends FollowList {
                                     JSONObject po = pa.getJSONObject(q);
                                     String ph = po.isNull("photo_url") ? "" : po.optString("photo_url", "");
                                     { String un9 = po.isNull("username") ? "" : po.optString("username", ""); if (un9.length() > 0) unames.put(po.optString("user_id"), un9); }
-                    if (ph.startsWith("http")) photos.put(po.optString("user_id"), ph);
+                    if (isImg(ph)) photos.put(po.optString("user_id"), ph);
                                 }
                                 runOnUiThread(new Runnable() {
                                     @Override public void run() { refreshUi(); }
@@ -1839,8 +1839,8 @@ public class Home extends FollowList {
         meBox.addView(meImg, new FrameLayout.LayoutParams(dp(46), dp(46)));
         String mePh = "";
         try { if (pjson.length() > 0) mePh = new JSONObject(pjson).optString("photoUrl", ""); } catch (Exception ignore) {}
-        if (!mePh.startsWith("http") && uavatar != null && uavatar.startsWith("http")) mePh = uavatar;
-        if (mePh.startsWith("http")) { loadImage(mePh, meImg); } else { meImg.setVisibility(View.GONE); }
+        if (!isImg(mePh) && isImg(uavatar)) mePh = uavatar;
+        if (isImg(mePh)) { loadImage(mePh, meImg); } else { meImg.setVisibility(View.GONE); }
         top.addView(meBox, new LinearLayout.LayoutParams(dp(46), dp(46)));
         balance = tv(GOLD, 20, true);
         balance.setText("…");

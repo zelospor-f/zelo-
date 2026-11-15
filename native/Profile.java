@@ -84,7 +84,7 @@ abstract class Profile extends WeeklyMatchRankings {
                     JSONObject po = pa.getJSONObject(q);
                     String ph = po.isNull("photo_url") ? "" : po.optString("photo_url", "");
                     { String un9 = po.isNull("username") ? "" : po.optString("username", ""); if (un9.length() > 0) unames.put(po.optString("user_id"), un9); }
-                    if (ph.startsWith("http")) photos.put(po.optString("user_id"), ph);
+                    if (isImg(ph)) photos.put(po.optString("user_id"), ph);
                 }
             }
         } catch (Exception ignore) {}
@@ -627,8 +627,8 @@ abstract class Profile extends WeeklyMatchRankings {
             dobV.setVisibility(View.VISIBLE);
         }
         String ph0 = P.optString("photoUrl", "");
-        if (mine && ph0.startsWith("http")) { loadImage(ph0, avImg); avLetter.setVisibility(View.GONE); }
-        else if (mine && uavatar != null && uavatar.startsWith("http")) { loadImage(uavatar, avImg); avLetter.setVisibility(View.GONE); }
+        if (mine && isImg(ph0)) { loadImage(ph0, avImg); avLetter.setVisibility(View.GONE); }
+        else if (mine && isImg(uavatar)) { loadImage(uavatar, avImg); avLetter.setVisibility(View.GONE); }
         String bl = mine ? ClubsData.logo(P.optString("badgeClub", "")) : "";
         if (bl.startsWith("http")) { bset[0] = true; loadImage(bl, badgeV); wm.setAlpha(0.38f); fillCover(wm); loadImage(bl, wm); refreshVer.run(); }
         try {
@@ -712,7 +712,7 @@ abstract class Profile extends WeeklyMatchRankings {
                         if (!mine) {
                             if (ex[0].length() > 0) { nameV.setText(ex[0]); avLetter.setText(ex[0].substring(0, 1).toUpperCase()); }
                             if (ex[1].length() > 0) { userV.setText("@" + ex[1]); shareName[0] = ex[1]; }
-                            if (ex[2].startsWith("http")) { loadImage(ex[2], avImg); avLetter.setVisibility(View.GONE); }
+                            if (isImg(ex[2])) { loadImage(ex[2], avImg); avLetter.setVisibility(View.GONE); }
                             if (ex[3].length() > 0 && !"null".equals(ex[3])) { bioV.setText(ex[3]); bioV.setVisibility(View.VISIBLE); }
                             String bl2 = ClubsData.logo(ex[4]);
                             if (bl2.startsWith("http")) { bset[0] = true; loadImage(bl2, badgeV); wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(bl2, wm); refreshVer.run(); }
