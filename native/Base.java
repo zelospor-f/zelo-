@@ -676,6 +676,20 @@ abstract class Base extends Activity {
     }
 
 
+    // يرفع المحتوى فوق الكيبورد (targetSdk 36 يتجاهل adjustResize)
+    protected void keyboardLift(Dialog d, final View v) {
+        d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        if (android.os.Build.VERSION.SDK_INT < 30) return;
+        v.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @Override public WindowInsets onApplyWindowInsets(View view, WindowInsets ins) {
+                int ime = ins.getInsets(WindowInsets.Type.ime()).bottom;
+                view.setPadding(0, 0, 0, ime);
+                return ins;
+            }
+        });
+        v.requestApplyInsets();
+    }
+
     protected Dialog sheetDialog(boolean full) {
         Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
         d.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, full ? ViewGroup.LayoutParams.MATCH_PARENT : ViewGroup.LayoutParams.WRAP_CONTENT);
