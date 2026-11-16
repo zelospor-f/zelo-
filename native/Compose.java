@@ -101,6 +101,7 @@ abstract class Compose extends Profile {
     private boolean cmPred = false;
     private JSONObject cmPredMatch = null;
     private int cmPredPick = -1;
+    private String cmLeague = "";
     private JSONArray cmMatches = null;
     private String cmMatchQuery = "";
     private boolean cmPosting = false;
@@ -247,11 +248,12 @@ abstract class Compose extends Profile {
             @Override public void onClick(View v) { cmPickTopic(null); }
         }));
         for (final String[] t : CM_TOPICS) {
+            if ("prediction".equals(t[0])) continue;
             cmChips.addView(cmChip(cmTopicTitle(t), t[0].equals(cmTopicType), new View.OnClickListener() {
                 @Override public void onClick(View v) { cmPickTopic(t[0]); }
             }));
         }
-        cmChips.addView(cmChip("⚽ " + L("توقّع مباراة", "Match prediction"), cmPred, new View.OnClickListener() {
+        cmChips.addView(cmChip("⚽ " + L("توقع", "Prediction"), cmPred, new View.OnClickListener() {
             @Override public void onClick(View v) { cmPickPred(); }
         }));
     }
@@ -324,7 +326,7 @@ abstract class Compose extends Profile {
     private void cmPickPred() {
         if (!cmTier3()) return;
         cmTopicType = null; cmTopicName = ""; cmTopicNameB = "";
-        cmPred = true; cmPredMatch = null; cmPredPick = -1; cmMatchQuery = "";
+        cmPred = true; cmPredMatch = null; cmPredPick = -1; cmMatchQuery = ""; cmLeague = "";
         cmRenderChips();
         cmRenderPred();
         if (cmMatches == null) {
@@ -376,6 +378,25 @@ abstract class Compose extends Profile {
             cmTopicFields.addView(cmHint(L("التوقّع مجاني دائمًا، بلا مال ولا جوائز نقدية.", "Free forever: no money involved.")));
             return;
         }
+        if (cmMatches != null && cmMatches.length() > 0) {
+            HorizontalScrollView lh = new HorizontalScrollView(this);
+            lh.setHorizontalScrollBarEnabled(false);
+            LinearLayout lr = new LinearLayout(this);
+            lh.addView(lr);
+            lr.addView(cmChip(L("الكل", "All"), cmLeague.length() == 0, new View.OnClickListener() {
+                @Override public void onClick(View v) { cmLeague = ""; cmRenderPred(); }
+            }));
+            java.util.LinkedHashSet<String> comps = new java.util.LinkedHashSet<String>();
+            for (int i = 0; i < cmMatches.length(); i++) { JSONObject mm = cmMatches.optJSONObject(i); if (mm != null && mm.optString("competition_name").length() > 0) comps.add(mm.optString("competition_name")); }
+            for (final String cn : comps) {
+                lr.addView(cmChip(cmLeagueName(cn), cn.equals(cmLeague), new View.OnClickListener() {
+                    @Override public void onClick(View v) { cmLeague = cn; cmRenderPred(); }
+                }));
+            }
+            LinearLayout.LayoutParams llp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            llp.setMargins(0, dp(10), 0, dp(4));
+            cmTopicFields.addView(lh, llp);
+        }
         EditText q = cmInput(L("ابحث عن مباراة أو فريق", "Search a match or team"), new TextW() { @Override public void on(String s) { cmMatchQuery = s; cmFillMatchList(); } });
         q.setText(cmMatchQuery);
         cmTopicFields.addView(q);
@@ -384,6 +405,19 @@ abstract class Compose extends Profile {
         list.setTag("mlist");
         cmTopicFields.addView(list);
         cmFillMatchList();
+    }
+
+    private String cmLeagueName(String n) {
+        if ("Primera Division".equals(n)) return L("الإسباني", "La Liga");
+        if ("Premier League".equals(n)) return L("الإنجليزي", "Premier League");
+        if ("Serie A".equals(n)) return L("الإيطالي", "Serie A");
+        if ("Bundesliga".equals(n)) return L("الألماني", "Bundesliga");
+        if ("Ligue 1".equals(n)) return L("الفرنسي", "Ligue 1");
+        if ("UEFA Champions League".equals(n)) return L("أبطال أوروبا", "Champions League");
+        if ("Championship".equals(n)) return L("تشامبيونشيب", "Championship");
+        if ("Eredivisie".equals(n)) return L("الهولندي", "Eredivisie");
+        if (n.startsWith("Campeonato Brasileiro")) return L("البرازيلي", "Brasileirão");
+        return n;
     }
 
     private void cmFillMatchList() {
@@ -399,9 +433,10 @@ abstract class Compose extends Profile {
             if (m == null) continue;
             String hay = (m.optString("team_a") + " " + m.optString("team_b") + " " + m.optString("competition_name")).toLowerCase();
             if (ql.length() > 0 && hay.indexOf(ql) < 0) continue;
+            if (cmLeague.length() > 0 && !cmLeague.equals(m.optString("competition_name"))) continue;
             shown++;
             TextView it = tv(Color.WHITE, 14, true);
-            it.setText(m.optString("team_a") + " × " + m.optString("team_b") + "\n" + cmWhen(m.optString("match_date")));
+            it.setText(m.optString("team_a") + " × " + m.optString("team_b") + "\n" + cmWhen(m.optString("match_date")) + " · " + cmLeagueName(m.optString("competition_name")));
             it.setPadding(dp(12), dp(10), dp(12), dp(10));
             it.setBackground(rbg(CARD, 0x33FFFFFF, 12));
             it.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPredMatch = m; cmPredPick = -1; cmRenderPred(); } });
