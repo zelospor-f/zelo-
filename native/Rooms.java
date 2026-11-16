@@ -422,8 +422,8 @@ abstract class Rooms extends Settings {
             @Override public void run() {
                 String found = "";
                 try {
-                    JSONArray a = new JSONArray(get("public_profiles?select=avatar_url&user_id=eq." + rmEnc(u)));
-                    if (a.length() > 0 && !a.getJSONObject(0).isNull("avatar_url")) found = a.getJSONObject(0).optString("avatar_url");
+                    JSONArray a = new JSONArray(get("public_profiles?select=photo_url&user_id=eq." + rmEnc(u)));
+                    if (a.length() > 0 && !a.getJSONObject(0).isNull("photo_url")) found = a.getJSONObject(0).optString("photo_url");
                 } catch (Exception ignore) {}
                 final String fu = found;
                 rmAv.put(u, fu);
@@ -484,7 +484,7 @@ abstract class Rooms extends Settings {
             pbar.setProgress(0);
             play.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rmPlay(path, ms, play, pbar); } });
             vr.addView(play, new LinearLayout.LayoutParams(dp(38), dp(38)));
-            LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(getResources().getDisplayMetrics().widthPixels * 38 / 100, dp(8));
+            LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(0, dp(8), 1f);
             pl.setMargins(dp(10), 0, dp(10), 0);
             vr.addView(pbar, pl);
             vr.addView(txt(rmDur(ms), 0xFFB6BDD0, 12, true));
@@ -500,7 +500,8 @@ abstract class Rooms extends Settings {
         }
         LinearLayout.LayoutParams al = new LinearLayout.LayoutParams(dp(34), dp(34));
         al.setMargins(dp(6), 0, dp(6), 0);
-        if (mine) { row.addView(bub); row.addView(av, al); } else { row.addView(av, al); row.addView(bub); }
+        LinearLayout.LayoutParams bl2 = new LinearLayout.LayoutParams(voice ? getResources().getDisplayMetrics().widthPixels * 70 / 100 : ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        if (mine) { row.addView(bub, bl2); row.addView(av, al); } else { row.addView(av, al); row.addView(bub, bl2); }
         return row;
     }
 
@@ -1212,7 +1213,8 @@ abstract class Rooms extends Settings {
 
     protected void shareRoom(JSONObject room) {
         String code = room.optString("code");
-        String text = L("انضم إلى غرفتي «" + room.optString("name") + "» في ZELO FC\nالرمز: " + code, "Join my room \"" + room.optString("name") + "\" on ZELO FC\nCode: " + code) + "\n" + rmRoomLink(code);
+        boolean needCode = room.optBoolean("requires_code", true);
+        String text = L("انضم إلى غرفتي «" + room.optString("name") + "» في ZELO FC" + (needCode ? "\nالرمز: " + code : ""), "Join my room \"" + room.optString("name") + "\" on ZELO FC" + (needCode ? "\nCode: " + code : "")) + "\n" + rmRoomLink(code);
         try {
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");
@@ -1229,7 +1231,7 @@ abstract class Rooms extends Settings {
         List<Runnable> runs = new ArrayList<Runnable>();
         final String rid = room.optString("id");
         if (rmIsOwner()) {
-            labels.add("⤴ " + L("مشاركة الرمز والرابط", "Share code & link")); dg.add(false);
+            labels.add("⤴ " + (room.optBoolean("requires_code", true) ? L("مشاركة الرمز والرابط", "Share code & link") : L("مشاركة الرابط", "Share link"))); dg.add(false);
             runs.add(new Runnable() { @Override public void run() { shareRoom(room); } });
             labels.add("👥 " + L("دعوة مستخدمين", "Invite users")); dg.add(false);
             runs.add(new Runnable() { @Override public void run() { rmInvite(); } });
