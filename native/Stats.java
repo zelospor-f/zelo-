@@ -240,7 +240,7 @@ abstract class Stats extends Settings {
         h.setPadding(dp(16), dp(12), dp(16), dp(8));
         h.addView(backBtn(new Runnable() { @Override public void run() { if (sxDlg != null) sxDlg.dismiss(); } }));
         TextView ti = txt(L("إحصائياتي", "My stats"), GOLD, 18, true);
-        ti.setPadding(dp(14), 0, 0, 0);
+        ti.setPaddingRelative(dp(14), 0, 0, 0);
         h.addView(ti, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         p.addView(h);
 
@@ -290,7 +290,7 @@ abstract class Stats extends Settings {
         b.addView(top, tlp);
 
         // الملخص
-        b.addView(sxRow(sxTile(L("👥 متابعون جدد", "👥 New followers"), "+" + sxNum(fnew), Color.WHITE, sxDelta(fnew, fprev)),
+        b.addView(sxRow(sxTile(L("👥 متابعون جدد", "👥 New followers"), "\u200E+" + sxNum(fnew), Color.WHITE, sxDelta(fnew, fprev)),
                         sxTile(L("👁 مشاهدات منشوراتك", "👁 Post views"), sxNum(views), Color.WHITE, sxDelta(views, vprev))));
         LinearLayout sp = new LinearLayout(this); b.addView(sp, new LinearLayout.LayoutParams(1, dp(12)));
         b.addView(sxRow(sxTile(L("🎁 دعم وصلك", "🎁 Support received"), sxNum(sup), GOLD, sxDelta(sup, sprev)),
@@ -312,7 +312,7 @@ abstract class Stats extends Settings {
         br.setPadding(0, dp(10), 0, 0);
         String[][] bt = {
             { String.valueOf(d.optLong("boost_n")), L("منشور معزَّز", "Boosted posts"), "w" },
-            { "+" + sxNum(d.optLong("boost_views")), L("مشاهدة إضافية", "Extra views"), "g" },
+            { "\u200E+" + sxNum(d.optLong("boost_views")), L("مشاهدة إضافية", "Extra views"), "g" },
             { sxNum(d.optDouble("boost_spent")), L("نقطة صُرفت", "Points spent"), "y" } };
         for (int i = 0; i < 3; i++) {
             LinearLayout cell = new LinearLayout(this);
@@ -347,7 +347,7 @@ abstract class Stats extends Settings {
         long rt = d.optLong("ref_total");
         long goalN = rt < 3 ? 3 : rt < 10 ? 10 : rt < 50 ? 50 : 100;
         LinearLayout rc = sxCard();
-        rc.addView(sxHead("🔗", L("الدعوات", "Invites"), rt + " / " + goalN, Color.WHITE));
+        rc.addView(sxHead("🔗", L("الدعوات", "Invites"), "\u200E" + rt + " / " + goalN + "\u200E", Color.WHITE));
         rc.addView(sxBar((double) rt / goalN));
         rc.addView(txt(L("باقي ", "") + (goalN - rt) + L(" دعوة للمرحلة التالية", " more for the next milestone"), MUTED, 13, false));
         long[] ms = { 3, 10, 50, 100 };
@@ -394,8 +394,15 @@ abstract class Stats extends Settings {
                 r.setGravity(Gravity.CENTER_VERTICAL);
                 r.setPadding(0, dp(10), 0, 0);
                 r.addView(txt(medal[i] + "  ", Color.WHITE, 18, false));
-                r.addView(txt(o.optString("name", ""), Color.WHITE, 15, true), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-                r.addView(txt(sxNum(o.optDouble("amt")), GOLD, 15, true));
+                TextView nmT = txt(o.optString("name", ""), Color.WHITE, 15, true);
+                nmT.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                nmT.setGravity(Gravity.START);
+                nmT.setSingleLine(true);
+                nmT.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                r.addView(nmT, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                TextView amT = txt(sxNum(o.optDouble("amt")), GOLD, 15, true);
+                amT.setPaddingRelative(dp(12), 0, 0, 0);
+                r.addView(amT);
                 sc2.addView(r);
             }
             sc2.addView(txt("👑 " + L("داعمك الأول: ", "Top supporter: ") + ts.optJSONObject(0).optString("name", "") + "  ·  " + d.optLong("sup_people") + " " + L("داعم", "supporters"), MUTED, 13, false));
