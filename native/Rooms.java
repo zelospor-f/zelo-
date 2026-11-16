@@ -1225,7 +1225,7 @@ abstract class Rooms extends Settings {
     protected void shareRoom(JSONObject room) {
         String code = room.optString("code");
         boolean needCode = room.optBoolean("requires_code", true);
-        String text = L("انضم إلى غرفتي «" + room.optString("name") + "» في ZELO FC" + (needCode ? "\nالرمز: " + code : ""), "Join my room \"" + room.optString("name") + "\" on ZELO FC" + (needCode ? "\nCode: " + code : "")) + "\n" + rmRoomLink(code);
+        String text = L("انضم إلى غرفتي «" + room.optString("name") + "» في ZELO Sport" + (needCode ? "\nالرمز: " + code : ""), "Join my room \"" + room.optString("name") + "\" on ZELO Sport" + (needCode ? "\nCode: " + code : "")) + "\n" + rmRoomLink(code);
         try {
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");
