@@ -200,21 +200,23 @@ abstract class Support extends Base {
     // حالة نافذة الهدايا الحالية
     protected String sPost, sOwner;
     protected boolean sShirts = false, sBusy = false;
-    protected int sSel = 0, sCombo = 0;
+    protected int sSel = 0, sCombo = 0, sQty = 1;
     protected long sComboNet = 0, sBalance = 0;
     protected String sNum = "10";
     protected Dialog sDlg;
     protected LinearLayout sGrid;
     protected TextView sBal, sMsg, sSend, sTabG, sTabS;
     protected EditText sNumEt;
-    protected LinearLayout sNumRow;
+    protected LinearLayout sNumRow, sQtyRow;
+    protected EditText sQtyEt;
+    protected boolean sQtyBusy = false;
 
     protected String[] curItem() {
         // {id, price, name, glyphOrNum, color, sub}
-        if (!sShirts) { String[] g = GIFTS[Math.min(sSel, GIFTS.length - 1)]; return new String[] { g[0], g[1], g[2], g[3], g[4], "" }; }
+        if (!sShirts) { String[] g = GIFTS[Math.min(sSel, GIFTS.length - 1)]; return new String[] { g[0], g[1], T(g[2]), g[3], g[4], "" }; }
         if (sSel == 0) return new String[] { "custom", "100", L("قميصك", "Your jersey"), sNum, "#C0392B", uname == null ? "" : uname };
         String[] x = SHIRTS[Math.min(sSel - 1, SHIRTS.length - 1)];
-        return new String[] { x[0], x[1], L("قميص ", "Jersey ") + x[2], x[2], x[4], x[3] };
+        return new String[] { x[0], x[1], L("قميص ", "Jersey ") + x[2], x[2], x[4], T(x[3]) };
     }
 
     protected void flushSupportNotify() {
@@ -225,7 +227,7 @@ abstract class Support extends Base {
 
     protected void openSupportSheet(String pk, String owner) {
         if (uid == null) return;
-        sPost = pk; sOwner = owner; sShirts = false; sSel = 0; sBusy = false; sCombo = 0; sComboNet = 0; sBalance = 0;
+        sPost = pk; sOwner = owner; sShirts = false; sSel = 0; sQty = 1; sBusy = false; sCombo = 0; sComboNet = 0; sBalance = 0;
         final Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
         sDlg = d;
         d.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -303,9 +305,79 @@ abstract class Support extends Base {
         nlp.setMargins(0, dp(4), 0, dp(8));
         box.addView(sNumRow, nlp);
 
+        sQtyRow = new LinearLayout(this);
+        sQtyRow.setGravity(Gravity.CENTER_VERTICAL);
+        sQtyRow.setPadding(dp(12), dp(6), dp(12), dp(6));
+        GradientDrawable qbg = new GradientDrawable();
+        qbg.setColor(CARD); qbg.setCornerRadius(dp(14));
+        sQtyRow.setBackground(qbg);
+        TextView ql = tv(MUTED, 13, false);
+        ql.setText(L("العدد", "Quantity"));
+        sQtyRow.addView(ql, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        int[] qs = new int[] { 10, 5, 1 };
+        for (int qi = 0; qi < qs.length; qi++) {
+            final int qv = qs[qi];
+            TextView ch = tv(0xFFCFD4F3, 12, false);
+            ch.setText("×" + qv);
+            ch.setGravity(Gravity.CENTER);
+            GradientDrawable chg = new GradientDrawable();
+            chg.setCornerRadius(dp(20)); chg.setStroke(dp(1), 0xFF3A4378);
+            ch.setBackground(chg);
+            ch.setPadding(dp(10), dp(5), dp(10), dp(5));
+            ch.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { setQty(qv); } });
+            LinearLayout.LayoutParams chl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            chl.setMargins(dp(3), 0, dp(3), 0);
+            sQtyRow.addView(ch, chl);
+        }
+        TextView qplus = tv(GOLD, 22, true);
+        qplus.setText("＋"); qplus.setGravity(Gravity.CENTER);
+        qplus.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { setQty(sQty + 1); } });
+        sQtyRow.addView(qplus, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        sQtyEt = new EditText(this);
+        sQtyEt.setInputType(android.text.InputType.TYPE_CLASS_NUMBER);
+        sQtyEt.setText("1");
+        sQtyEt.setTextColor(Color.WHITE);
+        sQtyEt.setGravity(Gravity.CENTER);
+        sQtyEt.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(2) });
+        sQtyEt.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence a, int b, int c, int e) {}
+            @Override public void onTextChanged(CharSequence a, int b, int c, int e) {}
+            @Override public void afterTextChanged(android.text.Editable ed) {
+                if (sQtyBusy) return;
+                String v = ed.toString().replaceAll("[^0-9]", "");
+                int n = 1;
+                try { n = v.length() == 0 ? 1 : Integer.parseInt(v); } catch (Exception ignore) {}
+                sQty = Math.max(1, Math.min(99, n));
+                updateSupport();
+            }
+        });
+        sQtyRow.addView(sQtyEt, new LinearLayout.LayoutParams(dp(56), ViewGroup.LayoutParams.WRAP_CONTENT));
+        TextView qminus = tv(GOLD, 22, true);
+        qminus.setText("－"); qminus.setGravity(Gravity.CENTER);
+        qminus.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { setQty(sQty - 1); } });
+        sQtyRow.addView(qminus, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        LinearLayout.LayoutParams qlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        qlp.setMargins(0, dp(4), 0, dp(8));
+        box.addView(sQtyRow, qlp);
+
+        LinearLayout balRow = new LinearLayout(this);
+        balRow.setGravity(Gravity.CENTER);
         sBal = tv(MUTED, 13, false);
         sBal.setGravity(Gravity.CENTER);
-        box.addView(sBal);
+        balRow.addView(sBal);
+        TextView topup = tv(GOLD, 13, true);
+        topup.setText("＋ " + L("اشحن", "Top up"));
+        GradientDrawable tg = new GradientDrawable();
+        tg.setCornerRadius(dp(20)); tg.setStroke(dp(1), GOLD);
+        topup.setBackground(tg);
+        topup.setPadding(dp(12), dp(4), dp(12), dp(4));
+        topup.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { if (sDlg != null) sDlg.dismiss(); openStorePage(); }
+        });
+        LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        tlp.setMargins(dp(10), 0, dp(10), 0);
+        balRow.addView(topup, tlp);
+        box.addView(balRow);
         sMsg = tv(MUTED, 12, false);
         sMsg.setGravity(Gravity.CENTER);
         sMsg.setPadding(0, dp(4), 0, dp(6));
@@ -351,9 +423,9 @@ abstract class Support extends Base {
             }
             final int idx = i;
             String[] it;
-            if (!sShirts) { String[] g = GIFTS[i]; it = new String[] { g[0], g[1], g[2], g[3], g[4], "" }; }
+            if (!sShirts) { String[] g = GIFTS[i]; it = new String[] { g[0], g[1], T(g[2]), g[3], g[4], "" }; }
             else if (i == 0) it = new String[] { "custom", "100", L("قميصك", "Your jersey"), sNum, "#C0392B", uname == null ? L("باسمك", "With your name") : uname };
-            else { String[] x = SHIRTS[i - 1]; it = new String[] { x[0], x[1], L("قميص ", "Jersey ") + x[2], x[2], x[4], x[3] }; }
+            else { String[] x = SHIRTS[i - 1]; it = new String[] { x[0], x[1], L("قميص ", "Jersey ") + x[2], x[2], x[4], T(x[3]) }; }
             LinearLayout cell = new LinearLayout(this);
             cell.setOrientation(LinearLayout.VERTICAL);
             cell.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -401,18 +473,28 @@ abstract class Support extends Base {
         if (rem != 0 && rowL != null) for (int k = rem; k < 3; k++) rowL.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
     }
 
+    protected void setQty(int n) {
+        sQty = Math.max(1, Math.min(99, n));
+        updateSupport();
+    }
+
     protected void updateSupport() {
         if (sDlg == null || !sDlg.isShowing()) return;
         String[] it = curItem();
-        long price = Long.parseLong(it[1]);
+        int qty = sShirts ? 1 : sQty;
+        long price = Long.parseLong(it[1]) * qty;
         boolean enough = sBalance >= price;
         sTabG.setTextColor(!sShirts ? GOLD : Color.WHITE);
         sTabS.setTextColor(sShirts ? GOLD : Color.WHITE);
         sNumRow.setVisibility(sShirts && sSel == 0 ? View.VISIBLE : View.GONE);
+        sQtyRow.setVisibility(sShirts ? View.GONE : View.VISIBLE);
+        if (!sShirts && !String.valueOf(sQty).equals(sQtyEt.getText().toString())) {
+            sQtyBusy = true; sQtyEt.setText(String.valueOf(sQty)); sQtyEt.setSelection(sQtyEt.getText().length()); sQtyBusy = false;
+        }
         sBal.setText(L("رصيدك الحالي: ", "Your current balance: ") + nfmt(sBalance) + " ZELO");
-        sMsg.setText(enough ? (sCombo > 1 ? "" : L("اضغط أكثر من مرة لتكرار الهدية", "Tap multiple times to repeat the gift")) : L("رصيدك لا يكفي لهذه الهدية", "Your balance isn't enough for this gift"));
+        sMsg.setText(enough ? (sCombo > 1 ? "" : (sShirts ? L("اضغط أكثر من مرة لتكرار الهدية", "Tap multiple times to repeat the gift") : L("الحد الأقصى 99 هدية في المرة", "Max 99 gifts at a time"))) : L("رصيدك لا يكفي لهذه الهدية", "Your balance isn't enough for this gift"));
         sMsg.setTextColor(enough ? MUTED : 0xFFFF6B6B);
-        sSend.setText("أرسل " + it[2] + ("custom".equals(it[0]) ? " " + it[3] : "") + (sCombo > 1 ? " ×" + sCombo : "") + " · " + it[1] + " ZELO");
+        sSend.setText(L("أرسل ", "Send ") + (qty > 1 ? qty + " " : "") + it[2] + ("custom".equals(it[0]) ? " " + it[3] : "") + " · " + price + " ZELO");
         sSend.setAlpha(!enough || sBusy ? 0.45f : 1f);
     }
 
@@ -420,42 +502,54 @@ abstract class Support extends Base {
         if (sBusy) return;
         final String[] it = curItem();
         final long price = Long.parseLong(it[1]);
-        if (sBalance < price) return;
+        final int qty = sShirts ? 1 : sQty;
+        if (sBalance < price * qty) return;
         sBusy = true;
         updateSupport();
         pool.execute(new Runnable() {
             @Override public void run() {
                 String err = null;
-                long net = price;
+                long net = 0;
+                int done = 0;
+                for (int k = 0; k < qty; k++) {
+                    try {
+                        JSONObject b = new JSONObject();
+                        b.put("p_from_user_id", uid);
+                        b.put("p_from_name", uname == null ? "" : uname);
+                        b.put("p_post_id", Long.parseLong(sPost));
+                        b.put("p_amount", price);
+                        b.put("p_gift_id", it[0]);
+                        String res = rpc("support_post", b.toString());
+                        long n1 = price;
+                        try { JSONObject r = new JSONObject(res); if (!r.isNull("net")) n1 = r.optLong("net", price); } catch (Exception ignore) {}
+                        net += n1;
+                        done++;
+                    } catch (Exception e) { err = String.valueOf(e.getMessage()); break; }
+                }
                 try {
-                    JSONObject b = new JSONObject();
-                    b.put("p_from_user_id", uid);
-                    b.put("p_from_name", uname == null ? "" : uname);
-                    b.put("p_post_id", Long.parseLong(sPost));
-                    b.put("p_amount", price);
-                    b.put("p_gift_id", it[0]);
-                    String res = rpc("support_post", b.toString());
-                    try { JSONObject r = new JSONObject(res); if (!r.isNull("net")) net = r.optLong("net", price); } catch (Exception ignore) {}
                     JSONArray a = new JSONArray(get("users?select=points&user_id=eq." + uid));
                     if (a.length() > 0) sBalance = a.getJSONObject(0).optLong("points", sBalance);
-                } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                } catch (Exception ignore) {}
                 try { loadSupportStats(sPost); } catch (Exception ignore) {}
                 final String fe = err;
                 final long fnet = net;
+                final int fdone = done;
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         sBusy = false;
+                        if (fdone > 0) {
+                            sCombo += fdone;
+                            sComboNet += fnet;
+                            toast("🎁 " + it[2] + (fdone > 1 ? " ×" + fdone : ""));
+                        }
                         if (fe != null) {
                             String m = L("تعذّر الدعم، حاول لاحقًا", "Could not support, try again later");
-                            if (fe.contains("insufficient_balance")) m = "رصيدك لا يكفي";
-                            else if (fe.contains("daily_limit")) m = "وصلت إلى حد الدعم اليومي";
-                            else if (fe.contains("own_post")) m = "لا يمكنك دعم منشورك";
-                            else if (fe.contains("invalid_gift")) m = "هذه الهدية غير متاحة، حدّث التطبيق";
+                            if (fe.contains("insufficient_balance")) m = L("رصيدك لا يكفي", "Your balance isn't enough");
+                            else if (fe.contains("daily_limit")) m = L("وصلت إلى حد الدعم اليومي", "You reached the daily support limit");
+                            else if (fe.contains("own_post")) m = L("لا يمكنك دعم منشورك", "You can't support your own post");
+                            else if (fe.contains("invalid_gift")) m = L("هذه الهدية غير متاحة، حدّث التطبيق", "This gift is unavailable, update the app");
+                            if (qty > 1) m = m + (L(" — أُرسل ", " — sent ") + fdone + "/" + qty);
                             toast(m);
-                        } else {
-                            sCombo++;
-                            sComboNet += fnet;
-                            toast("🎁 " + it[2] + (sCombo > 1 ? " ×" + sCombo : ""));
                         }
                         updateSupport();
                     }
@@ -548,7 +642,7 @@ abstract class Support extends Base {
                     @Override public void run() {
                         list.removeAllViews();
                         if (bad) {
-                            TextView e1 = tv(MUTED, 14, false); e1.setText("تعذّر التحميل"); e1.setGravity(Gravity.CENTER); e1.setPadding(0, dp(24), 0, dp(24)); list.addView(e1); return;
+                            TextView e1 = tv(MUTED, 14, false); e1.setText(T("تعذّر التحميل")); e1.setGravity(Gravity.CENTER); e1.setPadding(0, dp(24), 0, dp(24)); list.addView(e1); return;
                         }
                         if (rows.isEmpty()) {
                             TextView e1 = tv(MUTED, 14, false); e1.setText(L("لا يوجد داعمون بعد\nكن أول من يدعم", "No supporters yet\nBe the first to support")); e1.setGravity(Gravity.CENTER); e1.setPadding(0, dp(24), 0, dp(24)); list.addView(e1);

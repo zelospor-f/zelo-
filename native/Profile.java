@@ -179,7 +179,8 @@ abstract class Profile extends WeeklyMatchRankings {
     protected void shareProfile(String uname2) {
         Intent i = new Intent(Intent.ACTION_SEND);
         i.setType("text/plain");
-        i.putExtra(Intent.EXTRA_TEXT, "ZELO Sport — @" + uname2);
+        String lk = referralLink();
+        i.putExtra(Intent.EXTRA_TEXT, "ZELO Sport — @" + uname2 + (lk.length() > 0 ? "\n" + lk : ""));
         startActivity(Intent.createChooser(i, T("مشاركة")));
     }
 
@@ -497,6 +498,11 @@ abstract class Profile extends WeeklyMatchRankings {
             fetchTier(new TierCb() { @Override public void on(int tier) {
                 tierV[0] = tier; refreshVer.run(); if (tier < 1) vfCard.setVisibility(View.VISIBLE);
             } });
+            tierHook = new Runnable() { @Override public void run() {
+                fetchTier(new TierCb() { @Override public void on(int tier) {
+                    tierV[0] = tier; refreshVer.run(); vfCard.setVisibility(tier < 1 ? View.VISIBLE : View.GONE);
+                } });
+            } };
         }
 
         // التبويبات
@@ -689,7 +695,7 @@ abstract class Profile extends WeeklyMatchRankings {
         pool.execute(new Runnable() {
             @Override public void run() {
                 final String[] v = { "–", "–", "–", "–" };
-                final String[] ex = { "", "", "", "", "" }; // name, username, photo, bio, badge_club
+                final String[] ex = { "", "", "", "", "", "" }; // name, username, photo, bio, badge_club, first selected club
                 try {
                     if (!mine) {
                         JSONArray pa = new JSONArray(get("public_profiles?select=*&user_id=eq." + target + "&limit=1"));
@@ -706,6 +712,7 @@ abstract class Profile extends WeeklyMatchRankings {
                             String bi = po.isNull("bio") ? "" : po.optString("bio", "");
                             ex[3] = bi;
                             ex[4] = po.isNull("badge_club") ? "" : po.optString("badge_club", "");
+                            try { JSONArray sc1 = po.optJSONArray("selected_clubs"); if (sc1 != null && sc1.length() > 0) ex[5] = sc1.optString(0, ""); } catch (Exception ignore2) {}
                         }
                     }
                 } catch (Exception ignore) {}
@@ -737,6 +744,7 @@ abstract class Profile extends WeeklyMatchRankings {
                             if (isImg(ex[2])) { loadImage(ex[2], avImg); avLetter.setVisibility(View.GONE); }
                             if (ex[3].length() > 0 && !"null".equals(ex[3])) { bioV.setText(ex[3]); bioV.setVisibility(View.VISIBLE); }
                             String bl2 = ClubsData.logo(ex[4]);
+                            if (!bl2.startsWith("http") && ex[5].length() > 0) bl2 = ClubsData.logo(ex[5]);
                             if (bl2.startsWith("http")) { bset[0] = true; loadImage(bl2, badgeV); wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(bl2, wm); refreshVer.run(); }
                         }
                     }

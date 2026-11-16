@@ -71,7 +71,7 @@ import org.json.JSONObject;
 abstract class Referrals extends Notifications {
     // ===== من referrals.js: الإحالات + مجمع النقاط =====
     protected static final String REF_PACKAGE = "com.zelosport.app";
-    protected static final boolean REF_PUBLISHED = false;     // عند النشر على Google Play غيّرها إلى true
+    protected static final boolean REF_PUBLISHED = true;      // رابط Google Play
     protected static final String REF_GITHUB = "https://github.com/zelospor-f/zelo-/releases/latest";
 
     protected String cleanCode(String c) {

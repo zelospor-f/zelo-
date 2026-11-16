@@ -87,6 +87,7 @@ abstract class Base extends Activity {
 
     protected abstract void goWeb(String action);
     protected abstract void openMatchesPage();
+    protected abstract void openStorePage();
     protected abstract void openMessagesPage();
     protected abstract void openNotificationsPage();
     protected abstract void openRoomsHub();
@@ -158,6 +159,7 @@ abstract class Base extends Activity {
         TOPICS.put("prediction", new String[] { "توقع", "سيحدث", "لن يحدث" });
     }
     protected BaseAdapter adapter;
+    protected Runnable tierHook; // يُستدعى بعد الشراء لتحديث شارة التوثيق فورًا
     protected TextView status, balance;
     protected String url, key, token, uid, uname, uavatar, linkTpl;
     protected String pjson = "";
@@ -370,7 +372,8 @@ abstract class Base extends Activity {
     protected void setIc(TextView t, int type, int color, boolean on) {
         // الأيقونة والرقم بجانبها في صف واحد: كل الخلايا بنفس الشكل والمحاذاة
         t.setCompoundDrawablesRelativeWithIntrinsicBounds(new Ic(type, color, on, dp(20)), null, null, null);
-        t.setCompoundDrawablePadding(dp(5));
+        t.setCompoundDrawablePadding(t.getText().toString().trim().length() == 0 ? 0 : dp(5));
+        t.setMinHeight(dp(44));
         t.setTextSize(13);
         t.setGravity(Gravity.CENTER);
         t.setTextColor(color);

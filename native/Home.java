@@ -675,7 +675,7 @@ public class Home extends FollowList {
         Intent i = new Intent(Intent.ACTION_SEND);
         i.setType("text/plain");
         i.putExtra(Intent.EXTRA_TEXT, text);
-        startActivity(Intent.createChooser(i, "مشاركة"));
+        startActivity(Intent.createChooser(i, T("مشاركة")));
     }
 
     protected void editPost(final int idx) {
@@ -687,8 +687,8 @@ public class Home extends FollowList {
         new AlertDialog.Builder(this)
             .setTitle(L("تعديل المنشور", "Edit post"))
             .setView(et)
-            .setNegativeButton("إلغاء", null)
-            .setPositiveButton("حفظ", new DialogInterface.OnClickListener() {
+            .setNegativeButton(T("إلغاء"), null)
+            .setPositiveButton(T("حفظ"), new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) {
                     final String txt = et.getText().toString().trim();
                     final long id = o.optLong("id");
@@ -719,8 +719,8 @@ public class Home extends FollowList {
         final JSONObject o = items.get(idx);
         new AlertDialog.Builder(this)
             .setMessage(L("هل تريد حذف هذا المنشور؟", "Do you want to delete this post?"))
-            .setNegativeButton("إلغاء", null)
-            .setPositiveButton("حذف", new DialogInterface.OnClickListener() {
+            .setNegativeButton(T("إلغاء"), null)
+            .setPositiveButton(T("حذف"), new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) {
                     final String id = String.valueOf(o.optLong("id"));
                     final String vp = o.isNull("video_path") ? "" : o.optString("video_path", "");
@@ -944,8 +944,8 @@ public class Home extends FollowList {
         TextView d1 = tv(0xFF8F9BD1, 11, true);
         TextView d2;
         String score = r.optInt("away_score") + " - " + r.optInt("home_score");
-        if (fin) { d1.setText("انتهت"); d2 = tv(GOLD, 24, true); d2.setText(score); }
-        else if (started) { d1.setText("جارية"); d2 = tv(GOLD, 24, true); d2.setText(hasScore ? score : "—"); }
+        if (fin) { d1.setText(T("انتهت")); d2 = tv(GOLD, 24, true); d2.setText(score); }
+        else if (started) { d1.setText(T("جارية")); d2 = tv(GOLD, 24, true); d2.setText(hasScore ? score : "—"); }
         else { d1.setText(predWhen(r.optString("match_date", ""), true)); d2 = tv(Color.WHITE, 18, true); d2.setText(predWhen(r.optString("match_date", ""), false)); }
         d1.setGravity(Gravity.CENTER);
         d2.setGravity(Gravity.CENTER);
@@ -957,11 +957,11 @@ public class Home extends FollowList {
         mid.addView(colB, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         box.addView(mid);
 
-        final String[] lab = new String[] { ta, "تعادل", tb };
+        final String[] lab = new String[] { ta, T("تعادل"), tb };
         TextView mine = tv(0xFFCDD6FF, 13, true);
         mine.setGravity(Gravity.CENTER);
         mine.setPadding(0, dp(9), 0, 0);
-        mine.setText(L("📌 توقّع صاحب المنشور: ", "📌 Author's prediction: ") + (pick == 1 ? lab[1] : ("فوز " + lab[Math.max(0, Math.min(2, pick))])));
+        mine.setText(L("📌 توقّع صاحب المنشور: ", "📌 Author's prediction: ") + (pick == 1 ? lab[1] : (T("فوز ") + lab[Math.max(0, Math.min(2, pick))])));
         box.addView(mine);
 
         boolean open = !fin && !started;
@@ -972,7 +972,7 @@ public class Home extends FollowList {
             for (int i = 0; i < 3; i++) {
                 final int pi = i;
                 TextView b = tv(0xFFE8ECFF, 12, true);
-                b.setText(i == 1 ? lab[1] : ("فوز " + lab[i]));
+                b.setText(i == 1 ? lab[1] : (T("فوز ") + lab[i]));
                 b.setGravity(Gravity.CENTER);
                 b.setSingleLine(true);
                 GradientDrawable bb = new GradientDrawable();
@@ -1164,7 +1164,7 @@ public class Home extends FollowList {
                     runOnUiThread(new Runnable() {
                         @Override public void run() {
                             if (was) followSet.add(target); else followSet.remove(target);
-                            toast("تعذّر التنفيذ");
+                            toast(T("تعذّر التنفيذ"));
                         }
                     });
                 }
@@ -1195,8 +1195,8 @@ public class Home extends FollowList {
         if (uid == null || target.equals(uid)) return;
         new AlertDialog.Builder(this)
             .setMessage(L("هل تريد حظر ", "Do you want to block ") + tag + L("؟ لن ترى منشوراته وردوده.", "? You won't see their posts or replies."))
-            .setNegativeButton("إلغاء", null)
-            .setPositiveButton("حظر", new DialogInterface.OnClickListener() {
+            .setNegativeButton(T("إلغاء"), null)
+            .setPositiveButton(T("حظر"), new DialogInterface.OnClickListener() {
                 @Override public void onClick(DialogInterface d, int w) {
                     blockSet.add(target);
                     followSet.remove(target);
@@ -1307,10 +1307,10 @@ public class Home extends FollowList {
         h.vw.setText(String.valueOf(s[3]));
         setIc(h.vw, 3, MUTED, false);
         boolean svd = saved.contains(pk2);
-        h.sv.setText(" ");
+        h.sv.setText("");
         setIc(h.sv, 4, svd ? GOLD : MUTED, svd);
         h.sv.setTag(ti);
-        h.sh.setText(" ");
+        h.sh.setText("");
         setIc(h.sh, 5, MUTED, false);
         h.sh.setTag(ti);
         bindRope(h, o);
@@ -1405,7 +1405,7 @@ public class Home extends FollowList {
         et.setMaxLines(4);
         in.addView(et, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         final TextView sendBtn = tv(NAVY, 15, true);
-        sendBtn.setText("إرسال");
+        sendBtn.setText(T("إرسال"));
         sendBtn.setGravity(Gravity.CENTER);
         GradientDrawable sg = new GradientDrawable();
         sg.setColor(GOLD);
