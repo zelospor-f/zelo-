@@ -112,9 +112,42 @@ abstract class Base extends Activity {
     public static String pendingAction = null;
     // إشعارات تنتظر الرجوع إلى الويب لإرسالها: {kind, target, postId, text, amount}
     public static final List<String[]> pendingNotify = new ArrayList<String[]>();
-    protected void queueNotify(String kind, String target, String postId, String text, String amount) {
-        if (target == null || target.length() == 0 || target.equals(uid)) return;
-        synchronized (pendingNotify) { pendingNotify.add(new String[] { kind, target, postId, text == null ? "" : text, amount == null ? "" : amount }); }
+    protected String myNickCache = null;
+    protected final java.util.Set<String> sentNotify = new java.util.HashSet<String>();
+    protected void queueNotify(final String kind, final String target, final String postId, final String text, final String amount) {
+        if (target == null || target.length() == 0 || target.equals(uid) || uid == null) return;
+        final String dk = kind + "|" + target + "|" + (postId == null ? "" : postId) + ("support".equals(kind) ? "|" + System.currentTimeMillis() : "");
+        synchronized (sentNotify) { if (!sentNotify.add(dk)) return; }
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                try {
+                    if (myNickCache == null) {
+                        String nm = uname == null ? "" : uname;
+                        try {
+                            org.json.JSONArray a = new org.json.JSONArray(get("public_profiles?select=nickname,username&user_id=eq." + uid));
+                            if (a.length() > 0) { String nk = a.getJSONObject(0).isNull("nickname") ? "" : a.getJSONObject(0).optString("nickname"); if (nk.length() > 0) nm = nk; }
+                        } catch (Exception ignore) {}
+                        myNickCache = nm.length() > 0 ? nm : "ZELO";
+                    }
+                    String n = myNickCache, ta, te, act = postId != null && postId.length() > 0 ? "post:" + postId : "user:" + uid;
+                    String b = text == null ? "" : text;
+                    if (b.length() > 120) b = b.substring(0, 120);
+                    String ba = b, be = b;
+                    if ("like".equals(kind)) { ta = n + " أعجب بمنشورك"; te = n + " liked your post"; }
+                    else if ("repost".equals(kind)) { ta = n + " أعاد نشر منشورك"; te = n + " reposted your post"; }
+                    else if ("comment".equals(kind)) { ta = n + " علّق على منشورك"; te = n + " commented on your post"; }
+                    else if ("follow".equals(kind)) { ta = n + " بدأ بمتابعتك"; te = n + " started following you"; ba = ""; be = ""; act = "user:" + uid; }
+                    else if ("support".equals(kind)) { ta = n + " دعم منشورك"; te = n + " supported your post"; ba = "🎁 " + (amount == null ? "" : amount) + " ZELO"; be = ba; }
+                    else return;
+                    org.json.JSONObject o = new org.json.JSONObject();
+                    o.put("user_id", target); o.put("type", "social"); o.put("actor_id", uid);
+                    o.put("title_ar", ta); o.put("title_en", te); o.put("body_ar", ba); o.put("body_en", be);
+                    o.put("action", act); o.put("is_read", false);
+                    if (uavatar != null && uavatar.length() > 0) o.put("actor_avatar", uavatar);
+                    send("POST", "notifications", o.toString());
+                } catch (Exception ignore) {}
+            }
+        });
     }
     protected final Map<String, long[]> sup = new HashMap<String, long[]>(); // {net, supporters}
 
