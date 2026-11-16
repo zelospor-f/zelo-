@@ -344,7 +344,7 @@ abstract class Settings extends ShareCard {
             stLeagueOn.clear();
             try {
                 JSONArray a = new JSONArray(get("matches?select=competition_name&limit=1000"));
-                for (int i = 0; i < a.length(); i++) { String c = a.getJSONObject(i).optString("competition_name"); if (c.length() > 0) comps.add(c); }
+                for (int i = 0; i < a.length(); i++) { JSONObject jo = a.getJSONObject(i); if (jo.isNull("competition_name")) continue; String c = jo.optString("competition_name"); if (c.length() > 0 && !c.equals("null")) comps.add(c); }
             } catch (Exception ignore) {}
             try {
                 JSONArray a = new JSONArray(get("league_notif_prefs?select=competition&user_id=eq." + uid));

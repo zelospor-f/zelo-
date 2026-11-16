@@ -126,6 +126,8 @@ abstract class Base extends Activity {
         if ("Primeira Liga".equals(n)) return L("الدوري البرتغالي", "Primeira Liga");
         if ("European Championship".equals(n)) return L("كأس أمم أوروبا", "Euro");
         if ("FIFA World Cup".equals(n)) return L("كأس العالم", "World Cup");
+        if ("Copa Libertadores".equals(n)) return L("كأس ليبرتادوريس", "Copa Libertadores");
+        if ("Copa Sudamericana".equals(n)) return L("كأس سودأمريكانا", "Copa Sudamericana");
         return n;
     }
     protected String myNickCache = null;
