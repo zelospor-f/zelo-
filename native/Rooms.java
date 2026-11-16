@@ -862,9 +862,20 @@ abstract class Rooms extends Settings {
         d.getWindow().setBackgroundDrawable(new ColorDrawable(NAVY));
         d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         lbDirection(d);
-        LinearLayout root = new LinearLayout(this);
+        final LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(0, statusH() + dp(6), 0, 0);
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING);
+            d.getWindow().getDecorView().setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+                @Override public WindowInsets onApplyWindowInsets(View v, WindowInsets in) {
+                    int ime = in.getInsets(WindowInsets.Type.ime()).bottom;
+                    root.setPadding(0, statusH() + dp(6), 0, ime > 0 ? Math.max(0, ime - navH()) : 0);
+                    if (ime > 0 && rmScroll != null) rmScroll.post(new Runnable() { @Override public void run() { rmScrollEnd(); } });
+                    return in;
+                }
+            });
+        }
         // --- الرأس ---
         LinearLayout head = new LinearLayout(this);
         head.setGravity(Gravity.CENTER_VERTICAL);
@@ -1268,7 +1279,7 @@ abstract class Rooms extends Settings {
         final JSONObject room = rmCustom;
         if (room == null) return;
         final Dialog d = sheetDialog(false);
-        d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        d.getWindow().setSoftInputMode(android.os.Build.VERSION.SDK_INT >= 30 ? WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING : WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         lbDirection(d);
         final LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
