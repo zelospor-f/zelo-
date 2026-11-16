@@ -140,11 +140,11 @@ abstract class Store extends Rooms {
             final String[] p = ST_PACKS[i];
             View card = stPack(p);
             if (i == ST_PACKS.length - 1) {
-                body.addView(card, lpm(0, 0, 0, 0));
+                body.addView(card, lpm(6, 0, 6, 0));
             } else {
                 if (i % 2 == 0) { rowL = new LinearLayout(this); rowL.setBaselineAligned(false); body.addView(rowL, lpm(0, 0, 0, 12)); }
                 LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f);
-                cl.setMargins(i % 2 == 0 ? 0 : dp(6), 0, i % 2 == 0 ? dp(6) : 0, 0);
+                cl.setMargins(dp(6), 0, dp(6), 0);
                 rowL.addView(card, cl);
             }
         }

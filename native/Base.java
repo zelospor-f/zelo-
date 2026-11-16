@@ -376,7 +376,7 @@ abstract class Base extends Activity {
         t.setCompoundDrawablePadding(t.getText().toString().trim().length() == 0 ? 0 : dp(5));
         t.setMinHeight(dp(44));
         t.setTextSize(13);
-        t.setGravity(Gravity.CENTER);
+        t.setGravity(t.getText().toString().trim().length() == 0 ? Gravity.CENTER : (Gravity.CENTER_VERTICAL | Gravity.START));
         t.setTextColor(color);
     }
 

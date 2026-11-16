@@ -138,7 +138,7 @@ abstract class Subscriptions extends Support {
             nm.setText(T(p[1]) + (tier == 3 ? L("  ★ الأفضل قيمة", "  ★ Best value") : ""));
             head.addView(nm, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
             TextView pr = tv(GOLD, 20, true);
-            pr.setText("$" + p[2] + L(" / شهريًا", " / monthly"));
+            pr.setText((bpPrice(p[4]) != null ? bpPrice(p[4]) : "$" + p[2]) + L(" / شهريًا", " / monthly"));
             head.addView(pr);
             card.addView(head);
             for (int m = 0; m < MATRIX.length; m++) {

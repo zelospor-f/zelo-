@@ -123,7 +123,7 @@ abstract class FollowList extends EditProfile {
         root.addView(sc, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         flPaintTabs();
         TextView ld = tv(MUTED, 14, false);
-        ld.setText(L("جارٍ التحميل…", "Loading…"));
+        ld.setText("");
         ld.setGravity(Gravity.CENTER);
         ld.setPadding(0, dp(30), 0, 0);
         flList.addView(ld);
@@ -264,8 +264,9 @@ abstract class FollowList extends EditProfile {
     private void flStyleBtn(TextView b, String u) {
         boolean f = flMyFollowing.contains(u);
         b.setText(f ? L("مُتابَع", "Following") : (flMyFollowers.contains(u) ? L("ردّ المتابعة", "Follow back") : L("تابِع", "Follow")));
-        b.setTextColor(f ? Color.WHITE : NAVY);
-        b.setBackground(rbg(f ? 0x33FFFFFF : GOLD, 16, 0));
+        b.setTextColor(f ? GOLD : NAVY);
+        b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        b.setBackground(rbg(f ? 0x00000000 : GOLD, 18, f ? GOLD : 0));
     }
 
     private void flToggle(final String u) {

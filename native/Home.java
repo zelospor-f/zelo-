@@ -541,9 +541,9 @@ public class Home extends FollowList {
         h.sh = tv(MUTED, 15, false);
         TextView[] all = new TextView[] { h.cm, h.rp, h.heart, h.vw, h.sv, h.sh };
         for (int q = 0; q < all.length; q++) {
-            all[q].setPadding(dp(2), dp(10), dp(2), dp(10));
+            all[q].setPaddingRelative(q < 4 ? dp(14) : dp(2), dp(10), dp(2), dp(10));
             all[q].setGravity(Gravity.CENTER);
-            acts.addView(all[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            acts.addView(all[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f));
         }
         h.rp.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {

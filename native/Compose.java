@@ -163,7 +163,7 @@ abstract class Compose extends Profile {
             @Override public void afterTextChanged(android.text.Editable e) { cmUpdateCount(); }
         });
         LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-        tl.setMargins(dp(10), 0, 0, 0);
+        tl.setMarginStart(dp(12));
         row.addView(cmText, tl);
         box.addView(row);
 
@@ -389,7 +389,7 @@ abstract class Compose extends Profile {
         LinearLayout list = (LinearLayout) cmTopicFields.findViewWithTag("mlist");
         if (list == null) return;
         list.removeAllViews();
-        if (cmMatches == null) { list.addView(cmHint(L("جارٍ التحميل...", "Loading..."))); return; }
+        if (cmMatches == null) { list.addView(cmHint("")); return; }
         String ql = cmMatchQuery == null ? "" : cmMatchQuery.trim().toLowerCase();
         int shown = 0;
         for (int i = 0; i < cmMatches.length() && shown < 40; i++) {
