@@ -87,7 +87,7 @@ import org.json.JSONObject;
 // الغرف الفورية Realtime صارت استطلاعاً كل 3 ثوانٍ، وPresence صار عدد الأعضاء.
 // لوحة الاقتراحات الجانبية وتبويب مركز الغرف كانا معطَّلين في الويب (أُلغيا) فلم يُحوَّلا.
 // ============================================================
-abstract class Rooms extends Settings {
+abstract class Rooms extends Stats {
     protected static final int RM_OPEN_BEFORE = 60, RM_CLOSE_AFTER = 300, RM_MAX_LEN = 500, RM_GAP = 2000, RM_PAGE = 60, RM_MAX_DOM = 200, RM_MAX_VOICE = 60, RM_MIN_VOICE = 700;
     protected static final String RM_COLS = "id,name,code,owner_id,emoji,expires_at,is_public,requires_code,match_id";
     protected static final String RM_MSG = "id,user_id,username,body,created_at,kind,audio_path,audio_ms,expires_at";
