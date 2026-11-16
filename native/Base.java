@@ -112,6 +112,22 @@ abstract class Base extends Activity {
     public static String pendingAction = null;
     // إشعارات تنتظر الرجوع إلى الويب لإرسالها: {kind, target, postId, text, amount}
     public static final List<String[]> pendingNotify = new ArrayList<String[]>();
+    protected String leagueNameAr(String n) {
+        if (n == null) return "";
+        if ("Primera Division".equals(n)) return L("الدوري الإسباني", "La Liga");
+        if ("Premier League".equals(n)) return L("الدوري الإنجليزي الممتاز", "Premier League");
+        if ("Serie A".equals(n)) return L("الدوري الإيطالي", "Serie A");
+        if ("Bundesliga".equals(n)) return L("الدوري الألماني", "Bundesliga");
+        if ("Ligue 1".equals(n)) return L("الدوري الفرنسي", "Ligue 1");
+        if ("UEFA Champions League".equals(n)) return L("دوري أبطال أوروبا", "Champions League");
+        if ("Championship".equals(n)) return L("الدوري الإنجليزي (تشامبيونشيب)", "Championship");
+        if ("Eredivisie".equals(n)) return L("الدوري الهولندي", "Eredivisie");
+        if (n.startsWith("Campeonato Brasileiro")) return L("الدوري البرازيلي", "Brasileirão");
+        if ("Primeira Liga".equals(n)) return L("الدوري البرتغالي", "Primeira Liga");
+        if ("European Championship".equals(n)) return L("كأس أمم أوروبا", "Euro");
+        if ("FIFA World Cup".equals(n)) return L("كأس العالم", "World Cup");
+        return n;
+    }
     protected String myNickCache = null;
     protected final java.util.Set<String> sentNotify = new java.util.HashSet<String>();
     protected void queueNotify(final String kind, final String target, final String postId, final String text, final String amount) {
