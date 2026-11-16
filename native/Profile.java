@@ -699,6 +699,19 @@ abstract class Profile extends WeeklyMatchRankings {
             }
         } catch (Exception ignore) {}
 
+        final TextView topSupV = tv(GOLD, 13, true);
+        topSupV.setVisibility(View.GONE);
+        topSupV.setPadding(0, dp(8), 0, 0);
+        idb.addView(topSupV);
+        pool.execute(new Runnable() { @Override public void run() {
+            try {
+                String r = rpc("top_supporter", new JSONObject().put("p_user", target).toString()).trim();
+                if (r.startsWith("\"")) r = r.substring(1, r.length() - 1);
+                final String nm = r;
+                if (nm.length() > 0 && !nm.equals("null"))
+                    runOnUiThread(new Runnable() { @Override public void run() { topSupV.setText("\uD83D\uDC51 " + L("داعمه الأول: ", "Top supporter: ") + nm); topSupV.setVisibility(View.VISIBLE); } });
+            } catch (Exception ignore) {}
+        } });
         if (!mine) fetchTierOf(target, new TierCb() { @Override public void on(int tier) { tierV[0] = tier; refreshVer.run(); } });
         reload[0].run();
         pool.execute(new Runnable() {

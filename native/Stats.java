@@ -350,6 +350,35 @@ abstract class Stats extends Settings {
         rc.addView(sxHead("🔗", L("الدعوات", "Invites"), rt + " / " + goalN, Color.WHITE));
         rc.addView(sxBar((double) rt / goalN));
         rc.addView(txt(L("باقي ", "") + (goalN - rt) + L(" دعوة للمرحلة التالية", " more for the next milestone"), MUTED, 13, false));
+        long[] ms = { 3, 10, 50, 100 };
+        String[] mn = { L("المشجع", "Fan"), L("المؤثر", "Influencer"), L("السفير", "Ambassador"), L("الأسطورة", "Legend") };
+        for (int i = 0; i < ms.length; i++) {
+            LinearLayout mr = new LinearLayout(this);
+            mr.setGravity(Gravity.CENTER_VERTICAL);
+            mr.setPadding(0, dp(10), 0, 0);
+            boolean done = rt >= ms[i];
+            mr.addView(txt(done ? "\u2705  " : "\uD83D\uDD12  ", Color.WHITE, 16, false));
+            mr.addView(txt(ms[i] + " " + L("دعوة", "invites") + " \u00B7 " + mn[i], done ? SX_GREEN : MUTED, 14, true));
+            rc.addView(mr);
+        }
+        JSONArray rl = d.optJSONArray("ref_list");
+        if (rl != null && rl.length() > 0) {
+            TextView rh = txt(L("آخر من دعوتهم", "Recently invited"), Color.WHITE, 14, true);
+            rh.setPadding(0, dp(14), 0, 0);
+            rc.addView(rh);
+            for (int i = 0; i < rl.length(); i++) {
+                JSONObject o = rl.optJSONObject(i);
+                if (o == null) continue;
+                TextView rr = txt("\u2022 " + o.optString("name", ""), MUTED, 14, false);
+                rr.setPadding(0, dp(6), 0, 0);
+                rc.addView(rr);
+            }
+        }
+        rc.addView(txt("\uD83D\uDD17  " + L("ادعُ صديقاً", "Invite a friend"), GOLD, 14, true));
+        ((TextView) rc.getChildAt(rc.getChildCount() - 1)).setPadding(0, dp(14), 0, 0);
+        rc.getChildAt(rc.getChildCount() - 1).setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+            try { Intent i = new Intent(Intent.ACTION_SEND); i.setType("text/plain"); i.putExtra(Intent.EXTRA_TEXT, "ZELO Sport\n" + referralLink()); startActivity(Intent.createChooser(i, L("مشاركة", "Share"))); } catch (Exception ignore) {}
+        } });
         b.addView(rc);
 
         // الداعمون
@@ -405,19 +434,62 @@ abstract class Stats extends Settings {
     }
 
     protected void sxShare() {
-        try {
-            JSONObject d = sxData;
-            long pt = d.optLong("pred_total"), pok = d.optLong("pred_ok");
-            String t = L("إحصائياتي في ZELO Sport", "My stats on ZELO Sport") + "\n"
-                + L("الترتيب: #", "Rank: #") + d.optLong("rank") + "\n"
-                + L("متابعون: ", "Followers: ") + d.optLong("followers") + "\n"
-                + L("مشاهدات: ", "Views: ") + d.optLong("views") + "\n"
-                + (pt > 0 ? (L("دقة التوقع: ", "Prediction accuracy: ") + Math.round(100.0 * pok / pt) + "%\n") : "")
-                + "\n" + referralLink();
-            Intent i = new Intent(Intent.ACTION_SEND);
-            i.setType("text/plain");
-            i.putExtra(Intent.EXTRA_TEXT, t);
-            startActivity(Intent.createChooser(i, L("مشاركة", "Share")));
-        } catch (Exception ignore) {}
+        final JSONObject d = sxData;
+        toast(L("جارٍ تجهيز البطاقة...", "Preparing card..."));
+        pool.execute(new Runnable() { @Override public void run() {
+            try {
+                Bitmap ball = fetchBitmap("https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png");
+                Bitmap bmp = sxDrawCard(d, ball);
+                java.io.File f = new java.io.File(getCacheDir(), "zelo_season.png");
+                java.io.FileOutputStream fo = new java.io.FileOutputStream(f);
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, fo);
+                fo.close();
+                final java.io.File ff = f;
+                runOnUiThread(new Runnable() { @Override public void run() { shareImageFile(ff); } });
+            } catch (Exception e) {
+                runOnUiThread(new Runnable() { @Override public void run() { toast(L("تعذّر إنشاء البطاقة", "Could not create card")); } });
+            }
+        } });
+    }
+
+    protected Bitmap sxDrawCard(JSONObject d, Bitmap ball) {
+        int W = 1080, H = 1920;
+        Bitmap bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(bmp);
+        Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        p.setShader(new android.graphics.LinearGradient(0, 0, W, H, new int[] { 0xFF24348F, 0xFF0A1033, 0xFF3A2408 }, null, android.graphics.Shader.TileMode.CLAMP));
+        c.drawRect(0, 0, W, H, p);
+        p.setShader(null);
+        p.setTextAlign(Paint.Align.CENTER);
+        p.setTypeface(Typeface.DEFAULT_BOLD);
+        p.setColor(GOLD); p.setTextSize(52);
+        c.drawText("ZELO SPORT", W / 2f, 150, p);
+        if (ball != null) c.drawBitmap(ball, null, new RectF(W / 2f - 110, 230, W / 2f + 110, 450), p);
+        long pt = d.optLong("pred_total"), pok = d.optLong("pred_ok");
+        p.setColor(0xFF9AA6D8); p.setTextSize(44);
+        c.drawText(L("دقة توقعاتك", "Prediction accuracy"), W / 2f, 600, p);
+        p.setColor(GOLD); p.setTextSize(240);
+        c.drawText(pt > 0 ? (Math.round(100.0 * pok / pt) + "%") : "\u2014", W / 2f, 830, p);
+        String[][] t = {
+            { "#" + d.optLong("rank"), L("ترتيبك", "Rank") },
+            { String.valueOf(d.optLong("pred_streak")), L("أطول سلسلة 🔥", "Best streak") },
+            { sxNum(d.optLong("followers")), L("متابِعون", "Followers") },
+            { sxNum(d.optDouble("sup_all")), L("دعم وصلك", "Support") } };
+        for (int i = 0; i < 4; i++) {
+            float x = 70 + (i % 2) * 490, y = 960 + (i / 2) * 270;
+            Paint bp = new Paint(Paint.ANTI_ALIAS_FLAG);
+            bp.setColor(0x22FFFFFF);
+            c.drawRoundRect(new RectF(x, y, x + 450, y + 230), 40, 40, bp);
+            p.setColor(Color.WHITE); p.setTextSize(88);
+            c.drawText(t[i][0], x + 225, y + 120, p);
+            p.setColor(0xFF9AA6D8); p.setTextSize(38);
+            c.drawText(t[i][1], x + 225, y + 190, p);
+        }
+        Paint bp2 = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bp2.setShader(new android.graphics.LinearGradient(70, 0, 1010, 0, GOLD, 0xFFFDE9A8, android.graphics.Shader.TileMode.CLAMP));
+        c.drawRoundRect(new RectF(70, 1640, 1010, 1780), 50, 50, bp2);
+        p.setColor(NAVY); p.setTextSize(52);
+        c.drawText(L("حمّل ZELO Sport وتحدّاني ⚽", "Download ZELO Sport & challenge me"), W / 2f, 1730, p);
+        return bmp;
     }
 }
