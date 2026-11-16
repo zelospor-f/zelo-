@@ -194,7 +194,7 @@ public class Home extends FollowList {
         int d = dp(22);
         vIc[0].setImageDrawable(new Ic(11, NAVY, false, d));
         vCt[0].setText(sp == null ? "0" : kfmt(sp[0]));
-        vIc[1].setImageDrawable(new Ic(2, lk ? 0xFFFF4D6D : Color.WHITE, lk, d));
+        vIc[1].setImageDrawable(new Ic(2, lk ? 0xFF14F195 : Color.WHITE, lk, d));
         vCt[1].setText(String.valueOf(s[0]));
         vIc[2].setImageDrawable(new Ic(0, Color.WHITE, false, d));
         vCt[2].setText(String.valueOf(s[1]));
@@ -1291,7 +1291,7 @@ public class Home extends FollowList {
         if (s == null) s = new int[] { 0, 0, 0, 0 };
         boolean lk = liked.contains(String.valueOf(o.optLong("id")));
         h.heart.setText(String.valueOf(s[0]));
-        setIc(h.heart, 2, lk ? 0xFFFF4D6D : MUTED, lk);
+        setIc(h.heart, 2, lk ? 0xFF14F195 : MUTED, lk);
         Integer ti = Integer.valueOf(i);
         h.heart.setTag(ti);
         h.more.setTag(ti);
@@ -1308,7 +1308,7 @@ public class Home extends FollowList {
         setIc(h.vw, 3, MUTED, false);
         boolean svd = saved.contains(pk2);
         h.sv.setText("");
-        setIc(h.sv, 4, svd ? GOLD : MUTED, svd);
+        setIc(h.sv, 4, svd ? 0xFF14F195 : MUTED, svd);
         h.sv.setTag(ti);
         h.sh.setText("");
         setIc(h.sh, 5, MUTED, false);

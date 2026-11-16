@@ -109,6 +109,23 @@ abstract class Rooms extends Settings {
     protected ScrollView rmScroll;
     protected EditText rmInput, rmAiInput;
     protected TextView rmSubTv, rmCountTv, rmRecTime, rmSendBtn;
+    protected RmWave rmWave;
+    protected static class RmWave extends View {
+        final float[] v = new float[32];
+        final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        RmWave(Context c) { super(c); p.setColor(0xFFF5C35A); p.setStrokeCap(Paint.Cap.ROUND); }
+        void push(float a) { System.arraycopy(v, 1, v, 0, v.length - 1); v[v.length - 1] = a; invalidate(); }
+        void clear() { java.util.Arrays.fill(v, 0f); invalidate(); }
+        @Override protected void onDraw(Canvas c) {
+            float w = getWidth(), h = getHeight(), step = w / v.length;
+            p.setStrokeWidth(Math.max(2f, step * 0.5f));
+            for (int i = 0; i < v.length; i++) {
+                float a = Math.max(0.08f, Math.min(1f, v[i]));
+                float x = step * i + step / 2f, hh = h * a / 2f;
+                c.drawLine(x, h / 2f - hh, x, h / 2f + hh, p);
+            }
+        }
+    }
     protected final LinkedHashMap<Long, View> rmViews = new LinkedHashMap<Long, View>();
     protected final Map<Long, JSONObject> rmData = new HashMap<Long, JSONObject>();
     protected final Map<Long, TextView> rmExpTv = new HashMap<Long, TextView>();
@@ -163,8 +180,9 @@ abstract class Rooms extends Settings {
             if (rmRec == null) return;
             long ms = System.currentTimeMillis() - rmRecStart;
             if (rmRecTime != null) rmRecTime.setText(rmDur(ms));
+            try { if (rmWave != null) rmWave.push((float) Math.sqrt(rmRec.getMaxAmplitude() / 32767f)); } catch (Exception ignore) {}
             if (ms >= RM_MAX_VOICE * 1000L) { rmFinishRec(true); return; }
-            rmH.postDelayed(this, 250);
+            rmH.postDelayed(this, 80);
         }
     };
 
@@ -466,7 +484,7 @@ abstract class Rooms extends Settings {
             pbar.setProgress(0);
             play.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rmPlay(path, ms, play, pbar); } });
             vr.addView(play, new LinearLayout.LayoutParams(dp(38), dp(38)));
-            LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(0, dp(8), 1f);
+            LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(getResources().getDisplayMetrics().widthPixels * 38 / 100, dp(8));
             pl.setMargins(dp(10), 0, dp(10), 0);
             vr.addView(pbar, pl);
             vr.addView(txt(rmDur(ms), 0xFFB6BDD0, 12, true));
@@ -662,7 +680,8 @@ abstract class Rooms extends Settings {
             if (rmBarNormal != null) rmBarNormal.setVisibility(View.GONE);
             if (rmBarRec != null) rmBarRec.setVisibility(View.VISIBLE);
             if (rmRecTime != null) rmRecTime.setText("0:00");
-            rmH.postDelayed(rmRecTick, 250);
+            if (rmWave != null) rmWave.clear();
+            rmH.postDelayed(rmRecTick, 80);
         } catch (Exception e) {
             try { if (rmRec != null) rmRec.release(); } catch (Exception ignore) {}
             rmRec = null;
@@ -1033,6 +1052,10 @@ abstract class Rooms extends Settings {
         ri.addView(txt("● ", 0xFFFF4D4D, 14, true));
         rmRecTime = txt("0:00", Color.WHITE, 16, true);
         ri.addView(rmRecTime);
+        rmWave = new RmWave(this);
+        LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(dp(150), dp(32));
+        wl.setMargins(dp(12), 0, 0, 0);
+        ri.addView(rmWave, wl);
         rmBarRec.addView(ri, lpw(1f));
         TextView rs = txt("➤", Color.WHITE, 18, false);
         rs.setGravity(Gravity.CENTER);
@@ -1245,10 +1268,17 @@ abstract class Rooms extends Settings {
         final Dialog d = sheetDialog(false);
         d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         lbDirection(d);
-        LinearLayout box = new LinearLayout(this);
+        final LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(14), dp(14), dp(14), navH() + dp(8));
         box.setBackground(rbg(0xFF1C1C22, 0x40F5C35A, 20));
+        d.getWindow().getDecorView().setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+            @Override public WindowInsets onApplyWindowInsets(View v, WindowInsets in) {
+                int ime = android.os.Build.VERSION.SDK_INT >= 30 ? in.getInsets(WindowInsets.Type.ime()).bottom : in.getSystemWindowInsetBottom();
+                box.setPadding(dp(14), dp(14), dp(14), Math.max(navH() + dp(8), ime + dp(8)));
+                return in;
+            }
+        });
         TextView t = txt(L("دعوة مستخدمين", "Invite users"), GOLD, 16, true);
         t.setGravity(Gravity.CENTER);
         box.addView(t, lpm(0, 0, 0, 10));

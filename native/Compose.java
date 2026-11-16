@@ -332,7 +332,9 @@ abstract class Compose extends Profile {
                 @Override public void run() {
                     JSONArray a;
                     try {
-                        String now = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(new Date());
+                        SimpleDateFormat nf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", java.util.Locale.US);
+                        nf.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+                        String now = nf.format(new Date());
                         a = new JSONArray(get("matches?select=id,team_a,team_b,match_date,status,competition_name&status=eq.NOT_STARTED&match_date=gt." + java.net.URLEncoder.encode(now, "UTF-8") + "&order=match_date.asc&limit=300"));
                     } catch (Exception e) { a = new JSONArray(); }
                     final JSONArray fa = a;
