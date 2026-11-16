@@ -246,15 +246,6 @@ abstract class Settings extends ShareCard {
     protected void stMain() {
         stInAccount = false;
         LinearLayout b = stBody();
-        TextView inv = txt("🔗  " + L("ادعُ أصدقاءك", "Invite friends"), NAVY, 16, true);
-        inv.setGravity(Gravity.CENTER);
-        GradientDrawable ig = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] { GOLD, 0xFFFDE9A8 });
-        ig.setCornerRadius(dp(18));
-        inv.setBackground(ig);
-        inv.setPadding(dp(16), dp(15), dp(16), dp(15));
-        inv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { drInvite(); } });
-        b.addView(inv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
         b.addView(txt(L("الحساب", "Account"), MUTED, 12, true), lpm(4, 18, 4, 8));
         LinearLayout c1 = stCard();
         c1.addView(stRow("👤", L("الحساب", "Account"), L("الاسم، كلمة المرور، حذف الحساب", "Name, password, delete account"), new View.OnClickListener() { @Override public void onClick(View v) { stAccount(); } }));
@@ -266,6 +257,7 @@ abstract class Settings extends ShareCard {
         c2.addView(stRow("🌍", L("اللغة", "Language"), langMeta(getCurrentLang())[2], new View.OnClickListener() { @Override public void onClick(View v) {
             openLangPicker(new LangPick() { @Override public void on(String code) { zeloSetLang(code); } });
         } }));
+        c2.addView(stRow("🔔", L("إشعارات المباريات", "Match notifications"), L("اختر الدوريات التي تهمك", "Choose the leagues you follow"), new View.OnClickListener() { @Override public void onClick(View v) { stLeagueNotifs(); } }));
         c2.addView(stRow("🚫", L("المحظورون", "Blocked users"), L("إدارة من حظرتهم", "Manage people you blocked"), new View.OnClickListener() { @Override public void onClick(View v) { stBlocked(); } }));
         b.addView(c2);
 
@@ -286,6 +278,17 @@ abstract class Settings extends ShareCard {
         } });
         b.addView(out, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(50)));
         ((LinearLayout.LayoutParams) out.getLayoutParams()).setMargins(0, dp(22), 0, 0);
+        TextView inv = txt("🔗  " + L("ادعُ أصدقاءك", "Invite friends"), NAVY, 16, true);
+        inv.setGravity(Gravity.CENTER);
+        GradientDrawable ig = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] { GOLD, 0xFFFDE9A8 });
+        ig.setCornerRadius(dp(18));
+        inv.setBackground(ig);
+        inv.setPadding(dp(16), dp(15), dp(16), dp(15));
+        inv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { drInvite(); } });
+        LinearLayout.LayoutParams invLp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        invLp.setMargins(0, dp(16), 0, 0);
+        b.addView(inv, invLp);
+
         TextView ver = txt("ZELO Sport v" + APP_VERSION, 0xFF5B6697, 12, false);
         ver.setGravity(Gravity.CENTER);
         b.addView(ver, lpm(0, 16, 0, 0));
@@ -326,6 +329,69 @@ abstract class Settings extends ShareCard {
         stShow(stPage(L("الحساب", "Account"), null, new Runnable() { @Override public void run() { stInAccount = false; stMain(); } }, true, b, null));
     }
 
+
+    // ---------- إشعارات المباريات حسب الدوري ----------
+    protected final java.util.Set<String> stLeagueOn = new java.util.HashSet<String>();
+    protected void stLeagueNotifs() {
+        final LinearLayout b = stBody();
+        b.addView(txt(L("فعّل الدوريات التي تريد إشعارات مبارياتها: تذكير قبل البداية بساعة، كل هدف، والنتيجة النهائية. لن يصلك شيء من الدوريات غير المفعّلة.", "Turn on the leagues you want: a reminder 1 hour before kick-off, every goal and the final score. You get nothing from leagues that are off."), MUTED, 13, false), lpm(4, 4, 4, 12));
+        final LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        b.addView(list);
+        stShow(stPage("🔔 " + L("إشعارات المباريات", "Match notifications"), null, stBackMain, true, b, null));
+        stBg(new Runnable() { @Override public void run() {
+            final java.util.TreeSet<String> comps = new java.util.TreeSet<String>();
+            stLeagueOn.clear();
+            try {
+                JSONArray a = new JSONArray(get("matches?select=competition_name&limit=1000"));
+                for (int i = 0; i < a.length(); i++) { String c = a.getJSONObject(i).optString("competition_name"); if (c.length() > 0) comps.add(c); }
+            } catch (Exception ignore) {}
+            try {
+                JSONArray a = new JSONArray(get("league_notif_prefs?select=competition&user_id=eq." + uid));
+                for (int i = 0; i < a.length(); i++) { String c = a.getJSONObject(i).optString("competition"); stLeagueOn.add(c); comps.add(c); }
+            } catch (Exception ignore) {}
+            runOnUiThread(new Runnable() { @Override public void run() {
+                list.removeAllViews();
+                if (comps.isEmpty()) { list.addView(txt(L("لا توجد دوريات حالياً", "No leagues right now"), MUTED, 14, false)); return; }
+                LinearLayout card = stCard();
+                for (final String c : comps) card.addView(stLeagueRow(c));
+                list.addView(card);
+            } });
+        } });
+    }
+    protected View stLeagueRow(final String comp) {
+        LinearLayout r = new LinearLayout(this);
+        r.setGravity(Gravity.CENTER_VERTICAL);
+        r.setPadding(dp(16), dp(14), dp(16), dp(14));
+        r.addView(txt(leagueNameAr(comp), Color.WHITE, 15, true), lpw(1f));
+        final FrameLayout sw = new FrameLayout(this);
+        final View th = new View(this);
+        sw.addView(th);
+        r.addView(sw, new LinearLayout.LayoutParams(dp(46), dp(26)));
+        stLeagueDraw(sw, th, stLeagueOn.contains(comp));
+        r.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+            final boolean on = !stLeagueOn.contains(comp);
+            if (on) stLeagueOn.add(comp); else stLeagueOn.remove(comp);
+            stLeagueDraw(sw, th, on);
+            pool.execute(new Runnable() { @Override public void run() {
+                try {
+                    String enc = java.net.URLEncoder.encode(comp, "UTF-8");
+                    if (on) send("POST", "league_notif_prefs", new JSONObject().put("user_id", uid).put("competition", comp).toString());
+                    else send("DELETE", "league_notif_prefs?user_id=eq." + uid + "&competition=eq." + enc, null);
+                } catch (Exception e) {
+                    runOnUiThread(new Runnable() { @Override public void run() { toast(L("تعذّر الحفظ، حاول لاحقاً", "Could not save, try again")); } });
+                }
+            } });
+        } });
+        return r;
+    }
+    protected void stLeagueDraw(FrameLayout sw, View th, boolean on) {
+        sw.setBackground(rbg(on ? 0xFF2C4BB5 : 0xFF2A3470, 0, 13));
+        th.setBackground(oval(on ? GOLD : MUTED, 0));
+        FrameLayout.LayoutParams tlp = new FrameLayout.LayoutParams(dp(20), dp(20), (on ? Gravity.END : Gravity.START) | Gravity.CENTER_VERTICAL);
+        tlp.setMargins(dp(3), 0, dp(3), 0);
+        th.setLayoutParams(tlp);
+    }
 
     // ---------- المحظورون ----------
     protected void stBlocked() {
