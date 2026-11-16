@@ -135,6 +135,7 @@ abstract class ShareCard extends Search {
             it.setType("image/png");
             it.putExtra(Intent.EXTRA_STREAM, uri);
             it.putExtra(Intent.EXTRA_TITLE, "ZELO SPORT");
+            try { String lk = referralLink(); if (lk.length() > 0) it.putExtra(Intent.EXTRA_TEXT, "ZELO Sport\n" + lk); } catch (Exception ignore) {}
             it.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             startActivity(Intent.createChooser(it, "ZELO SPORT"));
         } catch (Throwable e) { toast(L("تعذّرت المشاركة", "Could not share")); }
