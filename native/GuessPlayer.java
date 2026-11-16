@@ -109,7 +109,7 @@ abstract class GuessPlayer extends Index {
         gpBody = new LinearLayout(this);
         gpBody.setOrientation(LinearLayout.VERTICAL);
         TextView ld = tv(MUTED, 22, false);
-        ld.setText("⏳");
+        ld.setText("");
         ld.setGravity(Gravity.CENTER);
         ld.setPadding(0, dp(30), 0, dp(30));
         gpBody.addView(ld);
@@ -409,7 +409,7 @@ abstract class GuessPlayer extends Index {
             for (int i = 0; i < Math.max(1, 5 - used); i++) sq.append("🟩");
             for (int i = 0; i < used; i++) sq.append("⬜");
         } else sq.append("🟥");
-        String text = "🕵️ " + L("خمّن اللاعب في ZELO Sport", "Guess the Player on ZELO Sport") + "\n" + sq + " " + gpSt.optInt("score", 0) + "/10\n" + L("هل تستطيع التفوق عليّ؟", "Can you beat me?") + "\nhttps://t.me/ZeloSport";
+        String text = "🕵️ " + L("خمّن اللاعب في ZELO Sport", "Guess the Player on ZELO Sport") + "\n" + sq + " " + gpSt.optInt("score", 0) + "/10\n" + L("هل تستطيع التفوق عليّ؟", "Can you beat me?") + "\n" + (referralLink().length() > 0 ? referralLink() : "https://t.me/ZeloSport");
         try {
             Intent i = new Intent(Intent.ACTION_SEND);
             i.setType("text/plain");

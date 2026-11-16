@@ -670,7 +670,7 @@ public class Home extends FollowList {
     }
 
     protected void shareLink(JSONObject o) {
-        String link = (linkTpl == null || linkTpl.length() == 0) ? "" : linkTpl.replace("__ID__", String.valueOf(o.optLong("id")));
+        String link = postLink(String.valueOf(o.optLong("id")));
         String text = link.length() > 0 ? link : o.optString("content", "");
         Intent i = new Intent(Intent.ACTION_SEND);
         i.setType("text/plain");

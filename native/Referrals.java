@@ -136,6 +136,15 @@ abstract class Referrals extends Notifications {
             return REF_GITHUB + (q.length() > 0 ? "?" + q : "");
         } catch (Exception e) { return ""; }
     }
+    protected String roomLink(String code) {
+        String c = String.valueOf(code == null ? "" : code).replaceAll("[^a-zA-Z0-9_-]", "");
+        String u = cleanCode(uname);
+        try {
+            String r = (u.length() > 0 ? "ref_" + u : "") + (c.length() > 0 ? (u.length() > 0 ? "&" : "") + "room_" + c : "");
+            if (REF_PUBLISHED) return "https://play.google.com/store/apps/details?id=" + REF_PACKAGE + (r.length() > 0 ? "&referrer=" + java.net.URLEncoder.encode(r, "UTF-8") : "");
+            return REF_GITHUB + (u.length() > 0 ? "?ref=" + java.net.URLEncoder.encode(u, "UTF-8") : "");
+        } catch (Exception e) { return ""; }
+    }
     protected void copyReferralLink() {
         String link = referralLink();
         if (link.length() == 0) { toast(L("أكمل إنشاء حسابك أولاً", "Finish creating your account first")); return; }

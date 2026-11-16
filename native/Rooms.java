@@ -799,13 +799,13 @@ abstract class Rooms extends Settings {
     protected void rmBanKick(final String muid, final String name) {
         if (!rmIsOwner()) return;
         final String rid = rmCustom.optString("id");
-        rmConfirm(L(name + " سيُطرد من الغرفة ولن يستطيع الدخول إليها مرة أخرى. متأكد؟", name + " will be removed and cannot join this room again. Sure?"), L("حظر وطرد", "Ban & kick"), new Runnable() { @Override public void run() {
+        rmConfirm(L(name + T(" سيُطرد من الغرفة ولن يستطيع الدخول إليها مرة أخرى. متأكد؟"), name + " will be removed and cannot join this room again. Sure?"), L("حظر وطرد", "Ban & kick"), new Runnable() { @Override public void run() {
             rmAsync(new RmTask() { @Override public void run() throws Exception {
                 rpc("ban_room_member", new JSONObject().put("p_room", rid).put("p_user", muid).put("p_actor", uid).toString());
                 runOnUiThread(new Runnable() { @Override public void run() {
                     rmBlocked.add(muid);
                     rmDropUser(muid);
-                    toast(L("تم حظر " + name + " وطرده", name + " was banned and removed"));
+                    toast(L("تم حظر " + name + T(" وطرده"), name + " was banned and removed"));
                 } });
             } });
         } });
@@ -1185,7 +1185,7 @@ abstract class Rooms extends Settings {
     }
 
     // ---------- قائمة الغرفة / المشاركة / الدعوة ----------
-    protected String rmRoomLink(String code) { return SITE + "?room=" + rmEnc(code); }
+    protected String rmRoomLink(String code) { return roomLink(code); }
 
     protected void shareRoom(JSONObject room) {
         String code = room.optString("code");

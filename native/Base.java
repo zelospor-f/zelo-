@@ -87,6 +87,7 @@ abstract class Base extends Activity {
 
     protected abstract void goWeb(String action);
     protected abstract void openMatchesPage();
+    protected abstract String referralLink();
     protected abstract void openStorePage();
     protected abstract void openMessagesPage();
     protected abstract void openNotificationsPage();
