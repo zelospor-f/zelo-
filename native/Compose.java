@@ -188,7 +188,7 @@ abstract class Compose extends Profile {
         cmNotice = tv(Color.WHITE, 13, true);
         cmNotice.setVisibility(View.GONE);
         cmNotice.setPadding(dp(12), dp(8), dp(12), dp(8));
-        cmNotice.setBackground(rbg(0xF2111A4A, 14, 0x4DF5C35A));
+        cmNotice.setBackground(rbg(0xF2111A4A, 0x4DF5C35A, 14));
         LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         nl.setMargins(0, dp(12), 0, 0);
         cmNotice.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openSubscriptions(); } });
@@ -260,7 +260,7 @@ abstract class Compose extends Profile {
         TextView c = tv(on ? NAVY : Color.WHITE, 13, true);
         c.setText(label);
         c.setPadding(dp(14), dp(7), dp(14), dp(7));
-        c.setBackground(rbg(on ? GOLD : CARD, 20, on ? GOLD : 0x33FFFFFF));
+        c.setBackground(rbg(on ? GOLD : CARD, on ? GOLD : 0x33FFFFFF, 20));
         c.setOnClickListener(l);
         LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         p.setMargins(0, 0, dp(6), 0);
@@ -301,7 +301,7 @@ abstract class Compose extends Profile {
         e.setSingleLine(true);
         e.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(60) });
         e.setPadding(dp(12), dp(10), dp(12), dp(10));
-        e.setBackground(rbg(CARD, 12, 0x33FFFFFF));
+        e.setBackground(rbg(CARD, 0x33FFFFFF, 12));
         e.addTextChangedListener(new android.text.TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
             @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
@@ -350,7 +350,7 @@ abstract class Compose extends Profile {
             TextView sel = tv(Color.WHITE, 15, true);
             sel.setText(a + " × " + b + "   (" + L("تغيير", "Change") + ")");
             sel.setPadding(dp(12), dp(12), dp(12), dp(12));
-            sel.setBackground(rbg(CARD, 12, GOLD));
+            sel.setBackground(rbg(CARD, GOLD, 12));
             sel.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPredMatch = null; cmPredPick = -1; cmRenderPred(); } });
             LinearLayout.LayoutParams sp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             sp.setMargins(0, dp(8), 0, 0);
@@ -364,7 +364,7 @@ abstract class Compose extends Profile {
                 pb.setText(lab[i]);
                 pb.setGravity(Gravity.CENTER);
                 pb.setPadding(dp(6), dp(10), dp(6), dp(10));
-                pb.setBackground(rbg(cmPredPick == i ? GOLD : CARD, 12, cmPredPick == i ? GOLD : 0x33FFFFFF));
+                pb.setBackground(rbg(cmPredPick == i ? GOLD : CARD, cmPredPick == i ? GOLD : 0x33FFFFFF, 12));
                 pb.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPredPick = pi; cmRenderPred(); } });
                 LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
                 p.setMargins(dp(3), dp(6), dp(3), 0);
@@ -401,7 +401,7 @@ abstract class Compose extends Profile {
             TextView it = tv(Color.WHITE, 14, true);
             it.setText(m.optString("team_a") + " × " + m.optString("team_b") + "\n" + cmWhen(m.optString("match_date")));
             it.setPadding(dp(12), dp(10), dp(12), dp(10));
-            it.setBackground(rbg(CARD, 12, 0x33FFFFFF));
+            it.setBackground(rbg(CARD, 0x33FFFFFF, 12));
             it.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPredMatch = m; cmPredPick = -1; cmRenderPred(); } });
             LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             p.setMargins(0, dp(6), 0, 0);
@@ -520,7 +520,7 @@ abstract class Compose extends Profile {
             TextView vt = tv(Color.WHITE, 14, true);
             vt.setText("🎬 " + cmVideoName);
             vt.setPadding(dp(14), dp(18), dp(14), dp(18));
-            vt.setBackground(rbg(CARD, 12, 0x33FFFFFF));
+            vt.setBackground(rbg(CARD, 0x33FFFFFF, 12));
             fl.addView(vt, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         }
         TextView x = tv(Color.WHITE, 16, true);

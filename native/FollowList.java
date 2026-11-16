@@ -184,7 +184,7 @@ abstract class FollowList extends EditProfile {
             head.setOrientation(LinearLayout.VERTICAL);
             head.setGravity(Gravity.CENTER);
             head.setPadding(dp(12), dp(12), dp(12), dp(12));
-            head.setBackground(rbg(0x14F5C35A, 14, 0x4DF5C35A));
+            head.setBackground(rbg(0x14F5C35A, 0x4DF5C35A, 14));
             TextView info = tv(Color.WHITE, 13, true);
             info.setText(L("🎁 لكل صديق يشارك في التطبيق: 10 كورة", "🎁 For each active friend you invite: 10 Kora"));
             info.setGravity(Gravity.CENTER);
@@ -224,7 +224,7 @@ abstract class FollowList extends EditProfile {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(8), dp(10), dp(8), dp(10));
-        row.setBackground(rbg(CARD, 14, 0));
+        row.setBackground(rbg(CARD, 0, 14));
         row.addView(lbAvatar(pickPhoto(p), name.substring(0, 1).toUpperCase(), 46, 0x33FFFFFF, false, 1));
         LinearLayout mid = new LinearLayout(this);
         mid.setOrientation(LinearLayout.VERTICAL);
@@ -266,7 +266,7 @@ abstract class FollowList extends EditProfile {
         b.setText(f ? L("مُتابَع", "Following") : (flMyFollowers.contains(u) ? L("ردّ المتابعة", "Follow back") : L("تابِع", "Follow")));
         b.setTextColor(f ? GOLD : NAVY);
         b.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
-        b.setBackground(rbg(f ? 0x00000000 : GOLD, 18, f ? GOLD : 0));
+        b.setBackground(rbg(f ? 0x00000000 : GOLD, f ? GOLD : 0, 18));
     }
 
     private void flToggle(final String u) {

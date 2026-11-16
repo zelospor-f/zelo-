@@ -139,7 +139,7 @@ abstract class EditProfile extends Compose {
         LinearLayout c = new LinearLayout(this);
         c.setOrientation(LinearLayout.VERTICAL);
         c.setPadding(dp(16), dp(12), dp(16), dp(12));
-        c.setBackground(rbg(CARD, 18, 0x33FFFFFF));
+        c.setBackground(rbg(CARD, 0x33FFFFFF, 18));
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         lp.setMargins(0, 0, 0, dp(12));
         c.setLayoutParams(lp);
@@ -213,7 +213,7 @@ abstract class EditProfile extends Compose {
         vt.setText(L("إظهار تاريخ الميلاد للآخرين", "Show my birth date to others"));
         vr.addView(vt, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         FrameLayout sw = new FrameLayout(this);
-        sw.setBackground(rbg(epDobVis ? 0xFF2C4BB5 : 0xFF2A3470, 13, 0));
+        sw.setBackground(rbg(epDobVis ? 0xFF2C4BB5 : 0xFF2A3470, 0, 13));
         View th = new View(this);
         th.setBackground(oval(epDobVis ? GOLD : MUTED, 0));
         FrameLayout.LayoutParams tlp = new FrameLayout.LayoutParams(dp(20), dp(20), (epDobVis ? Gravity.END : Gravity.START) | Gravity.CENTER_VERTICAL);
@@ -311,7 +311,7 @@ abstract class EditProfile extends Compose {
                 LinearLayout b = new LinearLayout(EditProfile.this);
                 b.setOrientation(LinearLayout.VERTICAL);
                 b.setPadding(dp(16), dp(18), dp(16), dp(24));
-                b.setBackground(rbg(NAVY, 20, 0x4DF5C35A));
+                b.setBackground(rbg(NAVY, 0x4DF5C35A, 20));
                 TextView h = tv(Color.WHITE, 16, true);
                 h.setText("✔️ " + L("وثّق حسابك بشارة ناديك", "Verify with your club badge"));
                 b.addView(h);
@@ -324,7 +324,7 @@ abstract class EditProfile extends Compose {
                     LinearLayout row = new LinearLayout(EditProfile.this);
                     row.setGravity(Gravity.CENTER_VERTICAL);
                     row.setPadding(dp(12), dp(10), dp(12), dp(10));
-                    row.setBackground(rbg(0x66000000, 14, id.equals(epBadge) ? GOLD : 0x802C4BB5));
+                    row.setBackground(rbg(0x66000000, id.equals(epBadge) ? GOLD : 0x802C4BB5, 14));
                     ImageView lg = new ImageView(EditProfile.this);
                     lg.setScaleType(ImageView.ScaleType.FIT_CENTER);
                     loadImage(ClubsData.logo(id), lg);
