@@ -85,6 +85,7 @@ abstract class Auth extends Badges {
     protected EditText fId, fPass, fPass2, fEmail, fCode, fUser;
     protected TextView aMsg, aNext, aResendV, aUMsg, aPMsg, aDMsg;
     protected android.widget.Spinner spD, spM, spY;
+    protected TextView dobField;
 
     // ---------- الجلسة المحفوظة ----------
     protected void saveSession(String access, String refresh, String id, String mail) {
@@ -306,14 +307,14 @@ abstract class Auth extends Badges {
             boolean reset = "forgot".equals(aStep);
             aTitle(col, reset ? L("إعادة تعيين كلمة السر", "Reset password") : L("إنشاء حساب جديد", "Create a new account"),
                 reset ? L("أدخل بريدك الإلكتروني وسنرسل لك رمز تحقق لتعيين كلمة سر جديدة.", "Enter your email and we'll send you a verification code to set a new password.") : L("أدخل بريدك الإلكتروني وسنرسل لك رمز تحقق.", "Enter your email and we'll send you a verification code."));
-            fEmail = aField(col, "البريد الإلكتروني", android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, true);
+            fEmail = aField(col, T("البريد الإلكتروني"), android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS, true);
             fEmail.setText(aEmail);
             col.addView(aMsg);
             TextView back = aLink(L("لديّ حساب – تسجيل الدخول", "I have an account – Sign in"));
             back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { aFlow = "signup"; aStep = "login"; authDraw(); } });
             col.addView(back);
             col.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
-            aNext = aButton("التالي", true);
+            aNext = aButton(T("التالي"), true);
             col.addView(aNext, aBtnLp());
             Runnable chk = new Runnable() {
                 @Override public void run() {
@@ -353,7 +354,7 @@ abstract class Auth extends Badges {
             fPass2 = aField(col, L("تأكيد كلمة السر", "Confirm password"), android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD, true);
             col.addView(aMsg);
             col.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
-            aNext = aButton("حفظ", true);
+            aNext = aButton(T("حفظ"), true);
             col.addView(aNext, aBtnLp());
             Runnable chk = new Runnable() {
                 @Override public void run() {
@@ -424,7 +425,7 @@ abstract class Auth extends Badges {
 
     // ---------- رمز التحقق ----------
     protected void authSendCode() {
-        aBusy = true; aEnable(false); aSetMsg("جارٍ الإرسال...", false, false);
+        aBusy = true; aEnable(false); aSetMsg(T("جارٍ الإرسال..."), false, false);
         final String em = aEmail.toLowerCase();
         pool.execute(new Runnable() {
             @Override public void run() {
@@ -463,12 +464,12 @@ abstract class Auth extends Badges {
 
     protected void authResend() {
         if (aResendLeft > 0) return;
-        aSetMsg("جارٍ الإرسال...", false, false);
+        aSetMsg(T("جارٍ الإرسال..."), false, false);
         pool.execute(new Runnable() {
             @Override public void run() {
                 try {
                     authCall("POST", "/auth/v1/otp", new JSONObject().put("email", aEmail).put("create_user", !"reset".equals(aFlow)).toString(), null);
-                    runOnUiThread(new Runnable() { @Override public void run() { aSetMsg("تم إرسال رمز جديد ✅", false, true); startResend(60); } });
+                    runOnUiThread(new Runnable() { @Override public void run() { aSetMsg(T("تم إرسال رمز جديد ✅"), false, true); startResend(60); } });
                 } catch (final Exception e) {
                     runOnUiThread(new Runnable() { @Override public void run() { aSetMsg(String.valueOf(e.getMessage()), true, false); } });
                 }
@@ -478,7 +479,7 @@ abstract class Auth extends Badges {
 
     protected void authVerify() {
         final String code = fCode.getText().toString().trim();
-        aBusy = true; aEnable(false); aSetMsg("جارٍ التحقق...", false, false);
+        aBusy = true; aEnable(false); aSetMsg(T("جارٍ التحقق..."), false, false);
         pool.execute(new Runnable() {
             @Override public void run() {
                 try {
@@ -597,11 +598,9 @@ abstract class Auth extends Badges {
         aPMsg.setText(MIN_PASS + L(" أحرف على الأقل", " characters minimum"));
         col.addView(aPMsg);
         TextView dl = tv(MUTED, 11, true);
-        dl.setText("تاريخ الميلاد");
+        dl.setText(T("تاريخ الميلاد"));
         dl.setPadding(0, dp(10), 0, dp(4));
         col.addView(dl);
-        LinearLayout dr = new LinearLayout(this);
-        dr.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         spD = new android.widget.Spinner(this);
         spM = new android.widget.Spinner(this);
         spY = new android.widget.Spinner(this);
@@ -616,14 +615,12 @@ abstract class Auth extends Badges {
         spD.setAdapter(new android.widget.ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, days));
         spM.setAdapter(new android.widget.ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, mons));
         spY.setAdapter(new android.widget.ArrayAdapter<String>(this, android.R.layout.simple_spinner_dropdown_item, yrs));
-        android.widget.Spinner[] sps = { spD, spM, spY };
-        for (android.widget.Spinner sp : sps) {
-            sp.setBackground(null);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-            lp.setMargins(dp(3), 0, dp(3), 0);
-            dr.addView(sp, lp);
-        }
-        col.addView(dr);
+        dobField = tv(0xFF94A3B8, 16, false);
+        dobField.setText(L("اختر تاريخ الميلاد", "Choose your date of birth") + "  \u25BE");
+        dobField.setGravity(Gravity.CENTER_VERTICAL);
+        dobField.setPadding(dp(16), 0, dp(16), 0);
+        dobField.setBackground(dobBg(0xFF111A4A, 0xFF2A3258, 14));
+        col.addView(dobField, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54)));
         aDMsg = tv(MUTED, 12, true);
         aDMsg.setText(L("يجب ألا يقل العمر عن ", "You must be at least ") + MIN_AGE + L(" سنة", " years old"));
         col.addView(aDMsg);
@@ -642,7 +639,7 @@ abstract class Auth extends Badges {
         });
         col.addView(back);
         col.addView(new View(this), new LinearLayout.LayoutParams(1, 0, 1f));
-        aNext = aButton("التالي", true);
+        aNext = aButton(T("التالي"), true);
         col.addView(aNext, aBtnLp());
         final Runnable chk = new Runnable() {
             @Override public void run() {
@@ -661,9 +658,122 @@ abstract class Auth extends Badges {
             @Override public void onNothingSelected(android.widget.AdapterView<?> p) {}
         };
         spD.setOnItemSelectedListener(sel); spM.setOnItemSelectedListener(sel); spY.setOnItemSelectedListener(sel);
+        dobField.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { dobPick(chk); } });
         fUser.addTextChangedListener(aWatch(new Runnable() { @Override public void run() { usernameInput(chk); } }));
         aNext.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { if (aNext.isEnabled()) authFinishSetup(); } });
         chk.run();
+    }
+
+    // ---------- نافذة اختيار تاريخ الميلاد (عجلات) ----------
+    protected GradientDrawable dobBg(int fill, int stroke, int rDp) {
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(fill);
+        g.setCornerRadius(dp(rDp));
+        if ((stroke >>> 24) != 0) g.setStroke(dp(1), stroke);
+        return g;
+    }
+    protected TextView dobTxt(String t, int color, int size, boolean bold) {
+        TextView v = tv(color, size, bold);
+        v.setText(t);
+        return v;
+    }
+    protected void dobStyle(final android.widget.NumberPicker np) {
+        np.setDescendantFocusability(android.widget.NumberPicker.FOCUS_BLOCK_DESCENDANTS);
+        if (android.os.Build.VERSION.SDK_INT >= 29) { try { np.setTextColor(Color.WHITE); np.setTextSize(dp(9)); } catch (Throwable ignore) {} }
+        try { java.lang.reflect.Field f = android.widget.NumberPicker.class.getDeclaredField("mSelectionDivider"); f.setAccessible(true); f.set(np, new ColorDrawable(0x00000000)); } catch (Throwable ignore) {}
+        try { np.setLayoutDirection(View.LAYOUT_DIRECTION_LTR); } catch (Throwable ignore) {}
+    }
+    protected String[] dobMonths() {
+        return new String[] { L("يناير", "January"), L("فبراير", "February"), L("مارس", "March"), L("أبريل", "April"), L("مايو", "May"), L("يونيو", "June"), L("يوليو", "July"), L("أغسطس", "August"), L("سبتمبر", "September"), L("أكتوبر", "October"), L("نوفمبر", "November"), L("ديسمبر", "December") };
+    }
+    protected void dobPick(final Runnable chk) {
+        try { android.view.inputmethod.InputMethodManager im = (android.view.inputmethod.InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE); if (fUser != null) im.hideSoftInputFromWindow(fUser.getWindowToken(), 0); } catch (Throwable ignore) {}
+        final Dialog dlg = sheetDialog(false);
+        final int thisYear = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+        final int maxYear = thisYear - MIN_AGE;
+        final String[] mn = dobMonths();
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { 0xFF131D52, 0xFF0D1540 });
+        bg.setCornerRadii(new float[] { dp(28), dp(28), dp(28), dp(28), 0, 0, 0, 0 });
+        bg.setStroke(dp(1), 0x44F5C35A);
+        box.setBackground(bg);
+        box.setPadding(dp(20), dp(14), dp(20), navH() + dp(22));
+        View grab = new View(this);
+        grab.setBackground(dobBg(0x33FFFFFF, 0x00000000, 3));
+        LinearLayout.LayoutParams gl = new LinearLayout.LayoutParams(dp(46), dp(5));
+        gl.gravity = Gravity.CENTER_HORIZONTAL; gl.bottomMargin = dp(14);
+        box.addView(grab, gl);
+        LinearLayout hd = new LinearLayout(this);
+        hd.setGravity(Gravity.CENTER_VERTICAL);
+        hd.addView(dobTxt("\uD83C\uDF82 " + T("تاريخ الميلاد"), Color.WHITE, 18, true), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        final TextView ageT = dobTxt("", 0xFF14F195, 13, true);
+        hd.addView(ageT);
+        box.addView(hd);
+        FrameLayout wheels = new FrameLayout(this);
+        View band = new View(this);
+        band.setBackground(dobBg(0x1FF5C35A, 0x88F5C35A, 16));
+        FrameLayout.LayoutParams bl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48), Gravity.CENTER_VERTICAL);
+        wheels.addView(band, bl);
+        LinearLayout row = new LinearLayout(this);
+        row.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        final android.widget.NumberPicker pY = new android.widget.NumberPicker(this), pM = new android.widget.NumberPicker(this), pD = new android.widget.NumberPicker(this);
+        final int nYears = maxYear - 1930 + 1;
+        String[] ys = new String[nYears];
+        for (int i = 0; i < nYears; i++) ys[i] = String.valueOf(maxYear - i);
+        pY.setMinValue(0); pY.setMaxValue(nYears - 1); pY.setDisplayedValues(ys); pY.setWrapSelectorWheel(false);
+        pM.setMinValue(0); pM.setMaxValue(11); pM.setDisplayedValues(mn); pM.setWrapSelectorWheel(true);
+        pD.setMinValue(1); pD.setMaxValue(31); pD.setWrapSelectorWheel(true);
+        int curD = spD.getSelectedItemPosition(), curM = spM.getSelectedItemPosition(), curY = spY.getSelectedItemPosition();
+        pY.setValue(curY > 0 ? curY - 1 : Math.min(nYears - 1, 25 - MIN_AGE + 0));
+        pM.setValue(curM > 0 ? curM - 1 : 0);
+        pD.setValue(curD > 0 ? curD : 1);
+        dobStyle(pY); dobStyle(pM); dobStyle(pD);
+        LinearLayout.LayoutParams wl = new LinearLayout.LayoutParams(0, dp(220), 1f);
+        row.addView(pY, wl);
+        row.addView(pM, new LinearLayout.LayoutParams(0, dp(220), 1.3f));
+        row.addView(pD, new LinearLayout.LayoutParams(0, dp(220), 1f));
+        wheels.addView(row, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
+        LinearLayout.LayoutParams wlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220));
+        wlp.topMargin = dp(10);
+        box.addView(wheels, wlp);
+        final Runnable upd = new Runnable() { @Override public void run() {
+            int y = maxYear - pY.getValue(), m = pM.getValue();
+            java.util.Calendar c = java.util.Calendar.getInstance();
+            c.set(y, m, 1);
+            int dim = c.getActualMaximum(java.util.Calendar.DAY_OF_MONTH);
+            if (pD.getMaxValue() != dim) { if (pD.getValue() > dim) pD.setValue(dim); pD.setMaxValue(dim); }
+            java.util.Calendar now = java.util.Calendar.getInstance();
+            int age = now.get(java.util.Calendar.YEAR) - y;
+            if (now.get(java.util.Calendar.MONTH) < m || (now.get(java.util.Calendar.MONTH) == m && now.get(java.util.Calendar.DAY_OF_MONTH) < pD.getValue())) age--;
+            ageT.setText(L("العمر: ", "Age: ") + age + (age >= MIN_AGE ? "  \u2713" : ""));
+            ageT.setTextColor(age >= MIN_AGE ? 0xFF14F195 : 0xFFFF6B6B);
+        } };
+        android.widget.NumberPicker.OnValueChangeListener ol = new android.widget.NumberPicker.OnValueChangeListener() {
+            @Override public void onValueChange(android.widget.NumberPicker p, int o, int n) { upd.run(); }
+        };
+        pY.setOnValueChangedListener(ol); pM.setOnValueChangedListener(ol); pD.setOnValueChangedListener(ol);
+        upd.run();
+        TextView note = dobTxt(L("يجب ألا يقل العمر عن ", "You must be at least ") + MIN_AGE + L(" سنة", " years old"), 0xFF94A3B8, 12, false);
+        note.setGravity(Gravity.CENTER);
+        note.setPadding(0, dp(8), 0, dp(12));
+        box.addView(note);
+        TextView ok = dobTxt(L("تأكيد", "Confirm"), NAVY, 16, true);
+        ok.setGravity(Gravity.CENTER);
+        GradientDrawable og = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] { 0xFFF5C35A, 0xFFFDE9A8 });
+        og.setCornerRadius(dp(18));
+        ok.setBackground(og);
+        ok.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+            int y = maxYear - pY.getValue(), m = pM.getValue(), d = pD.getValue();
+            spD.setSelection(d); spM.setSelection(m + 1); spY.setSelection(pY.getValue() + 1);
+            dobField.setText(d + " " + mn[m] + " " + y);
+            dobField.setTextColor(Color.WHITE);
+            dlg.dismiss();
+            chk.run();
+        } });
+        box.addView(ok, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(52)));
+        dlg.setContentView(box);
+        dlg.show();
     }
 
     protected void usernameInput(final Runnable chk) {
@@ -672,7 +782,7 @@ abstract class Auth extends Badges {
         if (aUserCheck != null) aH.removeCallbacks(aUserCheck);
         if (u.length() == 0) { aUMsg.setText(""); chk.run(); return; }
         if (!u.matches("^[a-zA-Z0-9_]{3,20}$")) { aUMsg.setText("من 3 إلى 20 حرفًا إنجليزيًا أو أرقامًا أو _"); aUMsg.setTextColor(0xFFFF6B6B); chk.run(); return; }
-        aUMsg.setText("جارٍ الفحص..."); aUMsg.setTextColor(MUTED);
+        aUMsg.setText(T("جارٍ الفحص...")); aUMsg.setTextColor(MUTED);
         aUserCheck = new Runnable() {
             @Override public void run() {
                 pool.execute(new Runnable() {
