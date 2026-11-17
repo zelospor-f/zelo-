@@ -257,7 +257,6 @@ abstract class Settings extends ShareCard {
         c2.addView(stRow("🌍", L("اللغة", "Language"), langMeta(getCurrentLang())[2], new View.OnClickListener() { @Override public void onClick(View v) {
             openLangPicker(new LangPick() { @Override public void on(String code) { zeloSetLang(code); } });
         } }));
-        c2.addView(stRow("🔔", L("إشعارات المباريات", "Match notifications"), L("اختر الدوريات التي تهمك", "Choose the leagues you follow"), new View.OnClickListener() { @Override public void onClick(View v) { stLeagueNotifs(); } }));
         c2.addView(stRow("🚫", L("المحظورون", "Blocked users"), L("إدارة من حظرتهم", "Manage people you blocked"), new View.OnClickListener() { @Override public void onClick(View v) { stBlocked(); } }));
         b.addView(c2);
 
@@ -359,6 +358,52 @@ abstract class Settings extends ShareCard {
             } });
         } });
     }
+    // تُفتح من ⚙ داخل شاشة الإشعارات
+    @Override protected void ntOpenPrefs() {
+        final Dialog d = sheetDialog(true);
+        d.getWindow().setBackgroundDrawable(new ColorDrawable(NAVY));
+        lbDirection(d);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(dp(14), statusH() + dp(6), dp(14), 0);
+        LinearLayout head = new LinearLayout(this);
+        head.setGravity(Gravity.CENTER_VERTICAL);
+        head.addView(backBtn(new Runnable() { @Override public void run() { d.dismiss(); } }));
+        head.addView(txt("🔔 " + L("إعدادات الإشعارات", "Notification settings"), GOLD, 20, true), lpw(1f));
+        root.addView(head, lpm(0, 0, 0, 14));
+        LinearLayout b = new LinearLayout(this);
+        b.setOrientation(LinearLayout.VERTICAL);
+        b.setPadding(0, 0, 0, navH() + dp(30));
+        b.addView(txt(L("إشعارات المباريات: فعّل الدوريات التي تريدها لتصلك تذكير قبل البداية بساعة، كل هدف، والنتيجة النهائية. لن يصلك شيء من الدوريات غير المفعّلة.", "Match notifications: turn on the leagues you want to get a reminder 1 hour before kick-off, every goal and the final score. You get nothing from leagues that are off."), MUTED, 13, false), lpm(4, 4, 4, 12));
+        final LinearLayout list = new LinearLayout(this);
+        list.setOrientation(LinearLayout.VERTICAL);
+        b.addView(list);
+        ScrollView sc = new ScrollView(this);
+        sc.addView(b);
+        root.addView(sc, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+        d.setContentView(root);
+        d.show();
+        pool.execute(new Runnable() { @Override public void run() {
+            final java.util.TreeSet<String> comps = new java.util.TreeSet<String>();
+            stLeagueOn.clear();
+            try {
+                JSONArray a = new JSONArray(get("matches?select=competition_name&limit=1000"));
+                for (int i = 0; i < a.length(); i++) { JSONObject jo = a.getJSONObject(i); if (jo.isNull("competition_name")) continue; String c = jo.optString("competition_name"); if (c.length() > 0 && !c.equals("null")) comps.add(c); }
+            } catch (Exception ignore) {}
+            try {
+                JSONArray a = new JSONArray(get("league_notif_prefs?select=competition&user_id=eq." + uid));
+                for (int i = 0; i < a.length(); i++) { String c = a.getJSONObject(i).optString("competition"); stLeagueOn.add(c); comps.add(c); }
+            } catch (Exception ignore) {}
+            runOnUiThread(new Runnable() { @Override public void run() {
+                list.removeAllViews();
+                if (comps.isEmpty()) { list.addView(txt(L("لا توجد دوريات حالياً", "No leagues right now"), MUTED, 14, false)); return; }
+                LinearLayout card = stCard();
+                for (final String c : comps) card.addView(stLeagueRow(c));
+                list.addView(card);
+            } });
+        } });
+    }
+
     protected View stLeagueRow(final String comp) {
         LinearLayout r = new LinearLayout(this);
         r.setGravity(Gravity.CENTER_VERTICAL);

@@ -1396,7 +1396,7 @@ public class Home extends FollowList {
     }
 
     protected static class RpH {
-        FrameLayout av; TextView n, m, t, more, vid; ImageView img;
+        FrameLayout av; TextView n, m, t, more, vid, acm, alk, ash, arp, avw, asv; ImageView img;
     }
 
     protected void openComments(final JSONObject post) {
@@ -1490,10 +1490,9 @@ public class Home extends FollowList {
         View l2 = new View(this); l2.setBackgroundColor(0x1AFFFFFF);
         hdr.addView(l2, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         LinearLayout hActs = new LinearLayout(this);
-        final TextView aCm = tv(MUTED, 20, false), aRp = tv(MUTED, 20, false), aLk = tv(MUTED, 20, false), aSh = tv(MUTED, 20, false);
-        aCm.setText("💬"); aRp.setText("🔁"); aLk.setText("♥"); aSh.setText("↗");
-        TextView[] aa = { aCm, aRp, aLk, aSh };
-        for (TextView a : aa) { a.setGravity(Gravity.CENTER); a.setPadding(0, dp(10), 0, dp(10)); hActs.addView(a, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)); }
+        final TextView aCm = tv(MUTED, 15, false), aRp = tv(MUTED, 15, false), aLk = tv(MUTED, 15, false), aVw = tv(MUTED, 15, false), aSv = tv(MUTED, 15, false), aSh = tv(MUTED, 15, false);
+        TextView[] aa = { aCm, aRp, aLk, aVw, aSv, aSh };
+        for (int q = 0; q < aa.length; q++) { aa[q].setPaddingRelative(dp(2), dp(4), dp(2), dp(4)); hActs.addView(aa[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
         hdr.addView(hActs);
         View l3 = new View(this); l3.setBackgroundColor(0x1AFFFFFF);
         hdr.addView(l3, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
@@ -1535,8 +1534,13 @@ public class Home extends FollowList {
                 int[] s = stats.get(pk);
                 if (s == null) s = new int[] { 0, 0, 0, 0 };
                 hCnt.setText("‎" + s[3] + " " + L("مشاهدة", "views") + "     ‎" + s[0] + " " + L("إعجاب", "likes") + "     ‎" + s[2] + " " + L("إعادة", "reposts") + "     ‎" + Math.max(s[1], cm.size()) + " " + L("رد", "replies"));
-                aLk.setTextColor(liked.contains(pk) ? 0xFF14F195 : MUTED);
-                aRp.setTextColor(reposted.contains(pk) ? 0xFF14F195 : MUTED);
+                boolean lk = liked.contains(pk), rpd = reposted.contains(pk), svd = saved.contains(pk);
+                aCm.setText(String.valueOf(Math.max(s[1], cm.size()))); setIc(aCm, 0, MUTED, false);
+                aRp.setText(String.valueOf(s[2])); setIc(aRp, 1, rpd ? 0xFF14F195 : MUTED, false);
+                aLk.setText(String.valueOf(s[0])); setIc(aLk, 2, lk ? 0xFF14F195 : MUTED, lk);
+                aVw.setText(String.valueOf(s[3])); setIc(aVw, 3, MUTED, false);
+                aSv.setText(""); setIc(aSv, 4, svd ? 0xFF14F195 : MUTED, svd);
+                aSh.setText(""); setIc(aSh, 5, MUTED, false);
             }
         };
         hdrBind.run();
@@ -1548,6 +1552,7 @@ public class Home extends FollowList {
         aCm.setOnClickListener(open); hIn.setOnClickListener(open); hSend.setOnClickListener(open);
         aLk.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleLike(post); v.postDelayed(hdrBind, 500); } });
         aRp.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleRepost(post); v.postDelayed(hdrBind, 500); } });
+        aSv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleSave(post); v.postDelayed(hdrBind, 500); } });
         aSh.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { shareLink(post); } });
 
         ListView lv = new ListView(this);
@@ -1556,6 +1561,10 @@ public class Home extends FollowList {
         lv.addHeaderView(hdr, null, false);
         final boolean[] cmAds = { false };
         final HashMap<Integer, View> cmAdViews = new HashMap<Integer, View>();
+        final HashMap<Long, Integer> cLikes = new HashMap<Long, Integer>(), cKids = new HashMap<Long, Integer>();
+        final Set<Long> cMine = new HashSet<Long>();
+        final HashMap<Long, Integer> cReps = new HashMap<Long, Integer>(), cViews = new HashMap<Long, Integer>();
+        final Set<Long> cRepMine = new HashSet<Long>(), cSaveMine = new HashSet<Long>();
         final BaseAdapter ca = new BaseAdapter() {
             // إعلان أصلي بعد الرد الثالث ثم كل 8 ردود (لغير المشترك)
             private boolean isAd(int p) { return cmAds[0] && p >= 3 && (p - 3) % 9 == 0; }
@@ -1609,6 +1618,13 @@ public class Home extends FollowList {
                     LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(160));
                     vlp.topMargin = dp(6);
                     col.addView(h.vid, vlp);
+                    LinearLayout acts = new LinearLayout(Home.this);
+                    h.acm = tv(MUTED, 15, false); h.arp = tv(MUTED, 15, false); h.alk = tv(MUTED, 15, false); h.avw = tv(MUTED, 15, false); h.asv = tv(MUTED, 15, false); h.ash = tv(MUTED, 15, false);
+                    TextView[] at = { h.acm, h.arp, h.alk, h.avw, h.asv, h.ash };
+                    for (int q = 0; q < at.length; q++) { at[q].setPaddingRelative(dp(2), dp(2), dp(2), dp(2)); acts.addView(at[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
+                    LinearLayout.LayoutParams alp2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                    alp2.topMargin = dp(4);
+                    col.addView(acts, alp2);
                     r.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                     r.setTag(h);
                     cv = r;
@@ -1635,6 +1651,28 @@ public class Home extends FollowList {
                 View.OnClickListener pr = new View.OnClickListener() { @Override public void onClick(View v) { if (au.length() > 0) openProfileOf(au); } };
                 h.av.setOnClickListener(pr); h.n.setOnClickListener(pr);
                 h.more.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpMenu(o, reloadRef[0]); } });
+                final long cid = o.optLong("id");
+                Integer kc = cKids.get(cid), lcn = cLikes.get(cid);
+                boolean clk = cMine.contains(cid);
+                h.acm.setText(String.valueOf(kc == null ? 0 : kc)); setIc(h.acm, 0, MUTED, false);
+                h.alk.setText(String.valueOf(lcn == null ? 0 : lcn)); setIc(h.alk, 2, clk ? 0xFF14F195 : MUTED, clk);
+                Integer rcn = cReps.get(cid), vcn = cViews.get(cid);
+                boolean rpm = cRepMine.contains(cid), svm = cSaveMine.contains(cid);
+                h.arp.setText(String.valueOf(rcn == null ? 0 : rcn)); setIc(h.arp, 1, rpm ? 0xFF14F195 : MUTED, false);
+                h.avw.setText(String.valueOf(vcn == null ? 0 : vcn)); setIc(h.avw, 3, MUTED, false);
+                h.asv.setText(""); setIc(h.asv, 4, svm ? 0xFF14F195 : MUTED, svm);
+                h.ash.setText(""); setIc(h.ash, 5, MUTED, false);
+                h.arp.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+                    rpToggleReact(o, "repost", cReps, cRepMine, new Runnable() { @Override public void run() { notifyDataSetChanged(); } });
+                } });
+                h.asv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+                    rpToggleReact(o, "save", null, cSaveMine, new Runnable() { @Override public void run() { notifyDataSetChanged(); } });
+                } });
+                h.acm.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openReplyComposer(post, reloadRef[0], o); } });
+                h.alk.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+                    rpToggleLike(o, cLikes, cMine, new Runnable() { @Override public void run() { notifyDataSetChanged(); } });
+                } });
+                h.ash.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { shareLink(post); } });
                 return cv;
             }
         };
@@ -1651,6 +1689,10 @@ public class Home extends FollowList {
                     @Override public void run() {
                         String err = null;
                         final List<JSONObject> got = new ArrayList<JSONObject>();
+                        final HashMap<Long, Integer> tl = new HashMap<Long, Integer>(), tk = new HashMap<Long, Integer>();
+                        final Set<Long> tm = new HashSet<Long>();
+                        final HashMap<Long, Integer> trp = new HashMap<Long, Integer>(), tvw = new HashMap<Long, Integer>();
+                        final Set<Long> trm = new HashSet<Long>(), tsm = new HashSet<Long>();
                         try {
                             JSONArray a = new JSONArray(get("post_comments?select=id,parent_id,user_id,author_name,content,created_at,hidden,image_url,video_url,video_path&post_id=eq." + pid + "&order=created_at.asc&limit=200"));
                             StringBuilder need = new StringBuilder();
@@ -1662,6 +1704,49 @@ public class Home extends FollowList {
                                 got.add(o);
                                 String au = o.optString("user_id", "");
                                 if (au.length() > 0 && !unames.containsKey(au) && !photos.containsKey(au) && seen.add(au)) { if (need.length() > 0) need.append(","); need.append(au); }
+                            }
+                            StringBuilder cids = new StringBuilder();
+                            for (JSONObject o : got) {
+                                if (cids.length() > 0) cids.append(",");
+                                cids.append(o.optLong("id"));
+                                if (!o.isNull("parent_id")) { long pp = o.optLong("parent_id"); Integer q0 = tk.get(pp); tk.put(pp, q0 == null ? 1 : q0 + 1); }
+                            }
+                            if (cids.length() > 0) {
+                                try {
+                                    JSONArray la = new JSONArray(get("comment_likes?select=comment_id,user_id&comment_id=in.(" + cids + ")&limit=5000"));
+                                    for (int q = 0; q < la.length(); q++) {
+                                        JSONObject lo = la.getJSONObject(q);
+                                        long ci = lo.optLong("comment_id");
+                                        Integer q1 = tl.get(ci); tl.put(ci, q1 == null ? 1 : q1 + 1);
+                                        if (uid != null && uid.equals(lo.optString("user_id"))) tm.add(ci);
+                                    }
+                                } catch (Exception ignore) {}
+                            }
+                            if (cids.length() > 0) {
+                                Set<Long> seenMine = new HashSet<Long>();
+                                try {
+                                    JSONArray ra = new JSONArray(get("comment_reactions?select=comment_id,user_id,kind&comment_id=in.(" + cids + ")&limit=10000"));
+                                    for (int q = 0; q < ra.length(); q++) {
+                                        JSONObject ro = ra.getJSONObject(q);
+                                        long ci = ro.optLong("comment_id");
+                                        String kd = ro.optString("kind"), ru = ro.optString("user_id");
+                                        boolean me2 = uid != null && uid.equals(ru);
+                                        if ("repost".equals(kd)) { Integer q1 = trp.get(ci); trp.put(ci, q1 == null ? 1 : q1 + 1); if (me2) trm.add(ci); }
+                                        else if ("save".equals(kd)) { if (me2) tsm.add(ci); }
+                                        else if ("view".equals(kd)) { Integer q1 = tvw.get(ci); tvw.put(ci, q1 == null ? 1 : q1 + 1); if (me2) seenMine.add(ci); }
+                                    }
+                                    // سجّل مشاهدتي لردود الآخرين مرة واحدة
+                                    if (uid != null) {
+                                        JSONArray nv = new JSONArray();
+                                        for (JSONObject o : got) {
+                                            long ci = o.optLong("id");
+                                            if (uid.equals(o.optString("user_id")) || seenMine.contains(ci)) continue;
+                                            nv.put(new JSONObject().put("comment_id", ci).put("user_id", uid).put("kind", "view"));
+                                            Integer q1 = tvw.get(ci); tvw.put(ci, q1 == null ? 1 : q1 + 1);
+                                        }
+                                        if (nv.length() > 0) sendUrl("POST", url + "/rest/v1/comment_reactions?on_conflict=comment_id,user_id,kind", nv.toString(), "resolution=ignore-duplicates,return=minimal");
+                                    }
+                                } catch (Exception ignore) {}
                             }
                             if (need.length() > 0) {
                                 try {
@@ -1682,6 +1767,8 @@ public class Home extends FollowList {
                                 if (fe != null) { empty.setText(L("تعذّر التحميل: ", "Could not load: ") + fe); return; }
                                 cm.clear();
                                 cm.addAll(got);
+                                cLikes.clear(); cLikes.putAll(tl); cKids.clear(); cKids.putAll(tk); cMine.clear(); cMine.addAll(tm);
+                                cReps.clear(); cReps.putAll(trp); cViews.clear(); cViews.putAll(tvw); cRepMine.clear(); cRepMine.addAll(trm); cSaveMine.clear(); cSaveMine.addAll(tsm);
                                 ca.notifyDataSetChanged();
                                 empty.setText(got.isEmpty() ? L("لا توجد ردود بعد. كن أول من يرد!", "No replies yet. Be the first!") : "");
                                 empty.setVisibility(got.isEmpty() ? View.VISIBLE : View.GONE);
@@ -1730,6 +1817,55 @@ public class Home extends FollowList {
                     }).setNegativeButton(L("إلغاء", "Cancel"), null).show();
             }
         }).show();
+    }
+
+    protected void rpToggleLike(final JSONObject o, final HashMap<Long, Integer> cl, final Set<Long> mine, final Runnable redraw) {
+        if (uid == null) return;
+        final long cid = o.optLong("id");
+        final boolean was = mine.contains(cid);
+        Integer n0 = cl.get(cid);
+        int n = n0 == null ? 0 : n0;
+        if (was) { mine.remove(cid); cl.put(cid, Math.max(0, n - 1)); } else { mine.add(cid); cl.put(cid, n + 1); }
+        redraw.run();
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                boolean fail = false;
+                try {
+                    if (was) send("DELETE", "comment_likes?comment_id=eq." + cid + "&user_id=eq." + uid, null);
+                    else send("POST", "comment_likes", new JSONObject().put("comment_id", cid).put("user_id", uid).toString());
+                } catch (Exception e) { fail = !String.valueOf(e.getMessage()).contains("23505"); }
+                if (fail) runOnUiThread(new Runnable() { @Override public void run() {
+                    Integer c0 = cl.get(cid); int c = c0 == null ? 0 : c0;
+                    if (was) { mine.add(cid); cl.put(cid, c + 1); } else { mine.remove(cid); cl.put(cid, Math.max(0, c - 1)); }
+                    redraw.run();
+                    toast(L("تعذّر الحفظ، حاول لاحقاً", "Could not save, try again"));
+                } });
+            }
+        });
+    }
+
+    protected void rpToggleReact(final JSONObject o, final String kind, final HashMap<Long, Integer> cnt, final Set<Long> mine, final Runnable redraw) {
+        if (uid == null) return;
+        final long cid = o.optLong("id");
+        final boolean was = mine.contains(cid);
+        if (was) mine.remove(cid); else mine.add(cid);
+        if (cnt != null) { Integer n0 = cnt.get(cid); int n = n0 == null ? 0 : n0; cnt.put(cid, was ? Math.max(0, n - 1) : n + 1); }
+        redraw.run();
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                boolean fail = false;
+                try {
+                    if (was) send("DELETE", "comment_reactions?comment_id=eq." + cid + "&user_id=eq." + uid + "&kind=eq." + kind, null);
+                    else send("POST", "comment_reactions", new JSONObject().put("comment_id", cid).put("user_id", uid).put("kind", kind).toString());
+                } catch (Exception e) { fail = !String.valueOf(e.getMessage()).contains("23505"); }
+                if (fail) runOnUiThread(new Runnable() { @Override public void run() {
+                    if (was) mine.add(cid); else mine.remove(cid);
+                    if (cnt != null) { Integer c0 = cnt.get(cid); int c = c0 == null ? 0 : c0; cnt.put(cid, was ? c + 1 : Math.max(0, c - 1)); }
+                    redraw.run();
+                    toast(L("تعذّر الحفظ، حاول لاحقاً", "Could not save, try again"));
+                } });
+            }
+        });
     }
 
     // ---------------- شاشة كتابة الرد ----------------
@@ -1820,10 +1956,13 @@ public class Home extends FollowList {
         catch (Exception e) { toast(L("تعذّر فتح المعرض", "Could not open the gallery")); }
     }
 
-    protected void openReplyComposer(final JSONObject post, final Runnable onSent) {
+    protected void openReplyComposer(JSONObject post, Runnable onSent) { openReplyComposer(post, onSent, null); }
+
+    protected void openReplyComposer(final JSONObject post, final Runnable onSent, final JSONObject parent) {
         if (uid == null) { toast(L("سجّل الدخول أولاً", "Please sign in first")); return; }
+        final JSONObject src = parent != null ? parent : post;
         final String pk = String.valueOf(post.optLong("id"));
-        final String pUser = post.optString("user_id", "");
+        final String pUser = src.optString("user_id", "");
         rpImage = null; rpVideoUri = null; rpVideoName = null;
         final Dialog d = sheetDialog(true);
         LinearLayout root = new LinearLayout(this);
@@ -1860,7 +1999,7 @@ public class Home extends FollowList {
         LinearLayout leftCol = new LinearLayout(this);
         leftCol.setOrientation(LinearLayout.VERTICAL);
         leftCol.setGravity(Gravity.CENTER_HORIZONTAL);
-        String on = post.optString("author_name", "");
+        String on = src.optString("author_name", "");
         leftCol.addView(rpAvatar(on, photos.get(pUser), 44), new LinearLayout.LayoutParams(dp(44), dp(44)));
         View vline = new View(this);
         vline.setBackgroundColor(0xFF2A3258);
@@ -1874,15 +2013,15 @@ public class Home extends FollowList {
         String oun = unames.get(pUser);
         TextView onm = tv(Color.WHITE, 15, true);
         onm.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        onm.setText(on + (oun != null ? "  @" + oun : "") + "  · " + ago(post.optString("created_at", "")));
+        onm.setText(on + (oun != null ? "  @" + oun : "") + "  · " + ago(src.optString("created_at", "")));
         oc.addView(onm);
-        String ot = post.optString("content", "");
-        boolean hasM = (!post.isNull("image_url") && post.optString("image_url", "").length() > 4) || (!post.isNull("video_url") && post.optString("video_url", "").length() > 4);
+        String ot = src.optString("content", "");
+        boolean hasM = (!src.isNull("image_url") && src.optString("image_url", "").length() > 4) || (!src.isNull("video_url") && src.optString("video_url", "").length() > 4);
         TextView otx = tv(0xFFE6E9FF, 15, false);
         otx.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
         otx.setMaxLines(5);
         otx.setEllipsize(android.text.TextUtils.TruncateAt.END);
-        otx.setText(ot + (hasM ? (ot.length() > 0 ? "  " : "") + (!post.isNull("video_url") && post.optString("video_url", "").length() > 4 ? "🎬" : "🖼") : ""));
+        otx.setText(ot + (hasM ? (ot.length() > 0 ? "  " : "") + (!src.isNull("video_url") && src.optString("video_url", "").length() > 4 ? "🎬" : "🖼") : ""));
         otx.setPadding(0, dp(4), 0, 0);
         oc.addView(otx);
         orig.addView(oc, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -2011,6 +2150,7 @@ public class Home extends FollowList {
                             b.put("author_name", uname == null ? "" : uname);
                             b.put("author_avatar", uavatar == null ? "" : uavatar);
                             b.put("content", txt);
+                            if (parent != null) b.put("parent_id", parent.optLong("id"));
                             if (imgUrl != null) b.put("image_url", imgUrl);
                             if (vidUrl != null) { b.put("video_url", vidUrl); b.put("video_path", vidPath); }
                             try { send("POST", "post_comments", b.toString()); }

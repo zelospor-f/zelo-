@@ -127,6 +127,12 @@ abstract class Notifications extends NftMarket {
         LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         cl.setMargins(dp(8), 0, 0, 0);
         head.addView(clear, cl);
+        TextView cog = ntBtn("⚙", false);
+        cog.setTextSize(16);
+        cog.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { ntOpenPrefs(); } });
+        LinearLayout.LayoutParams cgl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        cgl.setMargins(dp(8), 0, 0, 0);
+        head.addView(cog, cgl);
         root.addView(head, lpm(0, 0, 0, 14));
         ntList = new LinearLayout(this);
         ntList.setOrientation(LinearLayout.VERTICAL);
@@ -154,6 +160,9 @@ abstract class Notifications extends NftMarket {
         });
         ntLoad();
     }
+    // إعدادات الإشعارات: تُنفَّذ في Settings
+    protected void ntOpenPrefs() {}
+
     protected TextView ntBtn(String s, boolean danger) {
         TextView b = txt(s, danger ? 0xFFFF6B6B : GOLD, 12, true);
         b.setPadding(dp(12), dp(7), dp(12), dp(7));
