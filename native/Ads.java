@@ -1,6 +1,11 @@
 package PKG;
 
 import com.google.android.gms.ads.AdError;
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdLoader;
+import com.google.android.gms.ads.nativead.MediaView;
+import com.google.android.gms.ads.nativead.NativeAd;
+import com.google.android.gms.ads.nativead.NativeAdView;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdSize;
 import com.google.android.gms.ads.AdView;
@@ -88,6 +93,8 @@ abstract class Ads extends Store {
     protected static final boolean AD_REAL = false;   // false = معرّفات جوجل التجريبية
     protected static final String AD_REWARDED = AD_REAL ? "ca-app-pub-1758612048958433/8181428602" : "ca-app-pub-3940256099942544/5224354917";
     protected static final String AD_BANNER = AD_REAL ? "ca-app-pub-1758612048958433/9630688759" : "ca-app-pub-3940256099942544/6300978111";
+    protected static final String AD_NATIVE = AD_REAL ? "" : "ca-app-pub-3940256099942544/2247696110"; // الحقيقي: ضع معرّف وحدة Native من AdMob
+    protected final List<NativeAd> adNativeList = new ArrayList<NativeAd>();
     protected static final long AD_COOLDOWN_MS = 30 * 1000L;
 
     protected boolean adInit = false, adBusy = false, adBannerOn = false, adRewardEarned = false;
@@ -186,7 +193,7 @@ abstract class Ads extends Store {
                     dots.addView(dv, dl);
                 }
                 adProg.addView(dots);
-                TextView t = txt(L(prog + " من " + per + " للكورة القادمة · شاهدت " + total + " إعلانًا", prog + " of " + per + " to next Kora · " + total + " ads watched"), 0xFF94A3B8, 13, false);
+                TextView t = txt(L(prog + T(" من ") + per + T(" للكورة القادمة · شاهدت ") + total + T(" إعلانًا"), prog + " of " + per + " to next Kora · " + total + " ads watched"), 0xFF94A3B8, 13, false);
                 t.setPadding(0, dp(8), 0, 0);
                 adProg.addView(t);
             } });
@@ -199,7 +206,7 @@ abstract class Ads extends Store {
         long wait = AD_COOLDOWN_MS - (System.currentTimeMillis() - adLastShown);
         if (wait > 0) {
             long s = (wait + 999) / 1000;
-            adStatus(L("انتظر " + s + " ثانية قبل الإعلان التالي.", "Wait " + s + "s before the next ad."), true);
+            adStatus(L("انتظر " + s + T(" ثانية قبل الإعلان التالي."), "Wait " + s + "s before the next ad."), true);
             return;
         }
         adBusy = true;
@@ -268,7 +275,7 @@ abstract class Ads extends Store {
                     runOnUiThread(new Runnable() { @Override public void run() {
                         loadBalance();
                         adRenderProgress(p);
-                        adStatus(prog == 0 ? L("🎉 ربحت +1 كورة", "🎉 You earned +1 Kora") : L("تم ✅ التقدّم: " + prog + " من " + per + " إعلانات للكورة القادمة", "Done ✅ Progress: " + prog + " of " + per + " ads for the next Kora"), false);
+                        adStatus(prog == 0 ? L("🎉 ربحت +1 كورة", "🎉 You earned +1 Kora") : L("تم ✅ التقدّم: " + prog + T(" من ") + per + T(" إعلانات للكورة القادمة"), "Done ✅ Progress: " + prog + " of " + per + " ads for the next Kora"), false);
                     } });
                     return;
                 }
@@ -315,6 +322,111 @@ abstract class Ads extends Store {
             } catch (Throwable e) { slot.setVisibility(View.GONE); }
         } });
         return slot;
+    }
+
+    // إعلان أصلي (Native) داخل الردود: بطاقة بتصميم التطبيق مع شارة «إعلان» واضحة
+    protected void adNativeDestroy() {
+        for (NativeAd a : adNativeList) { try { a.destroy(); } catch (Throwable ignore) {} }
+        adNativeList.clear();
+    }
+    protected View adNativeView() {
+        final LinearLayout slot = new LinearLayout(this);
+        slot.setOrientation(LinearLayout.VERTICAL);
+        slot.setPadding(dp(14), dp(12), dp(14), dp(8));
+        slot.setVisibility(View.GONE);
+        if (AD_NATIVE.length() == 0) return slot;
+        adInitSdk(new Runnable() { @Override public void run() {
+            try {
+                AdLoader loader = new AdLoader.Builder(Ads.this, AD_NATIVE)
+                    .forNativeAd(new NativeAd.OnNativeAdLoadedListener() {
+                        @Override public void onNativeAdLoaded(NativeAd ad) {
+                            if (isDestroyed()) { ad.destroy(); return; }
+                            adNativeList.add(ad);
+                            slot.removeAllViews();
+                            slot.addView(adNativeCard(ad));
+                            slot.setVisibility(View.VISIBLE);
+                        }
+                    })
+                    .withAdListener(new AdListener() {
+                        @Override public void onAdFailedToLoad(LoadAdError e) { slot.setVisibility(View.GONE); }
+                    })
+                    .build();
+                loader.loadAd(new AdRequest.Builder().build());
+            } catch (Throwable e) { slot.setVisibility(View.GONE); }
+        } });
+        return slot;
+    }
+    protected View adNativeCard(NativeAd ad) {
+        NativeAdView nav = new NativeAdView(this);
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setPadding(dp(14), dp(14), dp(14), dp(12));
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] { 0xFF111A4A, 0xFF0D1540 });
+        bg.setCornerRadius(dp(20));
+        bg.setStroke(dp(1), 0x33F5C35A);
+        card.setBackground(bg);
+        LinearLayout hd = new LinearLayout(this);
+        hd.setGravity(Gravity.CENTER_VERTICAL);
+        TextView badge = tv(0xFFC9D1FF, 10, true);
+        badge.setText(L("إعلان", "Ad"));
+        badge.setPadding(dp(8), dp(2), dp(8), dp(2));
+        GradientDrawable bgd = new GradientDrawable();
+        bgd.setColor(0xFF2A3258);
+        bgd.setCornerRadius(dp(6));
+        badge.setBackground(bgd);
+        ImageView icon = new ImageView(this);
+        icon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        if (ad.getIcon() != null && ad.getIcon().getDrawable() != null) icon.setImageDrawable(ad.getIcon().getDrawable());
+        else icon.setVisibility(View.GONE);
+        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(dp(44), dp(44));
+        ilp.setMarginEnd(dp(10));
+        hd.addView(icon, ilp);
+        TextView head = tv(Color.WHITE, 15, true);
+        head.setText(ad.getHeadline());
+        head.setMaxLines(2);
+        hd.addView(head, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        hd.addView(badge);
+        card.addView(hd);
+        TextView body = tv(0xFFD6DCF5, 13, false);
+        if (ad.getBody() != null) { body.setText(ad.getBody()); body.setMaxLines(3); body.setPadding(0, dp(8), 0, 0); card.addView(body); }
+        MediaView mv = new MediaView(this);
+        if (ad.getMediaContent() != null) {
+            mv.setMediaContent(ad.getMediaContent());
+            mv.setImageScaleType(ImageView.ScaleType.CENTER_CROP);
+            LinearLayout.LayoutParams mlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(170));
+            mlp.topMargin = dp(10);
+            card.addView(mv, mlp);
+        }
+        TextView cta = tv(NAVY, 14, true);
+        cta.setGravity(Gravity.CENTER);
+        GradientDrawable cg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[] { GOLD, 0xFFFDE9A8 });
+        cg.setCornerRadius(dp(14));
+        cta.setBackground(cg);
+        cta.setPadding(0, dp(10), 0, dp(10));
+        if (ad.getCallToAction() != null) {
+            cta.setText(ad.getCallToAction());
+            LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            clp.topMargin = dp(10);
+            card.addView(cta, clp);
+        }
+        nav.addView(card);
+        nav.setHeadlineView(head);
+        nav.setBodyView(body);
+        nav.setIconView(icon);
+        nav.setMediaView(mv);
+        nav.setCallToActionView(cta);
+        nav.setNativeAd(ad);
+        // رابط إزالة الإعلانات خارج منطقة الإعلان
+        LinearLayout out = new LinearLayout(this);
+        out.setOrientation(LinearLayout.VERTICAL);
+        out.addView(nav);
+        TextView sub = tv(GOLD, 11, true);
+        sub.setText(L("اشترك لإزالة الإعلانات", "Subscribe to remove ads"));
+        sub.setGravity(Gravity.CENTER);
+        sub.setPadding(dp(10), dp(8), dp(10), dp(2));
+        sub.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openSubscriptions(); } });
+        out.addView(sub);
+        return out;
     }
 
     protected void adShowBanner() {

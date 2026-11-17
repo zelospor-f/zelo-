@@ -1364,11 +1364,23 @@ public class Home extends FollowList {
         ListView lv = new ListView(this);
         lv.setDivider(null);
         lv.setSelector(new ColorDrawable(Color.TRANSPARENT));
+        final boolean[] cmAds = { false };
+        final HashMap<Integer, View> cmAdViews = new HashMap<Integer, View>();
         final BaseAdapter ca = new BaseAdapter() {
-            @Override public int getCount() { return cm.size(); }
-            @Override public Object getItem(int i) { return cm.get(i); }
+            // إعلان أصلي بعد الرد الثالث ثم كل 8 ردود (لغير المشترك)
+            private boolean isAd(int p) { return cmAds[0] && p >= 3 && (p - 3) % 9 == 0; }
+            private int idx(int p) { return cmAds[0] && p >= 3 ? p - ((p - 3) / 9 + 1) : p; }
+            @Override public int getCount() { int n = cm.size(); return cmAds[0] && n >= 3 ? n + 1 + (n - 3) / 8 : n; }
+            @Override public Object getItem(int i) { return isAd(i) ? null : cm.get(idx(i)); }
             @Override public long getItemId(int i) { return i; }
+            @Override public int getItemViewType(int i) { return isAd(i) ? -1 : 0; }
             @Override public View getView(int i, View cv, ViewGroup p) {
+                if (isAd(i)) {
+                    View av = cmAdViews.get(i);
+                    if (av == null) { av = adNativeView(); cmAdViews.put(i, av); }
+                    return av;
+                }
+                i = idx(i);
                 LinearLayout r;
                 if (cv == null) {
                     r = new LinearLayout(Home.this);
@@ -1393,6 +1405,10 @@ public class Home extends FollowList {
             }
         };
         lv.setAdapter(ca);
+        if (uid != null) fetchTier(new TierCb() { @Override public void on(int tier) {
+            if (tier < 1) { cmAds[0] = true; ca.notifyDataSetChanged(); }
+        } });
+        d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface x) { adNativeDestroy(); } });
         box.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         LinearLayout in = new LinearLayout(this);
