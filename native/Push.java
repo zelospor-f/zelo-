@@ -75,7 +75,21 @@ abstract class Push extends Radar {
     protected String lastPushToken = "";
     protected boolean pushStarted = false;
 
+    // قناة إشعارات بأهمية عالية: تجعل الإشعار ينزل كبانر من أعلى الشاشة
+    protected void ensurePushChannel() {
+        if (android.os.Build.VERSION.SDK_INT < 26) return;
+        try {
+            android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null || nm.getNotificationChannel("zelo_high") != null) return;
+            android.app.NotificationChannel ch = new android.app.NotificationChannel("zelo_high", "ZELO Sport", android.app.NotificationManager.IMPORTANCE_HIGH);
+            ch.enableVibration(true);
+            ch.setShowBadge(true);
+            nm.createNotificationChannel(ch);
+        } catch (Throwable e) { android.util.Log.w("ZELO", "channel: " + e); }
+    }
+
     protected void startPush() {
+        ensurePushChannel();
         if (pushStarted || uid == null || token == null) return;
         pushStarted = true;
         if (android.os.Build.VERSION.SDK_INT >= 33 && checkSelfPermission("android.permission.POST_NOTIFICATIONS") != android.content.pm.PackageManager.PERMISSION_GRANTED) {
