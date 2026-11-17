@@ -679,19 +679,19 @@ abstract class Compose extends Profile {
         });
     }
 
-    private String cmEnc(String path) throws Exception {
+    protected String cmEnc(String path) throws Exception {
         String[] ps = path.split("/");
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < ps.length; i++) { if (i > 0) sb.append('/'); sb.append(java.net.URLEncoder.encode(ps[i], "UTF-8").replace("+", "%20")); }
         return sb.toString();
     }
 
-    private void cmRemove(String bucket, String path) {
+    protected void cmRemove(String bucket, String path) {
         try { sendUrl("DELETE", url + "/storage/v1/object/" + bucket + "/" + cmEnc(path), null); } catch (Exception ignore) {}
     }
 
     // إرسال خام (للتخزين والصفوف التي نحتاج إرجاعها)
-    private String cmHttp(String method, String full, byte[] body, String ctype, String upsert) throws Exception {
+    protected String cmHttp(String method, String full, byte[] body, String ctype, String upsert) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(full).openConnection();
         c.setRequestMethod(method);
         c.setRequestProperty("apikey", key);

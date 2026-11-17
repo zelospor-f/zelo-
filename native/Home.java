@@ -438,6 +438,12 @@ public class Home extends FollowList {
         g.setStroke(dp(1), 0x33F5C35A);
         row.setBackground(g);
         final Holder h = w.h;
+        row.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                Object t0 = h.cm.getTag();
+                if (t0 instanceof Integer) openComments((Integer) t0);
+            }
+        });
 
         LinearLayout head = new LinearLayout(this);
         head.setOrientation(LinearLayout.HORIZONTAL);
@@ -1322,12 +1328,81 @@ public class Home extends FollowList {
         h.avatar.setOnClickListener(pc); h.avImg.setOnClickListener(pc); h.name.setOnClickListener(pc);
     }
 
-    // ---------------- التعليقات ----------------
+    // ---------------- شاشة المنشور والردود (على نمط X) ----------------
+    protected static final int RP_IMG = 7311, RP_VID = 7312;
+    protected static final long RP_VID_MAX = 30L * 1024 * 1024;
+    protected static final long RP_VID_SECS = 60;
+    protected Bitmap rpImage;
+    protected android.net.Uri rpVideoUri;
+    protected String rpVideoName;
+    protected Runnable rpOnMedia;
+
     protected void openComments(int idx) { openComments(items.get(idx)); }
 
-    protected void openComments(JSONObject post) {
+    protected View rpAvatar(String name, String photo, int sz) {
+        FrameLayout f = new FrameLayout(this);
+        TextView t = tv(NAVY, sz > 40 ? 18 : 14, true);
+        t.setGravity(Gravity.CENTER);
+        t.setBackground(oval(GOLD, 0));
+        t.setText(name != null && name.length() > 0 ? name.substring(0, 1).toUpperCase() : "?");
+        f.addView(t, new FrameLayout.LayoutParams(dp(sz), dp(sz)));
+        if (photo != null && photo.length() > 4) {
+            ImageView iv = new ImageView(this);
+            iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            iv.setOutlineProvider(new ViewOutlineProvider() {
+                @Override public void getOutline(View v, Outline o) { o.setOval(0, 0, v.getWidth(), v.getHeight()); }
+            });
+            iv.setClipToOutline(true);
+            f.addView(iv, new FrameLayout.LayoutParams(dp(sz), dp(sz)));
+            loadImage(photo, iv);
+        }
+        return f;
+    }
+
+    protected String rpDate(String iso) {
+        try {
+            SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.US);
+            f.setTimeZone(TimeZone.getTimeZone("UTC"));
+            Date dt = f.parse(iso.substring(0, 19));
+            return "‎" + new SimpleDateFormat("h:mm a · d MMM yyyy").format(dt);
+        } catch (Exception e) { return ""; }
+    }
+
+    protected ImageView rpImageView(int hDp) {
+        ImageView iv = new ImageView(this);
+        iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        iv.setOutlineProvider(new ViewOutlineProvider() {
+            @Override public void getOutline(View v, Outline o) { o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), dp(14)); }
+        });
+        iv.setClipToOutline(true);
+        iv.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { Object t = v.getTag(); if (t instanceof String) showImage((String) t); }
+        });
+        return iv;
+    }
+
+    protected TextView rpVideoBox() {
+        TextView vb = tv(Color.WHITE, 30, false);
+        vb.setText("▶");
+        vb.setGravity(Gravity.CENTER);
+        GradientDrawable vg = new GradientDrawable();
+        vg.setColor(0xFF050A26);
+        vg.setCornerRadius(dp(14));
+        vb.setBackground(vg);
+        vb.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) { Object t = v.getTag(R_TAG); if (t instanceof String) playVideo((String) t); }
+        });
+        return vb;
+    }
+
+    protected static class RpH {
+        FrameLayout av; TextView n, m, t, more, vid; ImageView img;
+    }
+
+    protected void openComments(final JSONObject post) {
         final long pid = post.optLong("id");
         final String pk = String.valueOf(pid);
+        final String postUser = post.optString("user_id", "");
         final List<JSONObject> cm = new ArrayList<JSONObject>();
         final Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
         d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
@@ -1343,27 +1418,142 @@ public class Home extends FollowList {
         });
         LinearLayout bar = new LinearLayout(this);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setPadding(dp(16), dp(12), dp(16), dp(8));
-        TextView title = tv(GOLD, 18, true);
-        title.setText(L("التعليقات", "Comments"));
+        bar.setPadding(dp(8), dp(8), dp(16), dp(8));
+        TextView back = tv(Color.WHITE, 30, false);
+        back.setText("›");
+        back.setPadding(dp(14), 0, dp(14), dp(4));
+        back.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
+        bar.addView(back);
+        TextView title = tv(GOLD, 19, true);
+        title.setText(L("المنشور", "Post"));
         bar.addView(title, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        TextView x = tv(Color.WHITE, 22, false);
-        x.setText("✕");
-        x.setPadding(dp(12), 0, dp(4), 0);
-        x.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { d.dismiss(); }
-        });
-        bar.addView(x);
         box.addView(bar);
+        View sep = new View(this);
+        sep.setBackgroundColor(0x1AFFFFFF);
+        box.addView(sep, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
 
+        // ----- رأس القائمة: المنشور نفسه -----
+        LinearLayout hdr = new LinearLayout(this);
+        hdr.setOrientation(LinearLayout.VERTICAL);
+        hdr.setPadding(dp(16), dp(14), dp(16), 0);
+        LinearLayout hd1 = new LinearLayout(this);
+        hd1.setGravity(Gravity.CENTER_VERTICAL);
+        final FrameLayout hAv = new FrameLayout(this);
+        hd1.addView(hAv, new LinearLayout.LayoutParams(dp(46), dp(46)));
+        LinearLayout hn = new LinearLayout(this);
+        hn.setOrientation(LinearLayout.VERTICAL);
+        hn.setPadding(dp(10), 0, dp(10), 0);
+        final TextView hName = tv(Color.WHITE, 16, true), hUser = tv(MUTED, 13, false);
+        hName.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START); hUser.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        hn.addView(hName); hn.addView(hUser);
+        hd1.addView(hn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView hMore = tv(MUTED, 22, true);
+        hMore.setText("⋮");
+        hMore.setPadding(dp(12), dp(6), dp(6), dp(6));
+        hMore.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { showMenu(post); } });
+        hd1.addView(hMore);
+        hdr.addView(hd1);
+        String pc = post.optString("content", "");
+        TextView hBody = tv(Color.WHITE, 18, false);
+        hBody.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        hBody.setText(pc);
+        hBody.setPadding(0, dp(12), 0, dp(4));
+        hBody.setVisibility(pc.length() > 0 ? View.VISIBLE : View.GONE);
+        hdr.addView(hBody);
+        String pim = post.isNull("image_url") ? "" : post.optString("image_url", "");
+        String pvd = post.isNull("video_url") ? "" : post.optString("video_url", "");
+        if (pim.length() > 4) {
+            ImageView hi = rpImageView(220);
+            loadImage(pim, hi);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220));
+            lp.topMargin = dp(8);
+            hdr.addView(hi, lp);
+        }
+        if (pvd.length() > 4) {
+            TextView hv = rpVideoBox();
+            hv.setTag(R_TAG, pvd);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220));
+            lp.topMargin = dp(8);
+            hdr.addView(hv, lp);
+        }
+        TextView hDate = tv(MUTED, 13, false);
+        hDate.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        hDate.setText(rpDate(post.optString("created_at", "")));
+        hDate.setPadding(0, dp(12), 0, dp(10));
+        hdr.addView(hDate);
+        View l1 = new View(this); l1.setBackgroundColor(0x1AFFFFFF);
+        hdr.addView(l1, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+        final TextView hCnt = tv(MUTED, 13, false);
+        hCnt.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        hCnt.setPadding(0, dp(10), 0, dp(10));
+        hdr.addView(hCnt);
+        View l2 = new View(this); l2.setBackgroundColor(0x1AFFFFFF);
+        hdr.addView(l2, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+        LinearLayout hActs = new LinearLayout(this);
+        final TextView aCm = tv(MUTED, 20, false), aRp = tv(MUTED, 20, false), aLk = tv(MUTED, 20, false), aSh = tv(MUTED, 20, false);
+        aCm.setText("💬"); aRp.setText("🔁"); aLk.setText("♥"); aSh.setText("↗");
+        TextView[] aa = { aCm, aRp, aLk, aSh };
+        for (TextView a : aa) { a.setGravity(Gravity.CENTER); a.setPadding(0, dp(10), 0, dp(10)); hActs.addView(a, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)); }
+        hdr.addView(hActs);
+        View l3 = new View(this); l3.setBackgroundColor(0x1AFFFFFF);
+        hdr.addView(l3, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+        // صف "اكتب ردك"
+        LinearLayout hIn = new LinearLayout(this);
+        hIn.setGravity(Gravity.CENTER_VERTICAL);
+        hIn.setPadding(0, dp(12), 0, dp(12));
+        final FrameLayout meAv = new FrameLayout(this);
+        meAv.addView(rpAvatar(uname == null ? "" : uname, uavatar != null && uavatar.startsWith("http") ? uavatar : photos.get(uid == null ? "" : uid), 38));
+        hIn.addView(meAv, new LinearLayout.LayoutParams(dp(38), dp(38)));
+        TextView hHint = tv(MUTED, 15, false);
+        hHint.setText(L("اكتب ردّك...", "Write your reply..."));
+        hHint.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        hHint.setPadding(dp(12), 0, dp(12), 0);
+        hIn.addView(hHint, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        TextView hSend = tv(NAVY, 13, true);
+        hSend.setText(L("رد", "Reply"));
+        hSend.setGravity(Gravity.CENTER);
+        GradientDrawable hsg = new GradientDrawable(); hsg.setColor(GOLD); hsg.setCornerRadius(dp(16));
+        hSend.setBackground(hsg);
+        hSend.setPadding(dp(18), dp(7), dp(18), dp(7));
+        hIn.addView(hSend);
+        hdr.addView(hIn);
+        View l4 = new View(this); l4.setBackgroundColor(0x1AFFFFFF);
+        hdr.addView(l4, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         final TextView empty = tv(MUTED, 14, false);
         empty.setText("");
-        empty.setPadding(dp(16), dp(8), dp(16), dp(8));
-        box.addView(empty);
+        empty.setPadding(0, dp(12), 0, dp(8));
+        hdr.addView(empty);
+
+        final Runnable hdrBind = new Runnable() {
+            @Override public void run() {
+                String nm = post.optString("author_name", "");
+                hAv.removeAllViews();
+                hAv.addView(rpAvatar(nm, photos.get(postUser), 46));
+                hName.setText(nm);
+                String un = unames.get(postUser);
+                hUser.setText(un != null ? "@" + un : "");
+                int[] s = stats.get(pk);
+                if (s == null) s = new int[] { 0, 0, 0, 0 };
+                hCnt.setText("‎" + s[3] + " " + L("مشاهدة", "views") + "     ‎" + s[0] + " " + L("إعجاب", "likes") + "     ‎" + s[2] + " " + L("إعادة", "reposts") + "     ‎" + Math.max(s[1], cm.size()) + " " + L("رد", "replies"));
+                aLk.setTextColor(liked.contains(pk) ? 0xFF14F195 : MUTED);
+                aRp.setTextColor(reposted.contains(pk) ? 0xFF14F195 : MUTED);
+            }
+        };
+        hdrBind.run();
+        View.OnClickListener pcl = new View.OnClickListener() { @Override public void onClick(View v) { if (postUser.length() > 0) openProfileOf(postUser); } };
+        hAv.setOnClickListener(pcl); hName.setOnClickListener(pcl);
+        final Runnable[] toComposer = new Runnable[1];
+        final Runnable[] reloadRef = new Runnable[1];
+        View.OnClickListener open = new View.OnClickListener() { @Override public void onClick(View v) { toComposer[0].run(); } };
+        aCm.setOnClickListener(open); hIn.setOnClickListener(open); hSend.setOnClickListener(open);
+        aLk.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleLike(post); v.postDelayed(hdrBind, 500); } });
+        aRp.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleRepost(post); v.postDelayed(hdrBind, 500); } });
+        aSh.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { shareLink(post); } });
 
         ListView lv = new ListView(this);
         lv.setDivider(null);
         lv.setSelector(new ColorDrawable(Color.TRANSPARENT));
+        lv.addHeaderView(hdr, null, false);
         final boolean[] cmAds = { false };
         final HashMap<Integer, View> cmAdViews = new HashMap<Integer, View>();
         final BaseAdapter ca = new BaseAdapter() {
@@ -1382,25 +1572,69 @@ public class Home extends FollowList {
                 }
                 i = idx(i);
                 LinearLayout r;
+                RpH h;
                 if (cv == null) {
                     r = new LinearLayout(Home.this);
-                    r.setOrientation(LinearLayout.VERTICAL);
-                    TextView n = tv(Color.WHITE, 14, true);
-                    TextView t = tv(0xFFE6E9FF, 15, false);
-                    TextView m = tv(MUTED, 11, false);
-                    r.addView(n); r.addView(t); r.addView(m);
-                    r.setTag(new TextView[] { n, t, m });
+                    r.setOrientation(LinearLayout.HORIZONTAL);
+                    h = new RpH();
+                    h.av = new FrameLayout(Home.this);
+                    LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(38), dp(38));
+                    alp.setMarginEnd(dp(10));
+                    r.addView(h.av, alp);
+                    LinearLayout col = new LinearLayout(Home.this);
+                    col.setOrientation(LinearLayout.VERTICAL);
+                    LinearLayout line = new LinearLayout(Home.this);
+                    line.setGravity(Gravity.CENTER_VERTICAL);
+                    LinearLayout nn = new LinearLayout(Home.this);
+                    nn.setOrientation(LinearLayout.VERTICAL);
+                    h.n = tv(Color.WHITE, 14, true);
+                    h.m = tv(MUTED, 12, false);
+                    h.n.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START); h.m.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                    nn.addView(h.n); nn.addView(h.m);
+                    line.addView(nn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                    h.more = tv(MUTED, 20, true);
+                    h.more.setText("⋮");
+                    h.more.setPadding(dp(10), dp(2), dp(2), dp(2));
+                    line.addView(h.more);
+                    col.addView(line);
+                    h.t = tv(0xFFE6E9FF, 15, false);
+                    h.t.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+                    h.t.setPadding(0, dp(4), 0, dp(2));
+                    col.addView(h.t);
+                    h.img = rpImageView(180);
+                    LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(180));
+                    ilp.topMargin = dp(6);
+                    col.addView(h.img, ilp);
+                    h.vid = rpVideoBox();
+                    LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(160));
+                    vlp.topMargin = dp(6);
+                    col.addView(h.vid, vlp);
+                    r.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                    r.setTag(h);
                     cv = r;
                 }
                 r = (LinearLayout) cv;
-                TextView[] tt = (TextView[]) r.getTag();
-                JSONObject o = cm.get(i);
+                h = (RpH) r.getTag();
+                final JSONObject o = cm.get(i);
                 boolean reply = !o.isNull("parent_id");
-                r.setPadding(dp(reply ? 44 : 16), dp(10), dp(16), dp(10));
-                tt[0].setText(o.optString("author_name", ""));
+                r.setPaddingRelative(dp(reply ? 44 : 16), dp(12), dp(16), dp(12));
+                final String au = o.optString("user_id", "");
+                String nm = o.optString("author_name", "");
+                h.av.removeAllViews();
+                h.av.addView(rpAvatar(nm, photos.get(au), 38));
+                h.n.setText(nm);
+                String un = unames.get(au);
+                h.m.setText((un != null ? "@" + un + " · " : "") + ago(o.optString("created_at", "")));
                 String c = o.optString("content", "");
-                tt[1].setText(c.startsWith("::sticker::") ? c.substring(11) : c);
-                tt[2].setText(ago(o.optString("created_at", "")));
+                h.t.setText(c.startsWith("::sticker::") ? c.substring(11) : c);
+                h.t.setVisibility(c.length() > 0 ? View.VISIBLE : View.GONE);
+                String im = o.isNull("image_url") ? "" : o.optString("image_url", "");
+                String vd = o.isNull("video_url") ? "" : o.optString("video_url", "");
+                if (im.length() > 4) { h.img.setVisibility(View.VISIBLE); loadImage(im, h.img); } else { h.img.setTag(null); h.img.setVisibility(View.GONE); }
+                if (vd.length() > 4) { h.vid.setVisibility(View.VISIBLE); h.vid.setTag(R_TAG, vd); } else h.vid.setVisibility(View.GONE);
+                View.OnClickListener pr = new View.OnClickListener() { @Override public void onClick(View v) { if (au.length() > 0) openProfileOf(au); } };
+                h.av.setOnClickListener(pr); h.n.setOnClickListener(pr);
+                h.more.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpMenu(o, reloadRef[0]); } });
                 return cv;
             }
         };
@@ -1411,26 +1645,6 @@ public class Home extends FollowList {
         d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface x) { adNativeDestroy(); } });
         box.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
-        LinearLayout in = new LinearLayout(this);
-        in.setGravity(Gravity.CENTER_VERTICAL);
-        in.setPadding(dp(12), dp(8), dp(12), dp(8));
-        final EditText et = new EditText(this);
-        et.setHint(L("اكتب تعليقًا...", "Write a comment..."));
-        et.setHintTextColor(MUTED);
-        et.setTextColor(Color.WHITE);
-        et.setMaxLines(4);
-        in.addView(et, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        final TextView sendBtn = tv(NAVY, 15, true);
-        sendBtn.setText(T("إرسال"));
-        sendBtn.setGravity(Gravity.CENTER);
-        GradientDrawable sg = new GradientDrawable();
-        sg.setColor(GOLD);
-        sg.setCornerRadius(dp(18));
-        sendBtn.setBackground(sg);
-        sendBtn.setPadding(dp(18), dp(10), dp(18), dp(10));
-        in.addView(sendBtn);
-        box.addView(in);
-
         final Runnable reload = new Runnable() {
             @Override public void run() {
                 pool.execute(new Runnable() {
@@ -1438,10 +1652,28 @@ public class Home extends FollowList {
                         String err = null;
                         final List<JSONObject> got = new ArrayList<JSONObject>();
                         try {
-                            JSONArray a = new JSONArray(get("post_comments?select=id,parent_id,user_id,author_name,content,created_at,hidden&post_id=eq." + pid + "&order=created_at.asc&limit=200"));
+                            JSONArray a = new JSONArray(get("post_comments?select=id,parent_id,user_id,author_name,content,created_at,hidden,image_url,video_url,video_path&post_id=eq." + pid + "&order=created_at.asc&limit=200"));
+                            StringBuilder need = new StringBuilder();
+                            Set<String> seen = new HashSet<String>();
+                            if (postUser.length() > 0 && !unames.containsKey(postUser)) { need.append(postUser); seen.add(postUser); }
                             for (int k = 0; k < a.length(); k++) {
                                 JSONObject o = a.getJSONObject(k);
-                                if (!o.optBoolean("hidden", false)) got.add(o);
+                                if (o.optBoolean("hidden", false)) continue;
+                                got.add(o);
+                                String au = o.optString("user_id", "");
+                                if (au.length() > 0 && !unames.containsKey(au) && !photos.containsKey(au) && seen.add(au)) { if (need.length() > 0) need.append(","); need.append(au); }
+                            }
+                            if (need.length() > 0) {
+                                try {
+                                    JSONArray pa = new JSONArray(get("public_profiles?select=user_id,photo_url,username&user_id=in.(" + need + ")"));
+                                    for (int q = 0; q < pa.length(); q++) {
+                                        JSONObject po = pa.getJSONObject(q);
+                                        String ph = po.isNull("photo_url") ? "" : po.optString("photo_url", "");
+                                        String un9 = po.isNull("username") ? "" : po.optString("username", "");
+                                        if (un9.length() > 0) unames.put(po.optString("user_id"), un9);
+                                        if (isImg(ph)) photos.put(po.optString("user_id"), ph);
+                                    }
+                                } catch (Exception ignore) {}
                             }
                         } catch (Exception e) { err = String.valueOf(e.getMessage()); }
                         final String fe = err;
@@ -1451,50 +1683,412 @@ public class Home extends FollowList {
                                 cm.clear();
                                 cm.addAll(got);
                                 ca.notifyDataSetChanged();
+                                empty.setText(got.isEmpty() ? L("لا توجد ردود بعد. كن أول من يرد!", "No replies yet. Be the first!") : "");
                                 empty.setVisibility(got.isEmpty() ? View.VISIBLE : View.GONE);
-                                empty.setText(L("لا توجد تعليقات بعد", "No comments yet"));
                                 int[] s = stats.get(pk);
                                 if (s != null) { s[1] = got.size(); refreshUi(); }
+                                hdrBind.run();
                             }
                         });
                     }
                 });
             }
         };
-        sendBtn.setOnClickListener(new View.OnClickListener() {
+        reloadRef[0] = reload;
+        toComposer[0] = new Runnable() { @Override public void run() { openReplyComposer(post, reload); } };
+        d.setContentView(box);
+        d.show();
+        reload.run();
+    }
+
+    protected void rpMenu(final JSONObject o, final Runnable reload) {
+        final String id = String.valueOf(o.optLong("id"));
+        final boolean mine = uid != null && uid.equals(o.optString("user_id", ""));
+        String[] labels = mine ? new String[] { L("حذف الرد", "Delete reply") } : new String[] { L("إبلاغ", "Report") };
+        new AlertDialog.Builder(this).setItems(labels, new DialogInterface.OnClickListener() {
+            @Override public void onClick(DialogInterface dd, int w) {
+                if (!mine) { openReport("comment", id); return; }
+                new AlertDialog.Builder(Home.this).setMessage(L("حذف هذا الرد نهائياً؟", "Delete this reply permanently?"))
+                    .setPositiveButton(L("حذف", "Delete"), new DialogInterface.OnClickListener() {
+                        @Override public void onClick(DialogInterface d2, int w2) {
+                            pool.execute(new Runnable() {
+                                @Override public void run() {
+                                    String err = null;
+                                    try {
+                                        send("DELETE", "post_comments?id=eq." + id + "&user_id=eq." + uid, null);
+                                        String vp = o.isNull("video_path") ? "" : o.optString("video_path", "");
+                                        if (vp.length() > 0) cmRemove("post-videos", vp);
+                                    } catch (Exception e) { err = String.valueOf(e.getMessage()); }
+                                    final String fe = err;
+                                    runOnUiThread(new Runnable() { @Override public void run() {
+                                        if (fe != null) toast(L("تعذّر الحذف", "Could not delete"));
+                                        else { toast(L("تم حذف الرد", "Reply deleted")); if (reload != null) reload.run(); }
+                                    } });
+                                }
+                            });
+                        }
+                    }).setNegativeButton(L("إلغاء", "Cancel"), null).show();
+            }
+        }).show();
+    }
+
+    // ---------------- شاشة كتابة الرد ----------------
+    @Override protected void onActivityResult(int code, int res, Intent data) {
+        super.onActivityResult(code, res, data);
+        if (res != RESULT_OK || data == null || data.getData() == null) return;
+        if (code == RP_IMG) rpHandleImage(data.getData());
+        else if (code == RP_VID) rpHandleVideo(data.getData());
+    }
+
+    protected void rpHandleImage(final android.net.Uri u) {
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                Bitmap b = null;
+                try {
+                    BitmapFactory.Options o = new BitmapFactory.Options();
+                    o.inJustDecodeBounds = true;
+                    InputStream in = getContentResolver().openInputStream(u);
+                    BitmapFactory.decodeStream(in, null, o);
+                    in.close();
+                    int s = 1;
+                    while (Math.max(o.outWidth, o.outHeight) / s > 1800) s *= 2;
+                    o = new BitmapFactory.Options();
+                    o.inSampleSize = s;
+                    in = getContentResolver().openInputStream(u);
+                    Bitmap full = BitmapFactory.decodeStream(in, null, o);
+                    in.close();
+                    if (full != null) {
+                        float sc = Math.min(1f, 900f / Math.max(full.getWidth(), full.getHeight()));
+                        b = sc < 1f ? Bitmap.createScaledBitmap(full, Math.round(full.getWidth() * sc), Math.round(full.getHeight() * sc), true) : full;
+                    }
+                } catch (Exception e) { b = null; }
+                final Bitmap fb = b;
+                runOnUiThread(new Runnable() { @Override public void run() {
+                    if (fb == null) { toast(L("الملف ليس صورة", "Not an image")); return; }
+                    rpImage = fb; rpVideoUri = null; rpVideoName = null;
+                    if (rpOnMedia != null) rpOnMedia.run();
+                } });
+            }
+        });
+    }
+
+    protected void rpHandleVideo(final android.net.Uri u) {
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                String err = null; String name = "video.mp4"; long size = 0;
+                try {
+                    android.database.Cursor c = getContentResolver().query(u, null, null, null, null);
+                    if (c != null) {
+                        if (c.moveToFirst()) {
+                            int ni = c.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME), si = c.getColumnIndex(android.provider.OpenableColumns.SIZE);
+                            if (ni >= 0) name = c.getString(ni);
+                            if (si >= 0) size = c.getLong(si);
+                        }
+                        c.close();
+                    }
+                    if (name == null || !name.toLowerCase().endsWith(".mp4")) err = L("الصيغة المقبولة MP4 فقط.", "Only MP4 files are allowed.");
+                    else if (size > RP_VID_MAX) err = L("حجم الفيديو يتجاوز 30 ميغابايت.", "Video is larger than 30 MB.");
+                    else {
+                        android.media.MediaMetadataRetriever mr = new android.media.MediaMetadataRetriever();
+                        mr.setDataSource(Home.this, u);
+                        String dur = mr.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+                        mr.release();
+                        if (dur != null && Long.parseLong(dur) > RP_VID_SECS * 1000) err = L("مدة الفيديو تتجاوز 60 ثانية.", "Video is longer than 60 seconds.");
+                    }
+                } catch (Exception e) { err = L("تعذّر قراءة الفيديو.", "Could not read the video."); }
+                final String fe = err, fn = name;
+                runOnUiThread(new Runnable() { @Override public void run() {
+                    if (fe != null) { toast(fe); return; }
+                    rpVideoUri = u; rpVideoName = fn; rpImage = null;
+                    if (rpOnMedia != null) rpOnMedia.run();
+                } });
+            }
+        });
+    }
+
+    protected void rpPickMedia(final boolean image, int tier) {
+        if (tier < 2) {
+            toast(image ? L("📷 الصور في الردود للمشتركين (الباقة المميّزة 1.99$ فما فوق)", "📷 Image replies need the Plus plan or higher")
+                        : L("🎬 الفيديو في الردود للمشتركين (الباقة المميّزة 1.99$ فما فوق)", "🎬 Video replies need the Plus plan or higher"));
+            openSubscriptions();
+            return;
+        }
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.setType(image ? "image/*" : "video/mp4");
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        try { startActivityForResult(Intent.createChooser(i, null), image ? RP_IMG : RP_VID); }
+        catch (Exception e) { toast(L("تعذّر فتح المعرض", "Could not open the gallery")); }
+    }
+
+    protected void openReplyComposer(final JSONObject post, final Runnable onSent) {
+        if (uid == null) { toast(L("سجّل الدخول أولاً", "Please sign in first")); return; }
+        final String pk = String.valueOf(post.optLong("id"));
+        final String pUser = post.optString("user_id", "");
+        rpImage = null; rpVideoUri = null; rpVideoName = null;
+        final Dialog d = sheetDialog(true);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(NAVY);
+        root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        final int[] tier = { 0 };
+        fetchTier(new TierCb() { @Override public void on(int t) { tier[0] = t; } });
+
+        LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.setPadding(dp(8), statusH() + dp(8), dp(16), dp(8));
+        TextView close = tv(Color.WHITE, 22, false);
+        close.setText("✕");
+        close.setPadding(dp(12), dp(4), dp(12), dp(4));
+        close.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
+        top.addView(close);
+        top.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        final TextView btn = tv(NAVY, 15, true);
+        btn.setText(L("رد", "Reply"));
+        btn.setGravity(Gravity.CENTER);
+        GradientDrawable bg = new GradientDrawable(); bg.setColor(GOLD); bg.setCornerRadius(dp(20));
+        btn.setBackground(bg);
+        btn.setPadding(dp(26), dp(8), dp(26), dp(8));
+        top.addView(btn);
+        root.addView(top);
+
+        ScrollView sv = new ScrollView(this);
+        LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(16), dp(6), dp(16), dp(16));
+        // المنشور الأصلي مع الخط العمودي
+        LinearLayout orig = new LinearLayout(this);
+        LinearLayout leftCol = new LinearLayout(this);
+        leftCol.setOrientation(LinearLayout.VERTICAL);
+        leftCol.setGravity(Gravity.CENTER_HORIZONTAL);
+        String on = post.optString("author_name", "");
+        leftCol.addView(rpAvatar(on, photos.get(pUser), 44), new LinearLayout.LayoutParams(dp(44), dp(44)));
+        View vline = new View(this);
+        vline.setBackgroundColor(0xFF2A3258);
+        LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(dp(3), 0, 1f);
+        vlp.topMargin = dp(6);
+        leftCol.addView(vline, vlp);
+        orig.addView(leftCol, new LinearLayout.LayoutParams(dp(44), ViewGroup.LayoutParams.MATCH_PARENT));
+        LinearLayout oc = new LinearLayout(this);
+        oc.setOrientation(LinearLayout.VERTICAL);
+        oc.setPadding(dp(10), 0, 0, dp(14));
+        String oun = unames.get(pUser);
+        TextView onm = tv(Color.WHITE, 15, true);
+        onm.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        onm.setText(on + (oun != null ? "  @" + oun : "") + "  · " + ago(post.optString("created_at", "")));
+        oc.addView(onm);
+        String ot = post.optString("content", "");
+        boolean hasM = (!post.isNull("image_url") && post.optString("image_url", "").length() > 4) || (!post.isNull("video_url") && post.optString("video_url", "").length() > 4);
+        TextView otx = tv(0xFFE6E9FF, 15, false);
+        otx.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        otx.setMaxLines(5);
+        otx.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        otx.setText(ot + (hasM ? (ot.length() > 0 ? "  " : "") + (!post.isNull("video_url") && post.optString("video_url", "").length() > 4 ? "🎬" : "🖼") : ""));
+        otx.setPadding(0, dp(4), 0, 0);
+        oc.addView(otx);
+        orig.addView(oc, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        body.addView(orig);
+        TextView to = tv(MUTED, 14, false);
+        to.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        to.setText(L("رداً على ", "Replying to ") + (oun != null ? "@" + oun : on));
+        to.setPadding(dp(54), 0, 0, dp(6));
+        body.addView(to);
+        LinearLayout me = new LinearLayout(this);
+        me.addView(rpAvatar(uname == null ? "" : uname, uavatar != null && uavatar.startsWith("http") ? uavatar : photos.get(uid), 44), new LinearLayout.LayoutParams(dp(44), dp(44)));
+        final EditText et = new EditText(this);
+        et.setHint(L("انشر ردّك", "Post your reply"));
+        et.setHintTextColor(0xFF6B76B0);
+        et.setTextColor(Color.WHITE);
+        et.setTextSize(18);
+        et.setBackground(null);
+        et.setGravity(Gravity.TOP | Gravity.START);
+        et.setMinLines(3);
+        et.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(500) });
+        et.setPadding(dp(10), dp(6), 0, dp(6));
+        me.addView(et, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        body.addView(me);
+        final FrameLayout prev = new FrameLayout(this);
+        LinearLayout.LayoutParams plp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        plp.setMargins(dp(54), dp(8), 0, 0);
+        body.addView(prev, plp);
+        sv.addView(body);
+        root.addView(sv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
+
+        // شريط الأدوات
+        LinearLayout tb = new LinearLayout(this);
+        tb.setGravity(Gravity.CENTER_VERTICAL);
+        tb.setPadding(dp(16), dp(8), dp(16), dp(8));
+        View tl = new View(this); tl.setBackgroundColor(0x1AFFFFFF);
+        root.addView(tl, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+        TextView bi = tv(GOLD, 14, true);
+        bi.setText("🖼 " + L("صورة", "Image"));
+        bi.setPadding(dp(4), dp(8), dp(16), dp(8));
+        bi.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpPickMedia(true, tier[0]); } });
+        TextView bv = tv(GOLD, 14, true);
+        bv.setText("🎬 " + L("فيديو", "Video"));
+        bv.setPadding(dp(4), dp(8), dp(16), dp(8));
+        bv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpPickMedia(false, tier[0]); } });
+        tb.addView(bi); tb.addView(bv);
+        tb.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        final TextView cnt = tv(MUTED, 13, false);
+        cnt.setText("‎0 / 500");
+        tb.addView(cnt);
+        root.addView(tb);
+        et.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) {}
+            @Override public void afterTextChanged(android.text.Editable ed) { cnt.setText("‎" + ed.length() + " / 500"); }
+        });
+
+        rpOnMedia = new Runnable() {
+            @Override public void run() {
+                prev.removeAllViews();
+                if (rpImage == null && rpVideoUri == null) return;
+                if (rpImage != null) {
+                    ImageView iv = new ImageView(Home.this);
+                    iv.setImageBitmap(rpImage);
+                    iv.setAdjustViewBounds(true);
+                    iv.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    prev.addView(iv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                } else {
+                    TextView vt = tv(Color.WHITE, 14, true);
+                    vt.setText("🎬 " + rpVideoName);
+                    vt.setPadding(dp(14), dp(18), dp(14), dp(18));
+                    GradientDrawable vg = new GradientDrawable(); vg.setColor(CARD); vg.setCornerRadius(dp(12)); vg.setStroke(dp(1), 0x33FFFFFF);
+                    vt.setBackground(vg);
+                    prev.addView(vt, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+                }
+                TextView x = tv(Color.WHITE, 16, true);
+                x.setText("✕");
+                x.setGravity(Gravity.CENTER);
+                x.setBackground(oval(0xAA000000, 0));
+                x.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpImage = null; rpVideoUri = null; rpVideoName = null; rpOnMedia.run(); } });
+                FrameLayout.LayoutParams xp = new FrameLayout.LayoutParams(dp(30), dp(30), Gravity.TOP | Gravity.END);
+                xp.setMargins(dp(6), dp(6), dp(6), dp(6));
+                prev.addView(x, xp);
+            }
+        };
+        d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface x) { rpOnMedia = null; rpImage = null; rpVideoUri = null; } });
+
+        final boolean[] busy = { false };
+        btn.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
+                if (busy[0]) return;
                 final String txt = et.getText().toString().trim();
-                if (txt.length() == 0 || uid == null) return;
-                sendBtn.setEnabled(false);
+                final Bitmap img = rpImage;
+                final android.net.Uri vid = rpVideoUri;
+                if (txt.length() == 0 && img == null && vid == null) { toast(L("اكتب ردّك أو أضف صورة أو فيديو", "Write a reply or add an image or video")); return; }
+                busy[0] = true;
+                btn.setAlpha(0.6f);
                 pool.execute(new Runnable() {
                     @Override public void run() {
-                        String err = null;
+                        String err = null, imgPath = null, vidPath = null, imgUrl = null, vidUrl = null;
                         try {
+                            if (vid != null) {
+                                vidPath = uid + "/c_" + System.currentTimeMillis() + ".mp4";
+                                Exception last = null;
+                                for (int at = 1; at <= 3; at++) {
+                                    try { rpUploadVideo(vid, vidPath, btn); last = null; break; }
+                                    catch (Exception e) {
+                                        String m = String.valueOf(e.getMessage());
+                                        if (m.matches("(?s).*(already exists|duplicate|409).*")) { last = null; break; }
+                                        last = e;
+                                        if (at < 3) Thread.sleep(1500L * at);
+                                    }
+                                }
+                                if (last != null) throw new Exception(L("فشل رفع الفيديو: ", "Video upload failed: ") + last.getMessage());
+                                vidUrl = url + "/storage/v1/object/public/post-videos/" + vidPath;
+                            }
+                            if (img != null) {
+                                ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                                img.compress(Bitmap.CompressFormat.JPEG, 75, bo);
+                                imgPath = uid + "/c_" + System.currentTimeMillis() + "_" + Long.toString(Double.doubleToLongBits(Math.random()), 36).replace("-", "").substring(0, 6) + ".jpg";
+                                cmHttp("POST", url + "/storage/v1/object/post-images/" + cmEnc(imgPath), bo.toByteArray(), "image/jpeg", "false");
+                                imgUrl = url + "/storage/v1/object/public/post-images/" + imgPath;
+                            }
                             JSONObject b = new JSONObject();
-                            b.put("post_id", pid);
+                            b.put("post_id", post.optLong("id"));
                             b.put("user_id", uid);
                             b.put("author_name", uname == null ? "" : uname);
                             b.put("author_avatar", uavatar == null ? "" : uavatar);
                             b.put("content", txt);
-                            send("POST", "post_comments", b.toString());
-                            queueNotify("comment", ownerOf(pk), pk, txt, null);
+                            if (imgUrl != null) b.put("image_url", imgUrl);
+                            if (vidUrl != null) { b.put("video_url", vidUrl); b.put("video_path", vidPath); }
+                            try { send("POST", "post_comments", b.toString()); }
+                            catch (Exception e) {
+                                if (vidPath != null) cmRemove("post-videos", vidPath);
+                                if (imgPath != null) cmRemove("post-images", imgPath);
+                                throw e;
+                            }
+                            queueNotify("comment", pUser, pk, txt.length() > 0 ? txt : (vid != null ? "🎬" : "🖼"), null);
                         } catch (Exception e) { err = String.valueOf(e.getMessage()); }
                         final String fe = err;
                         runOnUiThread(new Runnable() {
                             @Override public void run() {
-                                sendBtn.setEnabled(true);
-                                if (fe != null) { if (fe.contains("premium_required")) { toast("هذه الميزة للمشتركين فقط"); openSubscriptions(); } else toast("تعذّر الإرسال"); return; }
-                                et.setText("");
-                                reload.run();
+                                busy[0] = false;
+                                btn.setAlpha(1f);
+                                btn.setText(L("رد", "Reply"));
+                                if (fe != null) {
+                                    if (fe.contains("premium_required")) { toast(L("هذه الميزة للمشتركين فقط", "Subscribers only")); openSubscriptions(); }
+                                    else if (fe.contains("video_daily_limit")) toast(L("وصلت إلى حد 10 فيديوهات ردود اليوم.", "You reached today's limit of 10 video replies."));
+                                    else toast(L("تعذّر الإرسال", "Could not send"));
+                                    return;
+                                }
+                                d.dismiss();
+                                toast(L("تم نشر ردّك", "Reply posted"));
+                                if (onSent != null) onSent.run();
                             }
                         });
                     }
                 });
             }
         });
-        d.setContentView(box);
+        keyboardLift(d, root);
+        d.setContentView(root);
         d.show();
-        reload.run();
+        et.requestFocus();
+        d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    }
+
+    protected void rpUploadVideo(android.net.Uri u, String path, final TextView progress) throws Exception {
+        InputStream in = getContentResolver().openInputStream(u);
+        long total = 0;
+        try {
+            android.content.res.AssetFileDescriptor fd = getContentResolver().openAssetFileDescriptor(u, "r");
+            total = fd.getLength();
+            fd.close();
+        } catch (Exception ignore) {}
+        HttpURLConnection c = (HttpURLConnection) new URL(url + "/storage/v1/object/post-videos/" + cmEnc(path)).openConnection();
+        c.setRequestMethod("POST");
+        c.setRequestProperty("apikey", key);
+        c.setRequestProperty("Authorization", "Bearer " + token);
+        c.setRequestProperty("Content-Type", "video/mp4");
+        c.setRequestProperty("x-upsert", "false");
+        c.setConnectTimeout(20000);
+        c.setReadTimeout(120000);
+        c.setDoOutput(true);
+        if (total > 0) c.setFixedLengthStreamingMode(total); else c.setChunkedStreamingMode(64 * 1024);
+        java.io.OutputStream out = c.getOutputStream();
+        byte[] buf = new byte[32 * 1024];
+        long sent = 0; int last = -1, n;
+        while ((n = in.read(buf)) > 0) {
+            out.write(buf, 0, n);
+            sent += n;
+            if (total > 0) {
+                final int pct = (int) Math.min(99, sent * 100 / total);
+                if (pct != last) { last = pct; runOnUiThread(new Runnable() { @Override public void run() { progress.setText("‎" + pct + "%"); } }); }
+            }
+        }
+        in.close();
+        out.close();
+        int code = c.getResponseCode();
+        if (code >= 300) {
+            BufferedReader r = new BufferedReader(new InputStreamReader(c.getErrorStream(), "UTF-8"));
+            StringBuilder sb = new StringBuilder();
+            String ln;
+            while ((ln = r.readLine()) != null) sb.append(ln);
+            r.close();
+            throw new Exception(sb.length() > 0 ? sb.toString() : ("HTTP " + code));
+        }
     }
 
 
