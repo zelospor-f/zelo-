@@ -522,13 +522,13 @@ abstract class Stats extends Settings {
         top.setPadding(dp(8), dp(8), dp(16), dp(8));
         top.addView(backBtn(new Runnable() { @Override public void run() { if (crDlg != null) crDlg.dismiss(); } }));
         TextView tt = txt(L("مكافآت المحتوى الأصلي", "Original content rewards"), Color.WHITE, 18, true);
-        tt.setPadding(dp(8), 0, 0, 0);
+        tt.setPadding(dp(12), 0, dp(12), 0);
         top.addView(tt, new LinearLayout.LayoutParams(0, -2, 1f));
         col.addView(top, new LinearLayout.LayoutParams(-1, -2));
         ScrollView sv = new ScrollView(this);
         crBody = new LinearLayout(this);
         crBody.setOrientation(LinearLayout.VERTICAL);
-        crBody.setPadding(dp(16), dp(8), dp(16), dp(40));
+        crBody.setPadding(dp(16), dp(8), dp(16), dp(40) + navH());
         sv.addView(crBody, new ViewGroup.LayoutParams(-1, -2));
         col.addView(sv, new LinearLayout.LayoutParams(-1, 0, 1f));
         crDlg.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface d) { crDlg = null; } });
@@ -602,8 +602,8 @@ abstract class Stats extends Settings {
         rq.addView(txt(L("الشروط", "Requirements"), Color.WHITE, 16, true));
         double vfReq = c.optDouble("vf_req", 500), vwReq = c.optDouble("views_req", 20000);
         double vf = c.optDouble("vf", 0), vw = c.optDouble("views", 0);
-        rq.addView(crReq(c.optBoolean("age_ok"), L("العمر ", "Age ") + crN(c.optDouble("age_req", 18)) + "+", c.optBoolean("age_ok") ? "" : crN(c.optDouble("age", 0)), 0, false, null));
-        rq.addView(crReq(c.optBoolean("days_ok"), L("مدة الحساب", "Account age"), crN(c.optDouble("days", 0)) + " / " + crN(c.optDouble("days_req", 30)) + L(" يوم", " d"), 0, false, null));
+        rq.addView(crReq(c.optBoolean("age_ok"), L("العمر ", "Age ") + crN(c.optDouble("age_req", 18)) + L(" فأكثر", "+"), c.optBoolean("age_ok") ? "" : crN(c.optDouble("age", 0)), 0, false, null));
+        rq.addView(crReq(c.optBoolean("days_ok"), L("مدة الحساب (يوم)", "Account age (days)"), crN(c.optDouble("days", 0)) + " / " + crN(c.optDouble("days_req", 30)), 0, false, null));
         rq.addView(crReq(c.optBoolean("vf_ok"), L("متابعون موثّقون", "Verified followers"), crN(vf) + " / " + crN(vfReq), vf / Math.max(1, vfReq), true,
             L("المتابع الموثّق = مشترك باشتراك فعّال", "Verified follower = active subscriber")));
         rq.addView(crReq(c.optBoolean("views_ok"), L("مشاهدات آخر 90 يوماً", "Views, last 90 days"), crN(vw) + " / " + crN(vwReq), vw / Math.max(1, vwReq), true,
