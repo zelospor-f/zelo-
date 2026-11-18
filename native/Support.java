@@ -237,7 +237,7 @@ abstract class Support extends Base {
         d.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override public void onDismiss(DialogInterface x) { flushSupportNotify(); loadBalance(); }
         });
-        ScrollView sc = new ScrollView(this);
+        final ScrollView sc = new ScrollView(this);
         LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(dp(18), dp(14), dp(18), navH() + dp(14));
@@ -396,6 +396,12 @@ abstract class Support extends Base {
 
         sc.addView(box);
         d.setContentView(sc);
+        keyboardLift(d, sc);
+        View.OnFocusChangeListener fcl = new View.OnFocusChangeListener() { @Override public void onFocusChange(View v, boolean f) {
+            if (f) sc.postDelayed(new Runnable() { @Override public void run() { sc.fullScroll(View.FOCUS_DOWN); } }, 350);
+        } };
+        sNumEt.setOnFocusChangeListener(fcl);
+        sQtyEt.setOnFocusChangeListener(fcl);
         d.show();
         drawSupportGrid();
         updateSupport();

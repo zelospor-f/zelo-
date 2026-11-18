@@ -177,6 +177,7 @@ abstract class Notifications extends NftMarket {
         } });
     }
 
+    protected final Map<String, String> ntNames = new HashMap<String, String>();
     protected boolean validPhoto(String u) { return u != null && (u.startsWith("http://") || u.startsWith("https://")); }
 
     protected void ntLoad() {
@@ -206,6 +207,17 @@ abstract class Notifications extends NftMarket {
                             for (int i = 0; i < us.length(); i++) { JSONObject u = us.getJSONObject(i); String v = u.isNull("photo_url") ? "" : u.optString("photo_url").trim(); if (!byUser.containsKey(u.optString("user_id")) && validPhoto(v)) byUser.put(u.optString("user_id"), v); }
                         } catch (Exception ignore) {}
                         for (JSONObject n : list) { String ac = n.isNull("actor_id") ? "" : n.optString("actor_id"); if (!photos.containsKey(n.optString("id")) && byUser.containsKey(ac)) photos.put(n.optString("id"), byUser.get(ac)); }
+                    }
+                } catch (Exception ignore) {}
+                try {
+                    List<String> all = new ArrayList<String>();
+                    for (JSONObject n : list) { String ac = n.isNull("actor_id") ? "" : n.optString("actor_id"); if (ac.length() > 0 && !all.contains(ac)) all.add(ac); }
+                    ntNames.clear();
+                    if (!all.isEmpty()) {
+                        Map<String, String> un = new HashMap<String, String>();
+                        JSONArray us = new JSONArray(get("users?select=user_id,username&user_id=in.(" + android.text.TextUtils.join(",", all) + ")"));
+                        for (int i = 0; i < us.length(); i++) { JSONObject u = us.getJSONObject(i); if (!u.isNull("username")) un.put(u.optString("user_id"), u.optString("username")); }
+                        for (JSONObject n : list) { String ac = n.isNull("actor_id") ? "" : n.optString("actor_id"); if (un.containsKey(ac)) ntNames.put(n.optString("id"), un.get(ac)); }
                     }
                 } catch (Exception ignore) {}
                 runOnUiThread(new Runnable() { @Override public void run() { ntRender(list, photos); } });
@@ -241,7 +253,10 @@ abstract class Notifications extends NftMarket {
             row.setBackground(read ? rbg(0xF20A1033, 0x1FF5C35A, 18) : rbg(0x4D2C4BB5, 0x8CF5C35A, 18));
             String ph = photos.get(n.optString("id"));
             if (ph != null) row.addView(lbAvatar(ph, "?", 42, 0x00000000, false, 1), new LinearLayout.LayoutParams(dp(42), dp(42)));
-            else {
+            else if (ntNames.containsKey(n.optString("id")) && ntNames.get(n.optString("id")).length() > 0) {
+                String nm = ntNames.get(n.optString("id"));
+                row.addView(lbAvatar("", nm.substring(0, 1).toUpperCase(), 42, 0x00000000, false, 1), new LinearLayout.LayoutParams(dp(42), dp(42)));
+            } else {
                 TextView ic = txt(ty[0], "verified".equals(n.optString("type")) ? 0xFF1DA1F2 : Color.WHITE, 21, "verified".equals(n.optString("type")));
                 ic.setGravity(Gravity.CENTER);
                 ic.setBackground(rbg(0x0FFFFFFF, 0x1AFFFFFF, 14));
