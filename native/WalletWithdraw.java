@@ -103,6 +103,8 @@ abstract class WalletWithdraw extends Ads {
     protected String wwUsd(long n) { return String.format(java.util.Locale.US, "%.2f", n / wwRate); }
     protected String wwNum(long n) { return String.format(java.util.Locale.US, "%,d", n); }
 
+    @Override protected void crOpenWallet() { openWithdrawWallet(); }
+
     protected void openWithdrawWallet() {
         if (uid == null) return;
         if (wwDlg != null) return;

@@ -300,9 +300,19 @@ abstract class Profile extends WeeklyMatchRankings {
             st.setContentDescription(T("إحصائياتي"));
             st.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openStats(); } });
             FrameLayout.LayoutParams sl = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.END);
-            sl.setMargins(0, statusH() + dp(8) + dp(50), 0, 0);
+            sl.setMargins(0, statusH() + dp(8) + dp(46), 0, 0);
             sl.setMarginEnd(dp(12));
             cov.addView(st, sl);
+            TextView cr = tv(GOLD, 20, true);
+            cr.setText("\uD83D\uDCB0");
+            cr.setGravity(Gravity.CENTER);
+            cr.setBackground(oval(0x99000000, GOLD));
+            cr.setContentDescription(T("مكافآت المحتوى الأصلي"));
+            cr.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openCreator(); } });
+            FrameLayout.LayoutParams crl = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.END);
+            crl.setMargins(0, statusH() + dp(8) + dp(92), 0, 0);
+            crl.setMarginEnd(dp(12));
+            cov.addView(cr, crl);
             TextView gear = tv(Color.WHITE, 22, true);
             gear.setText("\u2699");
             gear.setGravity(Gravity.CENTER);
@@ -310,7 +320,7 @@ abstract class Profile extends WeeklyMatchRankings {
             gear.setContentDescription(T("الإعدادات"));
             gear.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openSettings(); } });
             FrameLayout.LayoutParams gl = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.END);
-            gl.setMargins(0, statusH() + dp(8) + dp(100), 0, 0);
+            gl.setMargins(0, statusH() + dp(8) + dp(138), 0, 0);
             gl.setMarginEnd(dp(12));
             cov.addView(gear, gl);
         }

@@ -499,4 +499,179 @@ abstract class Stats extends Settings {
         c.drawText(L("حمّل ZELO Sport وتحدّاني ⚽", "Download ZELO Sport & challenge me"), W / 2f, 1730, p);
         return bmp;
     }
+
+    // ===== برنامج المبدعين / مكافآت المحتوى الأصلي =====
+    protected Dialog crDlg;
+    protected LinearLayout crBody;
+    protected void crOpenWallet() {}
+
+    protected void openCreator() {
+        if (uid == null) return;
+        if (crDlg != null) { try { crDlg.dismiss(); } catch (Exception ignore) {} }
+        crDlg = sheetDialog(true);
+        crDlg.getWindow().setBackgroundDrawable(new ColorDrawable(NAVY));
+        lbDirection(crDlg);
+        FrameLayout root = new FrameLayout(this);
+        crDlg.setContentView(root);
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setPadding(0, statusH(), 0, 0);
+        root.addView(col, new FrameLayout.LayoutParams(-1, -1));
+        LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.setPadding(dp(8), dp(8), dp(16), dp(8));
+        top.addView(backBtn(new Runnable() { @Override public void run() { if (crDlg != null) crDlg.dismiss(); } }));
+        TextView tt = txt(L("مكافآت المحتوى الأصلي", "Original content rewards"), Color.WHITE, 18, true);
+        tt.setPadding(dp(8), 0, 0, 0);
+        top.addView(tt, new LinearLayout.LayoutParams(0, -2, 1f));
+        col.addView(top, new LinearLayout.LayoutParams(-1, -2));
+        ScrollView sv = new ScrollView(this);
+        crBody = new LinearLayout(this);
+        crBody.setOrientation(LinearLayout.VERTICAL);
+        crBody.setPadding(dp(16), dp(8), dp(16), dp(40));
+        sv.addView(crBody, new ViewGroup.LayoutParams(-1, -2));
+        col.addView(sv, new LinearLayout.LayoutParams(-1, 0, 1f));
+        crDlg.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface d) { crDlg = null; } });
+        crDlg.show();
+        crLoad();
+    }
+
+    protected void crLoad() {
+        crBody.removeAllViews();
+        TextView ld = txt(L("جارٍ التحميل...", "Loading..."), MUTED, 15, false);
+        ld.setGravity(Gravity.CENTER);
+        ld.setPadding(0, dp(60), 0, 0);
+        crBody.addView(ld);
+        pool.execute(new Runnable() { @Override public void run() {
+            JSONObject o = null;
+            try { o = new JSONObject(rpc("creator_status", "{}")); } catch (Exception ignore) {}
+            final JSONObject fo = o;
+            runOnUiThread(new Runnable() { @Override public void run() {
+                if (crDlg == null) return;
+                if (fo == null || fo.optJSONObject("check") == null) {
+                    crBody.removeAllViews();
+                    TextView e = txt(L("تعذّر التحميل، اضغط للمحاولة", "Could not load, tap to retry"), MUTED, 15, false);
+                    e.setGravity(Gravity.CENTER);
+                    e.setPadding(0, dp(60), 0, 0);
+                    e.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { crLoad(); } });
+                    crBody.addView(e);
+                    return;
+                }
+                crBuild(fo);
+            } });
+        } });
+    }
+
+    protected String crN(double v) { return "‎" + String.format(java.util.Locale.US, "%,d", Math.round(v)); }
+    protected String crUsd(double v) { return "‎$" + String.format(java.util.Locale.US, "%.2f", v); }
+
+    protected View crReq(boolean ok, String label, String val, double frac, boolean bar, String note) {
+        LinearLayout r = new LinearLayout(this);
+        r.setOrientation(LinearLayout.VERTICAL);
+        r.setPadding(0, dp(8), 0, dp(8));
+        LinearLayout h = new LinearLayout(this);
+        h.setGravity(Gravity.CENTER_VERTICAL);
+        h.addView(txt(ok ? "✅  " : "❌  ", Color.WHITE, 16, false));
+        h.addView(txt(label, Color.WHITE, 15, true), new LinearLayout.LayoutParams(0, -2, 1f));
+        h.addView(txt(val, ok ? SX_GREEN : GOLD, 14, true));
+        r.addView(h);
+        if (bar) r.addView(sxBar(frac));
+        if (note != null) r.addView(txt(note, MUTED, 12, false));
+        return r;
+    }
+
+    protected void crBuild(final JSONObject d) {
+        crBody.removeAllViews();
+        JSONObject c = d.optJSONObject("check");
+        boolean elig = c.optBoolean("eligible");
+        // الحالة
+        LinearLayout hero = sxCard();
+        hero.setGravity(Gravity.CENTER_HORIZONTAL);
+        hero.addView(txt("💰", Color.WHITE, 36, false));
+        if (elig) {
+            hero.addView(txt(L("أنت ضمن البرنامج ✓", "You are in the program ✓"), SX_GREEN, 17, true));
+            hero.addView(txt(L("أرباحك التقديرية هذا الشهر", "Your estimated earnings this month"), MUTED, 13, false));
+            hero.addView(txt(crUsd(d.optDouble("est", 0)), GOLD, 34, true));
+        } else {
+            hero.addView(txt(L("لم تتأهل بعد", "Not eligible yet"), GOLD, 17, true));
+            hero.addView(txt(L("أكمل الشروط التالية للانضمام", "Complete the requirements below to join"), MUTED, 13, false));
+        }
+        crBody.addView(hero);
+        // الشروط
+        LinearLayout rq = sxCard();
+        rq.addView(txt(L("الشروط", "Requirements"), Color.WHITE, 16, true));
+        double vfReq = c.optDouble("vf_req", 500), vwReq = c.optDouble("views_req", 20000);
+        double vf = c.optDouble("vf", 0), vw = c.optDouble("views", 0);
+        rq.addView(crReq(c.optBoolean("age_ok"), L("العمر ", "Age ") + crN(c.optDouble("age_req", 18)) + "+", c.optBoolean("age_ok") ? "" : crN(c.optDouble("age", 0)), 0, false, null));
+        rq.addView(crReq(c.optBoolean("days_ok"), L("مدة الحساب", "Account age"), crN(c.optDouble("days", 0)) + " / " + crN(c.optDouble("days_req", 30)) + L(" يوم", " d"), 0, false, null));
+        rq.addView(crReq(c.optBoolean("vf_ok"), L("متابعون موثّقون", "Verified followers"), crN(vf) + " / " + crN(vfReq), vf / Math.max(1, vfReq), true,
+            L("المتابع الموثّق = مشترك باشتراك فعّال", "Verified follower = active subscriber")));
+        rq.addView(crReq(c.optBoolean("views_ok"), L("مشاهدات آخر 90 يوماً", "Views, last 90 days"), crN(vw) + " / " + crN(vwReq), vw / Math.max(1, vwReq), true,
+            L("لا يشمل الردود ولا مشاهداتك", "Excludes replies and your own views")));
+        View wr = crReq(c.optBoolean("wallet_ok"), L("عنوان السحب", "Withdrawal address"), c.optBoolean("wallet_ok") ? "" : L("إضافة ›", "Add ›"), 0, false, null);
+        if (!c.optBoolean("wallet_ok")) wr.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { crOpenWallet(); } });
+        rq.addView(wr);
+        crBody.addView(rq);
+        if (elig) {
+            JSONObject p = d.optJSONObject("pts");
+            LinearLayout pc = sxCard();
+            pc.addView(sxHead("📈", L("نقاط هذا الشهر", "This month's points"), crN(p == null ? 0 : p.optDouble("points")), GOLD));
+            if (p != null) {
+                pc.addView(txt(L("مشاهدات: ", "Views: ") + crN(p.optDouble("views")) + "   " + L("متابعون: ", "Follows: ") + crN(p.optDouble("follows")), MUTED, 13, false));
+                pc.addView(txt(L("إعادة نشر: ", "Reposts: ") + crN(p.optDouble("reposts")) + "   " + L("إعجابات: ", "Likes: ") + crN(p.optDouble("likes")), MUTED, 13, false));
+            }
+            pc.addView(txt(L("ترتيبك: ", "Rank: ") + crN(d.optDouble("rank", 1)) + (d.isNull("pool") ? "" : "   " + L("مجموع الجائزة: ", "Pool: ") + crUsd(d.optDouble("pool"))), MUTED, 13, false));
+            crBody.addView(pc);
+            JSONArray h = d.optJSONArray("history");
+            if (h != null && h.length() > 0) {
+                LinearLayout hc = sxCard();
+                hc.addView(txt(L("السجل", "History"), Color.WHITE, 16, true));
+                for (int i = 0; i < h.length(); i++) {
+                    JSONObject it = h.optJSONObject(i);
+                    if (it == null) continue;
+                    String st = it.optString("status");
+                    String sl = "paid".equals(st) ? L("مدفوع", "Paid") : "requested".equals(st) ? L("قيد الدفع", "Pending") : L("متراكم", "Accrued");
+                    LinearLayout row = new LinearLayout(this);
+                    row.setPadding(0, dp(6), 0, dp(6));
+                    String m = it.optString("month");
+                    row.addView(txt(m.length() >= 7 ? m.substring(0, 7) : m, Color.WHITE, 14, false), new LinearLayout.LayoutParams(0, -2, 1f));
+                    row.addView(txt(sl + "  ", MUTED, 13, false));
+                    row.addView(txt(crUsd(it.optDouble("amount_usd")), GOLD, 14, true));
+                    hc.addView(row);
+                }
+                crBody.addView(hc);
+            }
+        }
+        // كيف يعمل
+        LinearLayout how = sxCard();
+        how.addView(txt(L("كيف يعمل البرنامج؟", "How it works"), Color.WHITE, 16, true));
+        TextView ht = txt(L("تُوزَّع نسبة من صافي إيرادات الاشتراكات كل شهر على المبدعين المؤهلين بحسب تفاعل الناس مع محتواهم الأصلي (مشاهدات، متابعون جدد، إعادة نشر، إعجابات). لا تُحتسب تفاعلاتك مع نفسك. الأرباح تقديرية وتتأكد بعد إغلاق الشهر ومراجعة الإدارة.",
+            "A share of net subscription revenue is distributed monthly to eligible creators based on engagement with their original content. Self-interactions don't count. Estimates are confirmed after the month closes and admin review."), MUTED, 13, false);
+        ht.setLineSpacing(dp(3), 1f);
+        how.addView(ht);
+        crBody.addView(how);
+        // زر السحب
+        double unpaid = d.optDouble("unpaid", 0), minP = d.optDouble("min_payout", 0);
+        final boolean can = elig && unpaid >= minP && unpaid > 0;
+        TextView btn = txt(can ? L("طلب سحب ", "Request payout ") + crUsd(unpaid)
+                : L("الحد الأدنى للسحب ", "Minimum payout ") + crUsd(minP) + (elig ? "  •  " + L("رصيدك ", "Balance ") + crUsd(unpaid) : ""),
+                can ? 0xFF1A1200 : MUTED, 15, true);
+        btn.setGravity(Gravity.CENTER);
+        btn.setPadding(0, dp(14), 0, dp(14));
+        btn.setBackground(rbg(can ? GOLD : 0x1AFFFFFF, 0x00000000, 24));
+        if (can) btn.setOnClickListener(new View.OnClickListener() { @Override public void onClick(final View v) {
+            v.setEnabled(false);
+            pool.execute(new Runnable() { @Override public void run() {
+                String res = null; try { res = rpc("creator_request_payout", "{}"); } catch (Exception ignore) {}
+                final String fr = res == null ? "" : res;
+                runOnUiThread(new Runnable() { @Override public void run() {
+                    if (fr.contains("no_wallet")) { toast(L("أضف عنوان السحب أولاً", "Add a withdrawal address first")); v.setEnabled(true); crOpenWallet(); }
+                    else if (fr.contains("below_min")) { toast(L("الرصيد أقل من الحد الأدنى", "Balance below minimum")); v.setEnabled(true); }
+                    else if (fr.contains("\"code\"") || fr.contains("\"message\"")) { toast(L("تعذّر الطلب", "Request failed")); v.setEnabled(true); }
+                    else { toast(L("تم إرسال طلب السحب", "Payout requested")); if (crDlg != null) crLoad(); }
+                } });
+            } });
+        } });
+        crBody.addView(btn, new LinearLayout.LayoutParams(-1, -2));
+    }
 }
