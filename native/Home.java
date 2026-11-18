@@ -2445,6 +2445,15 @@ public class Home extends FollowList {
         return c;
     }
 
+    protected TextView bellBadgeV;
+    @Override protected void updateBellBadge() {
+        if (bellBadgeV == null) return;
+        int n = notifUnread;
+        bellBadgeV.setText(n > 99 ? "99+" : String.valueOf(n));
+        bellBadgeV.setMinWidth(dp(18));
+        bellBadgeV.setVisibility(n > 0 ? View.VISIBLE : View.GONE);
+    }
+
     protected TextView iconBtn(String glyph, final String action) {
         TextView t = tv(Color.WHITE, 20, false);
         t.setText(glyph);
@@ -2626,7 +2635,25 @@ public class Home extends FollowList {
         });
         top.addView(rf);
         top.addView(iconBtn("🔍", "search"));
-        top.addView(iconBtn("🔔", "notifications"));
+        TextView bell = iconBtn("\uD83D\uDD14", "notifications");
+        FrameLayout bellBox = new FrameLayout(this);
+        LinearLayout.LayoutParams bbl = (LinearLayout.LayoutParams) bell.getLayoutParams();
+        bell.setLayoutParams(new FrameLayout.LayoutParams(dp(46), dp(46)));
+        bellBox.addView(bell);
+        bellBadgeV = tv(Color.WHITE, 10, true);
+        bellBadgeV.setGravity(Gravity.CENTER);
+        GradientDrawable bg2 = new GradientDrawable();
+        bg2.setColor(0xFF2C4BB5);
+        bg2.setCornerRadius(dp(9));
+        bg2.setStroke(dp(2), NAVY);
+        bellBadgeV.setBackground(bg2);
+        bellBadgeV.setPadding(dp(4), 0, dp(4), 0);
+        bellBadgeV.setVisibility(View.GONE);
+        FrameLayout.LayoutParams bdl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(18), Gravity.TOP | Gravity.END);
+        bdl.setMargins(0, -dp(2), -dp(2), 0);
+        bellBox.addView(bellBadgeV, bdl);
+        top.addView(bellBox, new LinearLayout.LayoutParams(dp(54), dp(46)));
+        updateBellBadge();
         root.addView(top);
 
         // دوائر الاختصارات

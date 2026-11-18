@@ -117,10 +117,12 @@ abstract class Index extends I18nHelpers {
         });
     }
 
-    // العدّاد الواحد على زر الرسائل = رسائل غير مقروءة + إشعارات غير مقروءة
+    // عدّاد زر الرسائل = الرسائل غير المقروءة فقط، وعدّاد الإشعارات على أيقونة الجرس
+    protected void updateBellBadge() {}
     protected void updateNavBadge() {
+        updateBellBadge();
         if (msgBadgeV == null) return;
-        int n = msgUnread + notifUnread;
+        int n = msgUnread;
         msgBadgeV.setText(n > 99 ? "99+" : String.valueOf(n));
         msgBadgeV.setVisibility(n > 0 ? View.VISIBLE : View.GONE);
     }
