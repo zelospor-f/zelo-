@@ -630,7 +630,7 @@ abstract class Stats extends Settings {
                     JSONObject it = h.optJSONObject(i);
                     if (it == null) continue;
                     String st = it.optString("status");
-                    String sl = "paid".equals(st) ? L("مدفوع", "Paid") : "requested".equals(st) ? L("قيد الدفع", "Pending") : L("متراكم", "Accrued");
+                    String sl = "paid".equals(st) ? L("أُضيف للمحفظة", "Added to wallet") : "requested".equals(st) ? L("قيد الدفع", "Pending") : L("متراكم", "Accrued");
                     LinearLayout row = new LinearLayout(this);
                     row.setPadding(0, dp(6), 0, dp(6));
                     String m = it.optString("month");
@@ -650,28 +650,19 @@ abstract class Stats extends Settings {
         ht.setLineSpacing(dp(3), 1f);
         how.addView(ht);
         crBody.addView(how);
-        // زر السحب
-        double unpaid = d.optDouble("unpaid", 0), minP = d.optDouble("min_payout", 0);
-        final boolean can = elig && unpaid >= minP && unpaid > 0;
-        TextView btn = txt(can ? L("طلب سحب ", "Request payout ") + crUsd(unpaid)
-                : L("الحد الأدنى للسحب ", "Minimum payout ") + crUsd(minP) + (elig ? "  •  " + L("رصيدك ", "Balance ") + crUsd(unpaid) : ""),
-                can ? 0xFF1A1200 : MUTED, 15, true);
+        // الأرباح تُضاف تلقائياً إلى المحفظة أول كل شهر
+        LinearLayout au = sxCard();
+        au.addView(txt(L("الدفع تلقائي", "Automatic payout"), Color.WHITE, 16, true));
+        TextView at = txt(L("تُضاف أرباح الشهر تلقائياً إلى محفظتك (كورة) في أول الشهر التالي، وتسحبها من المحفظة بشروط السحب المعتادة.",
+            "Your monthly earnings are added to your wallet (coins) on the 1st of next month, and you withdraw from the wallet under the usual rules."), MUTED, 13, false);
+        at.setLineSpacing(dp(3), 1f);
+        au.addView(at);
+        crBody.addView(au);
+        TextView btn = txt(L("فتح المحفظة", "Open wallet"), 0xFF1A1200, 15, true);
         btn.setGravity(Gravity.CENTER);
         btn.setPadding(0, dp(14), 0, dp(14));
-        btn.setBackground(rbg(can ? GOLD : 0x1AFFFFFF, 0x00000000, 24));
-        if (can) btn.setOnClickListener(new View.OnClickListener() { @Override public void onClick(final View v) {
-            v.setEnabled(false);
-            pool.execute(new Runnable() { @Override public void run() {
-                String res = null; try { res = rpc("creator_request_payout", "{}"); } catch (Exception ignore) {}
-                final String fr = res == null ? "" : res;
-                runOnUiThread(new Runnable() { @Override public void run() {
-                    if (fr.contains("no_wallet")) { toast(L("أضف عنوان السحب أولاً", "Add a withdrawal address first")); v.setEnabled(true); crOpenWallet(); }
-                    else if (fr.contains("below_min")) { toast(L("الرصيد أقل من الحد الأدنى", "Balance below minimum")); v.setEnabled(true); }
-                    else if (fr.contains("\"code\"") || fr.contains("\"message\"")) { toast(L("تعذّر الطلب", "Request failed")); v.setEnabled(true); }
-                    else { toast(L("تم إرسال طلب السحب", "Payout requested")); if (crDlg != null) crLoad(); }
-                } });
-            } });
-        } });
+        btn.setBackground(rbg(GOLD, 0x00000000, 24));
+        btn.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { crOpenWallet(); } });
         crBody.addView(btn, new LinearLayout.LayoutParams(-1, -2));
     }
 }
