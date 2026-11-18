@@ -621,7 +621,7 @@ public class Home extends FollowList {
             labels.add(fl ? L("إلغاء متابعة ", "Unfollow ") + tag : L("متابعة ", "Follow ") + tag); icons.add(fl ? 19 : 18); danger.add(false); acts.add(new Runnable() { public void run() { toggleFollowUser(author); } });
             labels.add(L("كتم ", "Mute ") + tag); icons.add(20); danger.add(false); acts.add(new Runnable() { public void run() { muteUser(author); } });
             labels.add(L("حظر ", "Block ") + tag); icons.add(21); danger.add(true); acts.add(new Runnable() { public void run() { blockUser(author, tag); } });
-            labels.add(L("إبلاغ", "Report")); icons.add(16); danger.add(true); acts.add(new Runnable() { public void run() { openReport("post", String.valueOf(pid)); } });
+            labels.add(L("إبلاغ", "Report")); icons.add(16); danger.add(true); acts.add(new Runnable() { public void run() { openReport("post", String.valueOf(pid), o); } });
             labels.add(L("التفاعلات", "Interactions")); icons.add(3); danger.add(false); acts.add(new Runnable() { public void run() { showEngagements(o); } });
             labels.add(sv ? L("إزالة من المحفوظات", "Remove from saved") : L("حفظ المنشور", "Save post")); icons.add(4); danger.add(false); acts.add(new Runnable() { public void run() { toggleSave(o); } });
             labels.add(L("مشاركة الرابط", "Share link")); icons.add(5); danger.add(false); acts.add(new Runnable() { public void run() { shareLink(o); } });
@@ -1492,7 +1492,7 @@ public class Home extends FollowList {
         LinearLayout hActs = new LinearLayout(this);
         final TextView aCm = tv(MUTED, 15, false), aRp = tv(MUTED, 15, false), aLk = tv(MUTED, 15, false), aVw = tv(MUTED, 15, false), aSv = tv(MUTED, 15, false), aSh = tv(MUTED, 15, false);
         TextView[] aa = { aCm, aRp, aLk, aVw, aSv, aSh };
-        for (int q = 0; q < aa.length; q++) { aa[q].setPaddingRelative(dp(2), dp(4), dp(2), dp(4)); hActs.addView(aa[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
+        for (int q = 0; q < aa.length; q++) { aa[q].setPaddingRelative(q < 4 ? dp(14) : dp(2), dp(8), dp(2), dp(8)); hActs.addView(aa[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
         hdr.addView(hActs);
         View l3 = new View(this); l3.setBackgroundColor(0x1AFFFFFF);
         hdr.addView(l3, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
@@ -1621,7 +1621,7 @@ public class Home extends FollowList {
                     LinearLayout acts = new LinearLayout(Home.this);
                     h.acm = tv(MUTED, 15, false); h.arp = tv(MUTED, 15, false); h.alk = tv(MUTED, 15, false); h.avw = tv(MUTED, 15, false); h.asv = tv(MUTED, 15, false); h.ash = tv(MUTED, 15, false);
                     TextView[] at = { h.acm, h.arp, h.alk, h.avw, h.asv, h.ash };
-                    for (int q = 0; q < at.length; q++) { at[q].setPaddingRelative(dp(2), dp(2), dp(2), dp(2)); acts.addView(at[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
+                    for (int q = 0; q < at.length; q++) { at[q].setPaddingRelative(q < 4 ? dp(14) : dp(2), dp(6), dp(2), dp(6)); acts.addView(at[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
                     LinearLayout.LayoutParams alp2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                     alp2.topMargin = dp(4);
                     col.addView(acts, alp2);
@@ -1794,7 +1794,7 @@ public class Home extends FollowList {
         String[] labels = mine ? new String[] { L("حذف الرد", "Delete reply") } : new String[] { L("إبلاغ", "Report") };
         new AlertDialog.Builder(this).setItems(labels, new DialogInterface.OnClickListener() {
             @Override public void onClick(DialogInterface dd, int w) {
-                if (!mine) { openReport("comment", id); return; }
+                if (!mine) { openReport("comment", id, o); return; }
                 new AlertDialog.Builder(Home.this).setMessage(L("حذف هذا الرد نهائياً؟", "Delete this reply permanently?"))
                     .setPositiveButton(L("حذف", "Delete"), new DialogInterface.OnClickListener() {
                         @Override public void onClick(DialogInterface d2, int w2) {
@@ -2732,45 +2732,186 @@ public class Home extends FollowList {
     }
 
     // ===== من home.js: الإبلاغ عن منشور/رد + فتح منشور من إشعار =====
-    protected void openReport(final String type, final String id) {
+    protected void openReport(String type, String id) { openReport(type, id, null); }
+
+    protected void openReport(final String type, final String id, final JSONObject target) {
         final String[][] rs = {
-            { "spam", L("📢 محتوى مزعج أو إعلاني", "📢 Spam or advertising"), "📢 Spam" }, { "abuse", L("😡 إساءة أو تحرّش", "😡 Abuse or harassment"), "😡 Abuse or harassment" },
-            { "hate", L("⚠️ خطاب كراهية", "⚠️ Hate speech"), "⚠️ Hateful content" }, { "violence", L("🩸 عنف أو محتوى صادم", "🩸 Violence or graphic content"), "🩸 Violent or graphic content" },
-            { "adult", L("🔞 محتوى للبالغين", "🔞 Adult content"), "🔞 Adult content" }, { "misinfo", L("❓ معلومات مضللة", "❓ Misinformation"), "❓ Misinformation" },
-            { "other", L("… سبب آخر", "… Another reason"), "… Something else" }
+            { "spam", L("📢 محتوى مزعج أو إعلاني", "📢 Spam or advertising") }, { "abuse", L("😡 إساءة أو تحرّش", "😡 Abuse or harassment") },
+            { "hate", L("⚠️ خطاب كراهية", "⚠️ Hate speech") }, { "violence", L("🩸 عنف أو محتوى صادم", "🩸 Violence or graphic content") },
+            { "adult", L("🔞 محتوى للبالغين", "🔞 Adult content") }, { "misinfo", L("❓ معلومات مضللة", "❓ Misinformation") },
+            { "other", L("… سبب آخر", "… Another reason") }
         };
-        String[] labels = new String[rs.length];
-        for (int i = 0; i < rs.length; i++) labels[i] = L(rs[i][1], rs[i][2]);
-        new AlertDialog.Builder(this).setTitle(L("ما سبب البلاغ؟", "Why are you reporting this?")).setItems(labels, new DialogInterface.OnClickListener() {
-            @Override public void onClick(DialogInterface d, int w) {
-                if ("other".equals(rs[w][0])) openReportText(type, id); else submitReport(type, id, rs[w][0]);
-            }
-        }).show();
-    }
-
-    private void openReportText(final String type, final String id) {
-        final EditText t = new EditText(this);
-        t.setHint(L("اشرح المشكلة باختصار…", "Briefly explain…"));
-        t.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(300) });
-        t.setMinLines(3);
-        new AlertDialog.Builder(this).setTitle(L("اكتب سبب البلاغ", "Describe the problem")).setView(t)
-            .setPositiveButton(L("إرسال", "Send"), new DialogInterface.OnClickListener() {
-                @Override public void onClick(DialogInterface d, int w) {
-                    String x = t.getText().toString().trim();
-                    if (x.length() < 3) { toast(L("اكتب 3 أحرف على الأقل", "Write at least 3 characters")); return; }
-                    submitReport(type, id, "other: " + x);
+        final Dialog d = sheetDialog(false);
+        final ScrollView sc = new ScrollView(this);
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(18), dp(10), dp(18), navH() + dp(8));
+        GradientDrawable pbg = new GradientDrawable();
+        pbg.setColor(0xFF111A4A);
+        pbg.setCornerRadii(new float[] { dp(28), dp(28), dp(28), dp(28), 0, 0, 0, 0 });
+        pbg.setStroke(dp(1), 0x33F5C35A);
+        box.setBackground(pbg);
+        View gr = new View(this);
+        GradientDrawable grg = new GradientDrawable();
+        grg.setColor(0x33FFFFFF); grg.setCornerRadius(dp(3));
+        gr.setBackground(grg);
+        LinearLayout.LayoutParams grl = new LinearLayout.LayoutParams(dp(40), dp(5));
+        grl.gravity = Gravity.CENTER_HORIZONTAL;
+        grl.setMargins(0, 0, 0, dp(12));
+        box.addView(gr, grl);
+        LinearLayout th = new LinearLayout(this);
+        th.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView fi = new ImageView(this);
+        fi.setImageDrawable(new Ic(16, GOLD, false, dp(22)));
+        th.addView(fi, new LinearLayout.LayoutParams(dp(22), dp(22)));
+        TextView ttl = tv(GOLD, 20, true);
+        ttl.setText(L("الإبلاغ", "Report"));
+        ttl.setPadding(dp(10), 0, 0, 0);
+        th.addView(ttl);
+        box.addView(th);
+        TextView sub = tv(MUTED, 12, false);
+        sub.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        sub.setText(L("اختر السبب وسنراجع البلاغ", "Choose a reason and we will review it"));
+        sub.setPadding(0, dp(4), 0, dp(12));
+        box.addView(sub);
+        if (target != null) {
+            LinearLayout pv = new LinearLayout(this);
+            pv.setPadding(dp(12), dp(10), dp(12), dp(10));
+            GradientDrawable pg = new GradientDrawable();
+            pg.setColor(0xFF0D1540); pg.setCornerRadius(dp(16)); pg.setStroke(dp(1), 0x14FFFFFF);
+            pv.setBackground(pg);
+            String au = target.optString("user_id", ""), an = target.optString("author_name", "");
+            pv.addView(rpAvatar(an, photos.get(au), 34), new LinearLayout.LayoutParams(dp(34), dp(34)));
+            LinearLayout pc = new LinearLayout(this);
+            pc.setOrientation(LinearLayout.VERTICAL);
+            pc.setPadding(dp(10), 0, 0, 0);
+            String un = unames.get(au);
+            TextView pn = tv(Color.WHITE, 13, true);
+            pn.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+            pn.setText(an + (un != null ? "  @" + un : ""));
+            pc.addView(pn);
+            String ct = target.optString("content", "");
+            boolean hv = (!target.isNull("video_url") && target.optString("video_url", "").length() > 4);
+            boolean hi = (!target.isNull("image_url") && target.optString("image_url", "").length() > 4);
+            TextView pt = tv(0xFFDFE4FF, 13, false);
+            pt.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+            pt.setMaxLines(2);
+            pt.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            pt.setText(ct + (hv ? (ct.length() > 0 ? "  " : "") + "🎬" : hi ? (ct.length() > 0 ? "  " : "") + "🖼" : ""));
+            pc.addView(pt);
+            pv.addView(pc, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            LinearLayout.LayoutParams pvl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            pvl.bottomMargin = dp(8);
+            box.addView(pv, pvl);
+        }
+        final int[] sel = { -1 };
+        final View[] dots = new View[rs.length];
+        final TextView[] lbs = new TextView[rs.length];
+        final TextView send = tv(NAVY, 16, true);
+        final EditText note = new EditText(this);
+        final Runnable paint = new Runnable() {
+            @Override public void run() {
+                for (int i = 0; i < rs.length; i++) {
+                    boolean on = sel[0] == i;
+                    GradientDrawable dg = new GradientDrawable();
+                    dg.setShape(GradientDrawable.OVAL);
+                    dg.setColor(on ? GOLD : 0x00000000);
+                    dg.setStroke(dp(2), on ? GOLD : 0xFF4A5AA8);
+                    dots[i].setBackground(dg);
+                    lbs[i].setTextColor(on ? GOLD : Color.WHITE);
+                    lbs[i].setTypeface(null, on ? android.graphics.Typeface.BOLD : android.graphics.Typeface.NORMAL);
                 }
-            }).setNegativeButton(L("إلغاء", "Cancel"), null).show();
+                send.setAlpha(sel[0] >= 0 ? 1f : 0.45f);
+                note.setHint(sel[0] == rs.length - 1 ? L("اشرح المشكلة (مطلوب)…", "Explain the problem (required)…") : L("أضف تفاصيل (اختياري)…", "Add details (optional)…"));
+            }
+        };
+        for (int i = 0; i < rs.length; i++) {
+            final int fi2 = i;
+            LinearLayout rw = new LinearLayout(this);
+            rw.setGravity(Gravity.CENTER_VERTICAL);
+            rw.setPadding(dp(4), dp(12), dp(4), dp(12));
+            dots[i] = new View(this);
+            rw.addView(dots[i], new LinearLayout.LayoutParams(dp(22), dp(22)));
+            lbs[i] = tv(Color.WHITE, 15, false);
+            lbs[i].setText(rs[i][1]);
+            lbs[i].setPadding(dp(12), 0, 0, 0);
+            rw.addView(lbs[i]);
+            rw.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { sel[0] = fi2; paint.run(); } });
+            box.addView(rw);
+            if (i < rs.length - 1) {
+                View dv = new View(this);
+                dv.setBackgroundColor(0x14FFFFFF);
+                box.addView(dv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 1));
+            }
+        }
+        note.setTextColor(Color.WHITE);
+        note.setHintTextColor(0xFF6B76B0);
+        note.setTextSize(14);
+        note.setMinLines(2);
+        note.setGravity(Gravity.TOP | Gravity.START);
+        note.setFilters(new android.text.InputFilter[] { new android.text.InputFilter.LengthFilter(300) });
+        GradientDrawable ng = new GradientDrawable();
+        ng.setColor(0xFF0D1540); ng.setCornerRadius(dp(14)); ng.setStroke(dp(1), 0x1CFFFFFF);
+        note.setBackground(ng);
+        note.setPadding(dp(12), dp(10), dp(12), dp(10));
+        LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        nl.topMargin = dp(10);
+        box.addView(note, nl);
+        send.setText(L("إرسال البلاغ", "Send report"));
+        send.setGravity(Gravity.CENTER);
+        GradientDrawable sg = new GradientDrawable();
+        sg.setColor(GOLD); sg.setCornerRadius(dp(24));
+        send.setBackground(sg);
+        send.setPadding(0, dp(13), 0, dp(13));
+        LinearLayout.LayoutParams sl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        sl.topMargin = dp(12);
+        box.addView(send, sl);
+        TextView fn = tv(MUTED, 11, false);
+        fn.setGravity(Gravity.CENTER);
+        fn.setText(L("نحتفظ بنسخة من المحتوى المُبلَّغ عنه للمراجعة، حتى لو حُذف لاحقاً", "We keep a copy of the reported content for review, even if it is deleted later"));
+        fn.setPadding(0, dp(8), 0, 0);
+        box.addView(fn);
+        send.setOnClickListener(new View.OnClickListener() {
+            @Override public void onClick(View v) {
+                if (sel[0] < 0) { toast(L("اختر سبب البلاغ", "Choose a reason")); return; }
+                String x = note.getText().toString().trim();
+                boolean other = sel[0] == rs.length - 1;
+                if (other && x.length() < 3) { toast(L("اكتب 3 أحرف على الأقل", "Write at least 3 characters")); return; }
+                d.dismiss();
+                submitReport(type, id, other ? "other: " + x : rs[sel[0]][0], other ? "" : x, target);
+            }
+        });
+        paint.run();
+        sc.addView(box);
+        keyboardLift(d, sc);
+        d.setContentView(sc);
+        d.show();
     }
 
-    private void submitReport(final String type, final String id, final String reason) {
+    private void submitReport(final String type, final String id, final String reason, final String details, final JSONObject target) {
         pool.execute(new Runnable() {
             @Override public void run() {
                 boolean ok = true; String err = "";
                 try {
                     JSONObject o = new JSONObject();
                     o.put("reporter_id", uid); o.put("target_type", type); o.put("target_id", id); o.put("reason", reason);
-                    send("POST", "post_reports", "[" + o.toString() + "]");
+                    JSONObject full = new JSONObject(o.toString());
+                    if (details != null && details.length() > 0) full.put("details", details);
+                    if (target != null) {
+                        JSONObject sn = new JSONObject();
+                        String[] ks = { "content", "author_name", "user_id", "image_url", "video_url", "created_at" };
+                        for (String k : ks) if (!target.isNull(k)) sn.put(k, target.optString(k, ""));
+                        String un = unames.get(target.optString("user_id", ""));
+                        if (un != null) sn.put("username", un);
+                        full.put("snapshot", sn);
+                    }
+                    try { send("POST", "post_reports", "[" + full.toString() + "]"); }
+                    catch (Exception e1) {
+                        String m = String.valueOf(e1.getMessage());
+                        if (m.indexOf("23505") >= 0) throw e1;
+                        // قاعدة قديمة بلا أعمدة النسخة: أرسل البلاغ الأساسي
+                        send("POST", "post_reports", "[" + o.toString() + "]");
+                    }
                 } catch (Exception e) { err = String.valueOf(e.getMessage()); ok = err.indexOf("23505") >= 0; }
                 final boolean fok = ok; final String ferr = err;
                 runOnUiThread(new Runnable() { @Override public void run() { toast(fok ? L("تم استلام بلاغك، شكرًا لك", "Report received. Thank you") : ferr); } });

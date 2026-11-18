@@ -178,7 +178,7 @@ abstract class AdminReports extends Boost {
             admTabs[q].setBackground(q == tab ? box(GOLD, 0, 20) : box(0x00000000, 0x30FFFFFF, 20));
             admTabs[q].setTextColor(q == tab ? NAVY : 0xFFCBD5E1);
         }
-        admMsg("جارٍ التحميل…");
+        admMsg("");
         final String fn = tab == 0 ? "admin_list_reports" : tab == 1 ? "admin_list_room_reports" : tab == 2 ? "admin_list_bans" : "admin_list_appeals";
         pool.execute(new Runnable() {
             @Override public void run() {
@@ -196,7 +196,7 @@ abstract class AdminReports extends Boost {
                                 for (int i = 0; i < pa.length(); i++) {
                                     JSONObject po = pa.getJSONObject(i);
                                     String p = po.isNull("photo_url") ? "" : po.optString("photo_url", "");
-                                    if (p.startsWith("http")) ph.put(po.optString("user_id"), p);
+                                    if (isImg(p)) ph.put(po.optString("user_id"), p);
                                 }
                             }
                         } catch (Exception ignore) {}
@@ -260,15 +260,40 @@ abstract class AdminReports extends Boost {
         rs.setText("🚩 " + reasonText(r.optString("reason", "")));
         rs.setPadding(0, dp(8), 0, dp(8));
         card.addView(rs);
+        String dt = r.isNull("details") ? "" : r.optString("details", "");
+        if (dt.length() > 0) {
+            TextView dtv = tv(0xFFCBD5E1, 13, false);
+            dtv.setText("📝 " + dt);
+            dtv.setPadding(0, 0, 0, dp(8));
+            card.addView(dtv);
+        }
         LinearLayout cb = new LinearLayout(this);
         cb.setOrientation(LinearLayout.VERTICAL);
         cb.setPadding(dp(12), dp(10), dp(12), dp(10));
         cb.setBackground(box(0x0DFFFFFF, 0, 12));
         String content = r.isNull("content") ? "" : r.optString("content", "");
+        JSONObject sn = r.isNull("snapshot") ? null : r.optJSONObject("snapshot");
+        boolean fromSnap = false;
+        if (content.length() == 0 && sn != null && sn.optString("content", "").length() > 0) { content = sn.optString("content", ""); fromSnap = true; }
+        if (fromSnap) {
+            TextView sl = tv(MUTED, 11, false);
+            sl.setText("🗂 نسخة محفوظة وقت البلاغ (المحتوى حُذف أو غُيّر)");
+            sl.setPadding(0, 0, 0, dp(6));
+            cb.addView(sl);
+        }
         TextView ct = tv(0xFFE8ECFF, 15, false);
         ct.setText(content.length() > 0 ? content : (tab == 0 ? "(بلا نص)" : "(الرسالة محذوفة أو منتهية)"));
         cb.addView(ct);
         String im = r.isNull("image_url") ? "" : r.optString("image_url", "");
+        if (!im.startsWith("http") && sn != null) im = sn.optString("image_url", "");
+        final String vu = sn != null ? sn.optString("video_url", "") : "";
+        if (vu.startsWith("http")) {
+            TextView vt = tv(GOLD, 13, true);
+            vt.setText("🎬 فيديو مرفق (اضغط للتشغيل)");
+            vt.setPadding(0, dp(8), 0, 0);
+            vt.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { playVideo(vu); } });
+            cb.addView(vt);
+        }
         if (im.startsWith("http")) {
             ImageView iv = new ImageView(this);
             iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
