@@ -738,6 +738,8 @@ public class Home extends FollowList {
                                 if (vp.length() > 3) {
                                     cmRemove("post-videos", vp);
                                 }
+                                String ik = r2KeyFromUrl(o.isNull("image_url") ? "" : o.optString("image_url", ""));
+                                if (ik != null) r2Delete(ik);
                             } catch (Exception e) { err = String.valueOf(e.getMessage()); }
                             final String fe = err;
                             runOnUiThread(new Runnable() {
@@ -1806,6 +1808,8 @@ public class Home extends FollowList {
                                         send("DELETE", "post_comments?id=eq." + id + "&user_id=eq." + uid, null);
                                         String vp = o.isNull("video_path") ? "" : o.optString("video_path", "");
                                         if (vp.length() > 0) cmRemove("post-videos", vp);
+                                        String ik = r2KeyFromUrl(o.isNull("image_url") ? "" : o.optString("image_url", ""));
+                                        if (ik != null) r2Delete(ik);
                                     } catch (Exception e) { err = String.valueOf(e.getMessage()); }
                                     final String fe = err;
                                     runOnUiThread(new Runnable() { @Override public void run() {
