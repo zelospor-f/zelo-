@@ -178,7 +178,7 @@ abstract class Notifications extends NftMarket {
     }
 
     protected final Map<String, String> ntNames = new HashMap<String, String>();
-    protected boolean validPhoto(String u) { return u != null && (u.startsWith("http://") || u.startsWith("https://")); }
+    protected boolean validPhoto(String u) { return u != null && (u.startsWith("http://") || u.startsWith("https://") || u.startsWith("data:image/svg+xml")); }
 
     protected void ntLoad() {
         pool.execute(new Runnable() {

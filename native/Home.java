@@ -1626,7 +1626,6 @@ public class Home extends FollowList {
                     for (int q = 0; q < at.length; q++) { at[q].setPaddingRelative(q < 4 ? dp(14) : dp(2), dp(6), dp(2), dp(6)); acts.addView(at[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
                     LinearLayout.LayoutParams alp2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                     alp2.topMargin = dp(4);
-                    alp2.setMarginStart(-dp(48));
                     col.addView(acts, alp2);
                     r.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                     r.setTag(h);
