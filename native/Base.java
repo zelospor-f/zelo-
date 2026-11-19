@@ -179,6 +179,27 @@ abstract class Base extends Activity {
     protected List<JSONObject> items = homeItems;
     protected String profShown = null;
     protected int profTabNow = 0;
+    // علامة التوثيق: الباقة العليا (3) ذهبية، وبقية الباقات زرقاء
+    protected final Map<String, Integer> tierMap = new HashMap<String, Integer>();
+    protected int verColor(int tier) { return tier >= 3 ? 0xFFF5C35A : 0xFF1D9BF0; }
+    protected CharSequence nameChk(String name, String uid2) {
+        Integer t = uid2 == null ? null : tierMap.get(uid2);
+        if (t == null || t < 1) return name;
+        android.text.SpannableString sp = new android.text.SpannableString(name + " \u2714");
+        int st = name.length() + 1;
+        sp.setSpan(new android.text.style.ForegroundColorSpan(verColor(t)), st, sp.length(), 0);
+        return sp;
+    }
+    protected void loadTiers(java.util.Collection<String> ids) {
+        try {
+            StringBuilder b = new StringBuilder();
+            for (String u : ids) { if (u == null || u.length() == 0) continue; if (b.length() > 0) b.append(","); b.append("\"").append(u).append("\""); }
+            if (b.length() == 0) return;
+            JSONArray a = new JSONArray(rpc("tier_among", "{\"p_ids\":[" + b + "]}"));
+            for (int i = 0; i < a.length(); i++) tierMap.put(a.getJSONObject(i).optString("user_id"), a.getJSONObject(i).optInt("tier", 0));
+            runOnUiThread(new Runnable() { @Override public void run() { refreshUi(); } });
+        } catch (Exception ignore) {}
+    }
     protected final Map<String, int[]> stats = new HashMap<String, int[]>();
     protected final Map<String, String> unames = new HashMap<String, String>();
     protected final Map<String, String> photos = new HashMap<String, String>();

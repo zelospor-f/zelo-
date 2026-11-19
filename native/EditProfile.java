@@ -252,7 +252,6 @@ abstract class EditProfile extends Compose {
         bh.setText(L("تظهر بجانب اسمك وعلى حائط ملفك للمشتركين فقط", "Shown next to your name and on your profile cover (subscribers only)"));
         bc.addView(bh);
         bc.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { epBadgePicker(); } });
-        epDyn.addView(bc);
         epBox.addView(epDyn);
     }
 
@@ -306,7 +305,6 @@ abstract class EditProfile extends Compose {
             @Override public void on(int t) {
                 if (t < 1) { openSubscriptions(); return; }
                 if (epClubs.length() == 0) { toast(L("اختر نادياً أولاً من شاشة اختيار الأندية", "Select a club first")); return; }
-                if (epClubs.length() == 1) { epApplyBadge(epClubs.optString(0)); return; }
                 final Dialog d = sheetDialog(false);
                 LinearLayout b = new LinearLayout(EditProfile.this);
                 b.setOrientation(LinearLayout.VERTICAL);

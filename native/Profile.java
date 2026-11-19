@@ -382,9 +382,11 @@ abstract class Profile extends WeeklyMatchRankings {
         final int[] tierV = { 0 };
         final boolean[] bset = { false };
         final Runnable refreshVer = new Runnable() { @Override public void run() {
-            verV.setVisibility(tierV[0] >= 1 && !bset[0] ? View.VISIBLE : View.GONE);
-            badgeV.setVisibility(tierV[0] >= 1 && bset[0] ? View.VISIBLE : View.GONE);
+            verV.setTextColor(verColor(tierV[0]));
+            verV.setVisibility(tierV[0] >= 1 ? View.VISIBLE : View.GONE);
+            badgeV.setVisibility(View.GONE);
         } };
+        if (!mine) fetchTierOf(target, new TierCb() { @Override public void on(int tier) { tierV[0] = tier; refreshVer.run(); } });
         idb.addView(nameRow);
         final TextView userV = tv(MUTED, 14, false);
         userV.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
@@ -685,10 +687,10 @@ abstract class Profile extends WeeklyMatchRankings {
         else if (mine && isImg(uavatar)) { loadImage(uavatar, avImg); avLetter.setVisibility(View.GONE); }
         String cu0 = mine ? P.optString("coverUrl", "") : "";
         boolean customCover = cu0.startsWith("http");
-        if (customCover) { bset[0] = true; wm.setVisibility(View.VISIBLE); fillCoverFull(wm); loadImage(cu0, wm); }
+        if (customCover) { wm.setVisibility(View.VISIBLE); fillCoverFull(wm); loadImage(cu0, wm); }
         String bl = mine ? ClubsData.logo(P.optString("badgeClub", "")) : "";
         if (!customCover && bl.startsWith("http")) { bset[0] = true; loadImage(bl, badgeV); wm.setAlpha(0.38f); fillCover(wm); loadImage(bl, wm); refreshVer.run(); }
-        if (mine && !bset[0]) {
+        if (mine && !bset[0] && !customCover) {
             try {
                 JSONArray sc0 = P.optJSONArray("selected_clubs");
                 String l0 = sc0 != null && sc0.length() > 0 ? ClubsData.logo(sc0.optString(0, "")) : "";
@@ -794,7 +796,7 @@ abstract class Profile extends WeeklyMatchRankings {
                             if (isImg(ex[2])) { loadImage(ex[2], avImg); avLetter.setVisibility(View.GONE); }
                             if (ex[3].length() > 0 && !"null".equals(ex[3])) { bioV.setText(ex[3]); bioV.setVisibility(View.VISIBLE); }
                             boolean cust2 = ex[6].startsWith("http");
-                            if (cust2) { bset[0] = true; wm.setVisibility(View.VISIBLE); fillCoverFull(wm); loadImage(ex[6], wm); }
+                            if (cust2) { wm.setVisibility(View.VISIBLE); fillCoverFull(wm); loadImage(ex[6], wm); }
                             String bl2 = ClubsData.logo(ex[4]);
                             if (!bl2.startsWith("http") && ex[5].length() > 0 && !cust2) bl2 = ClubsData.logo(ex[5]);
                             if (!cust2 && bl2.startsWith("http")) { bset[0] = true; loadImage(bl2, badgeV); wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(bl2, wm); refreshVer.run(); }

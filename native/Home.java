@@ -1306,7 +1306,7 @@ public class Home extends FollowList {
         String ph = photos.get(o.optString("user_id", ""));
         if (ph != null) { h.avImg.setVisibility(View.VISIBLE); loadImage(ph, h.avImg); }
         else { h.avImg.setTag(null); h.avImg.setVisibility(View.GONE); }
-        h.name.setText(nm2);
+        h.name.setText(nameChk(nm2, o.optString("user_id", "")));
         String un8 = unames.get(o.optString("user_id", ""));
         h.time.setText((un8 != null ? "@" + un8 + " · " : "") + ago(o.optString("created_at", "")));
         String c = o.optString("content", "");
@@ -2330,6 +2330,7 @@ public class Home extends FollowList {
                                 });
                             }
                         } catch (Exception ignore) {}
+                        loadTiers(users);
                         count("post_likes", fids, 0);
                         count("post_comments", fids, 1);
                         count("post_reposts", fids, 2);
