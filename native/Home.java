@@ -210,7 +210,7 @@ public class Home extends FollowList {
         if (vPos < 0 || vPos >= vList.size()) return;
         JSONObject o = vList.get(vPos);
         String nm = o.optString("author_name", "");
-        vName.setText(nm);
+        vName.setText(nameChk(nm, o.optString("user_id", "")));
         String vun = unames.get(o.optString("user_id", ""));
         vUser.setText(vun != null && vun.length() > 0 ? "@" + vun : "");
         vAvLetter.setText(nm.length() > 0 ? nm.substring(0, 1).toUpperCase() : "?");
@@ -1298,6 +1298,15 @@ public class Home extends FollowList {
     }
 
 
+    // مصدر واحد لسطر الكاتب في كل مكان (الرئيسية، صفحة المنشور، الردود): الاسم + علامة التوثيق + @المستخدم + الوقت
+    protected void bindAuthor(TextView nameV, TextView metaV, JSONObject o, boolean withTime) {
+        String au = o.optString("user_id", "");
+        nameV.setText(nameChk(o.optString("author_name", ""), au));
+        String un = unames.get(au);
+        if (withTime) metaV.setText((un != null ? "@" + un + " · " : "") + ago(o.optString("created_at", "")));
+        else metaV.setText(un != null ? "@" + un : "");
+    }
+
     protected void bindPost(View cv, int i) {
         Holder h = ((Wrap) cv).h;
         JSONObject o = items.get(i);
@@ -1306,9 +1315,7 @@ public class Home extends FollowList {
         String ph = photos.get(o.optString("user_id", ""));
         if (ph != null) { h.avImg.setVisibility(View.VISIBLE); loadImage(ph, h.avImg); }
         else { h.avImg.setTag(null); h.avImg.setVisibility(View.GONE); }
-        h.name.setText(nameChk(nm2, o.optString("user_id", "")));
-        String un8 = unames.get(o.optString("user_id", ""));
-        h.time.setText((un8 != null ? "@" + un8 + " · " : "") + ago(o.optString("created_at", "")));
+        bindAuthor(h.name, h.time, o, true);
         String c = o.optString("content", "");
         h.body.setText(c);
         h.body.setVisibility(c.length() > 0 ? View.VISIBLE : View.GONE);
@@ -1556,9 +1563,7 @@ public class Home extends FollowList {
                 String nm = post.optString("author_name", "");
                 hAv.removeAllViews();
                 hAv.addView(rpAvatar(nm, photos.get(postUser), 46));
-                hName.setText(nm);
-                String un = unames.get(postUser);
-                hUser.setText(un != null ? "@" + un : "");
+                bindAuthor(hName, hUser, post, false);
                 int[] s = stats.get(pk);
                 if (s == null) s = new int[] { 0, 0, 0, 0 };
                 hCnt.setText("‎" + s[3] + " " + L("مشاهدة", "views") + "     ‎" + s[0] + " " + L("إعجاب", "likes") + "     ‎" + s[2] + " " + L("إعادة", "reposts") + "     ‎" + Math.max(s[1], cm.size()) + " " + L("رد", "replies"));
@@ -1666,9 +1671,7 @@ public class Home extends FollowList {
                 String nm = o.optString("author_name", "");
                 h.av.removeAllViews();
                 h.av.addView(rpAvatar(nm, photos.get(au), 38));
-                h.n.setText(nm);
-                String un = unames.get(au);
-                h.m.setText((un != null ? "@" + un + " · " : "") + ago(o.optString("created_at", "")));
+                bindAuthor(h.n, h.m, o, true);
                 String c = o.optString("content", "");
                 h.t.setText(c.startsWith("::sticker::") ? c.substring(11) : c);
                 h.t.setVisibility(c.length() > 0 ? View.VISIBLE : View.GONE);
@@ -1733,6 +1736,7 @@ public class Home extends FollowList {
                                 String au = o.optString("user_id", "");
                                 if (au.length() > 0 && !unames.containsKey(au) && !photos.containsKey(au) && seen.add(au)) { if (need.length() > 0) need.append(","); need.append(au); }
                             }
+                            { Set<String> tu = new HashSet<String>(); tu.add(postUser); for (JSONObject o2 : got) tu.add(o2.optString("user_id", "")); loadTiers(tu); }
                             StringBuilder cids = new StringBuilder();
                             for (JSONObject o : got) {
                                 if (cids.length() > 0) cids.append(",");
