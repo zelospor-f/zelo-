@@ -228,7 +228,7 @@ public class Home extends FollowList {
         if (vPos < 0 || vPos >= vList.size()) return;
         JSONObject o = vList.get(vPos);
         String nm = o.optString("author_name", "");
-        vName.setText(nameChk(nm, o.optString("user_id", "")));
+        setNameSeal(vName, nm, o.optString("user_id", ""));
         String vun = unames.get(o.optString("user_id", ""));
         vUser.setText(vun != null && vun.length() > 0 ? "@" + vun : "");
         vAvLetter.setText(nm.length() > 0 ? nm.substring(0, 1).toUpperCase() : "?");
@@ -487,7 +487,7 @@ public class Home extends FollowList {
         h.name.setGravity(Gravity.START);
         h.name.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
         h.time.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        names.addView(h.name, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        names.addView(h.name, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         LinearLayout trow = new LinearLayout(this);
         trow.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
         trow.addView(h.time);
@@ -1319,7 +1319,7 @@ public class Home extends FollowList {
     // مصدر واحد لسطر الكاتب في كل مكان (الرئيسية، صفحة المنشور، الردود): الاسم + علامة التوثيق + @المستخدم + الوقت
     protected void bindAuthor(TextView nameV, TextView metaV, JSONObject o, boolean withTime) {
         String au = o.optString("user_id", "");
-        nameV.setText(nameChk(o.optString("author_name", ""), au));
+        setNameSeal(nameV, o.optString("author_name", ""), au);
         String un = unames.get(au);
         if (withTime) metaV.setText((un != null ? "@" + un + " · " : "") + ago(o.optString("created_at", "")));
         else metaV.setText(un != null ? "@" + un : "");

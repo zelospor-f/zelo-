@@ -215,11 +215,18 @@ abstract class Base extends Activity {
     // علامة التوثيق: الباقة العليا (3) ذهبية، وبقية الباقات زرقاء
     protected final Map<String, Integer> tierMap = new HashMap<String, Integer>();
     protected int verColor(int tier) { return tier >= 3 ? 0xFFF5C35A : 0xFF1D9BF0; }
+    protected void setNameSeal(TextView v, String name, String uid2) {
+        v.setText(name);
+        Integer t = uid2 == null ? null : tierMap.get(uid2);
+        if (t == null || t < 1) { v.setCompoundDrawables(null, null, null, null); return; }
+        v.setCompoundDrawables(sealFor(t, dp(18)), null, null, null);
+        v.setCompoundDrawablePadding(dp(5));
+    }
     protected CharSequence nameChk(String name, String uid2) {
         Integer t = uid2 == null ? null : tierMap.get(uid2);
         if (t == null || t < 1) return name;
-        android.text.SpannableString sp = new android.text.SpannableString(name + " \uFFFC");
-        sp.setSpan(new android.text.style.ImageSpan(sealFor(t, dp(18)), android.text.style.ImageSpan.ALIGN_BOTTOM), sp.length() - 1, sp.length(), 0);
+        android.text.SpannableString sp = new android.text.SpannableString("\u200F\u2066\uFFFC " + name + "\u2069");
+        sp.setSpan(new android.text.style.ImageSpan(sealFor(t, dp(18)), android.text.style.ImageSpan.ALIGN_BOTTOM), 2, 3, 0);
         return sp;
     }
     protected void loadTiers(java.util.Collection<String> ids) {
