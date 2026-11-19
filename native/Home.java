@@ -467,7 +467,17 @@ public class Home extends FollowList {
         h.name = tv(Color.WHITE, 16, true);
         h.time = tv(MUTED, 12, false);
         names.addView(h.name);
-        names.addView(h.time);
+        LinearLayout trow = new LinearLayout(this);
+        trow.setGravity(Gravity.CENTER_VERTICAL);
+        trow.addView(h.time);
+        h.boostPill = tv(GOLD, 10, true);
+        h.boostPill.setPadding(dp(7), dp(1), dp(7), dp(1));
+        h.boostPill.setBackground(bxBg(0x26F5C35A, 0x66F5C35A, 8));
+        h.boostPill.setVisibility(View.GONE);
+        LinearLayout.LayoutParams bpl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        bpl.setMarginStart(dp(8));
+        trow.addView(h.boostPill, bpl);
+        names.addView(trow);
         head.addView(names);
         head.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         h.supBtn = tv(NAVY, 13, true);
@@ -587,6 +597,14 @@ public class Home extends FollowList {
         h.supbar.setVisibility(View.GONE);
         row.addView(h.supbar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         row.addView(acts);
+        h.boostBox = new LinearLayout(this);
+        h.boostBox.setOrientation(LinearLayout.VERTICAL);
+        h.boostBox.setPadding(dp(12), dp(10), dp(12), dp(10));
+        h.boostBox.setBackground(bxBg(0x12F5C35A, 0x40F5C35A, 12));
+        h.boostBox.setVisibility(View.GONE);
+        LinearLayout.LayoutParams bbl = new LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT);
+        bbl.topMargin = dp(8);
+        row.addView(h.boostBox, bbl);
 
         w.addView(row, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return w;
@@ -1324,6 +1342,7 @@ public class Home extends FollowList {
         bindRope(h, o);
         bindPred(h, o);
         bindSupport(h, o);
+        bindBoost(h, o, s);
         recordView(o, s);
         final String au0 = o.optString("user_id", "");
         View.OnClickListener pc = new View.OnClickListener() { @Override public void onClick(View v) { if (au0.length() > 0) openProfileOf(au0); } };
@@ -2263,6 +2282,18 @@ public class Home extends FollowList {
                         ids.append(p.optLong("id"));
                         users.add(p.optString("user_id", ""));
                     }
+                    if (first && uid != null) {
+                        loadBoostMeta(null, true);
+                        List<JSONObject> inj = boostedForFeed(got);
+                        int at = Math.min(2, got.size());
+                        for (JSONObject p : inj) {
+                            got.add(at++, p);
+                            stats.put(String.valueOf(p.optLong("id")), new int[] { 0, 0, 0, 0 });
+                            if (ids.length() > 0) ids.append(",");
+                            ids.append(p.optLong("id"));
+                            users.add(p.optString("user_id", ""));
+                        }
+                    }
                     final String fids = ids.toString();
                     final long mid = System.currentTimeMillis() - t0;
                     final int n = rawN;
@@ -2317,6 +2348,7 @@ public class Home extends FollowList {
                             for (int q = 0; q < x.length(); q++) preds.put(String.valueOf(x.getJSONObject(q).optLong("post_id")), x.getJSONObject(q));
                         } catch (Exception ignore) {}
                         loadSupportStats(fids);
+                        loadBoostMeta(fids, false);
                         try {
                             JSONArray x = new JSONArray(rpc("rope_summary", "{\"p_ids\":[" + fids + "]}"));
                             for (int q = 0; q < x.length(); q++) {

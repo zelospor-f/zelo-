@@ -454,7 +454,8 @@ abstract class Base extends Activity {
 
     protected static class Holder {
         TextView avatar, name, time, body, video, heart, cm, rp, vw, sv, sh, more, supBtn;
-        LinearLayout rope, pred, supbar;
+        LinearLayout rope, pred, supbar, boostBox;
+        TextView boostPill;
         ImageView avImg, img;
     }
 

@@ -665,4 +665,132 @@ abstract class Stats extends Settings {
         btn.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { crOpenWallet(); } });
         crBody.addView(btn, new LinearLayout.LayoutParams(-1, -2));
     }
+
+    // ================= صفحة «إحصائيات التعزيز» =================
+    protected Dialog bsDlg;
+
+    @Override
+    protected void openBoostStats() {
+        if (uid == null) return;
+        bsDlg = sheetDialog(true);
+        bsDlg.getWindow().setBackgroundDrawable(new ColorDrawable(NAVY));
+        lbDirection(bsDlg);
+        FrameLayout root = new FrameLayout(this);
+        bsDlg.setContentView(root);
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setPadding(0, statusH(), 0, 0);
+        root.addView(col, new FrameLayout.LayoutParams(-1, -1));
+        LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        top.setPadding(dp(8), dp(8), dp(16), dp(8));
+        top.addView(backBtn(new Runnable() { @Override public void run() { if (bsDlg != null) bsDlg.dismiss(); } }));
+        TextView ti = tv(Color.WHITE, 18, true);
+        ti.setText("⚡ " + L("إحصائيات التعزيز", "Boost stats"));
+        ti.setPadding(dp(8), 0, 0, 0);
+        top.addView(ti);
+        col.addView(top);
+        ScrollView sv = new ScrollView(this);
+        final LinearLayout body = new LinearLayout(this);
+        body.setOrientation(LinearLayout.VERTICAL);
+        body.setPadding(dp(16), dp(8), dp(16), navH() + dp(20));
+        sv.addView(body);
+        col.addView(sv, new LinearLayout.LayoutParams(-1, 0, 1f));
+        TextView ld = tv(MUTED, 14, false);
+        ld.setText(L("جارٍ التحميل…", "Loading…"));
+        ld.setGravity(Gravity.CENTER);
+        ld.setPadding(0, dp(30), 0, 0);
+        body.addView(ld);
+        bsDlg.show();
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                try {
+                    JSONArray a = new JSONArray(rpc("my_boost_stats", "{}"));
+                    myBoost.clear(); myBoostList.clear();
+                    for (int i = 0; i < a.length(); i++) {
+                        JSONObject o = a.getJSONObject(i);
+                        myBoostList.add(o);
+                        String k = String.valueOf(o.optLong("post_id"));
+                        if (!myBoost.containsKey(k)) myBoost.put(k, o);
+                    }
+                    everBoosted = myBoostList.size() > 0;
+                } catch (Exception ignore) {}
+                runOnUiThread(new Runnable() { @Override public void run() { bsFill(body); } });
+            }
+        });
+    }
+
+    protected void bsFill(LinearLayout body) {
+        body.removeAllViews();
+        if (myBoostList.isEmpty()) {
+            TextView e = tv(MUTED, 14, false);
+            e.setText(L("لم تعزّز أي منشور بعد.", "You haven't boosted any post yet."));
+            e.setGravity(Gravity.CENTER);
+            e.setPadding(0, dp(30), 0, 0);
+            body.addView(e);
+            return;
+        }
+        long imp = 0, cm = 0, fl = 0, tp = 0;
+        for (JSONObject b : myBoostList) {
+            imp += b.optLong("impressions", 0); cm += b.optLong("comments", 0);
+            fl += b.optLong("followers", 0); tp += b.optLong("tips_net", 0);
+        }
+        TextView h1 = tv(MUTED, 13, true);
+        h1.setText(L("المجموع", "Totals"));
+        h1.setPadding(0, dp(4), 0, dp(6));
+        body.addView(h1);
+        LinearLayout tot = new LinearLayout(this);
+        bxChip(nfmt(imp), L("ظهور كلي", "Total reach"), tot);
+        bxChip(nfmt(cm), L("تعليقات", "Comments"), tot);
+        bxChip(nfmt(fl), L("متابعون جدد", "New followers"), tot);
+        bxChip(nfmt(tp), L("ZELO دعم", "ZELO support"), tot);
+        body.addView(tot);
+        TextView h2 = tv(MUTED, 13, true);
+        h2.setText(L("منشوراتك المعزَّزة", "Your boosted posts"));
+        h2.setPadding(0, dp(16), 0, dp(6));
+        body.addView(h2);
+        for (final JSONObject b : myBoostList) {
+            boolean live = "active".equals(b.optString("status"));
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.VERTICAL);
+            card.setPadding(dp(14), dp(12), dp(14), dp(12));
+            card.setBackground(bxBg(0xFF111A4A, live ? 0x55F5C35A : 0x22FFFFFF, 14));
+            LinearLayout hd = new LinearLayout(this);
+            hd.setGravity(Gravity.CENTER_VERTICAL);
+            TextView sn = tv(Color.WHITE, 14, true);
+            String snip = b.optString("snippet", "").trim();
+            sn.setText(snip.length() > 0 ? snip : L("منشور", "Post"));
+            sn.setMaxLines(1);
+            sn.setEllipsize(android.text.TextUtils.TruncateAt.END);
+            hd.addView(sn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+            TextView st = tv(live ? NAVY : MUTED, 11, true);
+            st.setText(live ? "⚡ " + L("نشط", "Active") : L("منتهٍ", "Ended"));
+            st.setPadding(dp(8), dp(2), dp(8), dp(2));
+            st.setBackground(bxBg(live ? GOLD : 0x22FFFFFF, 0, 10));
+            hd.addView(st);
+            card.addView(hd);
+            TextView lf = tv(MUTED, 12, false);
+            lf.setText(bxLeft(b));
+            lf.setPadding(0, dp(4), 0, dp(4));
+            card.addView(lf);
+            card.addView(bxBar(bxPct(b), live));
+            TextView rc = tv(MUTED, 12, false);
+            rc.setText(L("وصل إلى ", "Reached ") + nfmt(b.optLong("impressions", 0)) + L(" من ", " of ") + nfmt(b.optLong("target", 0)) + L(" ظهوراً", " impressions"));
+            rc.setPadding(0, dp(4), 0, dp(8));
+            card.addView(rc);
+            LinearLayout chips = new LinearLayout(this);
+            bxChips4(chips, b);
+            card.addView(chips);
+            View sp = bxSupport(b);
+            sp.setPadding(0, dp(8), 0, 0);
+            card.addView(sp);
+            TextView sp2 = tv(MUTED, 11, false);
+            sp2.setText(L("أُنفق ", "Spent ") + (b.optLong("spent_tenths", 0) / 10) + L(" من ", " of ") + nfmt(b.optLong("total_points", 0)) + " ZELO");
+            sp2.setPadding(0, dp(4), 0, 0);
+            card.addView(sp2);
+            LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT);
+            cl.bottomMargin = dp(10);
+            body.addView(card, cl);
+        }
+    }
 }

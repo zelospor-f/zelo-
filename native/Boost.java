@@ -227,4 +227,230 @@ abstract class Boost extends Subscriptions {
             }
         });
     }
+
+    // ================= مؤشر الصعود + شارة التعزيز + إحصائيات التعزيز =================
+    protected final HashMap<String, JSONObject> boostActive = new HashMap<String, JSONObject>(); // post_id -> {id, owner_id}
+    protected final HashSet<String> rising = new HashSet<String>();
+    protected final HashMap<String, JSONObject> myBoost = new HashMap<String, JSONObject>(); // post_id -> أحدث تعزيز لي
+    protected final List<JSONObject> myBoostList = new ArrayList<JSONObject>();
+    protected final HashSet<String> boostSeen = new HashSet<String>();
+    protected boolean everBoosted = false;
+
+    protected void openBoostStats() {}
+
+    protected GradientDrawable bxBg(int fill, int stroke, int rDp) {
+        GradientDrawable g = new GradientDrawable();
+        g.setColor(fill);
+        g.setCornerRadius(dp(rDp));
+        if (stroke != 0) g.setStroke(dp(1), stroke);
+        return g;
+    }
+
+    protected long bxParse(String iso) {
+        try {
+            SimpleDateFormat f = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            f.setTimeZone(TimeZone.getTimeZone("UTC"));
+            return f.parse(iso.substring(0, 19)).getTime();
+        } catch (Exception e) { return 0; }
+    }
+
+    // يحمّل التعزيزات النشطة وإحصائيات تعزيزاتي (أول صفحة)، ومنشورات الصعود
+    protected void loadBoostMeta(String fids, boolean first) {
+        if (uid == null) return;
+        if (first) {
+            try {
+                JSONArray a = new JSONArray(rpc("get_active_boosts", "{}"));
+                boostActive.clear();
+                for (int i = 0; i < a.length(); i++) {
+                    JSONObject o = a.getJSONObject(i);
+                    boostActive.put(String.valueOf(o.optLong("post_id")), o);
+                }
+            } catch (Exception ignore) {}
+            try {
+                JSONArray a = new JSONArray(rpc("my_boost_stats", "{}"));
+                myBoost.clear(); myBoostList.clear();
+                for (int i = 0; i < a.length(); i++) {
+                    JSONObject o = a.getJSONObject(i);
+                    myBoostList.add(o);
+                    String k = String.valueOf(o.optLong("post_id"));
+                    if (!myBoost.containsKey(k)) myBoost.put(k, o);
+                }
+                everBoosted = myBoostList.size() > 0;
+            } catch (Exception ignore) {}
+        }
+        if (fids != null && fids.length() > 0) {
+            try {
+                JSONArray a = new JSONArray(rpc("rising_posts", "{\"p_ids\":[" + fids + "]}"));
+                for (int i = 0; i < a.length(); i++) rising.add(String.valueOf(a.getJSONObject(i).optLong("post_id")));
+            } catch (Exception ignore) {}
+        }
+        runOnUiThread(new Runnable() { @Override public void run() { refreshUi(); } });
+    }
+
+    // منشورات معزَّزة نشطة تُحقن في أعلى الصفحة الرئيسية (ليست لي، غير موجودة، وغير مكتومة)
+    protected List<JSONObject> boostedForFeed(List<JSONObject> have) {
+        List<JSONObject> out = new ArrayList<JSONObject>();
+        try {
+            HashSet<String> haveIds = new HashSet<String>();
+            for (JSONObject h : have) haveIds.add(String.valueOf(h.optLong("id")));
+            StringBuilder ids = new StringBuilder();
+            int n = 0;
+            for (Map.Entry<String, JSONObject> e : boostActive.entrySet()) {
+                String owner = e.getValue().optString("owner_id", "");
+                if (owner.equals(uid) || haveIds.contains(e.getKey()) || muteSet.contains(owner) || blockSet.contains(owner) || hiddenSet.contains(e.getKey())) continue;
+                if (n >= 3) break;
+                if (ids.length() > 0) ids.append(",");
+                ids.append(e.getKey());
+                n++;
+            }
+            if (ids.length() == 0) return out;
+            JSONArray a = new JSONArray(get("posts?select=id,user_id,author_name,content,created_at,image_url,video_url,video_path,topic_type,topic_name,topic_name_b&id=in.(" + ids + ")"));
+            for (int i = 0; i < a.length(); i++) out.add(a.getJSONObject(i));
+        } catch (Exception ignore) {}
+        return out;
+    }
+
+    protected void bxChip(String num, String label, LinearLayout row) {
+        LinearLayout c = new LinearLayout(this);
+        c.setOrientation(LinearLayout.VERTICAL);
+        c.setGravity(Gravity.CENTER);
+        c.setPadding(dp(4), dp(8), dp(4), dp(8));
+        c.setBackground(bxBg(0x14FFFFFF, 0x1AFFFFFF, 10));
+        TextView n = tv(Color.WHITE, 16, true);
+        n.setText(num);
+        n.setGravity(Gravity.CENTER);
+        TextView l = tv(MUTED, 11, false);
+        l.setText(label);
+        l.setGravity(Gravity.CENTER);
+        c.addView(n);
+        c.addView(l);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+        lp.setMarginStart(dp(3)); lp.setMarginEnd(dp(3));
+        row.addView(c, lp);
+    }
+
+    // شريط التقدّم الذهبي المتدرّج مع فقاعة النسبة
+    protected View bxBar(int pct, boolean live) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        int p = Math.max(0, Math.min(100, pct));
+        int bp = Math.max(8, Math.min(92, p));
+        LinearLayout top = new LinearLayout(this);
+        top.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        top.addView(new View(this), new LinearLayout.LayoutParams(0, 1, bp));
+        TextView bub = tv(NAVY, 10, true);
+        bub.setText(p + "%");
+        bub.setGravity(Gravity.CENTER);
+        bub.setPadding(dp(6), dp(1), dp(6), dp(1));
+        bub.setBackground(bxBg(live ? GOLD : 0xFF9AA6D8, 0, 8));
+        top.addView(bub);
+        top.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 100 - bp));
+        box.addView(top);
+        LinearLayout track = new LinearLayout(this);
+        track.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        track.setBackground(bxBg(0x22FFFFFF, 0, 4));
+        GradientDrawable fg = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, live ? new int[] { 0xFFB8860B, GOLD, 0xFFFFE7AD } : new int[] { 0xFF5A648F, 0xFF9AA6D8 });
+        fg.setCornerRadius(dp(4));
+        View fill = new View(this);
+        fill.setBackground(fg);
+        track.addView(fill, new LinearLayout.LayoutParams(0, dp(8), Math.max(p, 1)));
+        track.addView(new View(this), new LinearLayout.LayoutParams(0, dp(8), 100 - Math.max(p, 1)));
+        LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(-1, dp(8));
+        tl.topMargin = dp(2);
+        box.addView(track, tl);
+        return box;
+    }
+
+    protected int bxPct(JSONObject b) {
+        long t = b.optLong("target", 0);
+        if (t <= 0) return 0;
+        return (int) Math.min(100, b.optLong("impressions", 0) * 100 / t);
+    }
+
+    protected String bxLeft(JSONObject b) {
+        long ms = bxParse(b.optString("end_at", "")) - System.currentTimeMillis();
+        if (ms <= 0) return L("انتهى", "Ended");
+        long h = ms / 3600000L;
+        if (h >= 48) return L("ينتهي بعد ", "Ends in ") + (h / 24) + L(" يوماً", " days");
+        if (h < 1) return L("ينتهي بعد أقل من ساعة", "Ends in under 1 hour");
+        return L("ينتهي بعد ", "Ends in ") + h + L(" ساعة", " h");
+    }
+
+    protected View bxSupport(JSONObject b) {
+        TextView t = tv(MUTED, 12, true);
+        long c = b.optLong("tips_count", 0);
+        if (c > 0) t.setText("🎁 " + L("الدعم المستلم · ", "Support received · ") + c + (c == 1 ? L(" داعم", " supporter") : L(" داعمين", " supporters")) + " · " + nfmt(b.optLong("tips_net", 0)) + " ZELO");
+        else t.setText("🎁 " + L("الدعم المستلم · لا يوجد بعد", "Support received · none yet"));
+        t.setTextColor(c > 0 ? GOLD : MUTED);
+        return t;
+    }
+
+    protected void bxChips4(LinearLayout row, JSONObject b) {
+        bxChip(nfmt(b.optLong("impressions", 0)), L("ظهور", "Reach"), row);
+        bxChip(nfmt(b.optLong("comments", 0)), L("تعليقات", "Comments"), row);
+        bxChip(nfmt(b.optLong("followers", 0)), L("متابعون جدد", "New followers"), row);
+        bxChip(nfmt(b.optLong("likes", 0)), L("أهداف", "Goals"), row);
+    }
+
+    // يُستدعى من bindPost: الصعود + الشارة + سطر صاحب المنشور + تسجيل الظهور
+    protected void bindBoost(Holder h, JSONObject o, int[] s) {
+        final String pk = String.valueOf(o.optLong("id"));
+        String owner = o.optString("user_id", "");
+        boolean mine = owner.equals(uid);
+        if (rising.contains(pk)) {
+            h.vw.setText(s[3] + " ↑");
+            setIc(h.vw, 3, 0xFF14F195, false);
+        }
+        JSONObject my = mine ? myBoost.get(pk) : null;
+        JSONObject act = boostActive.get(pk);
+        boolean activeMine = my != null && "active".equals(my.optString("status"));
+        boolean on = act != null || activeMine;
+        if (h.boostPill != null) {
+            h.boostPill.setText("⚡ " + L("معزَّز", "Boosted"));
+            h.boostPill.setVisibility(on ? View.VISIBLE : View.GONE);
+        }
+        if (h.boostBox != null) {
+            h.boostBox.removeAllViews();
+            h.boostBox.setVisibility(View.GONE);
+            if (my != null) {
+                boolean live = activeMine;
+                h.boostBox.setVisibility(View.VISIBLE);
+                LinearLayout hd = new LinearLayout(this);
+                hd.setGravity(Gravity.CENTER_VERTICAL);
+                TextView a = tv(live ? GOLD : MUTED, 13, true);
+                a.setText(live ? "⚡ " + L("التعزيز نشط", "Boost active") : L("انتهى التعزيز", "Boost ended"));
+                TextView b2 = tv(MUTED, 12, false);
+                b2.setText(bxLeft(my));
+                hd.addView(a, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+                hd.addView(b2);
+                h.boostBox.addView(hd);
+                h.boostBox.addView(bxBar(bxPct(my), live));
+                TextView rc = tv(MUTED, 12, false);
+                rc.setText(L("وصل إلى ", "Reached ") + nfmt(my.optLong("impressions", 0)) + L(" من ", " of ") + nfmt(my.optLong("target", 0)) + L(" ظهوراً", " impressions"));
+                rc.setPadding(0, dp(4), 0, dp(8));
+                h.boostBox.addView(rc);
+                LinearLayout chips = new LinearLayout(this);
+                bxChips4(chips, my);
+                h.boostBox.addView(chips);
+                View sp = bxSupport(my);
+                sp.setPadding(0, dp(8), 0, dp(2));
+                h.boostBox.addView(sp);
+                TextView lk = tv(GOLD, 12, true);
+                lk.setText(L("عرض كل الإحصائيات ‹", "View all stats ›"));
+                lk.setPadding(0, dp(6), 0, dp(2));
+                lk.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openBoostStats(); } });
+                h.boostBox.addView(lk);
+            }
+        }
+        if (act != null && !mine && uid != null) {
+            final long bid = act.optLong("id");
+            if (boostSeen.add(String.valueOf(bid))) {
+                pool.execute(new Runnable() {
+                    @Override public void run() {
+                        try { rpc("record_boost_impression", "{\"p_boost_id\":" + bid + ",\"p_viewer_id\":\"" + uid + "\"}"); } catch (Exception ignore) {}
+                    }
+                });
+            }
+        }
+    }
 }
