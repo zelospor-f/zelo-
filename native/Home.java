@@ -466,9 +466,10 @@ public class Home extends FollowList {
         names.setPadding(dp(10), 0, dp(10), 0);
         h.name = tv(Color.WHITE, 16, true);
         h.time = tv(MUTED, 12, false);
-        names.addView(h.name);
+        h.name.setGravity(Gravity.START);
+        names.addView(h.name, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         LinearLayout trow = new LinearLayout(this);
-        trow.setGravity(Gravity.CENTER_VERTICAL);
+        trow.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
         trow.addView(h.time);
         h.boostPill = tv(GOLD, 10, true);
         h.boostPill.setPadding(dp(7), dp(1), dp(7), dp(1));
@@ -477,7 +478,7 @@ public class Home extends FollowList {
         LinearLayout.LayoutParams bpl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         bpl.setMarginStart(dp(8));
         trow.addView(h.boostPill, bpl);
-        names.addView(trow);
+        names.addView(trow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         head.addView(names);
         head.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         h.supBtn = tv(NAVY, 13, true);
