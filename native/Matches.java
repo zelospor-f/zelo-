@@ -231,7 +231,7 @@ abstract class Matches extends Leaderboard {
         grp.setPadding(dp(16), dp(16), dp(16), dp(16));
         grp.setBackground(rbg(0x33000000, 0x0DFFFFFF, 16));
         final EditText[] in = new EditText[2];
-        String[] names = { team1, team2 };
+        String[] names = { teamName(team1), teamName(team2) };
         for (int i = 0; i < 2; i++) {
             TextView l = txt("⚽ " + tr("goalsLabel", "أهداف", "Goals") + " " + names[i], Color.WHITE, 14, true);
             l.setPadding(0, i == 0 ? 0 : dp(14), 0, dp(8));
@@ -368,8 +368,8 @@ abstract class Matches extends Leaderboard {
         LinearLayout teams = new LinearLayout(this);
         teams.setGravity(Gravity.CENTER_VERTICAL);
         teams.setPadding(dp(15), dp(15), dp(15), dp(10));
-        TextView ta = txt(a, Color.WHITE, 16, true); ta.setGravity(Gravity.CENTER);
-        TextView tb = txt(b, Color.WHITE, 16, true); tb.setGravity(Gravity.CENTER);
+        TextView ta = txt(teamName(a), Color.WHITE, 16, true); ta.setGravity(Gravity.CENTER);
+        TextView tb = txt(teamName(b), Color.WHITE, 16, true); tb.setGravity(Gravity.CENTER);
         TextView vs = txt("VS", GOLD, 18, true); vs.setPadding(dp(15), 0, dp(15), 0);
         teams.addView(ta, lpw(1f)); teams.addView(vs); teams.addView(tb, lpw(1f));
         card.addView(teams);
@@ -680,7 +680,7 @@ abstract class Matches extends Leaderboard {
         card.setBackground(rbg(CARD, focus ? GOLD : (state.equals("waiting") ? 0x80F5C35A : 0x1AFFFFFF), 20));
         LinearLayout hd = new LinearLayout(this);
         hd.setGravity(Gravity.CENTER_VERTICAL);
-        hd.addView(txt(c.optString("team_a", "") + " × " + c.optString("team_b", ""), Color.WHITE, 15, true), lpw(1f));
+        hd.addView(txt(teamName(c.optString("team_a", "")) + " × " + teamName(c.optString("team_b", "")), Color.WHITE, 15, true), lpw(1f));
         TextView stv = txt(stT + (score.length() > 0 ? " · " + score : ""), stC, 12, true);
         stv.setPadding(dp(10), dp(4), dp(10), dp(4));
         stv.setBackground(rbg(0x14FFFFFF, 0, 20));
@@ -873,8 +873,8 @@ abstract class Matches extends Leaderboard {
         card.addView(top, lpm(0, 0, 0, 12));
         LinearLayout r = new LinearLayout(this);
         r.setGravity(Gravity.CENTER_VERTICAL);
-        TextView a = txt(m.optString("team_a", ""), Color.WHITE, 15, true); a.setGravity(Gravity.CENTER);
-        TextView b = txt(m.optString("team_b", ""), Color.WHITE, 15, true); b.setGravity(Gravity.CENTER);
+        TextView a = txt(teamName(m.optString("team_a", "")), Color.WHITE, 15, true); a.setGravity(Gravity.CENTER);
+        TextView b = txt(teamName(m.optString("team_b", "")), Color.WHITE, 15, true); b.setGravity(Gravity.CENTER);
         TextView md = txt(mid, live ? 0xFF14F195 : GOLD, (done || live) ? 24 : 18, true);
         md.setGravity(Gravity.CENTER); md.setLayoutDirection(View.LAYOUT_DIRECTION_LTR); md.setMinWidth(dp(74));
         r.addView(a, lpw(1f)); r.addView(md); r.addView(b, lpw(1f));

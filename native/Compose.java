@@ -350,7 +350,7 @@ abstract class Compose extends Profile {
         cmTopicFields.removeAllViews();
         if (!cmPred) return;
         if (cmPredMatch != null) {
-            final String a = cmPredMatch.optString("team_a"), b = cmPredMatch.optString("team_b");
+            final String a = teamName(cmPredMatch.optString("team_a")), b = teamName(cmPredMatch.optString("team_b"));
             TextView sel = tv(Color.WHITE, 15, true);
             sel.setText(a + " × " + b + "   (" + L("تغيير", "Change") + ")");
             sel.setPadding(dp(12), dp(12), dp(12), dp(12));
@@ -431,12 +431,12 @@ abstract class Compose extends Profile {
         for (int i = 0; i < cmMatches.length() && shown < 40; i++) {
             final JSONObject m = cmMatches.optJSONObject(i);
             if (m == null) continue;
-            String hay = (m.optString("team_a") + " " + m.optString("team_b") + " " + m.optString("competition_name")).toLowerCase();
+            String hay = (teamHay(m.optString("team_a")) + " " + teamHay(m.optString("team_b")) + " " + m.optString("competition_name")).toLowerCase();
             if (ql.length() > 0 && hay.indexOf(ql) < 0) continue;
             if (cmLeague.length() > 0 && !cmLeague.equals(m.optString("competition_name"))) continue;
             shown++;
             TextView it = tv(Color.WHITE, 14, true);
-            it.setText(m.optString("team_a") + " × " + m.optString("team_b") + "\n" + cmWhen(m.optString("match_date")) + " · " + cmLeagueName(m.optString("competition_name")));
+            it.setText(teamName(m.optString("team_a")) + " × " + teamName(m.optString("team_b")) + "\n" + cmWhen(m.optString("match_date")) + " · " + cmLeagueName(m.optString("competition_name")));
             it.setPadding(dp(12), dp(10), dp(12), dp(10));
             it.setBackground(rbg(CARD, 0x33FFFFFF, 12));
             it.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPredMatch = m; cmPredPick = -1; cmRenderPred(); } });

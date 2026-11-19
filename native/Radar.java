@@ -383,9 +383,9 @@ abstract class Radar extends Referrals {
                 int[] mix = { (int) Math.round(j / sum * 100), (int) Math.round(h / sum * 100), (int) Math.round(r / sum * 100) };
                 int d = mix[0] >= mix[1] && mix[0] >= mix[2] ? 0 : (mix[1] >= mix[2] ? 1 : 2);
                 String[] doms = { "joy", "hype", "rage" };
-                String who = s == 0 ? L("مشجعو ", "Fans of ") + m.optString("team_a") : s == 1 ? L("مشجعو ", "Fans of ") + m.optString("team_b") : L("جمهور محايد", "Neutral fans");
+                String who = s == 0 ? L("مشجعو ", "Fans of ") + teamName(m.optString("team_a")) : s == 1 ? L("مشجعو ", "Fans of ") + teamName(m.optString("team_b")) : L("جمهور محايد", "Neutral fans");
                 float[] xy = matchXY(m, s == 0 ? "a" : s == 1 ? "b" : null);
-                rPush(who, m.optString("team_a") + " × " + m.optString("team_b"), emoName(doms[d]), doms[d], mix, (long) sum, xy[0], xy[1], 0, true);
+                rPush(who, teamName(m.optString("team_a")) + " × " + teamName(m.optString("team_b")), emoName(doms[d]), doms[d], mix, (long) sum, xy[0], xy[1], 0, true);
             }
         }
     }
@@ -624,7 +624,7 @@ abstract class Radar extends Referrals {
         c.addView(txt("● " + L("مباراة مباشرة الآن", "Live now"), 0xFF14F195, 11, true));
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        TextView t1 = txt(m.optString("team_a"), Color.WHITE, 14, true), sc = txt(h + " - " + a, 0xFF14F195, 22, true), t2 = txt(m.optString("team_b"), Color.WHITE, 14, true);
+        TextView t1 = txt(teamName(m.optString("team_a")), Color.WHITE, 14, true), sc = txt(h + " - " + a, 0xFF14F195, 22, true), t2 = txt(teamName(m.optString("team_b")), Color.WHITE, 14, true);
         t1.setGravity(Gravity.CENTER); t2.setGravity(Gravity.CENTER); sc.setGravity(Gravity.CENTER);
         row.addView(t1, lpw(1f)); row.addView(sc, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)); row.addView(t2, lpw(1f));
         c.addView(row, lpm(0, 6, 0, 0));
@@ -635,7 +635,7 @@ abstract class Radar extends Referrals {
             hs.setHorizontalScrollBarEnabled(false);
             for (final JSONObject x : rMatches) {
                 boolean on = x.optString("id").equals(rCurr);
-                TextView ch = txt(x.optString("team_a") + " × " + x.optString("team_b"), on ? NAVY : GOLD, 12, true);
+                TextView ch = txt(teamName(x.optString("team_a")) + " × " + teamName(x.optString("team_b")), on ? NAVY : GOLD, 12, true);
                 ch.setPadding(dp(13), dp(5), dp(13), dp(5));
                 ch.setBackground(rbg(on ? GOLD : 0x00000000, GOLD, 20));
                 ch.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rSelectMatch(x.optString("id")); } });
@@ -661,7 +661,7 @@ abstract class Radar extends Referrals {
         if (m == null) return;
         rSideBox.addView(txt(L("مع أي فريق أنت؟", "Which side are you on?"), Color.WHITE, 15, true), lpm(0, 0, 0, 8));
         LinearLayout r = new LinearLayout(this);
-        String[][] bs = { { "a", m.optString("team_a") }, { "b", m.optString("team_b") }, { "n", L("محايد", "Neutral") } };
+        String[][] bs = { { "a", teamName(m.optString("team_a")) }, { "b", teamName(m.optString("team_b")) }, { "n", L("محايد", "Neutral") } };
         for (final String[] b : bs) {
             boolean on = b[0].equals(rSide);
             TextView t = txt(b[1], on ? NAVY : 0xFFCFD8FF, 13, true);
@@ -686,8 +686,8 @@ abstract class Radar extends Referrals {
         JSONObject m = rById.get(rCurr);
         double[] l = rLast.get(rCurr);
         if (m == null || l == null) { rTeamsBox.addView(txt(L("اختر مباراة مباشرة.", "Pick a live match."), MUTED, 13, false)); return; }
-        rTeamBlock(L("مشجعو ", "Fans of ") + m.optString("team_a"), l[3], l[4], l[5]);
-        rTeamBlock(L("مشجعو ", "Fans of ") + m.optString("team_b"), l[6], l[7], l[8]);
+        rTeamBlock(L("مشجعو ", "Fans of ") + teamName(m.optString("team_a")), l[3], l[4], l[5]);
+        rTeamBlock(L("مشجعو ", "Fans of ") + teamName(m.optString("team_b")), l[6], l[7], l[8]);
     }
     protected void rTeamBlock(String name, double j, double h, double r) {
         double sum = j + h + r;

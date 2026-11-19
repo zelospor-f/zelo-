@@ -179,11 +179,32 @@ abstract class Index extends I18nHelpers {
         } });
     }
 
+    private long teamsAt = 0;
+
+    // يحمّل أسماء الفرق العربية (مرة كل 6 ساعات على الأكثر)
+    protected void loadTeamNames() {
+        if (uid == null || token == null) return;
+        long now = System.currentTimeMillis();
+        if (now - teamsAt < 6L * 3600 * 1000 && !TEAM_AR.isEmpty()) return;
+        teamsAt = now;
+        pool.execute(new Runnable() { @Override public void run() {
+            try {
+                JSONArray a = new JSONArray(get("team_names?select=name_en,name_ar&limit=2000"));
+                for (int i = 0; i < a.length(); i++) {
+                    JSONObject o = a.getJSONObject(i);
+                    String en = o.optString("name_en", "").trim().toLowerCase(), ar = o.optString("name_ar", "").trim();
+                    if (en.length() > 0 && ar.length() > 0) TEAM_AR.put(en, ar);
+                }
+            } catch (Exception ignore) { teamsAt = 0; }
+        } });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         shellStart();
         reportCountry();
+        loadTeamNames();
     }
 
     @Override

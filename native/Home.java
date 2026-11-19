@@ -932,7 +932,7 @@ public class Home extends FollowList {
         colA.setGravity(Gravity.CENTER_HORIZONTAL);
         colA.addView(crest(ta), new LinearLayout.LayoutParams(dp(44), dp(44)));
         TextView na = tv(0xFFE8ECFF, 12, true);
-        na.setText(ta);
+        na.setText(teamName(ta));
         na.setGravity(Gravity.CENTER);
         na.setSingleLine(true);
         colA.addView(na);
@@ -941,7 +941,7 @@ public class Home extends FollowList {
         colB.setGravity(Gravity.CENTER_HORIZONTAL);
         colB.addView(crest(tb), new LinearLayout.LayoutParams(dp(44), dp(44)));
         TextView nb = tv(0xFFE8ECFF, 12, true);
-        nb.setText(tb);
+        nb.setText(teamName(tb));
         nb.setGravity(Gravity.CENTER);
         nb.setSingleLine(true);
         colB.addView(nb);

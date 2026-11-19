@@ -91,7 +91,7 @@ abstract class Leaderboard extends GuessPlayer {
     // رابط صورة آمن فقط (http/https)
     protected String lbSafePhoto(String u) {
         u = u == null ? "" : u.trim();
-        return u.matches("(?i)^https?://.*") ? u : "";
+        return (u.matches("(?i)^https?://.*") || u.startsWith("data:image/svg+xml")) ? u : "";
     }
 
     protected ImageView lbCoin(int sizeDp) {
@@ -209,7 +209,7 @@ abstract class Leaderboard extends GuessPlayer {
         final LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
         TextView ld = tv(MUTED, 15, true);
-        ld.setText("⏳ " + L("جاري التحميل...", "Loading..."));
+        ld.setText("");
         ld.setGravity(Gravity.CENTER);
         ld.setPadding(0, dp(40), 0, dp(40));
         body.addView(ld);
@@ -570,7 +570,7 @@ abstract class Leaderboard extends GuessPlayer {
         final LinearLayout list = new LinearLayout(this);
         list.setOrientation(LinearLayout.VERTICAL);
         TextView ld = tv(GOLD, 15, true);
-        ld.setText(tr("loadingFans", "⏳ جاري استدعاء أبطال {club}...", "⏳ Fetching {club} fans...", pm));
+        ld.setText("");
         ld.setGravity(Gravity.CENTER);
         ld.setPadding(0, dp(40), 0, dp(40));
         list.addView(ld);
@@ -804,7 +804,7 @@ abstract class Leaderboard extends GuessPlayer {
         final LinearLayout body = new LinearLayout(this);
         body.setOrientation(LinearLayout.VERTICAL);
         TextView ld = tv(0xFF94A3B8, 15, true);
-        ld.setText(L("⏳ جاري التحميل...", "⏳ Loading..."));
+        ld.setText("");
         ld.setGravity(Gravity.CENTER);
         ld.setPadding(0, dp(30), 0, dp(30));
         body.addView(ld);
@@ -873,7 +873,7 @@ abstract class Leaderboard extends GuessPlayer {
             nm.setGravity(Gravity.CENTER_VERTICAL);
             nm.addView(lgCrest(t.optString("crest", ""), 26));
             TextView tn = tv(Color.WHITE, 13, true);
-            tn.setText(t.optString("team_name", ""));
+            tn.setText(teamName(t.optString("team_name", "")));
             tn.setSingleLine(true);
             tn.setEllipsize(android.text.TextUtils.TruncateAt.END);
             tn.setPadding(dp(9), 0, dp(9), 0);
@@ -959,7 +959,7 @@ abstract class Leaderboard extends GuessPlayer {
             tm.addView(lgCrest(p.optString("team_crest", ""), 16));
             String ast = p.isNull("assists") || !p.has("assists") ? "" : " · " + p.optInt("assists") + " " + L("تمريرة حاسمة", "assists");
             TextView tt = tv(MUTED, 12, false);
-            tt.setText(p.optString("team_name", "") + ast);
+            tt.setText(teamName(p.optString("team_name", "")) + ast);
             tt.setPadding(dp(6), 0, 0, 0);
             tm.addView(tt);
             mid.addView(tm);

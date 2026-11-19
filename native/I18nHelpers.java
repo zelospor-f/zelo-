@@ -95,6 +95,19 @@ abstract class I18nHelpers extends Billing {
     }
 
     protected boolean isAr() { return "ar".equals(getCurrentLang()); }
+
+    // أسماء الفرق بالعربية (للعرض فقط؛ الاسم الإنجليزي يبقى هو المحفوظ والمستخدم في المطابقة)
+    protected static final Map<String, String> TEAM_AR = new java.util.concurrent.ConcurrentHashMap<String, String>();
+    protected String teamName(String n) {
+        if (n == null || n.length() == 0 || !isAr()) return n;
+        String v = TEAM_AR.get(n.trim().toLowerCase());
+        return v == null ? n : v;
+    }
+    // للبحث: الاسم الإنجليزي + العربي معاً
+    protected String teamHay(String n) {
+        String v = n == null ? null : TEAM_AR.get(n.trim().toLowerCase());
+        return v == null ? (n == null ? "" : n) : n + " " + v;
+    }
     protected String L(String ar, String en) {
         String lg = getCurrentLang();
         if (lg.equals("ar")) return ar;
