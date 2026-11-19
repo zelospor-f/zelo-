@@ -467,6 +467,8 @@ public class Home extends FollowList {
         h.name = tv(Color.WHITE, 16, true);
         h.time = tv(MUTED, 12, false);
         h.name.setGravity(Gravity.START);
+        h.name.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        h.time.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
         names.addView(h.name, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         LinearLayout trow = new LinearLayout(this);
         trow.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
