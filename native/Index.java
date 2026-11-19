@@ -196,6 +196,14 @@ abstract class Index extends I18nHelpers {
                     if (en.length() > 0 && ar.length() > 0) TEAM_AR.put(en, ar);
                 }
             } catch (Exception ignore) { teamsAt = 0; }
+            try {
+                JSONArray c = new JSONArray(get("team_crests?select=name_en,crest&limit=2000"));
+                for (int i = 0; i < c.length(); i++) {
+                    JSONObject o = c.getJSONObject(i);
+                    String en = o.optString("name_en", "").trim().toLowerCase(), cr = o.optString("crest", "").trim();
+                    if (en.length() > 0 && cr.length() > 0) TEAM_CREST.put(en, cr);
+                }
+            } catch (Exception ignore) {}
         } });
     }
 

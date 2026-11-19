@@ -320,7 +320,9 @@ abstract class Leagues extends Matches {
         LinearLayout t = new LinearLayout(this);
         t.setOrientation(LinearLayout.VERTICAL);
         t.setGravity(Gravity.CENTER_HORIZONTAL);
-        String u = crests.get(n == null ? "" : n.trim().toLowerCase());
+        String ck = n == null ? "" : n.trim().toLowerCase();
+        String u = crests.get(ck);
+        if (u == null) u = TEAM_CREST.get(ck);
         t.addView(lbAvatar(u == null ? "" : u, initial(n), 36, 0x40FFFFFF, true, 1), new LinearLayout.LayoutParams(dp(36), dp(36)));
         TextView nm = txt(teamName(n), Color.WHITE, 12, true);
         nm.setSingleLine(true); nm.setEllipsize(android.text.TextUtils.TruncateAt.END); nm.setGravity(Gravity.CENTER);
