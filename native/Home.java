@@ -496,9 +496,9 @@ public class Home extends FollowList {
         h.boostPill.setBackground(bxBg(0x26F5C35A, 0x66F5C35A, 8));
         h.boostPill.setVisibility(View.GONE);
         LinearLayout.LayoutParams bpl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        bpl.setMarginStart(dp(8));
-        trow.addView(h.boostPill, bpl);
-        names.addView(trow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        bpl.setMarginEnd(dp(4));
+        h.boostPill.setGravity(Gravity.CENTER);
+        names.addView(trow, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         head.addView(names);
         head.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         h.supBtn = tv(NAVY, 13, true);
@@ -512,6 +512,8 @@ public class Home extends FollowList {
         h.supBtn.setVisibility(View.GONE);
         LinearLayout.LayoutParams sblp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         sblp.setMarginEnd(dp(34));
+        bpl.setMarginEnd(dp(8));
+        head.addView(h.boostPill, bpl);
         head.addView(h.supBtn, sblp);
         h.more = tv(MUTED, 22, true);
         h.more.setText("⋮");
@@ -1579,7 +1581,7 @@ public class Home extends FollowList {
                     h.n = tv(Color.WHITE, 14, true);
                     h.m = tv(MUTED, 12, false);
                     h.n.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START); h.m.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    nn.addView(h.n); nn.addView(h.m);
+                    nn.addView(h.n, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)); nn.addView(h.m);
                     line.addView(nn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                     h.more = tv(MUTED, 20, true);
                     h.more.setText("⋮");
