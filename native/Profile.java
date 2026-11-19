@@ -376,13 +376,14 @@ abstract class Profile extends WeeklyMatchRankings {
         blp2.setMargins(dp(6), 0, dp(6), 0);
         nameRow.addView(badgeV, blp2);
         final TextView verV = tv(0xFF14B8FF, 18, true);
-        verV.setText("\u2714");
+        verV.setText("");
+        verV.setPadding(dp(6), 0, 0, 0);
         verV.setVisibility(View.GONE);
         nameRow.addView(verV);
         final int[] tierV = { 0 };
         final boolean[] bset = { false };
         final Runnable refreshVer = new Runnable() { @Override public void run() {
-            verV.setTextColor(verColor(tierV[0]));
+            verV.setCompoundDrawables(sealFor(tierV[0], dp(24)), null, null, null);
             verV.setVisibility(tierV[0] >= 1 ? View.VISIBLE : View.GONE);
             badgeV.setVisibility(View.GONE);
         } };

@@ -179,15 +179,47 @@ abstract class Base extends Activity {
     protected List<JSONObject> items = homeItems;
     protected String profShown = null;
     protected int profTabNow = 0;
+    // ختم التوثيق: دائرة متموّجة (مثل X) مع إشارة صح. ذهبي للباقة العليا، أزرق لبقية الباقات
+    protected static class Seal extends Drawable {
+        private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG), ck = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path body = new Path(), tick = new Path();
+        private final int sz;
+        Seal(int color, int size, int tickColor) {
+            sz = size;
+            fill.setColor(color); fill.setStyle(Paint.Style.FILL);
+            ck.setColor(tickColor); ck.setStyle(Paint.Style.STROKE); ck.setStrokeCap(Paint.Cap.ROUND); ck.setStrokeJoin(Paint.Join.ROUND);
+            ck.setStrokeWidth(size * 0.12f);
+            float c = size / 2f, R = size / 2f * 0.94f;
+            for (int i = 0; i <= 120; i++) {
+                double a = Math.PI * 2 * i / 120;
+                float r = (float) (R * (0.93 + 0.07 * Math.cos(8 * a)));
+                float x = c + r * (float) Math.cos(a), y = c + r * (float) Math.sin(a);
+                if (i == 0) body.moveTo(x, y); else body.lineTo(x, y);
+            }
+            body.close();
+            tick.moveTo(size * 0.29f, size * 0.52f);
+            tick.lineTo(size * 0.44f, size * 0.66f);
+            tick.lineTo(size * 0.72f, size * 0.36f);
+            setBounds(0, 0, size, size);
+        }
+        @Override public void draw(Canvas cv) { cv.drawPath(body, fill); cv.drawPath(tick, ck); }
+        @Override public void setAlpha(int a) {}
+        @Override public void setColorFilter(ColorFilter f) {}
+        @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
+        @Override public int getIntrinsicWidth() { return sz; }
+        @Override public int getIntrinsicHeight() { return sz; }
+    }
+
+    protected Seal sealFor(int tier, int px) { return new Seal(verColor(tier), px, tier >= 3 ? 0xFF0A1033 : 0xFFFFFFFF); }
+
     // علامة التوثيق: الباقة العليا (3) ذهبية، وبقية الباقات زرقاء
     protected final Map<String, Integer> tierMap = new HashMap<String, Integer>();
     protected int verColor(int tier) { return tier >= 3 ? 0xFFF5C35A : 0xFF1D9BF0; }
     protected CharSequence nameChk(String name, String uid2) {
         Integer t = uid2 == null ? null : tierMap.get(uid2);
         if (t == null || t < 1) return name;
-        android.text.SpannableString sp = new android.text.SpannableString(name + " \u2714");
-        int st = name.length() + 1;
-        sp.setSpan(new android.text.style.ForegroundColorSpan(verColor(t)), st, sp.length(), 0);
+        android.text.SpannableString sp = new android.text.SpannableString(name + " \uFFFC");
+        sp.setSpan(new android.text.style.ImageSpan(sealFor(t, dp(18)), android.text.style.ImageSpan.ALIGN_BOTTOM), sp.length() - 1, sp.length(), 0);
         return sp;
     }
     protected void loadTiers(java.util.Collection<String> ids) {
