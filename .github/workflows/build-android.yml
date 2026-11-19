@@ -207,7 +207,7 @@ jobs:
 
                   <meta-data
                       android:name="com.google.android.gms.ads.APPLICATION_ID"
-                      android:value="ca-app-pub-1758612048958433~9861788893" />
+                      android:value="ca-app-pub-4978898922755717~8616762048" />
 
                   <activity
                       android:name=".Home"
