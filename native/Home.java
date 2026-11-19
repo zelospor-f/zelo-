@@ -2529,6 +2529,7 @@ public class Home extends FollowList {
                 p.put("dobVisible", r.optBoolean("dob_visible", false)); p.put("dob_visible", r.optBoolean("dob_visible", false));
                 p.put("photoUrl", ph); p.put("photo_url", ph);
                 p.put("badgeClub", r.isNull("badge_club") ? "" : r.optString("badge_club"));
+                p.put("coverUrl", r.isNull("cover_url") ? "" : r.optString("cover_url"));
                 p.put("selected_clubs", r.optJSONArray("selected_clubs") == null ? new JSONArray() : r.optJSONArray("selected_clubs"));
             }
             pjson = p.toString();

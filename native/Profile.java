@@ -683,8 +683,11 @@ abstract class Profile extends WeeklyMatchRankings {
         String ph0 = P.optString("photoUrl", "");
         if (mine && isImg(ph0)) { loadImage(ph0, avImg); avLetter.setVisibility(View.GONE); }
         else if (mine && isImg(uavatar)) { loadImage(uavatar, avImg); avLetter.setVisibility(View.GONE); }
+        String cu0 = mine ? P.optString("coverUrl", "") : "";
+        boolean customCover = cu0.startsWith("http");
+        if (customCover) { bset[0] = true; wm.setVisibility(View.VISIBLE); fillCoverFull(wm); loadImage(cu0, wm); }
         String bl = mine ? ClubsData.logo(P.optString("badgeClub", "")) : "";
-        if (bl.startsWith("http")) { bset[0] = true; loadImage(bl, badgeV); wm.setAlpha(0.38f); fillCover(wm); loadImage(bl, wm); refreshVer.run(); }
+        if (!customCover && bl.startsWith("http")) { bset[0] = true; loadImage(bl, badgeV); wm.setAlpha(0.38f); fillCover(wm); loadImage(bl, wm); refreshVer.run(); }
         if (mine && !bset[0]) {
             try {
                 JSONArray sc0 = P.optJSONArray("selected_clubs");
@@ -741,7 +744,7 @@ abstract class Profile extends WeeklyMatchRankings {
         pool.execute(new Runnable() {
             @Override public void run() {
                 final String[] v = { "–", "–", "–", "–" };
-                final String[] ex = { "", "", "", "", "", "" }; // name, username, photo, bio, badge_club, first selected club
+                final String[] ex = { "", "", "", "", "", "", "" }; // name, username, photo, bio, badge_club, first selected club
                 try {
                     if (!mine) {
                         JSONArray pa = new JSONArray(get("public_profiles?select=*&user_id=eq." + target + "&limit=1"));
@@ -758,6 +761,7 @@ abstract class Profile extends WeeklyMatchRankings {
                             String bi = po.isNull("bio") ? "" : po.optString("bio", "");
                             ex[3] = bi;
                             ex[4] = po.isNull("badge_club") ? "" : po.optString("badge_club", "");
+                            ex[6] = po.isNull("cover_url") ? "" : po.optString("cover_url", "");
                             try { JSONArray sc1 = po.optJSONArray("selected_clubs"); if (sc1 != null && sc1.length() > 0) ex[5] = sc1.optString(0, ""); } catch (Exception ignore2) {}
                         }
                     }
@@ -789,14 +793,25 @@ abstract class Profile extends WeeklyMatchRankings {
                             if (ex[1].length() > 0) { userV.setText("@" + ex[1]); shareName[0] = ex[1]; }
                             if (isImg(ex[2])) { loadImage(ex[2], avImg); avLetter.setVisibility(View.GONE); }
                             if (ex[3].length() > 0 && !"null".equals(ex[3])) { bioV.setText(ex[3]); bioV.setVisibility(View.VISIBLE); }
+                            boolean cust2 = ex[6].startsWith("http");
+                            if (cust2) { bset[0] = true; wm.setVisibility(View.VISIBLE); fillCoverFull(wm); loadImage(ex[6], wm); }
                             String bl2 = ClubsData.logo(ex[4]);
-                            if (!bl2.startsWith("http") && ex[5].length() > 0) bl2 = ClubsData.logo(ex[5]);
-                            if (bl2.startsWith("http")) { bset[0] = true; loadImage(bl2, badgeV); wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(bl2, wm); refreshVer.run(); }
+                            if (!bl2.startsWith("http") && ex[5].length() > 0 && !cust2) bl2 = ClubsData.logo(ex[5]);
+                            if (!cust2 && bl2.startsWith("http")) { bset[0] = true; loadImage(bl2, badgeV); wm.setAlpha(0.38f); fillCover(wm); wm.setVisibility(View.VISIBLE); loadImage(bl2, wm); refreshVer.run(); }
                         }
                     }
                 });
             }
         });
+    }
+
+    // صورة غلاف مخصّصة تملأ الحائط (قصّ مركزي) مع تعتيم خفيف
+    private void fillCoverFull(ImageView wm) {
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(150) + statusH(), Gravity.TOP);
+        wm.setLayoutParams(lp);
+        wm.setPadding(0, 0, 0, 0);
+        wm.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        wm.setAlpha(0.6f);
     }
 
     // شعار النادي يملأ الحائط كاملًا
