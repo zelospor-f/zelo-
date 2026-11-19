@@ -91,9 +91,9 @@ import org.json.JSONObject;
 // ============================================================
 abstract class Ads extends Store {
     protected static final boolean AD_REAL = false;   // false = معرّفات جوجل التجريبية
-    protected static final String AD_REWARDED = AD_REAL ? "ca-app-pub-1758612048958433/8181428602" : "ca-app-pub-3940256099942544/5224354917";
-    protected static final String AD_BANNER = AD_REAL ? "ca-app-pub-1758612048958433/9630688759" : "ca-app-pub-3940256099942544/6300978111";
-    protected static final String AD_NATIVE = AD_REAL ? "ca-app-pub-1758612048958433/6843554914" : "ca-app-pub-3940256099942544/2247696110"; // الحقيقي: ضع معرّف وحدة Native من AdMob
+    protected static final String AD_REWARDED = AD_REAL ? "ca-app-pub-4978898922755717/4216858741" : "ca-app-pub-3940256099942544/5224354917";
+    protected static final String AD_BANNER = AD_REAL ? "ca-app-pub-4978898922755717/4234216793" : "ca-app-pub-3940256099942544/6300978111";
+    protected static final String AD_NATIVE = AD_REAL ? "ca-app-pub-4978898922755717/2981291981" : "ca-app-pub-3940256099942544/2247696110"; // الحقيقي: ضع معرّف وحدة Native من AdMob
     protected final List<NativeAd> adNativeList = new ArrayList<NativeAd>();
     protected static final long AD_COOLDOWN_MS = 30 * 1000L;
 
