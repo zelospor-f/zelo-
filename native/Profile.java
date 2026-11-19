@@ -549,6 +549,7 @@ abstract class Profile extends WeeklyMatchRankings {
                     if (lbs[q] != null) lbs[q].setTextColor(on ? GOLD : MUTED);
                     uls[q].setBackgroundColor(on ? GOLD : 0x00000000);
                 }
+                profTabNow = tab[0];
                 plist.clear();
                 if (padRef[0] != null) padRef[0].notifyDataSetChanged();
                 emptyV.setText("");
@@ -658,6 +659,7 @@ abstract class Profile extends WeeklyMatchRankings {
                 items = savedItems;
                 adapter = savedAdapter;
                 profShown = null;
+                profTabNow = 0;
                 refreshUi();
             }
         });

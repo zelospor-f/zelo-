@@ -1123,6 +1123,10 @@ public class Home extends FollowList {
         if (s == null || uid == null) return;
         final boolean was = reposted.contains(k);
         if (was) { reposted.remove(k); s[2] = Math.max(0, s[2] - 1); } else { reposted.add(k); s[2]++; }
+        // داخل تبويب «التمريرات» في ملفي: يختفي المنشور فور إلغاء التمرير
+        if (was && profTabNow == 2 && items != homeItems && uid.equals(profShown)) {
+            for (int q = items.size() - 1; q >= 0; q--) if (String.valueOf(items.get(q).optLong("id")).equals(k)) items.remove(q);
+        }
         refreshUi();
         pool.execute(new Runnable() {
             @Override public void run() {

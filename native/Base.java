@@ -178,6 +178,7 @@ abstract class Base extends Activity {
     protected final List<JSONObject> homeItems = new ArrayList<JSONObject>();
     protected List<JSONObject> items = homeItems;
     protected String profShown = null;
+    protected int profTabNow = 0;
     protected final Map<String, int[]> stats = new HashMap<String, int[]>();
     protected final Map<String, String> unames = new HashMap<String, String>();
     protected final Map<String, String> photos = new HashMap<String, String>();
