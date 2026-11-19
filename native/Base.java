@@ -277,8 +277,10 @@ abstract class Base extends Activity {
     }
 
     protected Runnable vRefresh = null;
+    protected Runnable cardRefresh = null; // يعيد رسم بطاقة المنشور داخل صفحة المنشور
     protected void refreshUi() {
         if (adapter != null) adapter.notifyDataSetChanged();
+        if (cardRefresh != null) cardRefresh.run();
         if (vRefresh != null) vRefresh.run();
     }
 

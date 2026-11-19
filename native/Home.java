@@ -83,6 +83,24 @@ public class Home extends FollowList {
     protected TextView[] vCt = new TextView[6];
     protected int vTrackW = 0;
 
+    // الوسم على أزرار البطاقة: كائن المنشور نفسه (أو رقمه في القائمة الحالية)
+    protected JSONObject tagPost(Object t) {
+        if (t instanceof JSONObject) return (JSONObject) t;
+        if (t instanceof Integer) { int i = (Integer) t; return i >= 0 && i < items.size() ? items.get(i) : null; }
+        return null;
+    }
+
+    protected void openViewerFromFeed(JSONObject cur) {
+        List<JSONObject> l = new ArrayList<JSONObject>();
+        int start = 0;
+        for (JSONObject p : items) {
+            String vu = p.isNull("video_url") ? "" : p.optString("video_url", "");
+            if (vu.length() > 4) { if (p == cur) start = l.size(); l.add(p); }
+        }
+        if (l.isEmpty() || l.get(start) != cur) { l.clear(); l.add(cur); start = 0; }
+        openViewer(l, start);
+    }
+
     protected void openViewerFromFeed(int idx) {
         List<JSONObject> l = new ArrayList<JSONObject>();
         int start = 0;
@@ -440,8 +458,8 @@ public class Home extends FollowList {
         final Holder h = w.h;
         row.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
-                Object t0 = h.cm.getTag();
-                if (t0 instanceof Integer) openComments((Integer) t0);
+                JSONObject p0 = tagPost(h.cm.getTag());
+                if (p0 != null) openComments(p0);
             }
         });
 
@@ -501,7 +519,7 @@ public class Home extends FollowList {
         h.more.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag();
-                if (t instanceof Integer) showMenu((Integer) t);
+                JSONObject pp = tagPost(t); if (pp != null) showMenu(pp);
             }
         });
         head.addView(h.more);
@@ -520,7 +538,7 @@ public class Home extends FollowList {
         h.img.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag(R_TAG);
-                if (t instanceof Integer) showImage(items.get((Integer) t).optString("image_url", ""));
+                JSONObject pp = tagPost(t); if (pp != null) showImage(pp.optString("image_url", ""));
             }
         });
         row.addView(h.img, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
@@ -535,7 +553,7 @@ public class Home extends FollowList {
         h.video.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag();
-                if (t instanceof Integer) openViewerFromFeed((Integer) t);
+                JSONObject pp = tagPost(t); if (pp != null) openViewerFromFeed(pp);
             }
         });
         row.addView(h.video, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220)));
@@ -567,31 +585,31 @@ public class Home extends FollowList {
         h.rp.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag();
-                if (t instanceof Integer) toggleRepost((Integer) t);
+                JSONObject pp = tagPost(t); if (pp != null) toggleRepost(pp);
             }
         });
         h.sv.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag();
-                if (t instanceof Integer) toggleSave((Integer) t);
+                JSONObject pp = tagPost(t); if (pp != null) toggleSave(pp);
             }
         });
         h.sh.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag();
-                if (t instanceof Integer) shareLink(items.get((Integer) t));
+                JSONObject pp = tagPost(t); if (pp != null) shareLink(pp);
             }
         });
         h.heart.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag();
-                if (t instanceof Integer) toggleLike((Integer) t);
+                JSONObject pp = tagPost(t); if (pp != null) toggleLike(pp);
             }
         });
         h.cm.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {
                 Object t = v.getTag();
-                if (t instanceof Integer) openComments((Integer) t);
+                JSONObject pp = tagPost(t); if (pp != null) openComments(pp);
             }
         });
         h.supbar = new LinearLayout(this);
@@ -1307,9 +1325,10 @@ public class Home extends FollowList {
         else metaV.setText(un != null ? "@" + un : "");
     }
 
-    protected void bindPost(View cv, int i) {
+    protected void bindPost(View cv, int i) { bindPost(cv, items.get(i)); }
+
+    protected void bindPost(View cv, JSONObject o) {
         Holder h = ((Wrap) cv).h;
-        JSONObject o = items.get(i);
         String nm2 = o.optString("author_name", "");
         h.avatar.setText(nm2.length() > 0 ? nm2.substring(0, 1).toUpperCase() : "?");
         String ph = photos.get(o.optString("user_id", ""));
@@ -1324,7 +1343,7 @@ public class Home extends FollowList {
         if (im.length() > 4) {
             h.img.setVisibility(View.VISIBLE);
             loadImage(im, h.img);
-            h.img.setTag(R_TAG, Integer.valueOf(i));
+            h.img.setTag(R_TAG, o);
         } else { h.img.setTag(null); h.img.setVisibility(View.GONE); }
         h.video.setVisibility(vd.length() > 4 ? View.VISIBLE : View.GONE);
         int[] s = stats.get(String.valueOf(o.optLong("id")));
@@ -1332,7 +1351,7 @@ public class Home extends FollowList {
         boolean lk = liked.contains(String.valueOf(o.optLong("id")));
         h.heart.setText(String.valueOf(s[0]));
         setIc(h.heart, 2, lk ? 0xFF14F195 : MUTED, lk);
-        Integer ti = Integer.valueOf(i);
+        Object ti = o;
         h.heart.setTag(ti);
         h.more.setTag(ti);
         h.video.setTag(ti);
@@ -1467,74 +1486,18 @@ public class Home extends FollowList {
         sep.setBackgroundColor(0x1AFFFFFF);
         box.addView(sep, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
 
-        // ----- رأس القائمة: المنشور نفسه -----
+        // ----- رأس القائمة: المنشور نفسه (نفس بطاقة الرئيسية بكود واحد) -----
         LinearLayout hdr = new LinearLayout(this);
         hdr.setOrientation(LinearLayout.VERTICAL);
-        hdr.setPadding(dp(16), dp(14), dp(16), 0);
-        LinearLayout hd1 = new LinearLayout(this);
-        hd1.setGravity(Gravity.CENTER_VERTICAL);
-        final FrameLayout hAv = new FrameLayout(this);
-        hd1.addView(hAv, new LinearLayout.LayoutParams(dp(46), dp(46)));
-        LinearLayout hn = new LinearLayout(this);
-        hn.setOrientation(LinearLayout.VERTICAL);
-        hn.setPadding(dp(10), 0, dp(10), 0);
-        final TextView hName = tv(Color.WHITE, 16, true), hUser = tv(MUTED, 13, false);
-        hName.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START); hUser.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        hn.addView(hName); hn.addView(hUser);
-        hd1.addView(hn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        TextView hMore = tv(MUTED, 22, true);
-        hMore.setText("⋮");
-        hMore.setPadding(dp(12), dp(6), dp(6), dp(6));
-        hMore.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { showMenu(post); } });
-        hd1.addView(hMore);
-        hdr.addView(hd1);
-        String pc = post.optString("content", "");
-        TextView hBody = tv(Color.WHITE, 18, false);
-        hBody.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        hBody.setText(pc);
-        hBody.setPadding(0, dp(12), 0, dp(4));
-        hBody.setVisibility(pc.length() > 0 ? View.VISIBLE : View.GONE);
-        hdr.addView(hBody);
-        String pim = post.isNull("image_url") ? "" : post.optString("image_url", "");
-        String pvd = post.isNull("video_url") ? "" : post.optString("video_url", "");
-        if (pim.length() > 4) {
-            ImageView hi = rpImageView(220);
-            loadImage(pim, hi);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220));
-            lp.topMargin = dp(8);
-            hdr.addView(hi, lp);
-        }
-        if (pvd.length() > 4) {
-            TextView hv = rpVideoBox();
-            hv.setTag(R_TAG, pvd);
-            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(220));
-            lp.topMargin = dp(8);
-            hdr.addView(hv, lp);
-        }
-        TextView hDate = tv(MUTED, 13, false);
-        hDate.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        hDate.setText(rpDate(post.optString("created_at", "")));
-        hDate.setPadding(0, dp(12), 0, dp(10));
-        hdr.addView(hDate);
-        View l1 = new View(this); l1.setBackgroundColor(0x1AFFFFFF);
-        hdr.addView(l1, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
-        final TextView hCnt = tv(MUTED, 13, false);
-        hCnt.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-        hCnt.setPadding(0, dp(10), 0, dp(10));
-        hdr.addView(hCnt);
-        View l2 = new View(this); l2.setBackgroundColor(0x1AFFFFFF);
-        hdr.addView(l2, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
-        LinearLayout hActs = new LinearLayout(this);
-        final TextView aCm = tv(MUTED, 15, false), aRp = tv(MUTED, 15, false), aLk = tv(MUTED, 15, false), aVw = tv(MUTED, 15, false), aSv = tv(MUTED, 15, false), aSh = tv(MUTED, 15, false);
-        TextView[] aa = { aCm, aRp, aLk, aVw, aSv, aSh };
-        for (int q = 0; q < aa.length; q++) { aa[q].setPaddingRelative(q < 4 ? dp(14) : dp(2), dp(8), dp(2), dp(8)); hActs.addView(aa[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
-        hdr.addView(hActs);
-        View l3 = new View(this); l3.setBackgroundColor(0x1AFFFFFF);
-        hdr.addView(l3, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+        hdr.setPadding(0, dp(6), 0, 0);
+        final View pw = makeRow();
+        ((ViewGroup) pw).getChildAt(0).setOnClickListener(null);
+        ((ViewGroup) pw).getChildAt(0).setClickable(false);
+        hdr.addView(pw);
         // صف "اكتب ردك"
         LinearLayout hIn = new LinearLayout(this);
         hIn.setGravity(Gravity.CENTER_VERTICAL);
-        hIn.setPadding(0, dp(12), 0, dp(12));
+        hIn.setPadding(dp(16), dp(12), dp(16), dp(12));
         final FrameLayout meAv = new FrameLayout(this);
         meAv.addView(rpAvatar(uname == null ? "" : uname, uavatar != null && uavatar.startsWith("http") ? uavatar : photos.get(uid == null ? "" : uid), 38));
         hIn.addView(meAv, new LinearLayout.LayoutParams(dp(38), dp(38)));
@@ -1555,38 +1518,22 @@ public class Home extends FollowList {
         hdr.addView(l4, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         final TextView empty = tv(MUTED, 14, false);
         empty.setText("");
-        empty.setPadding(0, dp(12), 0, dp(8));
+        empty.setPadding(dp(16), dp(12), dp(16), dp(8));
         hdr.addView(empty);
 
-        final Runnable hdrBind = new Runnable() {
+        final Runnable bindCard = new Runnable() {
             @Override public void run() {
-                String nm = post.optString("author_name", "");
-                hAv.removeAllViews();
-                hAv.addView(rpAvatar(nm, photos.get(postUser), 46));
-                bindAuthor(hName, hUser, post, false);
-                int[] s = stats.get(pk);
-                if (s == null) s = new int[] { 0, 0, 0, 0 };
-                hCnt.setText("‎" + s[3] + " " + L("مشاهدة", "views") + "     ‎" + s[0] + " " + L("إعجاب", "likes") + "     ‎" + s[2] + " " + L("إعادة", "reposts") + "     ‎" + Math.max(s[1], cm.size()) + " " + L("رد", "replies"));
-                boolean lk = liked.contains(pk), rpd = reposted.contains(pk), svd = saved.contains(pk);
-                aCm.setText(String.valueOf(Math.max(s[1], cm.size()))); setIc(aCm, 0, MUTED, false);
-                aRp.setText(String.valueOf(s[2])); setIc(aRp, 1, rpd ? 0xFF14F195 : MUTED, false);
-                aLk.setText(String.valueOf(s[0])); setIc(aLk, 2, lk ? 0xFF14F195 : MUTED, lk);
-                aVw.setText(String.valueOf(s[3])); setIc(aVw, 3, MUTED, false);
-                aSv.setText(""); setIc(aSv, 4, svd ? 0xFF14F195 : MUTED, svd);
-                aSh.setText(""); setIc(aSh, 5, MUTED, false);
+                int[] sc = stats.get(pk);
+                if (sc != null) sc[1] = Math.max(sc[1], cm.size());
+                bindPost(pw, post);
             }
         };
-        hdrBind.run();
-        View.OnClickListener pcl = new View.OnClickListener() { @Override public void onClick(View v) { if (postUser.length() > 0) openProfileOf(postUser); } };
-        hAv.setOnClickListener(pcl); hName.setOnClickListener(pcl);
+        bindCard.run();
+        cardRefresh = bindCard;
         final Runnable[] toComposer = new Runnable[1];
         final Runnable[] reloadRef = new Runnable[1];
         View.OnClickListener open = new View.OnClickListener() { @Override public void onClick(View v) { toComposer[0].run(); } };
-        aCm.setOnClickListener(open); hIn.setOnClickListener(open); hSend.setOnClickListener(open);
-        aLk.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleLike(post); v.postDelayed(hdrBind, 500); } });
-        aRp.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleRepost(post); v.postDelayed(hdrBind, 500); } });
-        aSv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { toggleSave(post); v.postDelayed(hdrBind, 500); } });
-        aSh.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { shareLink(post); } });
+        ((Wrap) pw).h.cm.setOnClickListener(open); hIn.setOnClickListener(open); hSend.setOnClickListener(open);
 
         ListView lv = new ListView(this);
         lv.setDivider(null);
@@ -1711,7 +1658,7 @@ public class Home extends FollowList {
         if (uid != null) fetchTier(new TierCb() { @Override public void on(int tier) {
             if (tier < 1) { cmAds[0] = true; ca.notifyDataSetChanged(); }
         } });
-        d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface x) { adNativeDestroy(); } });
+        d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface x) { adNativeDestroy(); cardRefresh = null; } });
         box.addView(lv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
 
         final Runnable reload = new Runnable() {
@@ -1806,7 +1753,7 @@ public class Home extends FollowList {
                                 empty.setVisibility(got.isEmpty() ? View.VISIBLE : View.GONE);
                                 int[] s = stats.get(pk);
                                 if (s != null) { s[1] = got.size(); refreshUi(); }
-                                hdrBind.run();
+                                bindCard.run();
                             }
                         });
                     }
