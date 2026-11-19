@@ -610,10 +610,14 @@ abstract class Compose extends Profile {
                 String imgPath = null, vidPath = null, imgUrl = null, vidUrl = null, error = null;
                 try {
                     if (vid != null) {
-                        vidPath = uid + "/" + System.currentTimeMillis() + ".mp4";
                         Exception last = null;
                         for (int at = 1; at <= 3; at++) {
-                            try { cmUploadVideo(vid, vidPath); last = null; break; }
+                            try {
+                                JSONObject sg = r2UploadVideo(vid, new R2Progress() { @Override public void on(int pct, double mb) {
+                                    cmStage(L("جارٍ رفع الفيديو ", "Uploading ") + pct + "% (" + String.format(java.util.Locale.US, "%.1f", mb) + " MB)");
+                                } });
+                                vidPath = sg.getString("key"); vidUrl = sg.getString("publicUrl");
+                                last = null; break; }
                             catch (Exception e) {
                                 String m = String.valueOf(e.getMessage());
                                 if (m.matches("(?s).*(already exists|duplicate|409).*")) { last = null; break; }
@@ -622,15 +626,13 @@ abstract class Compose extends Profile {
                             }
                         }
                         if (last != null) throw new Exception(L("فشل رفع الفيديو: ", "Video upload failed: ") + last.getMessage());
-                        vidUrl = url + "/storage/v1/object/public/post-videos/" + vidPath;
                         cmStage(L("جارٍ إنشاء المنشور...", "Creating the post..."));
                     }
                     if (img != null) {
                         ByteArrayOutputStream bo = new ByteArrayOutputStream();
                         img.compress(Bitmap.CompressFormat.JPEG, 75, bo);
-                        imgPath = uid + "/" + System.currentTimeMillis() + "_" + Long.toString(Double.doubleToLongBits(Math.random()), 36).replace("-", "").substring(0, 6) + ".jpg";
-                        cmHttp("POST", url + "/storage/v1/object/post-images/" + cmEnc(imgPath), bo.toByteArray(), "image/jpeg", "false");
-                        imgUrl = url + "/storage/v1/object/public/post-images/" + imgPath;
+                        JSONObject si = r2UploadBytes(bo.toByteArray(), "image", "image/jpeg");
+                        imgPath = si.getString("key"); imgUrl = si.getString("publicUrl");
                     }
                     JSONObject o = new JSONObject();
                     o.put("user_id", uid);
@@ -687,7 +689,108 @@ abstract class Compose extends Profile {
     }
 
     protected void cmRemove(String bucket, String path) {
+        if (path != null && (path.startsWith("v/") || path.startsWith("i/"))) { r2Delete(path); return; }
         try { sendUrl("DELETE", url + "/storage/v1/object/" + bucket + "/" + cmEnc(path), null); } catch (Exception ignore) {}
+    }
+
+    // ===== Cloudflare R2 =====
+    protected static final String R2_PUB = "https://media.zelosport.net/";
+
+    protected interface R2Progress { void on(int pct, double mb); }
+
+    // استخراج مفتاح R2 من رابط عام (للحذف)؛ يرجع null لو الرابط ليس من R2
+    protected String r2KeyFromUrl(String u) {
+        if (u != null && u.startsWith(R2_PUB)) return u.substring(R2_PUB.length());
+        return null;
+    }
+
+    protected String r2Call(String json) throws Exception {
+        HttpURLConnection c = (HttpURLConnection) new URL(url + "/functions/v1/r2-sign").openConnection();
+        c.setRequestMethod("POST");
+        c.setRequestProperty("apikey", key);
+        c.setRequestProperty("Authorization", "Bearer " + token);
+        c.setRequestProperty("Content-Type", "application/json");
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(30000);
+        c.setDoOutput(true);
+        c.getOutputStream().write(json.getBytes("UTF-8"));
+        int code = c.getResponseCode();
+        BufferedReader r = new BufferedReader(new InputStreamReader(code >= 400 ? c.getErrorStream() : c.getInputStream(), "UTF-8"));
+        StringBuilder sb = new StringBuilder();
+        String ln;
+        while ((ln = r.readLine()) != null) sb.append(ln);
+        r.close();
+        if (code >= 400) { banCheck(sb.toString()); throw new Exception(sb.length() > 0 ? sb.toString() : ("HTTP " + code)); }
+        return sb.toString();
+    }
+
+    protected void r2Delete(final String key2) {
+        pool.execute(new Runnable() { @Override public void run() {
+            try { r2Call("{\"action\":\"delete\",\"key\":\"" + key2 + "\"}"); } catch (Exception ignore) {}
+        } });
+    }
+
+    // رفع بايتات (صور) إلى R2. يرجع {publicUrl,key}
+    protected JSONObject r2UploadBytes(byte[] data, String kind, String ctype) throws Exception {
+        JSONObject s = new JSONObject(r2Call("{\"kind\":\"" + kind + "\"}"));
+        HttpURLConnection c = (HttpURLConnection) new URL(s.getString("uploadUrl")).openConnection();
+        c.setRequestMethod("PUT");
+        c.setRequestProperty("Content-Type", ctype);
+        c.setConnectTimeout(20000);
+        c.setReadTimeout(60000);
+        c.setDoOutput(true);
+        c.setFixedLengthStreamingMode(data.length);
+        c.getOutputStream().write(data);
+        r2Check(c);
+        return s;
+    }
+
+    // رفع فيديو من Uri إلى R2 مع نسبة التقدم. يرجع {publicUrl,key}
+    protected JSONObject r2UploadVideo(Uri u, R2Progress pg) throws Exception {
+        JSONObject s = new JSONObject(r2Call("{\"kind\":\"video\"}"));
+        InputStream in = getContentResolver().openInputStream(u);
+        long total = 0;
+        try {
+            android.content.res.AssetFileDescriptor fd = getContentResolver().openAssetFileDescriptor(u, "r");
+            total = fd.getLength();
+            fd.close();
+        } catch (Exception ignore) {}
+        HttpURLConnection c = (HttpURLConnection) new URL(s.getString("uploadUrl")).openConnection();
+        c.setRequestMethod("PUT");
+        c.setRequestProperty("Content-Type", "video/mp4");
+        c.setConnectTimeout(20000);
+        c.setReadTimeout(120000);
+        c.setDoOutput(true);
+        if (total > 0) c.setFixedLengthStreamingMode(total); else c.setChunkedStreamingMode(64 * 1024);
+        java.io.OutputStream out = c.getOutputStream();
+        byte[] buf = new byte[32 * 1024];
+        long sent = 0; int last = -1, n;
+        while ((n = in.read(buf)) > 0) {
+            out.write(buf, 0, n);
+            sent += n;
+            if (total > 0 && pg != null) {
+                int pct = (int) Math.min(99, sent * 100 / total);
+                if (pct != last) { last = pct; pg.on(pct, total / 1048576.0); }
+            }
+        }
+        in.close();
+        out.close();
+        r2Check(c);
+        return s;
+    }
+
+    private void r2Check(HttpURLConnection c) throws Exception {
+        int code = c.getResponseCode();
+        if (code >= 300) {
+            StringBuilder sb = new StringBuilder();
+            try {
+                BufferedReader r = new BufferedReader(new InputStreamReader(c.getErrorStream(), "UTF-8"));
+                String ln;
+                while ((ln = r.readLine()) != null) sb.append(ln);
+                r.close();
+            } catch (Exception ignore) {}
+            throw new Exception(sb.length() > 0 ? sb.toString() : ("HTTP " + code));
+        }
     }
 
     // إرسال خام (للتخزين والصفوف التي نحتاج إرجاعها)
@@ -710,47 +813,5 @@ abstract class Compose extends Profile {
         r.close();
         if (code >= 400) { banCheck(sb.toString()); throw new Exception(sb.toString().length() > 0 ? sb.toString() : ("HTTP " + code)); }
         return sb.toString();
-    }
-
-    private void cmUploadVideo(Uri u, String path) throws Exception {
-        InputStream in = getContentResolver().openInputStream(u);
-        long total = 0;
-        try {
-            android.content.res.AssetFileDescriptor fd = getContentResolver().openAssetFileDescriptor(u, "r");
-            total = fd.getLength();
-            fd.close();
-        } catch (Exception ignore) {}
-        HttpURLConnection c = (HttpURLConnection) new URL(url + "/storage/v1/object/post-videos/" + cmEnc(path)).openConnection();
-        c.setRequestMethod("POST");
-        c.setRequestProperty("apikey", key);
-        c.setRequestProperty("Authorization", "Bearer " + token);
-        c.setRequestProperty("Content-Type", "video/mp4");
-        c.setRequestProperty("x-upsert", "false");
-        c.setConnectTimeout(20000);
-        c.setReadTimeout(120000);
-        c.setDoOutput(true);
-        if (total > 0) c.setFixedLengthStreamingMode(total); else c.setChunkedStreamingMode(64 * 1024);
-        java.io.OutputStream out = c.getOutputStream();
-        byte[] buf = new byte[32 * 1024];
-        long sent = 0; int last = -1, n;
-        while ((n = in.read(buf)) > 0) {
-            out.write(buf, 0, n);
-            sent += n;
-            if (total > 0) {
-                int pct = (int) Math.min(99, sent * 100 / total);
-                if (pct != last) { last = pct; cmStage(L("جارٍ رفع الفيديو ", "Uploading ") + pct + "% (" + String.format(java.util.Locale.US, "%.1f", total / 1048576.0) + " MB)"); }
-            }
-        }
-        in.close();
-        out.close();
-        int code = c.getResponseCode();
-        if (code >= 300) {
-            BufferedReader r = new BufferedReader(new InputStreamReader(c.getErrorStream(), "UTF-8"));
-            StringBuilder sb = new StringBuilder();
-            String ln;
-            while ((ln = r.readLine()) != null) sb.append(ln);
-            r.close();
-            throw new Exception(sb.length() > 0 ? sb.toString() : ("HTTP " + code));
-        }
     }
 }

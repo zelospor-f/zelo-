@@ -736,7 +736,7 @@ public class Home extends FollowList {
                             try {
                                 send("DELETE", "posts?id=eq." + id + "&user_id=eq." + uid, null);
                                 if (vp.length() > 3) {
-                                    try { sendUrl("DELETE", url + "/storage/v1/object/post-videos/" + vp, null); } catch (Exception ignore) {}
+                                    cmRemove("post-videos", vp);
                                 }
                             } catch (Exception e) { err = String.valueOf(e.getMessage()); }
                             final String fe = err;
@@ -2124,10 +2124,14 @@ public class Home extends FollowList {
                         String err = null, imgPath = null, vidPath = null, imgUrl = null, vidUrl = null;
                         try {
                             if (vid != null) {
-                                vidPath = uid + "/c_" + System.currentTimeMillis() + ".mp4";
                                 Exception last = null;
                                 for (int at = 1; at <= 3; at++) {
-                                    try { rpUploadVideo(vid, vidPath, btn); last = null; break; }
+                                    try {
+                                        JSONObject sg = r2UploadVideo(vid, new R2Progress() { @Override public void on(final int pct, double mb) {
+                                            runOnUiThread(new Runnable() { @Override public void run() { btn.setText("\u200e" + pct + "%"); } });
+                                        } });
+                                        vidPath = sg.getString("key"); vidUrl = sg.getString("publicUrl");
+                                        last = null; break; }
                                     catch (Exception e) {
                                         String m = String.valueOf(e.getMessage());
                                         if (m.matches("(?s).*(already exists|duplicate|409).*")) { last = null; break; }
@@ -2136,14 +2140,12 @@ public class Home extends FollowList {
                                     }
                                 }
                                 if (last != null) throw new Exception(L("فشل رفع الفيديو: ", "Video upload failed: ") + last.getMessage());
-                                vidUrl = url + "/storage/v1/object/public/post-videos/" + vidPath;
                             }
                             if (img != null) {
                                 ByteArrayOutputStream bo = new ByteArrayOutputStream();
                                 img.compress(Bitmap.CompressFormat.JPEG, 75, bo);
-                                imgPath = uid + "/c_" + System.currentTimeMillis() + "_" + Long.toString(Double.doubleToLongBits(Math.random()), 36).replace("-", "").substring(0, 6) + ".jpg";
-                                cmHttp("POST", url + "/storage/v1/object/post-images/" + cmEnc(imgPath), bo.toByteArray(), "image/jpeg", "false");
-                                imgUrl = url + "/storage/v1/object/public/post-images/" + imgPath;
+                                JSONObject si = r2UploadBytes(bo.toByteArray(), "image", "image/jpeg");
+                                imgPath = si.getString("key"); imgUrl = si.getString("publicUrl");
                             }
                             JSONObject b = new JSONObject();
                             b.put("post_id", post.optLong("id"));
@@ -2189,49 +2191,6 @@ public class Home extends FollowList {
         et.requestFocus();
         d.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE | WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     }
-
-    protected void rpUploadVideo(android.net.Uri u, String path, final TextView progress) throws Exception {
-        InputStream in = getContentResolver().openInputStream(u);
-        long total = 0;
-        try {
-            android.content.res.AssetFileDescriptor fd = getContentResolver().openAssetFileDescriptor(u, "r");
-            total = fd.getLength();
-            fd.close();
-        } catch (Exception ignore) {}
-        HttpURLConnection c = (HttpURLConnection) new URL(url + "/storage/v1/object/post-videos/" + cmEnc(path)).openConnection();
-        c.setRequestMethod("POST");
-        c.setRequestProperty("apikey", key);
-        c.setRequestProperty("Authorization", "Bearer " + token);
-        c.setRequestProperty("Content-Type", "video/mp4");
-        c.setRequestProperty("x-upsert", "false");
-        c.setConnectTimeout(20000);
-        c.setReadTimeout(120000);
-        c.setDoOutput(true);
-        if (total > 0) c.setFixedLengthStreamingMode(total); else c.setChunkedStreamingMode(64 * 1024);
-        java.io.OutputStream out = c.getOutputStream();
-        byte[] buf = new byte[32 * 1024];
-        long sent = 0; int last = -1, n;
-        while ((n = in.read(buf)) > 0) {
-            out.write(buf, 0, n);
-            sent += n;
-            if (total > 0) {
-                final int pct = (int) Math.min(99, sent * 100 / total);
-                if (pct != last) { last = pct; runOnUiThread(new Runnable() { @Override public void run() { progress.setText("‎" + pct + "%"); } }); }
-            }
-        }
-        in.close();
-        out.close();
-        int code = c.getResponseCode();
-        if (code >= 300) {
-            BufferedReader r = new BufferedReader(new InputStreamReader(c.getErrorStream(), "UTF-8"));
-            StringBuilder sb = new StringBuilder();
-            String ln;
-            while ((ln = r.readLine()) != null) sb.append(ln);
-            r.close();
-            throw new Exception(sb.length() > 0 ? sb.toString() : ("HTTP " + code));
-        }
-    }
-
 
     // ---------------- تحميل الصفحات ----------------
     protected void loadBalance() {
