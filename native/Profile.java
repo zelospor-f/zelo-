@@ -330,9 +330,9 @@ abstract class Profile extends WeeklyMatchRankings {
                 bx.setBackground(oval(0x99000000, GOLD));
                 bx.setContentDescription(T("إحصائيات التعزيز"));
                 bx.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openBoostStats(); } });
-                FrameLayout.LayoutParams bxl = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.END);
-                bxl.setMargins(0, statusH() + dp(8) + dp(184), 0, 0);
-                bxl.setMarginEnd(dp(12));
+                FrameLayout.LayoutParams bxl = new FrameLayout.LayoutParams(dp(42), dp(42), Gravity.TOP | Gravity.START);
+                bxl.setMargins(0, statusH() + dp(8), 0, 0);
+                bxl.setMarginStart(dp(12));
                 cov.addView(bx, bxl);
             }
         }
