@@ -156,10 +156,34 @@ abstract class Index extends I18nHelpers {
         shellH.postDelayed(msgTick, 4000);
     }
 
+    private long ctryAt = 0;
+
+    // يحدّث دولة المستخدم (رمز فقط) من الخادم، مرة كل 12 ساعة على الأكثر
+    protected void reportCountry() {
+        if (uid == null || token == null) return;
+        long now = System.currentTimeMillis();
+        if (now - ctryAt < 12L * 3600 * 1000) return;
+        ctryAt = now;
+        pool.execute(new Runnable() { @Override public void run() {
+            try {
+                java.net.HttpURLConnection c = (java.net.HttpURLConnection) new java.net.URL(url + "/functions/v1/set-country").openConnection();
+                c.setRequestMethod("POST");
+                c.setRequestProperty("apikey", key);
+                c.setRequestProperty("Authorization", "Bearer " + token);
+                c.setRequestProperty("Content-Type", "application/json");
+                c.setConnectTimeout(10000); c.setReadTimeout(10000);
+                c.setDoOutput(true);
+                c.getOutputStream().write("{}".getBytes("UTF-8"));
+                c.getResponseCode();
+            } catch (Exception ignore) {}
+        } });
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         shellStart();
+        reportCountry();
     }
 
     @Override
