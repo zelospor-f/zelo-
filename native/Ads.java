@@ -90,7 +90,7 @@ import org.json.JSONObject;
 // الإعلان البيني معطّل عمداً كما في الأصل. عند الإطلاق غيّر AD_REAL إلى true فقط.
 // ============================================================
 abstract class Ads extends Store {
-    protected static final boolean AD_REAL = false;   // false = معرّفات جوجل التجريبية
+    protected static final boolean AD_REAL = true;   // false = معرّفات جوجل التجريبية
     protected static final String AD_REWARDED = AD_REAL ? "ca-app-pub-4978898922755717/4216858741" : "ca-app-pub-3940256099942544/5224354917";
     protected static final String AD_BANNER = AD_REAL ? "ca-app-pub-4978898922755717/4234216793" : "ca-app-pub-3940256099942544/6300978111";
     protected static final String AD_NATIVE = AD_REAL ? "ca-app-pub-4978898922755717/2981291981" : "ca-app-pub-3940256099942544/2247696110"; // الحقيقي: ضع معرّف وحدة Native من AdMob
