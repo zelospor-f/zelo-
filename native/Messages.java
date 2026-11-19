@@ -94,7 +94,7 @@ abstract class Messages extends Login {
         return f.format(new Date());
     }
     protected String dmAvatarUrl(String name, String url) {
-        if (url != null && url.startsWith("http")) return url;
+        if (isImg(url)) return url;
         try { return "https://ui-avatars.com/api/?name=" + java.net.URLEncoder.encode(name == null || name.length() == 0 ? "P" : name, "UTF-8") + "&background=0c0e20&color=00FF87&size=96&bold=true"; }
         catch (Exception e) { return ""; }
     }
@@ -277,27 +277,9 @@ abstract class Messages extends Login {
             @Override public void afterTextChanged(android.text.Editable s) {}
         });
         dmMsgsPane.addView(dmSearch, lpm(0, 6, 0, 8));
-        // صف الإشعارات
-        LinearLayout nr = new LinearLayout(this);
-        nr.setGravity(Gravity.CENTER_VERTICAL);
-        nr.setPadding(dp(4), dp(12), dp(4), dp(12));
-        TextView bell = txt("🔔", NAVY, 22, false);
-        bell.setGravity(Gravity.CENTER);
-        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR, new int[] { 0xFFF5C35A, 0xFFE08A2C });
-        bg.setShape(GradientDrawable.OVAL);
-        bell.setBackground(bg);
-        nr.addView(bell, new LinearLayout.LayoutParams(dp(52), dp(52)));
-        LinearLayout nt = new LinearLayout(this);
-        nt.setOrientation(LinearLayout.VERTICAL);
-        nt.setPadding(dp(12), 0, dp(12), 0);
-        nt.addView(txt(L("الإشعارات", "Notifications"), Color.WHITE, 15, true));
-        nt.addView(txt(L("اضغط لعرض إشعاراتك", "Tap to see your notifications"), 0xFF94A3B8, 13, false));
-        nr.addView(nt, lpw(1f));
-        nr.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { showPage("notifications"); } });
-        dmMsgsPane.addView(nr);
         dmListBox = new LinearLayout(this);
         dmListBox.setOrientation(LinearLayout.VERTICAL);
-        dmListBox.addView(uEmpty(L("جارٍ التحميل...", "Loading...")));
+        dmListBox.addView(uEmpty(""));
         dmMsgsPane.addView(dmListBox);
         wrap.addView(dmMsgsPane);
         dmRoomsPane = new LinearLayout(this);
@@ -490,7 +472,7 @@ abstract class Messages extends Login {
         root.addView(q, lpm(0, 0, 0, 8));
         final LinearLayout res = new LinearLayout(this);
         res.setOrientation(LinearLayout.VERTICAL);
-        res.addView(uEmpty(L("جارٍ التحميل...", "Loading...")));
+        res.addView(uEmpty(""));
         ScrollView sc = new ScrollView(this);
         sc.addView(res);
         root.addView(sc, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
