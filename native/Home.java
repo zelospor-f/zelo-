@@ -1332,7 +1332,7 @@ public class Home extends FollowList {
 
     // ---------------- شاشة المنشور والردود (على نمط X) ----------------
     protected static final int RP_IMG = 7311, RP_VID = 7312;
-    protected static final long RP_VID_MAX = 30L * 1024 * 1024;
+    protected static final long RP_VID_MAX = 100L * 1024 * 1024;
     protected static final long RP_VID_SECS = 60;
     protected Bitmap rpImage;
     protected android.net.Uri rpVideoUri;
@@ -1901,6 +1901,7 @@ public class Home extends FollowList {
                     if (full != null) {
                         float sc = Math.min(1f, 900f / Math.max(full.getWidth(), full.getHeight()));
                         b = sc < 1f ? Bitmap.createScaledBitmap(full, Math.round(full.getWidth() * sc), Math.round(full.getHeight() * sc), true) : full;
+                        b = mpExifFix(u, b);
                     }
                 } catch (Exception e) { b = null; }
                 final Bitmap fb = b;
@@ -1928,7 +1929,7 @@ public class Home extends FollowList {
                         c.close();
                     }
                     if (name == null || !name.toLowerCase().endsWith(".mp4")) err = L("الصيغة المقبولة MP4 فقط.", "Only MP4 files are allowed.");
-                    else if (size > RP_VID_MAX) err = L("حجم الفيديو يتجاوز 30 ميغابايت.", "Video is larger than 30 MB.");
+                    else if (size > RP_VID_MAX) err = L("حجم الفيديو يتجاوز 100 ميغابايت.", "Video is larger than 100 MB.");
                     else {
                         android.media.MediaMetadataRetriever mr = new android.media.MediaMetadataRetriever();
                         mr.setDataSource(Home.this, u);
@@ -1947,18 +1948,15 @@ public class Home extends FollowList {
         });
     }
 
-    protected void rpPickMedia(final boolean image, int tier) {
+    // camera=false: إرفاق من المعرض، camera=true: الكاميرا
+    protected void rpPickMedia(final boolean camera, int tier) {
         if (tier < 2) {
-            toast(image ? L("📷 الصور في الردود للمشتركين (الباقة المميّزة 1.99$ فما فوق)", "📷 Image replies need the Plus plan or higher")
-                        : L("🎬 الفيديو في الردود للمشتركين (الباقة المميّزة 1.99$ فما فوق)", "🎬 Video replies need the Plus plan or higher"));
+            toast(L("📎 الصور والفيديو في الردود للمشتركين (الباقة المميّزة 1.99$ فما فوق)", "📎 Image and video replies need the Plus plan or higher"));
             openSubscriptions();
             return;
         }
-        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-        i.setType(image ? "image/*" : "video/mp4");
-        i.addCategory(Intent.CATEGORY_OPENABLE);
-        try { startActivityForResult(Intent.createChooser(i, null), image ? RP_IMG : RP_VID); }
-        catch (Exception e) { toast(L("تعذّر فتح المعرض", "Could not open the gallery")); }
+        MediaCb cb = new MediaCb() { @Override public void picked(android.net.Uri u, boolean video) { if (video) rpHandleVideo(u); else rpHandleImage(u); } };
+        if (camera) mediaCameraShow(cb); else mediaAttachShow(cb);
     }
 
     protected void openReplyComposer(JSONObject post, Runnable onSent) { openReplyComposer(post, onSent, null); }
@@ -2063,15 +2061,13 @@ public class Home extends FollowList {
         tb.setPadding(dp(16), dp(8), dp(16), dp(8));
         View tl = new View(this); tl.setBackgroundColor(0x1AFFFFFF);
         root.addView(tl, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
-        TextView bi = tv(GOLD, 14, true);
-        bi.setText("🖼 " + L("صورة", "Image"));
-        bi.setPadding(dp(4), dp(8), dp(16), dp(8));
-        bi.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpPickMedia(true, tier[0]); } });
-        TextView bv = tv(GOLD, 14, true);
-        bv.setText("🎬 " + L("فيديو", "Video"));
-        bv.setPadding(dp(4), dp(8), dp(16), dp(8));
-        bv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpPickMedia(false, tier[0]); } });
-        tb.addView(bi); tb.addView(bv);
+        ImageView bi = mpIconBtn(30);
+        bi.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpPickMedia(false, tier[0]); } });
+        ImageView bv = mpIconBtn(31);
+        bv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpPickMedia(true, tier[0]); } });
+        LinearLayout.LayoutParams bvl = new LinearLayout.LayoutParams(dp(46), dp(46));
+        bvl.setMargins(dp(10), 0, dp(10), 0);
+        tb.addView(bi); tb.addView(bv, bvl);
         tb.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
         final TextView cnt = tv(MUTED, 13, false);
         cnt.setText("‎0 / 500");

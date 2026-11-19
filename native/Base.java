@@ -401,6 +401,27 @@ abstract class Base extends Activity {
             } else if (type == 26) {
                 c.drawRoundRect(new RectF(5, 3, 19, 21), 3, 3, p);
                 p.setStyle(Paint.Style.FILL); c.drawCircle(12, 12, 2.4f, p);
+            } else if (type == 30) {
+                // مشبك إرفاق
+                a.moveTo(21.44f, 11.05f); a.lineTo(12.25f, 20.24f);
+                a.arcTo(new RectF(2.005f, 9.995f, 14.005f, 21.995f), 45, 180);
+                a.lineTo(12.95f, 2.56f);
+                a.arcTo(new RectF(11.78f, 1.39f, 19.78f, 9.39f), 225, 180);
+                a.lineTo(9.41f, 17.41f);
+                a.arcTo(new RectF(6, 14, 10, 18), 45, 180);
+                a.lineTo(15.07f, 6.10f);
+                c.drawPath(a, p);
+            } else if (type == 31) {
+                // كاميرا
+                c.drawRoundRect(new RectF(2.5f, 7, 21.5f, 20), 3, 3, p);
+                a.moveTo(8.5f, 7); a.lineTo(10, 4.5f); a.lineTo(14, 4.5f); a.lineTo(15.5f, 7);
+                c.drawPath(a, p);
+                c.drawCircle(12, 13.5f, 3.6f, p);
+            } else if (type == 33) {
+                // كاميرا فيديو
+                c.drawRoundRect(new RectF(2, 6.5f, 16, 17.5f), 3, 3, p);
+                a.moveTo(16, 10.5f); a.lineTo(22, 7.5f); a.lineTo(22, 16.5f); a.lineTo(16, 13.5f); a.close();
+                c.drawPath(a, p);
             } else if (type == 12) {
                 p.setStyle(Paint.Style.FILL);
                 c.drawRoundRect(new RectF(6, 4, 10, 20), 1, 1, p);

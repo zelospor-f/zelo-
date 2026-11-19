@@ -71,7 +71,7 @@ abstract class Compose extends Profile {
 
     private static final int CM_IMG = 7101, CM_VID = 7102;
     private static final int CM_FREE = 280, CM_PRO = 1000;
-    private static final long CM_VID_MAX = 30L * 1024 * 1024;
+    private static final long CM_VID_MAX = 100L * 1024 * 1024;
     private static final long CM_VID_SECS = 60;
     // {id, عربي, إنجليزي, أ-عربي, أ-إنجليزي, ب-عربي, ب-إنجليزي, placeholder-ar, placeholder-en}
     private static final String[][] CM_TOPICS = {
@@ -198,13 +198,13 @@ abstract class Compose extends Profile {
         LinearLayout tools = new LinearLayout(this);
         tools.setGravity(Gravity.CENTER_VERTICAL);
         tools.setPadding(0, dp(14), 0, 0);
-        TextView bi = pill("📷 " + L("إضافة صورة", "Add image"), Color.WHITE, CARD, 0x33FFFFFF);
-        bi.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPickMedia(true); } });
-        TextView bv = pill("🎬 " + L("فيديو", "Video"), Color.WHITE, CARD, 0x33FFFFFF);
-        bv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPickMedia(false); } });
+        ImageView bi = mpIconBtn(30);
+        bi.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPickMedia(false); } });
+        ImageView bv = mpIconBtn(31);
+        bv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { cmPickMedia(true); } });
         tools.addView(bi);
         LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        bl.setMargins(dp(8), 0, dp(8), 0);
+        bl.setMargins(dp(10), 0, dp(10), 0);
         tools.addView(bv, bl);
         View sp2 = new View(this);
         tools.addView(sp2, new LinearLayout.LayoutParams(0, 1, 1f));
@@ -457,21 +457,19 @@ abstract class Compose extends Profile {
     }
 
     // ---------- الصور والفيديو ----------
-    private void cmPickMedia(final boolean image) {
+    // camera=false: أيقونة الإرفاق (معرض صور وفيديو)، camera=true: أيقونة الكاميرا (صورة أو فيديو)
+    private void cmPickMedia(final boolean camera) {
         if (cmTier < 2) {
-            cmNote(image ? L("📷 نشر الصور في الباقة المميّزة (1.99$) فما فوق (اضغط)", "📷 Images need the Plus plan or higher (tap)")
-                         : L("🎬 نشر الفيديو في الباقة المميّزة (1.99$) فما فوق (اضغط)", "🎬 Video posts need the Plus plan or higher (tap)"), "media");
+            cmNote(L("📎 نشر الصور والفيديو في الباقة المميّزة (1.99$) فما فوق (اضغط)", "📎 Images and video need the Plus plan or higher (tap)"), "media");
             return;
         }
-        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-        i.setType(image ? "image/*" : "video/mp4");
-        i.addCategory(Intent.CATEGORY_OPENABLE);
-        try { startActivityForResult(Intent.createChooser(i, null), image ? CM_IMG : CM_VID); }
-        catch (Exception e) { toast(L("تعذّر فتح المعرض", "Could not open the gallery")); }
+        MediaCb cb = new MediaCb() { @Override public void picked(Uri u, boolean video) { if (video) cmHandleVideo(u); else cmHandleImage(u); } };
+        if (camera) mediaCameraShow(cb); else mediaAttachShow(cb);
     }
 
     @Override protected void onActivityResult(int code, int res, Intent data) {
         super.onActivityResult(code, res, data);
+        if (mpOnResult(code, res, data)) return;
         if (res != RESULT_OK || data == null || data.getData() == null) return;
         if (code == CM_IMG) cmHandleImage(data.getData());
         else if (code == CM_VID) cmHandleVideo(data.getData());
@@ -497,6 +495,7 @@ abstract class Compose extends Profile {
                     if (full != null) {
                         float sc = Math.min(1f, 900f / Math.max(full.getWidth(), full.getHeight()));
                         b = sc < 1f ? Bitmap.createScaledBitmap(full, Math.round(full.getWidth() * sc), Math.round(full.getHeight() * sc), true) : full;
+                        b = mpExifFix(u, b);
                     }
                 } catch (Exception e) { b = null; }
                 final Bitmap fb = b;
@@ -524,7 +523,7 @@ abstract class Compose extends Profile {
                         c.close();
                     }
                     if (name == null || !name.toLowerCase().endsWith(".mp4")) err = L("الصيغة المقبولة MP4 فقط.", "Only MP4 files are allowed.");
-                    else if (size > CM_VID_MAX) err = L("حجم الفيديو يتجاوز 30 ميغابايت.", "Video is larger than 30 MB.");
+                    else if (size > CM_VID_MAX) err = L("حجم الفيديو يتجاوز 100 ميغابايت.", "Video is larger than 100 MB.");
                     else {
                         android.media.MediaMetadataRetriever mr = new android.media.MediaMetadataRetriever();
                         mr.setDataSource(Compose.this, u);
@@ -813,5 +812,340 @@ abstract class Compose extends Profile {
         r.close();
         if (code >= 400) { banCheck(sb.toString()); throw new Exception(sb.toString().length() > 0 ? sb.toString() : ("HTTP " + code)); }
         return sb.toString();
+    }
+
+    // ================= اختيار الوسائط: كاميرا / معرض / قصّ الفيديو =================
+    protected interface MediaCb { void picked(Uri u, boolean video); }
+    protected static final int MP_GAL = 7401, MP_CAM_IMG = 7402, MP_CAM_VID = 7403;
+    protected static final long MP_MAX_SECS = 60;
+    private MediaCb mpCb;
+    private java.io.File mpCamFile;
+
+    protected ImageView mpIconBtn(int type) {
+        ImageView iv = new ImageView(this);
+        iv.setImageDrawable(new Ic(type, GOLD, false, dp(24)));
+        iv.setScaleType(ImageView.ScaleType.CENTER);
+        iv.setBackground(rbg(CARD, 0x44F5C35A, 22));
+        iv.setLayoutParams(new LinearLayout.LayoutParams(dp(46), dp(46)));
+        return iv;
+    }
+
+    private TextView mpRow(String text, int icon) {
+        TextView t = tv(Color.WHITE, 16, true);
+        t.setText(text);
+        t.setGravity(Gravity.CENTER_VERTICAL);
+        t.setPadding(dp(18), dp(16), dp(18), dp(16));
+        t.setBackground(rbg(CARD, 0x33FFFFFF, 14));
+        if (icon >= 0) { t.setCompoundDrawablesRelativeWithIntrinsicBounds(new Ic(icon, GOLD, false, dp(24)), null, null, null); t.setCompoundDrawablePadding(dp(14)); }
+        return t;
+    }
+
+    // أيقونة الكاميرا: التقاط صورة أو تصوير فيديو
+    protected void mediaCameraShow(final MediaCb cb) {
+        mpCb = cb;
+        final Dialog d = sheetDialog(false);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackground(rbg(NAVY, 0x22FFFFFF, 22));
+        root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        root.setPadding(dp(16), dp(16), dp(16), dp(16) + navH());
+        TextView h = tv(GOLD, 17, true);
+        h.setText(L("الكاميرا", "Camera"));
+        h.setGravity(Gravity.CENTER);
+        root.addView(h, new LinearLayout.LayoutParams(-1, -2));
+        TextView ph = mpRow(L("التقاط صورة", "Take a photo"), 31);
+        TextView vd = mpRow(L("تصوير فيديو (حتى 60 ثانية)", "Record a video (up to 60 s)"), 33);
+        TextView no = mpRow(L("إلغاء", "Cancel"), -1);
+        no.setTextColor(MUTED); no.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+        lp.topMargin = dp(10);
+        root.addView(ph, lp); root.addView(vd, lp); root.addView(no, lp);
+        ph.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); mpOpenCamera(true); } });
+        vd.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); mpOpenCamera(false); } });
+        no.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
+        d.setContentView(root);
+        d.show();
+    }
+
+    // أيقونة الإرفاق: معرض الهاتف (صور وفيديو معاً)
+    protected void mediaAttachShow(MediaCb cb) {
+        mpCb = cb;
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.setType("*/*");
+        i.putExtra(Intent.EXTRA_MIME_TYPES, new String[] { "image/*", "video/*" });
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        try { startActivityForResult(Intent.createChooser(i, null), MP_GAL); }
+        catch (Exception e) { toast(L("تعذّر فتح المعرض", "Could not open the gallery")); }
+    }
+
+    private Uri mpFileUri(java.io.File f) throws Exception {
+        Class<?> fp = Class.forName("androidx.core.content.FileProvider");
+        return (Uri) fp.getMethod("getUriForFile", Context.class, String.class, java.io.File.class).invoke(null, this, getPackageName() + ".fileprovider", f);
+    }
+
+    private void mpOpenCamera(boolean image) {
+        try {
+            mpCleanCache();
+            mpCamFile = new java.io.File(getCacheDir(), "cam_" + System.currentTimeMillis() + (image ? ".jpg" : ".mp4"));
+            Uri out = mpFileUri(mpCamFile);
+            Intent it = new Intent(image ? android.provider.MediaStore.ACTION_IMAGE_CAPTURE : android.provider.MediaStore.ACTION_VIDEO_CAPTURE);
+            it.putExtra(android.provider.MediaStore.EXTRA_OUTPUT, out);
+            if (!image) { it.putExtra(android.provider.MediaStore.EXTRA_DURATION_LIMIT, (int) MP_MAX_SECS); it.putExtra(android.provider.MediaStore.EXTRA_VIDEO_QUALITY, 1); }
+            it.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            it.setClipData(android.content.ClipData.newRawUri("out", out));
+            startActivityForResult(it, image ? MP_CAM_IMG : MP_CAM_VID);
+        } catch (Throwable e) { toast(L("تعذّر فتح الكاميرا", "Could not open the camera")); }
+    }
+
+    // حذف ملفات الكاميرا والقصّ القديمة من الكاش
+    private void mpCleanCache() {
+        try {
+            java.io.File[] fs = getCacheDir().listFiles();
+            if (fs == null) return;
+            long old = System.currentTimeMillis() - 30L * 60 * 1000;
+            for (java.io.File f : fs) {
+                String n = f.getName();
+                if ((n.startsWith("cam_") || n.startsWith("trim_")) && f.lastModified() < old) f.delete();
+            }
+        } catch (Exception ignore) {}
+    }
+
+    // نتيجة الكاميرا/المعرض. يرجع true إن عالجها
+    protected boolean mpOnResult(int code, int res, Intent data) {
+        if (code != MP_GAL && code != MP_CAM_IMG && code != MP_CAM_VID) return false;
+        if (res != RESULT_OK || mpCb == null) return true;
+        Uri u = null;
+        if (code == MP_GAL) u = data != null ? data.getData() : null;
+        else if (mpCamFile != null && mpCamFile.exists() && mpCamFile.length() > 0) u = Uri.fromFile(mpCamFile);
+        else if (data != null) u = data.getData();
+        if (u == null) { toast(L("لم يُحفظ الملف", "File was not saved")); return true; }
+        if (code == MP_CAM_IMG) { mpCb.picked(u, false); return true; }
+        if (code == MP_CAM_VID) { mpVideoChosen(u); return true; }
+        String mt = null;
+        try { mt = getContentResolver().getType(u); } catch (Exception ignore) {}
+        if (mt != null && mt.startsWith("image/")) mpCb.picked(u, false);
+        else if (mt != null && mt.startsWith("video/")) mpVideoChosen(u);
+        else toast(L("اختر صورة أو فيديو", "Choose an image or a video"));
+        return true;
+    }
+
+    // فيديو مختار: إن كان أطول من 60 ثانية تظهر شاشة القصّ
+    private void mpVideoChosen(final Uri u) {
+        pool.execute(new Runnable() { @Override public void run() {
+            long dur = 0;
+            try {
+                android.media.MediaMetadataRetriever mr = new android.media.MediaMetadataRetriever();
+                mr.setDataSource(Compose.this, u);
+                String s = mr.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+                mr.release();
+                dur = s == null ? 0 : Long.parseLong(s);
+            } catch (Exception e) { dur = 0; }
+            final long fd = dur;
+            runOnUiThread(new Runnable() { @Override public void run() {
+                if (fd <= 0) { toast(L("تعذّر قراءة الفيديو.", "Could not read the video.")); return; }
+                if (fd <= MP_MAX_SECS * 1000) { if (mpCb != null) mpCb.picked(u, true); }
+                else mpTrimDialog(u, fd);
+            } });
+        } });
+    }
+
+    private static String mpFmt(long ms) {
+        long s = ms / 1000;
+        return String.format(java.util.Locale.US, "%d:%02d", s / 60, s % 60);
+    }
+
+    // شريط اختيار الجزء: إطار ذهبي بمقبضين، يُسحب أو يُسحب أحد طرفيه
+    private class RangeBar extends View {
+        long dur, a, b; final long maxWin = MP_MAX_SECS * 1000, minWin = 1000;
+        int mode = 0; float lastX;
+        Runnable onChange;
+        final Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+        RangeBar(Context c, long d) { super(c); dur = d; a = 0; b = Math.min(d, maxWin); setLayoutDirection(View.LAYOUT_DIRECTION_LTR); }
+        float x(long t) { float w = getWidth() - 2 * dp(14); return dp(14) + w * t / dur; }
+        long t(float x) { float w = getWidth() - 2 * dp(14); return Math.max(0, Math.min(dur, (long) ((x - dp(14)) / w * dur))); }
+        @Override protected void onDraw(Canvas cv) {
+            float h = getHeight(), top = h * 0.2f, bot = h * 0.8f;
+            p.setStyle(Paint.Style.FILL); p.setColor(CARD);
+            cv.drawRoundRect(new RectF(dp(14), top, getWidth() - dp(14), bot), dp(8), dp(8), p);
+            RectF r = new RectF(x(a), top - dp(4), x(b), bot + dp(4));
+            p.setColor(0x33F5C35A); cv.drawRoundRect(r, dp(8), dp(8), p);
+            p.setStyle(Paint.Style.STROKE); p.setStrokeWidth(dp(3)); p.setColor(GOLD); cv.drawRoundRect(r, dp(8), dp(8), p);
+            p.setStyle(Paint.Style.FILL); p.setColor(GOLD);
+            cv.drawRoundRect(new RectF(x(a) - dp(7), top - dp(8), x(a) + dp(7), bot + dp(8)), dp(5), dp(5), p);
+            cv.drawRoundRect(new RectF(x(b) - dp(7), top - dp(8), x(b) + dp(7), bot + dp(8)), dp(5), dp(5), p);
+        }
+        @Override public boolean onTouchEvent(android.view.MotionEvent e) {
+            float ex = e.getX();
+            if (e.getAction() == android.view.MotionEvent.ACTION_DOWN) {
+                getParent().requestDisallowInterceptTouchEvent(true);
+                float da = Math.abs(ex - x(a)), db = Math.abs(ex - x(b)), th = dp(30);
+                if (da <= th && da <= db) mode = 1;
+                else if (db <= th) mode = 2;
+                else if (ex > x(a) && ex < x(b)) mode = 3;
+                else mode = 0;
+                lastX = ex; return true;
+            }
+            if (e.getAction() == android.view.MotionEvent.ACTION_MOVE && mode != 0) {
+                long tt = t(ex);
+                if (mode == 1) { a = Math.min(tt, b - minWin); if (b - a > maxWin) b = a + maxWin; }
+                else if (mode == 2) { b = Math.max(tt, a + minWin); if (b - a > maxWin) a = b - maxWin; }
+                else { long w = b - a, d2 = t(ex) - t(lastX); long na = Math.max(0, Math.min(dur - w, a + d2)); a = na; b = na + w; }
+                a = Math.max(0, a); b = Math.min(dur, b);
+                lastX = ex; invalidate();
+                if (onChange != null) onChange.run();
+                return true;
+            }
+            if (e.getAction() == android.view.MotionEvent.ACTION_UP || e.getAction() == android.view.MotionEvent.ACTION_CANCEL) { mode = 0; return true; }
+            return true;
+        }
+    }
+
+    private void mpTrimDialog(final Uri u, final long dur) {
+        final Dialog d = sheetDialog(true);
+        LinearLayout root = new LinearLayout(this);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(NAVY);
+        root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        root.setPadding(dp(14), statusH() + dp(10), dp(14), dp(14) + navH());
+        TextView h = tv(GOLD, 18, true);
+        h.setText(L("✂️ قصّ الفيديو", "✂️ Trim video"));
+        h.setGravity(Gravity.CENTER);
+        root.addView(h, new LinearLayout.LayoutParams(-1, -2));
+        final VideoView vv = new VideoView(this);
+        FrameLayout vf = new FrameLayout(this);
+        vf.setBackgroundColor(0xFF000000);
+        vf.addView(vv, new FrameLayout.LayoutParams(-1, -1, Gravity.CENTER));
+        LinearLayout.LayoutParams vl = new LinearLayout.LayoutParams(-1, 0, 1f);
+        vl.topMargin = dp(10);
+        root.addView(vf, vl);
+        final RangeBar rb = new RangeBar(this, dur);
+        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(-1, dp(64));
+        rl.topMargin = dp(12);
+        root.addView(rb, rl);
+        final TextView info = tv(Color.WHITE, 14, true);
+        info.setGravity(Gravity.CENTER);
+        root.addView(info, new LinearLayout.LayoutParams(-1, -2));
+        TextView hint = tv(MUTED, 12, false);
+        hint.setText(L("الحد الأقصى 60 ثانية. حرّك الإطار الذهبي أو اسحب طرفيه لاختيار الجزء.", "Max 60 seconds. Drag the gold frame or its edges to choose the part."));
+        hint.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams hl = new LinearLayout.LayoutParams(-1, -2);
+        hl.topMargin = dp(4);
+        root.addView(hint, hl);
+        TextView ok = pill(L("قصّ واستخدام", "Trim & use"), NAVY, GOLD, 0);
+        TextView no = pill(L("إلغاء", "Cancel"), Color.WHITE, CARD, 0x33FFFFFF);
+        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(-1, -2);
+        bl.topMargin = dp(12);
+        root.addView(ok, bl);
+        LinearLayout.LayoutParams bl2 = new LinearLayout.LayoutParams(-1, -2);
+        bl2.topMargin = dp(8);
+        root.addView(no, bl2);
+
+        final android.os.Handler hd = new android.os.Handler(android.os.Looper.getMainLooper());
+        final Runnable[] loop = new Runnable[1];
+        final Runnable upd = new Runnable() { @Override public void run() {
+            info.setText("‎" + L("البداية ", "Start ") + mpFmt(rb.a) + "   •   " + L("المدة ", "Length ") + mpFmt(rb.b - rb.a) + "   •   " + L("النهاية ", "End ") + mpFmt(rb.b));
+        } };
+        rb.onChange = new Runnable() { @Override public void run() { upd.run(); try { vv.seekTo((int) rb.a); } catch (Exception ignore) {} } };
+        upd.run();
+        vv.setVideoURI(u);
+        vv.setOnPreparedListener(new android.media.MediaPlayer.OnPreparedListener() { @Override public void onPrepared(android.media.MediaPlayer mp) {
+            mp.setLooping(false);
+            vv.seekTo((int) rb.a); vv.start();
+            loop[0] = new Runnable() { @Override public void run() {
+                try { if (vv.getCurrentPosition() >= rb.b || !vv.isPlaying()) { vv.seekTo((int) rb.a); vv.start(); } } catch (Exception ignore) {}
+                hd.postDelayed(this, 250);
+            } };
+            hd.postDelayed(loop[0], 250);
+        } });
+        d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface x) { hd.removeCallbacksAndMessages(null); try { vv.stopPlayback(); } catch (Exception ignore) {} } });
+        no.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); } });
+        ok.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+            final long s = rb.a, e = rb.b;
+            d.dismiss();
+            final Dialog pg = new AlertDialog.Builder(Compose.this).setMessage(L("جارٍ قصّ الفيديو...", "Trimming video...")).setCancelable(false).show();
+            pool.execute(new Runnable() { @Override public void run() {
+                Uri out = null; String err = null;
+                try { out = Uri.fromFile(mpTrim(u, s, e)); } catch (Throwable t) { err = String.valueOf(t.getMessage()); }
+                final Uri fo = out; final String fe = err;
+                runOnUiThread(new Runnable() { @Override public void run() {
+                    try { pg.dismiss(); } catch (Exception ignore) {}
+                    if (fo == null) { toast(L("تعذّر قصّ الفيديو", "Could not trim the video")); return; }
+                    if (mpCb != null) mpCb.picked(fo, true);
+                } });
+            } });
+        } });
+        d.setContentView(root);
+        d.show();
+    }
+
+    // قصّ بدون إعادة ترميز (سريع وبلا فقد جودة). يبدأ من أول إطار مفتاحي بعد البداية فلا تتجاوز المدة 60 ثانية
+    private java.io.File mpTrim(Uri src, long startMs, long endMs) throws Exception {
+        java.io.File out = new java.io.File(getCacheDir(), "trim_" + System.currentTimeMillis() + ".mp4");
+        android.media.MediaExtractor ex = new android.media.MediaExtractor();
+        ex.setDataSource(this, src, null);
+        int n = ex.getTrackCount();
+        int[] map = new int[n];
+        android.media.MediaMuxer mux = new android.media.MediaMuxer(out.getAbsolutePath(), android.media.MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+        int vTrack = -1; int rot = 0;
+        try {
+            android.media.MediaMetadataRetriever mr = new android.media.MediaMetadataRetriever();
+            mr.setDataSource(this, src);
+            String r = mr.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+            mr.release();
+            if (r != null) rot = Integer.parseInt(r);
+        } catch (Exception ignore) {}
+        if (rot != 0) mux.setOrientationHint(rot);
+        int added = 0;
+        for (int i = 0; i < n; i++) {
+            android.media.MediaFormat f = ex.getTrackFormat(i);
+            String mime = f.getString(android.media.MediaFormat.KEY_MIME);
+            map[i] = -1;
+            if (mime != null && (mime.startsWith("video/") || mime.startsWith("audio/"))) {
+                ex.selectTrack(i);
+                map[i] = mux.addTrack(f);
+                if (mime.startsWith("video/")) vTrack = i;
+                added++;
+            }
+        }
+        if (added == 0 || vTrack < 0) { try { mux.release(); } catch (Exception ignore) {} ex.release(); throw new Exception("no tracks"); }
+        mux.start();
+        ex.seekTo(startMs * 1000, android.media.MediaExtractor.SEEK_TO_NEXT_SYNC);
+        long base = -1, endUs = endMs * 1000;
+        java.nio.ByteBuffer buf = java.nio.ByteBuffer.allocate(4 * 1024 * 1024);
+        android.media.MediaCodec.BufferInfo bi = new android.media.MediaCodec.BufferInfo();
+        long wrote = 0;
+        while (true) {
+            int ti = ex.getSampleTrackIndex();
+            if (ti < 0) break;
+            long ts = ex.getSampleTime();
+            if (ts > endUs) break;
+            if (base < 0) { if (ti != vTrack) { ex.advance(); continue; } base = ts; }
+            if (ts < base) { ex.advance(); continue; }
+            buf.clear();
+            int sz = ex.readSampleData(buf, 0);
+            if (sz < 0) break;
+            bi.set(0, sz, ts - base, ex.getSampleFlags());
+            if (map[ti] >= 0) { mux.writeSampleData(map[ti], buf, bi); wrote++; }
+            ex.advance();
+        }
+        try { mux.stop(); } catch (Exception ignore) {}
+        mux.release();
+        ex.release();
+        if (wrote == 0 || out.length() < 1000) { out.delete(); throw new Exception("empty"); }
+        return out;
+    }
+
+    // تصحيح اتجاه الصورة حسب EXIF (صور الكاميرا تأتي مقلوبة أحياناً)
+    protected Bitmap mpExifFix(Uri u, Bitmap b) {
+        try {
+            InputStream in = getContentResolver().openInputStream(u);
+            int o = new android.media.ExifInterface(in).getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, 1);
+            in.close();
+            int deg = o == 6 ? 90 : o == 3 ? 180 : o == 8 ? 270 : 0;
+            if (deg == 0) return b;
+            android.graphics.Matrix m = new android.graphics.Matrix();
+            m.postRotate(deg);
+            return Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), m, true);
+        } catch (Throwable e) { return b; }
     }
 }
