@@ -70,6 +70,40 @@ abstract class GoogleVerify extends FollowLinks {
     protected static final String[] COINS = { "zelo_coin_100", "zelo_coin_500", "zelo_coin_1000", "zelo_coin_2000", "zelo_coin_6000" };
     protected static final String[] SUBS = { "zelo_t1_m", "zelo_t1_y", "zelo_t2_m", "zelo_t2_y", "zelo_t3_m", "zelo_t3_y" };
 
+    // ===== Play Integrity (وضع مراقبة فقط: يسجَّل الفحص في الخادم ولا يمنع أحدًا) =====
+    // مرة كل 24 ساعة كحد أقصى، بعد تسجيل الدخول، وبصمت تام عند أي فشل
+    protected void integrityCheck() {
+        try {
+            if (token == null || token.length() == 0 || uid == null || uid.length() == 0) return;
+            android.content.SharedPreferences sp = getSharedPreferences("zn_integrity", MODE_PRIVATE);
+            long now = System.currentTimeMillis();
+            if (now - sp.getLong("last", 0L) < 24L * 3600L * 1000L) return;
+            byte[] rnd = new byte[24];
+            new java.security.SecureRandom().nextBytes(rnd);
+            final String nonce = android.util.Base64.encodeToString(rnd, android.util.Base64.URL_SAFE | android.util.Base64.NO_WRAP | android.util.Base64.NO_PADDING);
+            com.google.android.play.core.integrity.IntegrityManager im = com.google.android.play.core.integrity.IntegrityManagerFactory.create(getApplicationContext());
+            im.requestIntegrityToken(com.google.android.play.core.integrity.IntegrityTokenRequest.builder().setNonce(nonce).build())
+                .addOnSuccessListener(new com.google.android.gms.tasks.OnSuccessListener<com.google.android.play.core.integrity.IntegrityTokenResponse>() {
+                    @Override public void onSuccess(com.google.android.play.core.integrity.IntegrityTokenResponse r) { integritySend(nonce, r.token(), ""); }
+                })
+                .addOnFailureListener(new com.google.android.gms.tasks.OnFailureListener() {
+                    @Override public void onFailure(Exception e) { integritySend(nonce, "", String.valueOf(e.getMessage())); }
+                });
+        } catch (Throwable ignore) {}
+    }
+
+    protected void integritySend(final String nonce, final String itoken, final String err) {
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                try {
+                    JSONObject b = new JSONObject().put("nonce", nonce).put("integrity_token", itoken).put("client_error", err.length() > 200 ? err.substring(0, 200) : err);
+                    authCall("POST", "/functions/v1/integrity-check", b.toString(), token);
+                    getSharedPreferences("zn_integrity", MODE_PRIVATE).edit().putLong("last", System.currentTimeMillis()).apply();
+                } catch (Throwable ignore) {}
+            }
+        });
+    }
+
     protected boolean inList(String[] l, String id) { for (String x : l) if (x.equals(id)) return true; return false; }
 
     // بصمة الحساب = sha256("zelo:" + uid) (applicationUsername في الشراء)

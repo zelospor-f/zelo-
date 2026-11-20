@@ -2622,7 +2622,7 @@ public class Home extends FollowList {
         showAuth(new Runnable() { @Override public void run() {
             pool.execute(new Runnable() { @Override public void run() {
                 final JSONObject row = loadUserRow(uid);
-                runOnUiThread(new Runnable() { @Override public void run() { applyUserRow(row); buildHome(); } });
+                runOnUiThread(new Runnable() { @Override public void run() { applyUserRow(row); buildHome(); integrityCheck(); } });
             } });
         } });
         handleAuthIntent(getIntent());
