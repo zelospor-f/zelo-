@@ -508,11 +508,11 @@ public class Home extends FollowList {
         sbBg.setColor(GOLD);
         sbBg.setCornerRadius(dp(18));
         h.supBtn.setBackground(sbBg);
-        h.supBtn.setPadding(dp(16), dp(6), dp(16), dp(6));
+        h.supBtn.setPadding(dp(14), dp(6), dp(14), dp(6));
         h.supBtn.setVisibility(View.GONE);
         LinearLayout.LayoutParams sblp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        sblp.setMarginEnd(dp(34));
-        bpl.setMarginEnd(dp(8));
+        sblp.setMarginEnd(dp(2));
+        bpl.setMarginEnd(dp(6));
         head.addView(h.boostPill, bpl);
         head.addView(h.supBtn, sblp);
         h.more = tv(MUTED, 22, true);
