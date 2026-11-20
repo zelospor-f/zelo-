@@ -2236,8 +2236,86 @@ public class Home extends FollowList {
         });
     }
 
+    protected LinearLayout newPill;
+    protected ListView feedLv;
+    protected long feedMaxId = 0;
+    protected final Runnable newPoll = new Runnable() {
+        @Override public void run() {
+            pool.execute(new Runnable() { @Override public void run() { pollNewPosts(); } });
+            timerH.postDelayed(this, 30000);
+        }
+    };
+
+    // زر الرئيسية أو شارة "منشورات جديدة": اصعد للأعلى وحدّث الصفحة
+    protected void onHomeTap() {
+        if (newPill != null) newPill.setVisibility(View.GONE);
+        if (feedLv != null) feedLv.setSelection(0);
+        refresh();
+    }
+
+    protected void pollNewPosts() {
+        if (feedMaxId <= 0 || uid == null) return;
+        try {
+            JSONArray a = new JSONArray(get("posts?select=id,user_id,author_name&id=gt." + feedMaxId + "&order=id.desc&limit=30"));
+            final List<String[]> au = new ArrayList<String[]>();
+            Set<String> seen = new HashSet<String>();
+            int n = 0;
+            for (int i = 0; i < a.length(); i++) {
+                JSONObject p = a.getJSONObject(i);
+                String u = p.optString("user_id", "");
+                if (u.equals(uid) || muteSet.contains(u) || blockSet.contains(u) || hiddenSet.contains(String.valueOf(p.optLong("id")))) continue;
+                n++;
+                if (au.size() < 3 && seen.add(u)) au.add(new String[] { u, p.optString("author_name", "") });
+            }
+            if (n == 0) return;
+            StringBuilder need = new StringBuilder();
+            for (String[] x : au) if (!photos.containsKey(x[0])) { if (need.length() > 0) need.append(","); need.append(x[0]); }
+            if (need.length() > 0) {
+                try {
+                    JSONArray pa = new JSONArray(get("public_profiles?select=user_id,photo_url&user_id=in.(" + need + ")"));
+                    for (int q = 0; q < pa.length(); q++) {
+                        JSONObject po = pa.getJSONObject(q);
+                        String ph = po.isNull("photo_url") ? "" : po.optString("photo_url", "");
+                        if (isImg(ph)) photos.put(po.optString("user_id"), ph);
+                    }
+                } catch (Exception ignore) {}
+            }
+            runOnUiThread(new Runnable() { @Override public void run() { showNewPill(au); } });
+        } catch (Exception ignore) {}
+    }
+
+    protected void showNewPill(List<String[]> au) {
+        if (newPill == null) return;
+        newPill.removeAllViews();
+        for (int i = 0; i < au.size(); i++) {
+            View av = miniAv(au.get(i)[0], au.get(i)[1], 26);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(26), dp(26));
+            if (i > 0) lp.setMarginStart(-dp(8));
+            newPill.addView(av, lp);
+        }
+        TextView t = tv(NAVY, 14, true);
+        t.setText("↑ " + L("منشورات جديدة", "New posts"));
+        t.setPadding(dp(8), 0, 0, 0);
+        newPill.addView(t);
+        newPill.setVisibility(View.VISIBLE);
+    }
+
+    protected View miniAv(String u, String name, int sz) {
+        FrameLayout f = new FrameLayout(this);
+        TextView t = tv(Color.WHITE, 11, true);
+        t.setGravity(Gravity.CENTER);
+        t.setText(name != null && name.length() > 0 ? name.substring(0, 1).toUpperCase() : "?");
+        t.setBackground(oval(0xFF1B2A63, GOLD));
+        f.addView(t, new FrameLayout.LayoutParams(dp(sz), dp(sz)));
+        ImageView iv = circImg(sz);
+        String ph = photos.get(u);
+        if (ph != null && isImg(ph)) { loadImage(ph, iv); f.addView(iv, new FrameLayout.LayoutParams(dp(sz), dp(sz))); }
+        return f;
+    }
+
     protected void refresh() {
         if (loading) return;
+        if (newPill != null) newPill.setVisibility(View.GONE);
         items.clear();
         stats.clear();
         offset = 0;
@@ -2308,6 +2386,7 @@ public class Home extends FollowList {
                     runOnUiThread(new Runnable() {
                         @Override public void run() {
                             homeItems.addAll(got);
+                            for (JSONObject gp : got) feedMaxId = Math.max(feedMaxId, gp.optLong("id"));
                             offset += n;
                             if (n < PAGE) endReached = true;
                             refreshUi();
@@ -2440,6 +2519,7 @@ public class Home extends FollowList {
                 @Override public void onClick(View v) { if (action.startsWith("nav:")) showPage(action.substring(4)); else goWeb(action); }
             });
         }
+        if (action == null) c.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { onHomeTap(); } });
         if ("nav:messages".equals(action)) return withMsgBadge(c);
         return c;
     }
@@ -2629,11 +2709,6 @@ public class Home extends FollowList {
         blp.setMargins(0, 0, dp(10), 0);
         top.addView(balance, blp);
         top.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
-        TextView rf = iconBtn("↻", null);
-        rf.setOnClickListener(new View.OnClickListener() {
-            @Override public void onClick(View v) { refresh(); }
-        });
-        top.addView(rf);
         top.addView(iconBtn("🔍", "search"));
         TextView bell = iconBtn("\uD83D\uDD14", "notifications");
         FrameLayout bellBox = new FrameLayout(this);
@@ -2705,6 +2780,7 @@ public class Home extends FollowList {
             if (tier < 1) { feedAds[0] = true; adapter.notifyDataSetChanged(); }
         } });
         lv.setAdapter(adapter);
+        feedLv = lv;
         lv.setOnScrollListener(new AbsListView.OnScrollListener() {
             @Override public void onScrollStateChanged(AbsListView v, int st) {}
             @Override public void onScroll(AbsListView v, int first, int visible, int total) {
@@ -2725,6 +2801,19 @@ public class Home extends FollowList {
         FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.BOTTOM | Gravity.LEFT);
         flp.setMargins(dp(18), 0, 0, dp(18));
         listBox.addView(fab, flp);
+        newPill = new LinearLayout(this);
+        newPill.setOrientation(LinearLayout.HORIZONTAL);
+        newPill.setGravity(Gravity.CENTER_VERTICAL);
+        newPill.setPadding(dp(10), dp(7), dp(14), dp(7));
+        GradientDrawable npg = new GradientDrawable(); npg.setColor(GOLD); npg.setCornerRadius(dp(24));
+        newPill.setBackground(npg);
+        newPill.setElevation(dp(8));
+        newPill.setVisibility(View.GONE);
+        newPill.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { onHomeTap(); } });
+        FrameLayout.LayoutParams npl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        npl.topMargin = dp(10);
+        listBox.addView(newPill, npl);
+        timerH.postDelayed(newPoll, 30000);
         adFab = fab;
         adFabShift();
         root.addView(listBox, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
