@@ -104,6 +104,14 @@ abstract class Base extends Activity {
     protected abstract void acceptRoomInvite(String roomId);
     protected abstract void openVideosTab();
     protected abstract View makeRow();
+    // خلفية مسطحة بلا بطاقة: لون الصفحة مع خط رفيع في الأسفل (اختياري)
+    protected android.graphics.drawable.Drawable flatBg(boolean divider) {
+        if (!divider) return new android.graphics.drawable.ColorDrawable(0xFF0A1033);
+        android.graphics.drawable.LayerDrawable ld = new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[] {
+            new android.graphics.drawable.ColorDrawable(0x80F5C35A), new android.graphics.drawable.ColorDrawable(0xFF0A1033) });
+        ld.setLayerInset(1, 0, 0, 0, 1);
+        return ld;
+    }
     protected abstract void toggleFollowUser(final String target);
     protected abstract void bindPost(View cv, int i);
     protected abstract void bindPost(View cv, JSONObject o);

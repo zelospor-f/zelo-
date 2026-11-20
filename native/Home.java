@@ -446,15 +446,10 @@ public class Home extends FollowList {
     // ---------------- بطاقة المنشور ----------------
     protected View makeRow() {
         Wrap w = new Wrap(this);
-        w.setPadding(dp(14), dp(6), dp(14), dp(6));
         LinearLayout row = new LinearLayout(this);
         row.setOrientation(LinearLayout.VERTICAL);
-        row.setPadding(dp(14), dp(14), dp(14), dp(12));
-        GradientDrawable g = new GradientDrawable();
-        g.setColor(CARD);
-        g.setCornerRadius(dp(20));
-        g.setStroke(dp(1), 0x33F5C35A);
-        row.setBackground(g);
+        row.setPadding(dp(16), dp(14), dp(16), dp(4));
+        row.setBackground(flatBg(true));
         final Holder h = w.h;
         row.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) {

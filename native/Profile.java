@@ -863,16 +863,37 @@ abstract class Profile extends WeeklyMatchRankings {
         wm.setScaleType(ImageView.ScaleType.FIT_CENTER);
     }
 
-    // رد على طريقة X: المنشور الأصلي (نفس بطاقة المنشور) ثم ردّ صاحب الحساب بنفس صف الردود في صفحة المنشور
+    // رد على طريقة X: المنشور الأصلي ثم خط من صورته إلى صورة صاحب الرد، وردّه تحته (نفس بطاقة المنشور ونفس صف الردود)
     protected View replyRow(View cv, final JSONObject o) {
         LinearLayout w = (LinearLayout) cv;
         if (w.getTag() == null) {
             w.setOrientation(LinearLayout.VERTICAL);
-            View pv = makeRow();
-            w.addView(pv);
-            View rr = rpNewRowView();
-            rr.setPaddingRelative(dp(16), dp(10), dp(16), dp(12));
-            w.addView(rr, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            w.setBackground(flatBg(true));
+            FrameLayout fl = new FrameLayout(this);
+            final LinearLayout col = new LinearLayout(this);
+            col.setOrientation(LinearLayout.VERTICAL);
+            final View pv = makeRow();
+            ((ViewGroup) pv).getChildAt(0).setBackground(flatBg(false));
+            col.addView(pv);
+            final View rr = rpNewRowView();
+            col.addView(rr, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            fl.addView(col, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            final View line = new View(this);
+            line.setBackgroundColor(0xFFF5C35A);
+            FrameLayout.LayoutParams ll = new FrameLayout.LayoutParams(dp(2), 0, Gravity.TOP | Gravity.START);
+            ll.setMarginStart(dp(37));
+            fl.addView(line, ll);
+            col.addOnLayoutChangeListener(new View.OnLayoutChangeListener() {
+                @Override public void onLayoutChange(View v, int l, int t, int r2, int b2, int ol, int ot, int or2, int ob) {
+                    if (pv.getVisibility() != View.VISIBLE) { line.setVisibility(View.GONE); return; }
+                    int top = dp(14) + dp(44) + dp(4);
+                    int bot = rr.getTop() + dp(8) - dp(3);
+                    FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) line.getLayoutParams();
+                    if (bot > top && (lp.topMargin != top || lp.height != bot - top)) { lp.topMargin = top; lp.height = bot - top; line.setLayoutParams(lp); }
+                    line.setVisibility(bot > top ? View.VISIBLE : View.GONE);
+                }
+            });
+            w.addView(fl, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             w.setTag(new View[] { pv, rr });
         }
         View[] tg = (View[]) w.getTag();
@@ -880,6 +901,7 @@ abstract class Profile extends WeeklyMatchRankings {
         tg[0].setVisibility(par != null ? View.VISIBLE : View.GONE);
         if (par != null) bindPost(tg[0], par);
         rpBindView(tg[1], o, par, new Runnable() { @Override public void run() { if (adapter != null) adapter.notifyDataSetChanged(); } });
+        tg[1].setPaddingRelative(dp(19), dp(8), dp(16), dp(12));
         final long pid = o.optLong("post_id");
         tg[1].setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { if (pid > 0) openPostById(String.valueOf(pid)); } });
         return cv;
