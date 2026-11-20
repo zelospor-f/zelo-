@@ -2570,6 +2570,7 @@ public class Home extends FollowList {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
+        try { if (getResources().getConfiguration().smallestScreenWidthDp < 600) setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT); } catch (Exception ignore) {}
         url = getIntent().getStringExtra("url");
         key = getIntent().getStringExtra("key");
         token = getIntent().getStringExtra("token");
