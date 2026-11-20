@@ -806,25 +806,34 @@ abstract class Profile extends WeeklyMatchRankings {
                         }
                     }
                 } catch (Exception ignore) {}
-                try { v[0] = String.valueOf(new JSONArray(get("user_follows?select=following_id&follower_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {}
-                try { v[1] = String.valueOf(new JSONArray(get("user_follows?select=follower_id&following_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {}
-                if (mine) {
-                    try {
-                        String g = rpc("get_gifts_received", "{\"p_uid\":\"" + target + "\"}").trim();
-                        v[2] = g.replace("\"", "");
-                    } catch (Exception ignore) {}
-                } else {
-                    try { v[2] = String.valueOf(new JSONArray(get("posts?select=id&user_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {}
+                // إعادة المحاولة حتى 3 مرات إذا فشل أي رقم (اتصال ضعيف أو جلسة لم تكتمل بعد)
+                for (int attempt = 0; attempt < 3; attempt++) {
+                    if (attempt > 0) { try { Thread.sleep(1500); } catch (Exception ignoreSleep) {} }
+                    if ("–".equals(v[0])) { try { v[0] = String.valueOf(new JSONArray(get("user_follows?select=following_id&follower_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {} }
+                    if ("–".equals(v[1])) { try { v[1] = String.valueOf(new JSONArray(get("user_follows?select=follower_id&following_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {} }
+                    if ("–".equals(v[2])) {
+                        if (mine) {
+                            try {
+                                String g = rpc("get_gifts_received", "{\"p_uid\":\"" + target + "\"}").trim();
+                                if (g.length() > 0 && !g.startsWith("{")) v[2] = g.replace("\"", "");
+                            } catch (Exception ignore) {}
+                        } else {
+                            try { v[2] = String.valueOf(new JSONArray(get("posts?select=id&user_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {}
+                        }
+                    }
+                    if ("–".equals(v[3])) {
+                        try {
+                            JSONArray mp = new JSONArray(get("posts?select=id&user_id=eq." + target + "&order=created_at.desc&limit=300"));
+                            StringBuilder ib = new StringBuilder();
+                            for (int i = 0; i < mp.length(); i++) { if (ib.length() > 0) ib.append(","); ib.append(mp.getJSONObject(i).optLong("id")); }
+                            if (ib.length() > 0) {
+                                JSONArray lk = new JSONArray(get("post_likes?select=post_id&post_id=in.(" + ib + ")&user_id=neq." + target + "&limit=100000"));
+                                v[3] = String.valueOf(lk.length());
+                            } else v[3] = "0";
+                        } catch (Exception ignore) {}
+                    }
+                    if (!"–".equals(v[0]) && !"–".equals(v[1]) && !"–".equals(v[2]) && !"–".equals(v[3])) break;
                 }
-                try {
-                    JSONArray mp = new JSONArray(get("posts?select=id&user_id=eq." + target + "&order=created_at.desc&limit=300"));
-                    StringBuilder ib = new StringBuilder();
-                    for (int i = 0; i < mp.length(); i++) { if (ib.length() > 0) ib.append(","); ib.append(mp.getJSONObject(i).optLong("id")); }
-                    if (ib.length() > 0) {
-                        JSONArray lk = new JSONArray(get("post_likes?select=post_id&post_id=in.(" + ib + ")&user_id=neq." + target + "&limit=100000"));
-                        v[3] = String.valueOf(lk.length());
-                    } else v[3] = "0";
-                } catch (Exception ignore) {}
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         for (int q = 0; q < 4; q++) nums[q].setText(v[q]);
