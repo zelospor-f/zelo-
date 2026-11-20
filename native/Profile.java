@@ -781,9 +781,9 @@ abstract class Profile extends WeeklyMatchRankings {
         } });
         if (!mine) fetchTierOf(target, new TierCb() { @Override public void on(int tier) { tierV[0] = tier; refreshVer.run(); } });
         reload[0].run();
+        // معلومات الملف تُجلب وتُعرض فورًا (بالتوازي مع الأرقام)
         pool.execute(new Runnable() {
             @Override public void run() {
-                final String[] v = { "–", "–", "–", "–" };
                 final String[] ex = { "", "", "", "", "", "", "" }; // name, username, photo, bio, badge_club, first selected club
                 try {
                     if (!mine) {
@@ -806,33 +806,8 @@ abstract class Profile extends WeeklyMatchRankings {
                         }
                     }
                 } catch (Exception ignore) {}
-                // إعادة المحاولة حتى 3 مرات إذا فشل أي رقم (اتصال ضعيف أو جلسة لم تكتمل بعد)
-                for (int attempt = 0; attempt < 3; attempt++) {
-                    if (attempt > 0) { try { Thread.sleep(1500); } catch (Exception ignoreSleep) {} }
-                    if ("–".equals(v[0])) { try { v[0] = String.valueOf(new JSONArray(get("user_follows?select=following_id&follower_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {} }
-                    if ("–".equals(v[1])) { try { v[1] = String.valueOf(new JSONArray(get("user_follows?select=follower_id&following_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {} }
-                    if ("–".equals(v[2])) {
-                        try {
-                            String g = rpc("get_gifts_received", "{\"p_uid\":\"" + target + "\"}").trim();
-                            if (g.length() > 0 && !g.startsWith("{")) v[2] = g.replace("\"", "");
-                        } catch (Exception ignore) {}
-                    }
-                    if ("–".equals(v[3])) {
-                        try {
-                            JSONArray mp = new JSONArray(get("posts?select=id&user_id=eq." + target + "&order=created_at.desc&limit=300"));
-                            StringBuilder ib = new StringBuilder();
-                            for (int i = 0; i < mp.length(); i++) { if (ib.length() > 0) ib.append(","); ib.append(mp.getJSONObject(i).optLong("id")); }
-                            if (ib.length() > 0) {
-                                JSONArray lk = new JSONArray(get("post_likes?select=post_id&post_id=in.(" + ib + ")&user_id=neq." + target + "&limit=100000"));
-                                v[3] = String.valueOf(lk.length());
-                            } else v[3] = "0";
-                        } catch (Exception ignore) {}
-                    }
-                    if (!"–".equals(v[0]) && !"–".equals(v[1]) && !"–".equals(v[2]) && !"–".equals(v[3])) break;
-                }
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
-                        for (int q = 0; q < 4; q++) nums[q].setText(v[q]);
                         if (!mine) {
                             if (ex[0].length() > 0) { nameV.setText(ex[0]); avLetter.setText(ex[0].substring(0, 1).toUpperCase()); }
                             if (ex[1].length() > 0) { userV.setText("@" + ex[1]); shareName[0] = ex[1]; }
@@ -848,6 +823,40 @@ abstract class Profile extends WeeklyMatchRankings {
                 });
             }
         });
+        // كل رقم يُجلب بشكل مستقل ويظهر حال وصوله
+        for (int q0 = 0; q0 < 4; q0++) {
+            final int q = q0;
+            pool.execute(new Runnable() {
+                @Override public void run() {
+                    String r = "–";
+                    for (int attempt = 0; attempt < 3; attempt++) {
+                        if (attempt > 0) { try { Thread.sleep(1500); } catch (Exception ignoreSleep) {} }
+                        r = profStatFetch(q, target);
+                        if (!"–".equals(r)) break;
+                    }
+                    final String fr = r;
+                    runOnUiThread(new Runnable() { @Override public void run() { nums[q].setText(fr); } });
+                }
+            });
+        }
+    }
+
+    private String profStatFetch(int q, String target) {
+        try {
+            if (q == 0) return String.valueOf(new JSONArray(get("user_follows?select=following_id&follower_id=eq." + target + "&limit=10000")).length());
+            if (q == 1) return String.valueOf(new JSONArray(get("user_follows?select=follower_id&following_id=eq." + target + "&limit=10000")).length());
+            if (q == 2) {
+                String g = rpc("get_gifts_received", "{\"p_uid\":\"" + target + "\"}").trim();
+                if (g.length() > 0 && !g.startsWith("{")) return g.replace("\"", "");
+                return "–";
+            }
+            JSONArray mp = new JSONArray(get("posts?select=id&user_id=eq." + target + "&order=created_at.desc&limit=300"));
+            StringBuilder ib = new StringBuilder();
+            for (int i = 0; i < mp.length(); i++) { if (ib.length() > 0) ib.append(","); ib.append(mp.getJSONObject(i).optLong("id")); }
+            if (ib.length() == 0) return "0";
+            JSONArray lk = new JSONArray(get("post_likes?select=post_id&post_id=in.(" + ib + ")&user_id=neq." + target + "&limit=100000"));
+            return String.valueOf(lk.length());
+        } catch (Exception e) { return "–"; }
     }
 
     // صورة غلاف مخصّصة تملأ الحائط (قصّ مركزي) مع تعتيم خفيف
