@@ -110,7 +110,8 @@ abstract class Base extends Activity {
     protected abstract void bindAuthor(TextView nameV, TextView metaV, JSONObject o, boolean withTime);
     protected abstract View rpAvatar(String name, String photo, int sz);
     protected abstract View rpNewRowView();
-    protected abstract void rpBindView(View r, JSONObject o, boolean hideActs);
+    protected abstract void rpBindView(View r, JSONObject o, JSONObject post, Runnable redraw);
+    protected abstract void rpProfLoad(java.util.List<JSONObject> replies);
     protected abstract View navItem(int icon, String label, final String action, boolean active);
 
     // يضبطها هذا الشاشة عند الرجوع إلى صفحة من صفحات الويب (يقرؤها NativeFeedPlugin)

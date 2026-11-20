@@ -1521,12 +1521,107 @@ public class Home extends FollowList {
     }
 
     protected View rpNewRowView() { return rpNewRow(); }
-    protected void rpBindView(View r, JSONObject o, boolean hideActs) {
+    protected void rpBindView(View r, JSONObject o, JSONObject post, Runnable redraw) {
         RpH h = (RpH) r.getTag();
         rpBindBasic((LinearLayout) r, h, o, false);
-        View ac = h.acm == null ? null : (View) h.acm.getParent();
-        if (ac != null) ac.setVisibility(hideActs ? View.GONE : View.VISIBLE);
-        h.more.setVisibility(hideActs ? View.GONE : View.VISIBLE);
+        rpBindActs(h, o, post, profRp, redraw, redraw);
+        h.more.setVisibility(View.GONE);
+    }
+
+    protected static class RpData {
+        final HashMap<Long, Integer> likes = new HashMap<Long, Integer>(), kids = new HashMap<Long, Integer>(), reps = new HashMap<Long, Integer>(), views = new HashMap<Long, Integer>();
+        final Set<Long> mine = new HashSet<Long>(), repMine = new HashSet<Long>(), saveMine = new HashSet<Long>();
+    }
+
+    // جلب إعجابات/تعليقات/تمريرات/مشاهدات/حفظ لقائمة ردود (مصدر واحد: صفحة المنشور وتبويب الردود)
+    protected void rpFetchData(List<JSONObject> got, RpData d) {
+        final HashMap<Long, Integer> tl = d.likes, tk = d.kids, trp = d.reps, tvw = d.views;
+        final Set<Long> tm = d.mine, trm = d.repMine, tsm = d.saveMine;
+        try {
+                            StringBuilder cids = new StringBuilder();
+                            for (JSONObject o : got) {
+                                if (cids.length() > 0) cids.append(",");
+                                cids.append(o.optLong("id"));
+                                if (!o.isNull("parent_id")) { long pp = o.optLong("parent_id"); Integer q0 = tk.get(pp); tk.put(pp, q0 == null ? 1 : q0 + 1); }
+                            }
+                            if (cids.length() > 0) {
+                                try {
+                                    JSONArray la = new JSONArray(get("comment_likes?select=comment_id,user_id&comment_id=in.(" + cids + ")&limit=5000"));
+                                    for (int q = 0; q < la.length(); q++) {
+                                        JSONObject lo = la.getJSONObject(q);
+                                        long ci = lo.optLong("comment_id");
+                                        Integer q1 = tl.get(ci); tl.put(ci, q1 == null ? 1 : q1 + 1);
+                                        if (uid != null && uid.equals(lo.optString("user_id"))) tm.add(ci);
+                                    }
+                                } catch (Exception ignore) {}
+                            }
+                            if (cids.length() > 0) {
+                                Set<Long> seenMine = new HashSet<Long>();
+                                try {
+                                    JSONArray ra = new JSONArray(get("comment_reactions?select=comment_id,user_id,kind&comment_id=in.(" + cids + ")&limit=10000"));
+                                    for (int q = 0; q < ra.length(); q++) {
+                                        JSONObject ro = ra.getJSONObject(q);
+                                        long ci = ro.optLong("comment_id");
+                                        String kd = ro.optString("kind"), ru = ro.optString("user_id");
+                                        boolean me2 = uid != null && uid.equals(ru);
+                                        if ("repost".equals(kd)) { Integer q1 = trp.get(ci); trp.put(ci, q1 == null ? 1 : q1 + 1); if (me2) trm.add(ci); }
+                                        else if ("save".equals(kd)) { if (me2) tsm.add(ci); }
+                                        else if ("view".equals(kd)) { Integer q1 = tvw.get(ci); tvw.put(ci, q1 == null ? 1 : q1 + 1); if (me2) seenMine.add(ci); }
+                                    }
+                                    // سجّل مشاهدتي لردود الآخرين مرة واحدة
+                                    if (uid != null) {
+                                        JSONArray nv = new JSONArray();
+                                        for (JSONObject o : got) {
+                                            long ci = o.optLong("id");
+                                            if (uid.equals(o.optString("user_id")) || seenMine.contains(ci)) continue;
+                                            nv.put(new JSONObject().put("comment_id", ci).put("user_id", uid).put("kind", "view"));
+                                            Integer q1 = tvw.get(ci); tvw.put(ci, q1 == null ? 1 : q1 + 1);
+                                        }
+                                        if (nv.length() > 0) sendUrl("POST", url + "/rest/v1/comment_reactions?on_conflict=comment_id,user_id,kind", nv.toString(), "resolution=ignore-duplicates,return=minimal");
+                                    }
+                                } catch (Exception ignore) {}
+                            }
+        } catch (Exception ignore) {}
+    }
+
+    // ربط أزرار الرد (تعليق/تمرير/إعجاب/مشاهدات/حفظ/مشاركة) — مصدر واحد
+    protected void rpBindActs(RpH h, final JSONObject o, final JSONObject post, final RpData cd, final Runnable redraw, final Runnable reload) {
+        final HashMap<Long, Integer> cLikes = cd.likes, cKids = cd.kids, cReps = cd.reps, cViews = cd.views;
+        final Set<Long> cMine = cd.mine, cRepMine = cd.repMine, cSaveMine = cd.saveMine;
+        h.more.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpMenu(o, reload); } });
+                final long cid = o.optLong("id");
+                Integer kc = cKids.get(cid), lcn = cLikes.get(cid);
+                boolean clk = cMine.contains(cid);
+                h.acm.setText(String.valueOf(kc == null ? 0 : kc)); setIc(h.acm, 0, MUTED, false);
+                h.alk.setText(String.valueOf(lcn == null ? 0 : lcn)); setIc(h.alk, 2, clk ? 0xFF14F195 : MUTED, clk);
+                Integer rcn = cReps.get(cid), vcn = cViews.get(cid);
+                boolean rpm = cRepMine.contains(cid), svm = cSaveMine.contains(cid);
+                h.arp.setText(String.valueOf(rcn == null ? 0 : rcn)); setIc(h.arp, 1, rpm ? 0xFF14F195 : MUTED, false);
+                h.avw.setText(String.valueOf(vcn == null ? 0 : vcn)); setIc(h.avw, 3, MUTED, false);
+                h.asv.setText(""); setIc(h.asv, 4, svm ? 0xFF14F195 : MUTED, svm);
+                h.ash.setText(""); setIc(h.ash, 5, MUTED, false);
+                h.arp.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+                    rpToggleReact(o, "repost", cReps, cRepMine, redraw);
+                } });
+                h.asv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+                    rpToggleReact(o, "save", null, cSaveMine, redraw);
+                } });
+                h.acm.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openReplyComposer(post, reload, o); } });
+                h.alk.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
+                    rpToggleLike(o, cLikes, cMine, redraw);
+                } });
+                h.ash.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { shareLink(post); } });
+    }
+
+    protected final RpData profRp = new RpData();
+    // تبويب الردود في البروفايل: جلب البيانات ثم نسخها للواجهة
+    protected void rpProfLoad(List<JSONObject> replies) {
+        final RpData nd = new RpData();
+        rpFetchData(replies, nd);
+        runOnUiThread(new Runnable() { @Override public void run() {
+            profRp.likes.clear(); profRp.likes.putAll(nd.likes); profRp.kids.clear(); profRp.kids.putAll(nd.kids); profRp.mine.clear(); profRp.mine.addAll(nd.mine);
+            profRp.reps.clear(); profRp.reps.putAll(nd.reps); profRp.views.clear(); profRp.views.putAll(nd.views); profRp.repMine.clear(); profRp.repMine.addAll(nd.repMine); profRp.saveMine.clear(); profRp.saveMine.addAll(nd.saveMine);
+        } });
     }
 
     protected void openComments(final JSONObject post) {
@@ -1617,10 +1712,11 @@ public class Home extends FollowList {
         lv.addHeaderView(hdr, null, false);
         final boolean[] cmAds = { false };
         final HashMap<Integer, View> cmAdViews = new HashMap<Integer, View>();
-        final HashMap<Long, Integer> cLikes = new HashMap<Long, Integer>(), cKids = new HashMap<Long, Integer>();
-        final Set<Long> cMine = new HashSet<Long>();
-        final HashMap<Long, Integer> cReps = new HashMap<Long, Integer>(), cViews = new HashMap<Long, Integer>();
-        final Set<Long> cRepMine = new HashSet<Long>(), cSaveMine = new HashSet<Long>();
+        final RpData cd = new RpData();
+        final HashMap<Long, Integer> cLikes = cd.likes, cKids = cd.kids;
+        final Set<Long> cMine = cd.mine;
+        final HashMap<Long, Integer> cReps = cd.reps, cViews = cd.views;
+        final Set<Long> cRepMine = cd.repMine, cSaveMine = cd.saveMine;
         final BaseAdapter ca = new BaseAdapter() {
             // إعلان أصلي بعد الرد الثالث ثم كل 8 ردود (لغير المشترك)
             private boolean isAd(int p) { return cmAds[0] && p >= 3 && (p - 3) % 9 == 0; }
@@ -1650,28 +1746,7 @@ public class Home extends FollowList {
                 View.OnClickListener pr = new View.OnClickListener() { @Override public void onClick(View v) { if (au.length() > 0) openProfileOf(au); } };
                 h.av.setOnClickListener(pr); h.n.setOnClickListener(pr);
                 h.more.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpMenu(o, reloadRef[0]); } });
-                final long cid = o.optLong("id");
-                Integer kc = cKids.get(cid), lcn = cLikes.get(cid);
-                boolean clk = cMine.contains(cid);
-                h.acm.setText(String.valueOf(kc == null ? 0 : kc)); setIc(h.acm, 0, MUTED, false);
-                h.alk.setText(String.valueOf(lcn == null ? 0 : lcn)); setIc(h.alk, 2, clk ? 0xFF14F195 : MUTED, clk);
-                Integer rcn = cReps.get(cid), vcn = cViews.get(cid);
-                boolean rpm = cRepMine.contains(cid), svm = cSaveMine.contains(cid);
-                h.arp.setText(String.valueOf(rcn == null ? 0 : rcn)); setIc(h.arp, 1, rpm ? 0xFF14F195 : MUTED, false);
-                h.avw.setText(String.valueOf(vcn == null ? 0 : vcn)); setIc(h.avw, 3, MUTED, false);
-                h.asv.setText(""); setIc(h.asv, 4, svm ? 0xFF14F195 : MUTED, svm);
-                h.ash.setText(""); setIc(h.ash, 5, MUTED, false);
-                h.arp.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
-                    rpToggleReact(o, "repost", cReps, cRepMine, new Runnable() { @Override public void run() { notifyDataSetChanged(); } });
-                } });
-                h.asv.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
-                    rpToggleReact(o, "save", null, cSaveMine, new Runnable() { @Override public void run() { notifyDataSetChanged(); } });
-                } });
-                h.acm.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openReplyComposer(post, reloadRef[0], o); } });
-                h.alk.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
-                    rpToggleLike(o, cLikes, cMine, new Runnable() { @Override public void run() { notifyDataSetChanged(); } });
-                } });
-                h.ash.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { shareLink(post); } });
+                rpBindActs(h, o, post, cd, new Runnable() { @Override public void run() { notifyDataSetChanged(); } }, new Runnable() { @Override public void run() { if (reloadRef[0] != null) reloadRef[0].run(); } });
                 return cv;
             }
         };
@@ -1688,10 +1763,11 @@ public class Home extends FollowList {
                     @Override public void run() {
                         String err = null;
                         final List<JSONObject> got = new ArrayList<JSONObject>();
-                        final HashMap<Long, Integer> tl = new HashMap<Long, Integer>(), tk = new HashMap<Long, Integer>();
-                        final Set<Long> tm = new HashSet<Long>();
-                        final HashMap<Long, Integer> trp = new HashMap<Long, Integer>(), tvw = new HashMap<Long, Integer>();
-                        final Set<Long> trm = new HashSet<Long>(), tsm = new HashSet<Long>();
+                        final RpData nd = new RpData();
+                        final HashMap<Long, Integer> tl = nd.likes, tk = nd.kids;
+                        final Set<Long> tm = nd.mine;
+                        final HashMap<Long, Integer> trp = nd.reps, tvw = nd.views;
+                        final Set<Long> trm = nd.repMine, tsm = nd.saveMine;
                         try {
                             JSONArray a = new JSONArray(get("post_comments?select=id,parent_id,user_id,author_name,content,created_at,hidden,image_url,video_url,video_path&post_id=eq." + pid + "&order=created_at.asc&limit=200"));
                             StringBuilder need = new StringBuilder();
@@ -1705,49 +1781,7 @@ public class Home extends FollowList {
                                 if (au.length() > 0 && !unames.containsKey(au) && !photos.containsKey(au) && seen.add(au)) { if (need.length() > 0) need.append(","); need.append(au); }
                             }
                             { Set<String> tu = new HashSet<String>(); tu.add(postUser); for (JSONObject o2 : got) tu.add(o2.optString("user_id", "")); loadTiers(tu); }
-                            StringBuilder cids = new StringBuilder();
-                            for (JSONObject o : got) {
-                                if (cids.length() > 0) cids.append(",");
-                                cids.append(o.optLong("id"));
-                                if (!o.isNull("parent_id")) { long pp = o.optLong("parent_id"); Integer q0 = tk.get(pp); tk.put(pp, q0 == null ? 1 : q0 + 1); }
-                            }
-                            if (cids.length() > 0) {
-                                try {
-                                    JSONArray la = new JSONArray(get("comment_likes?select=comment_id,user_id&comment_id=in.(" + cids + ")&limit=5000"));
-                                    for (int q = 0; q < la.length(); q++) {
-                                        JSONObject lo = la.getJSONObject(q);
-                                        long ci = lo.optLong("comment_id");
-                                        Integer q1 = tl.get(ci); tl.put(ci, q1 == null ? 1 : q1 + 1);
-                                        if (uid != null && uid.equals(lo.optString("user_id"))) tm.add(ci);
-                                    }
-                                } catch (Exception ignore) {}
-                            }
-                            if (cids.length() > 0) {
-                                Set<Long> seenMine = new HashSet<Long>();
-                                try {
-                                    JSONArray ra = new JSONArray(get("comment_reactions?select=comment_id,user_id,kind&comment_id=in.(" + cids + ")&limit=10000"));
-                                    for (int q = 0; q < ra.length(); q++) {
-                                        JSONObject ro = ra.getJSONObject(q);
-                                        long ci = ro.optLong("comment_id");
-                                        String kd = ro.optString("kind"), ru = ro.optString("user_id");
-                                        boolean me2 = uid != null && uid.equals(ru);
-                                        if ("repost".equals(kd)) { Integer q1 = trp.get(ci); trp.put(ci, q1 == null ? 1 : q1 + 1); if (me2) trm.add(ci); }
-                                        else if ("save".equals(kd)) { if (me2) tsm.add(ci); }
-                                        else if ("view".equals(kd)) { Integer q1 = tvw.get(ci); tvw.put(ci, q1 == null ? 1 : q1 + 1); if (me2) seenMine.add(ci); }
-                                    }
-                                    // سجّل مشاهدتي لردود الآخرين مرة واحدة
-                                    if (uid != null) {
-                                        JSONArray nv = new JSONArray();
-                                        for (JSONObject o : got) {
-                                            long ci = o.optLong("id");
-                                            if (uid.equals(o.optString("user_id")) || seenMine.contains(ci)) continue;
-                                            nv.put(new JSONObject().put("comment_id", ci).put("user_id", uid).put("kind", "view"));
-                                            Integer q1 = tvw.get(ci); tvw.put(ci, q1 == null ? 1 : q1 + 1);
-                                        }
-                                        if (nv.length() > 0) sendUrl("POST", url + "/rest/v1/comment_reactions?on_conflict=comment_id,user_id,kind", nv.toString(), "resolution=ignore-duplicates,return=minimal");
-                                    }
-                                } catch (Exception ignore) {}
-                            }
+                            rpFetchData(got, nd);
                             if (need.length() > 0) {
                                 try {
                                     JSONArray pa = new JSONArray(get("public_profiles?select=user_id,photo_url,username&user_id=in.(" + need + ")"));

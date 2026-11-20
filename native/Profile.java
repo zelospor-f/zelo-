@@ -199,6 +199,7 @@ abstract class Profile extends WeeklyMatchRankings {
                         @Override public void run() { plist.clear(); plist.addAll(got); done.run(); }
                     });
                     loadMetaFor(ids.toString(), users, t == 1 ? got2 : got);
+                    if (t == 1) rpProfLoad(got);
                 } catch (Exception e) {
                     runOnUiThread(new Runnable() {
                         @Override public void run() { plist.clear(); done.run(); toast(T("تعذّر التحميل")); }
@@ -878,7 +879,7 @@ abstract class Profile extends WeeklyMatchRankings {
         JSONObject par = o.optJSONObject("_parent");
         tg[0].setVisibility(par != null ? View.VISIBLE : View.GONE);
         if (par != null) bindPost(tg[0], par);
-        rpBindView(tg[1], o, true);
+        rpBindView(tg[1], o, par, new Runnable() { @Override public void run() { if (adapter != null) adapter.notifyDataSetChanged(); } });
         final long pid = o.optLong("post_id");
         tg[1].setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { if (pid > 0) openPostById(String.valueOf(pid)); } });
         return cv;
