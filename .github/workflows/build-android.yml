@@ -122,7 +122,9 @@ jobs:
 
               buildTypes {
                   release {
-                      minifyEnabled false
+                      minifyEnabled true
+                      shrinkResources true
+                      proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
                       if (ksFile) { signingConfig signingConfigs.release }
                   }
               }
@@ -140,6 +142,7 @@ jobs:
 
           dependencies {
               implementation 'androidx.core:core:1.13.1'
+              implementation 'androidx.fragment:fragment:1.8.5'
               implementation 'com.google.android.gms:play-services-ads:23.6.0'
               implementation 'com.android.billingclient:billing:8.0.0'
               implementation 'com.google.android.play:integrity:1.4.0'
@@ -150,6 +153,19 @@ jobs:
                   implementation 'com.google.firebase:firebase-crashlytics'
               }
           }
+          EOF
+
+          cat > $APP_DIR/app/proguard-rules.pro <<'EOF'
+          -keep class com.zelosport.app.** { *; }
+          -keep class androidx.core.content.FileProvider { *; }
+          -keep class com.google.firebase.messaging.FirebaseMessaging { *; }
+          -keep class com.google.android.gms.tasks.** { *; }
+          -keep class com.android.billingclient.** { *; }
+          -keep class com.google.android.play.core.integrity.** { *; }
+          -keep class com.android.installreferrer.** { *; }
+          -keepclassmembers class * { @android.webkit.JavascriptInterface <methods>; }
+          -dontwarn com.google.firebase.**
+          -dontwarn com.google.android.gms.**
           EOF
 
           cat > $APP_DIR/app/src/main/res/values/strings.xml <<'EOF'
@@ -214,7 +230,7 @@ jobs:
                       android:name=".Home"
                       android:exported="true"
                       android:launchMode="singleTop"
-                      android:screenOrientation="portrait"
+                      android:resizeableActivity="true"
                       android:windowSoftInputMode="adjustResize"
                       android:configChanges="orientation|screenSize|keyboardHidden|keyboard|navigation|uiMode|density|fontScale">
                       <intent-filter>
