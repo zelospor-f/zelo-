@@ -601,16 +601,7 @@ abstract class Radar extends Referrals {
             c.setGravity(Gravity.CENTER_VERTICAL);
             c.setPadding(dp(12), dp(10), dp(12), dp(10));
             c.setBackground(rbg(0x0DFFFFFF, 0x6614F195, 20));
-            c.addView(txt(L("لا توجد مباراة مباشرة الآن.", "No live match right now."), MUTED, 14, false), lpw(1f));
-            TextView demo = txt(L("عرض تجريبي", "Demo mode"), Color.WHITE, 13, true);
-            demo.setPadding(dp(14), dp(8), dp(14), dp(8));
-            demo.setBackground(rbg(0x0FFFFFFF, 0x1FFFFFFF, 14));
-            demo.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
-                rDemo = true; rVote.setAlpha(0.45f);
-                for (int i = 0; i < 5; i++) rSimulate(i * 3500L);
-                timerH.postDelayed(rSimTick, 4500);
-            } });
-            c.addView(demo);
+            c.addView(txt(L("لا توجد مباريات الآن.", "No matches right now."), MUTED, 14, false), lpw(1f));
             rMatchBox.addView(c);
             return;
         }
