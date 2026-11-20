@@ -533,6 +533,7 @@ abstract class Auth extends Badges {
         String s = in.getData().toString();
         if (!s.startsWith(AUTH_REDIRECT)) return false;
         String frag = in.getData().getEncodedFragment();
+        try { setIntent(new Intent()); } catch (Exception ignore) {}
         if (frag == null) return true;
         String at = "", rt = "";
         for (String kv : frag.split("&")) {
