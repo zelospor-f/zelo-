@@ -444,7 +444,7 @@ abstract class Profile extends WeeklyMatchRankings {
         stats4.setBackground(sg);
         stats4.addView(profStat(nums, 0, L("يتابِع", "Following"), mine ? "follow:following" : null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         stats4.addView(profStat(nums, 1, L("متابِعون", "Followers"), mine ? "follow:followers" : null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        stats4.addView(profStat(nums, 2, mine ? L("هدايا", "Gifts") : L("منشور", "Post"), null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        stats4.addView(profStat(nums, 2, L("هدايا", "Gifts"), null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         stats4.addView(profStat(nums, 3, L("أهداف", "Goals"), null), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         LinearLayout.LayoutParams slp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         slp.setMargins(dp(14), dp(8), dp(14), dp(4));
@@ -812,14 +812,10 @@ abstract class Profile extends WeeklyMatchRankings {
                     if ("–".equals(v[0])) { try { v[0] = String.valueOf(new JSONArray(get("user_follows?select=following_id&follower_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {} }
                     if ("–".equals(v[1])) { try { v[1] = String.valueOf(new JSONArray(get("user_follows?select=follower_id&following_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {} }
                     if ("–".equals(v[2])) {
-                        if (mine) {
-                            try {
-                                String g = rpc("get_gifts_received", "{\"p_uid\":\"" + target + "\"}").trim();
-                                if (g.length() > 0 && !g.startsWith("{")) v[2] = g.replace("\"", "");
-                            } catch (Exception ignore) {}
-                        } else {
-                            try { v[2] = String.valueOf(new JSONArray(get("posts?select=id&user_id=eq." + target + "&limit=10000")).length()); } catch (Exception ignore) {}
-                        }
+                        try {
+                            String g = rpc("get_gifts_received", "{\"p_uid\":\"" + target + "\"}").trim();
+                            if (g.length() > 0 && !g.startsWith("{")) v[2] = g.replace("\"", "");
+                        } catch (Exception ignore) {}
                     }
                     if ("–".equals(v[3])) {
                         try {

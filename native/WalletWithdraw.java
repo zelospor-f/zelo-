@@ -259,7 +259,9 @@ abstract class WalletWithdraw extends Ads {
             col.addView(ic, new LinearLayout.LayoutParams(dp(56), dp(56)));
             TextView lb = txt(al[i], 0xFFF4F6FF, 12, true);
             lb.setPadding(0, dp(6), 0, 0);
-            col.addView(lb);
+            lb.setGravity(Gravity.CENTER);
+            lb.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+            col.addView(lb, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             col.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
                 if (k == 0) { if (wwDlg != null) wwDlg.dismiss(); openStorePage(); }
                 else if (k == 1) { if (wwDlg != null) wwDlg.dismiss(); openAdsPage(); }
