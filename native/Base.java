@@ -106,6 +106,11 @@ abstract class Base extends Activity {
     protected abstract View makeRow();
     protected abstract void toggleFollowUser(final String target);
     protected abstract void bindPost(View cv, int i);
+    protected abstract void bindPost(View cv, JSONObject o);
+    protected abstract void bindAuthor(TextView nameV, TextView metaV, JSONObject o, boolean withTime);
+    protected abstract View rpAvatar(String name, String photo, int sz);
+    protected abstract View rpNewRowView();
+    protected abstract void rpBindView(View r, JSONObject o, boolean hideActs);
     protected abstract View navItem(int icon, String label, final String action, boolean active);
 
     // يضبطها هذا الشاشة عند الرجوع إلى صفحة من صفحات الويب (يقرؤها NativeFeedPlugin)

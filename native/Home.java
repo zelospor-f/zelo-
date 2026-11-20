@@ -1455,6 +1455,80 @@ public class Home extends FollowList {
         FrameLayout av; TextView n, m, t, more, vid, acm, alk, ash, arp, avw, asv; ImageView img;
     }
 
+    protected LinearLayout rpNewRow() {
+        LinearLayout r; RpH h;
+        r = new LinearLayout(Home.this);
+        r.setOrientation(LinearLayout.HORIZONTAL);
+        h = new RpH();
+        h.av = new FrameLayout(Home.this);
+        LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(38), dp(38));
+        alp.setMarginEnd(dp(10));
+        r.addView(h.av, alp);
+        LinearLayout col = new LinearLayout(Home.this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout line = new LinearLayout(Home.this);
+        line.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout nn = new LinearLayout(Home.this);
+        nn.setOrientation(LinearLayout.VERTICAL);
+        h.n = tv(Color.WHITE, 14, true);
+        h.m = tv(MUTED, 12, false);
+        h.n.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START); h.m.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        nn.addView(h.n, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)); nn.addView(h.m);
+        line.addView(nn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        h.more = tv(MUTED, 20, true);
+        h.more.setText("⋮");
+        h.more.setPadding(dp(10), dp(2), dp(2), dp(2));
+        line.addView(h.more);
+        col.addView(line);
+        h.t = tv(0xFFE6E9FF, 15, false);
+        h.t.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
+        h.t.setPadding(0, dp(4), 0, dp(2));
+        col.addView(h.t);
+        h.img = rpImageView(180);
+        LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(180));
+        ilp.topMargin = dp(6);
+        col.addView(h.img, ilp);
+        h.vid = rpVideoBox();
+        LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(160));
+        vlp.topMargin = dp(6);
+        col.addView(h.vid, vlp);
+        LinearLayout acts = new LinearLayout(Home.this);
+        h.acm = tv(MUTED, 15, false); h.arp = tv(MUTED, 15, false); h.alk = tv(MUTED, 15, false); h.avw = tv(MUTED, 15, false); h.asv = tv(MUTED, 15, false); h.ash = tv(MUTED, 15, false);
+        TextView[] at = { h.acm, h.arp, h.alk, h.avw, h.asv, h.ash };
+        for (int q = 0; q < at.length; q++) { at[q].setPaddingRelative(q < 4 ? dp(14) : dp(2), dp(6), dp(2), dp(6)); acts.addView(at[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
+        LinearLayout.LayoutParams alp2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        alp2.topMargin = dp(4);
+        col.addView(acts, alp2);
+        r.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        r.setTag(h);
+        return r;
+    }
+
+    protected void rpBindBasic(LinearLayout r, RpH h, final JSONObject o, boolean reply) {
+        final String au = o.optString("user_id", "");
+        r.setPaddingRelative(dp(reply ? 44 : 16), dp(12), dp(16), dp(12));
+        String nm = o.optString("author_name", "");
+        h.av.removeAllViews();
+        h.av.addView(rpAvatar(nm, photos.get(au), 38));
+        bindAuthor(h.n, h.m, o, true);
+        String c = o.optString("content", "");
+        h.t.setText(c.startsWith("::sticker::") ? c.substring(11) : c);
+        h.t.setVisibility(c.length() > 0 ? View.VISIBLE : View.GONE);
+        String im = o.isNull("image_url") ? "" : o.optString("image_url", "");
+        String vd = o.isNull("video_url") ? "" : o.optString("video_url", "");
+        if (im.length() > 4) { h.img.setVisibility(View.VISIBLE); loadImage(im, h.img); } else { h.img.setTag(null); h.img.setVisibility(View.GONE); }
+        if (vd.length() > 4) { h.vid.setVisibility(View.VISIBLE); h.vid.setTag(R_TAG, vd); } else h.vid.setVisibility(View.GONE);
+    }
+
+    protected View rpNewRowView() { return rpNewRow(); }
+    protected void rpBindView(View r, JSONObject o, boolean hideActs) {
+        RpH h = (RpH) r.getTag();
+        rpBindBasic((LinearLayout) r, h, o, false);
+        View ac = h.acm == null ? null : (View) h.acm.getParent();
+        if (ac != null) ac.setVisibility(hideActs ? View.GONE : View.VISIBLE);
+        h.more.setVisibility(hideActs ? View.GONE : View.VISIBLE);
+    }
+
     protected void openComments(final JSONObject post) {
         final long pid = post.optLong("id");
         final String pk = String.valueOf(pid);
@@ -1565,69 +1639,14 @@ public class Home extends FollowList {
                 LinearLayout r;
                 RpH h;
                 if (cv == null) {
-                    r = new LinearLayout(Home.this);
-                    r.setOrientation(LinearLayout.HORIZONTAL);
-                    h = new RpH();
-                    h.av = new FrameLayout(Home.this);
-                    LinearLayout.LayoutParams alp = new LinearLayout.LayoutParams(dp(38), dp(38));
-                    alp.setMarginEnd(dp(10));
-                    r.addView(h.av, alp);
-                    LinearLayout col = new LinearLayout(Home.this);
-                    col.setOrientation(LinearLayout.VERTICAL);
-                    LinearLayout line = new LinearLayout(Home.this);
-                    line.setGravity(Gravity.CENTER_VERTICAL);
-                    LinearLayout nn = new LinearLayout(Home.this);
-                    nn.setOrientation(LinearLayout.VERTICAL);
-                    h.n = tv(Color.WHITE, 14, true);
-                    h.m = tv(MUTED, 12, false);
-                    h.n.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START); h.m.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    nn.addView(h.n, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)); nn.addView(h.m);
-                    line.addView(nn, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-                    h.more = tv(MUTED, 20, true);
-                    h.more.setText("⋮");
-                    h.more.setPadding(dp(10), dp(2), dp(2), dp(2));
-                    line.addView(h.more);
-                    col.addView(line);
-                    h.t = tv(0xFFE6E9FF, 15, false);
-                    h.t.setTextAlignment(View.TEXT_ALIGNMENT_VIEW_START);
-                    h.t.setPadding(0, dp(4), 0, dp(2));
-                    col.addView(h.t);
-                    h.img = rpImageView(180);
-                    LinearLayout.LayoutParams ilp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(180));
-                    ilp.topMargin = dp(6);
-                    col.addView(h.img, ilp);
-                    h.vid = rpVideoBox();
-                    LinearLayout.LayoutParams vlp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(160));
-                    vlp.topMargin = dp(6);
-                    col.addView(h.vid, vlp);
-                    LinearLayout acts = new LinearLayout(Home.this);
-                    h.acm = tv(MUTED, 15, false); h.arp = tv(MUTED, 15, false); h.alk = tv(MUTED, 15, false); h.avw = tv(MUTED, 15, false); h.asv = tv(MUTED, 15, false); h.ash = tv(MUTED, 15, false);
-                    TextView[] at = { h.acm, h.arp, h.alk, h.avw, h.asv, h.ash };
-                    for (int q = 0; q < at.length; q++) { at[q].setPaddingRelative(q < 4 ? dp(14) : dp(2), dp(6), dp(2), dp(6)); acts.addView(at[q], new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, q >= 4 ? 0.7f : 1f)); }
-                    LinearLayout.LayoutParams alp2 = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                    alp2.topMargin = dp(4);
-                    col.addView(acts, alp2);
-                    r.addView(col, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-                    r.setTag(h);
-                    cv = r;
+                    cv = rpNewRow();
                 }
                 r = (LinearLayout) cv;
                 h = (RpH) r.getTag();
                 final JSONObject o = cm.get(i);
                 boolean reply = !o.isNull("parent_id");
-                r.setPaddingRelative(dp(reply ? 44 : 16), dp(12), dp(16), dp(12));
                 final String au = o.optString("user_id", "");
-                String nm = o.optString("author_name", "");
-                h.av.removeAllViews();
-                h.av.addView(rpAvatar(nm, photos.get(au), 38));
-                bindAuthor(h.n, h.m, o, true);
-                String c = o.optString("content", "");
-                h.t.setText(c.startsWith("::sticker::") ? c.substring(11) : c);
-                h.t.setVisibility(c.length() > 0 ? View.VISIBLE : View.GONE);
-                String im = o.isNull("image_url") ? "" : o.optString("image_url", "");
-                String vd = o.isNull("video_url") ? "" : o.optString("video_url", "");
-                if (im.length() > 4) { h.img.setVisibility(View.VISIBLE); loadImage(im, h.img); } else { h.img.setTag(null); h.img.setVisibility(View.GONE); }
-                if (vd.length() > 4) { h.vid.setVisibility(View.VISIBLE); h.vid.setTag(R_TAG, vd); } else h.vid.setVisibility(View.GONE);
+                rpBindBasic(r, h, o, reply);
                 View.OnClickListener pr = new View.OnClickListener() { @Override public void onClick(View v) { if (au.length() > 0) openProfileOf(au); } };
                 h.av.setOnClickListener(pr); h.n.setOnClickListener(pr);
                 h.more.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rpMenu(o, reloadRef[0]); } });

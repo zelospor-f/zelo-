@@ -134,6 +134,7 @@ abstract class Profile extends WeeklyMatchRankings {
         pool.execute(new Runnable() {
             @Override public void run() {
                 final List<JSONObject> got = new ArrayList<JSONObject>();
+                final List<JSONObject> got2 = new ArrayList<JSONObject>();
                 final String cols = "id,user_id,author_name,content,created_at,image_url,video_url,video_path,topic_type,topic_name,topic_name_b";
                 try {
                     JSONArray a;
@@ -146,12 +147,46 @@ abstract class Profile extends WeeklyMatchRankings {
                         a = ib.length() == 0 ? new JSONArray() : new JSONArray(get("posts?select=" + cols + "&id=in.(" + ib + ")&order=created_at.desc"));
                     } else {
                         a = new JSONArray(get("post_comments?select=id,post_id,content,created_at&user_id=eq." + target + "&order=created_at.desc&limit=40"));
+                        // المنشور الأصلي لكل رد + اسم صاحب الحساب
+                        String an = "";
+                        try {
+                            JSONArray pp = new JSONArray(get("public_profiles?select=nickname,username&user_id=eq." + target));
+                            if (pp.length() > 0) { an = pp.getJSONObject(0).isNull("nickname") ? "" : pp.getJSONObject(0).optString("nickname", ""); if (an.length() == 0) an = pp.getJSONObject(0).optString("username", ""); }
+                        } catch (Exception ignore) {}
+                        StringBuilder pidb = new StringBuilder();
+                        for (int i = 0; i < a.length(); i++) { long pid = a.getJSONObject(i).optLong("post_id"); if (pid > 0) { if (pidb.length() > 0) pidb.append(","); pidb.append(pid); } }
+                        Map<Long, JSONObject> pmap = new HashMap<Long, JSONObject>();
+                        if (pidb.length() > 0) {
+                            try {
+                                JSONArray par = new JSONArray(get("posts?select=" + cols + "&id=in.(" + pidb + ")"));
+                                for (int i = 0; i < par.length(); i++) pmap.put(par.getJSONObject(i).optLong("id"), par.getJSONObject(i));
+                            } catch (Exception ignore) {}
+                        }
+                        for (int i = 0; i < a.length(); i++) {
+                            JSONObject rp = a.getJSONObject(i);
+                            rp.put("user_id", target);
+                            rp.put("author_name", an);
+                            JSONObject par = pmap.get(rp.optLong("post_id"));
+                            if (par != null) rp.put("_parent", par);
+                        }
                     }
                     StringBuilder ids = new StringBuilder();
                     Set<String> users = new HashSet<String>();
                     for (int i = 0; i < a.length(); i++) {
                         JSONObject p = a.getJSONObject(i);
-                        if (t == 1) { p.put("_reply", true); got.add(p); continue; }
+                        if (t == 1) {
+                            p.put("_reply", true); got.add(p);
+                            users.add(target);
+                            JSONObject par = p.optJSONObject("_parent");
+                            if (par != null) {
+                                String pk = String.valueOf(par.optLong("id"));
+                                if (!stats.containsKey(pk)) stats.put(pk, new int[] { 0, 0, 0, 0 });
+                                if (ids.length() > 0) ids.append(",");
+                                ids.append(par.optLong("id"));
+                                users.add(par.optString("user_id", ""));
+                            }
+                            continue;
+                        }
                         if (p.optString("video_url", "").length() < 5 && t == 3) continue;
                         got.add(p);
                         stats.put(String.valueOf(p.optLong("id")), new int[] { 0, 0, 0, 0 });
@@ -159,10 +194,11 @@ abstract class Profile extends WeeklyMatchRankings {
                         ids.append(p.optLong("id"));
                         users.add(p.optString("user_id", ""));
                     }
+                    if (t == 1) { for (JSONObject g : got) { JSONObject pr = g.optJSONObject("_parent"); if (pr != null) got2.add(pr); } loadTiers(users); }
                     runOnUiThread(new Runnable() {
                         @Override public void run() { plist.clear(); plist.addAll(got); done.run(); }
                     });
-                    loadMetaFor(ids.toString(), users, got);
+                    loadMetaFor(ids.toString(), users, t == 1 ? got2 : got);
                 } catch (Exception e) {
                     runOnUiThread(new Runnable() {
                         @Override public void run() { plist.clear(); done.run(); toast(T("تعذّر التحميل")); }
@@ -826,33 +862,25 @@ abstract class Profile extends WeeklyMatchRankings {
         wm.setScaleType(ImageView.ScaleType.FIT_CENTER);
     }
 
-    protected View replyRow(View cv, JSONObject o) {
-        LinearLayout w;
-        TextView body, time;
-        if (cv.getTag() == null) {
-            w = (LinearLayout) cv;
+    // رد على طريقة X: المنشور الأصلي (نفس بطاقة المنشور) ثم ردّ صاحب الحساب بنفس صف الردود في صفحة المنشور
+    protected View replyRow(View cv, final JSONObject o) {
+        LinearLayout w = (LinearLayout) cv;
+        if (w.getTag() == null) {
             w.setOrientation(LinearLayout.VERTICAL);
-            w.setPadding(dp(14), dp(6), dp(14), dp(6));
-            LinearLayout in = new LinearLayout(this);
-            in.setOrientation(LinearLayout.VERTICAL);
-            in.setPadding(dp(14), dp(12), dp(14), dp(12));
-            GradientDrawable g = new GradientDrawable();
-            g.setColor(CARD); g.setCornerRadius(dp(18)); g.setStroke(dp(1), 0x33F5C35A);
-            in.setBackground(g);
-            TextView t1 = tv(MUTED, 11, false);
-            t1.setText(L("↩ رد على منشور", "↩ Reply to a post"));
-            in.addView(t1);
-            TextView b1 = tv(Color.WHITE, 15, false);
-            b1.setPadding(0, dp(4), 0, dp(4));
-            in.addView(b1);
-            TextView tm = tv(MUTED, 11, false);
-            in.addView(tm);
-            w.addView(in);
-            w.setTag(new TextView[] { b1, tm });
+            View pv = makeRow();
+            w.addView(pv);
+            View rr = rpNewRowView();
+            rr.setPaddingRelative(dp(16), dp(10), dp(16), dp(12));
+            w.addView(rr, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+            w.setTag(new View[] { pv, rr });
         }
-        TextView[] tt = (TextView[]) cv.getTag();
-        tt[0].setText(o.optString("content", ""));
-        tt[1].setText(ago(o.optString("created_at", "")));
+        View[] tg = (View[]) w.getTag();
+        JSONObject par = o.optJSONObject("_parent");
+        tg[0].setVisibility(par != null ? View.VISIBLE : View.GONE);
+        if (par != null) bindPost(tg[0], par);
+        rpBindView(tg[1], o, true);
+        final long pid = o.optLong("post_id");
+        tg[1].setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { if (pid > 0) openPostById(String.valueOf(pid)); } });
         return cv;
     }
 }
