@@ -90,7 +90,7 @@ abstract class Auth extends Badges {
     // ---------- الجلسة المحفوظة ----------
     protected void saveSession(String access, String refresh, String id, String mail) {
         token = access; uid = id; aRefresh = refresh;
-        getSharedPreferences("zn_auth", MODE_PRIVATE).edit().putString("access", access).putString("refresh", refresh).putString("uid", id).putString("email", mail == null ? "" : mail).apply();
+        getSharedPreferences("zn_auth", MODE_PRIVATE).edit().putString("access", access).putString("refresh", refresh).putString("uid", id).putString("email", mail == null ? "" : mail).putLong("saved_at", System.currentTimeMillis()).apply();
     }
 
     protected void clearSession() {
@@ -151,7 +151,11 @@ abstract class Auth extends Badges {
     protected JSONObject loadUserRow(String id) {
         try {
             JSONArray a = new JSONArray(get("users?select=*&user_id=eq." + id + "&limit=1"));
-            return a.length() > 0 ? a.getJSONObject(0) : null;
+            if (a.length() > 0) {
+                try { getSharedPreferences("zn_auth", MODE_PRIVATE).edit().putString("urow", a.getJSONObject(0).toString()).apply(); } catch (Exception ignore) {}
+                return a.getJSONObject(0);
+            }
+            return null;
         } catch (Exception e) { return null; }
     }
 

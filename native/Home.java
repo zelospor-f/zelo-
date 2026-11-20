@@ -2587,6 +2587,20 @@ public class Home extends FollowList {
         if (uid != null && token != null) { buildHome(); return; }
         // بدون ويب: الجلسة من التخزين المحلي أو شاشة الدخول
         if (restoreSession()) {
+            // مسار سريع: جلسة حديثة (أقل من 40 دقيقة) وبيانات محفوظة → افتح الرئيسية فورًا وجدّد في الخلفية
+            try {
+                SharedPreferences zp = getSharedPreferences("zn_auth", MODE_PRIVATE);
+                String cached = zp.getString("urow", "");
+                long at = zp.getLong("saved_at", 0);
+                if (cached.length() > 0 && at > 0 && System.currentTimeMillis() - at < 40L * 60 * 1000) {
+                    applyUserRow(new JSONObject(cached));
+                    buildHome();
+                    pool.execute(new Runnable() { @Override public void run() {
+                        try { loadUserRow(uid); } catch (Exception ignore) {}
+                    } });
+                    return;
+                }
+            } catch (Exception ignore) {}
             pool.execute(new Runnable() {
                 @Override public void run() {
                     boolean ok = refreshSession();
