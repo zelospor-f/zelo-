@@ -291,7 +291,7 @@ abstract class WalletWithdraw extends Ads {
             head.setGravity(Gravity.CENTER_VERTICAL);
             TextView ht = wwH(allOk ? L("جاهز للسحب", "Ready to withdraw") : done >= tot - 2 ? L("أنت قريب من السحب", "You are close to withdrawing") : L("شروط السحب", "Withdrawal conditions"));
             head.addView(ht, lpw(1f));
-            head.addView(txt(done + " / " + tot, allOk ? 0xFF14F195 : GOLD, 14, true));
+            TextView cnt = txt(done + " / " + tot, allOk ? 0xFF14F195 : GOLD, 14, true); cnt.setTextDirection(View.TEXT_DIRECTION_LTR); head.addView(cnt);
             cl.addView(head);
             LinearLayout dots = new LinearLayout(this);
             dots.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
