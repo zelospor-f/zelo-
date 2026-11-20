@@ -267,11 +267,11 @@ abstract class Notifications extends NftMarket {
             col.setPadding(dp(12), 0, 0, 0);
             LinearLayout r1 = new LinearLayout(this);
             r1.setGravity(Gravity.CENTER_VERTICAL);
-            r1.addView(txt(title, Color.WHITE, 14, true), lpw(1f));
+            TextView ttl = txt(title, Color.WHITE, 14, true); ttl.setTextDirection(View.TEXT_DIRECTION_RTL); ttl.setGravity(Gravity.START); r1.addView(ttl, lpw(1f));
             if (!read) { View dot = new View(this); dot.setBackground(oval(0xFFFD1D1D, 0)); r1.addView(dot, new LinearLayout.LayoutParams(dp(9), dp(9))); }
             col.addView(r1);
-            if (body.length() > 0) col.addView(txt(body, MUTED, 12, false));
-            col.addView(txt(ago(n.optString("created_at")), 0xFF7782B0, 11, true), lpm(0, 5, 0, 0));
+            if (body.length() > 0) { TextView bd = txt(body, MUTED, 12, false); bd.setTextDirection(View.TEXT_DIRECTION_RTL); bd.setGravity(Gravity.START); col.addView(bd, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)); }
+            TextView ag = txt(ago(n.optString("created_at")), 0xFF7782B0, 11, true); ag.setGravity(Gravity.START); col.addView(ag, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)); ((LinearLayout.LayoutParams) ag.getLayoutParams()).topMargin = dp(5);
             row.addView(col, lpw(1f));
             row.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { ntTap(n); } });
             ntList.addView(row, lpm(0, 0, 0, 10));
