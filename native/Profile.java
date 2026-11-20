@@ -874,6 +874,16 @@ abstract class Profile extends WeeklyMatchRankings {
             col.setOrientation(LinearLayout.VERTICAL);
             final View pv = makeRow();
             ((ViewGroup) pv).getChildAt(0).setBackground(flatBg(false));
+            // محتوى المنشور الأصلي يبدأ بعد عمود الصورة ليمرّ الخط الذهبي بجانبه لا فوقه (مثل X)
+            ViewGroup prow = (ViewGroup) ((ViewGroup) pv).getChildAt(0);
+            for (int ci = 1; ci < prow.getChildCount(); ci++) {
+                View cc = prow.getChildAt(ci);
+                if (cc.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+                    ViewGroup.MarginLayoutParams ml = (ViewGroup.MarginLayoutParams) cc.getLayoutParams();
+                    ml.setMarginStart(ml.getMarginStart() + dp(54));
+                    cc.setLayoutParams(ml);
+                }
+            }
             col.addView(pv);
             final View rr = rpNewRowView();
             col.addView(rr, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
