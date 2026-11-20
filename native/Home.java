@@ -903,6 +903,12 @@ public class Home extends FollowList {
     }
 
     protected View crest(String n) {
+        // شعار الفريق الحقيقي إن وُجد، وإلا حرفان احتياطيان
+        try {
+            String ck = n == null ? "" : n.trim().toLowerCase();
+            String cu = TEAM_CREST.get(ck);
+            if (cu != null && cu.startsWith("http")) return lbAvatar(cu, initials(n), 44, 0x40FFFFFF, true, 1);
+        } catch (Exception ignore) {}
         TextView c = tv(Color.WHITE, 15, true);
         c.setText(initials(n));
         c.setGravity(Gravity.CENTER);
