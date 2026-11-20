@@ -585,6 +585,19 @@ abstract class Messages extends Login {
         chatInputBar = bar;
         root.addView(bar);
         chatDlg.setContentView(root);
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            final LinearLayout kbBar = bar;
+            final int sh = statusH() + dp(6), nb = navH();
+            root.setOnApplyWindowInsetsListener(new View.OnApplyWindowInsetsListener() {
+                @Override public WindowInsets onApplyWindowInsets(View view, WindowInsets ins) {
+                    int ime = ins.getInsets(WindowInsets.Type.ime()).bottom;
+                    view.setPadding(0, sh, 0, ime);
+                    kbBar.setPadding(dp(12), dp(10), dp(12), (ime > 0 ? 0 : nb) + dp(6));
+                    return ins;
+                }
+            });
+            root.requestApplyInsets();
+        }
         chatDlg.setOnDismissListener(new DialogInterface.OnDismissListener() {
             @Override public void onDismiss(DialogInterface di) { chatDlg = null; chatUid = null; timerH.removeCallbacks(chatTick); loadDmList(); updateMsgBadge(); }
         });
