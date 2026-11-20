@@ -184,19 +184,20 @@ abstract class Boost extends Subscriptions {
     protected void updateBoost() {
         if (bDailyV == null) return;
         long daily = bDaily * 1000L;
-        boolean enough = bBalance >= daily;
+        boolean enough = bBalance >= daily * bDays;
         bDailyV.setText(nfmt(daily) + " ZELO");
         bDaysV.setText(bDays + L(" يومًا", " days"));
         bTotal.setText(nfmt(daily * bDays) + " ZELO");
         if (bAudience < 0) bReach.setText("—");
         else bReach.setText(L("حتى ", "Up to ") + nfmt(Math.min(daily * 10, bAudience * 3)) + L(" ظهور يوميًا (تقديري)", " impressions per day (estimate)"));
         bBal.setText(L("رصيدك: ", "Your balance: ") + nfmt(bBalance) + " ZELO");
-        bMsg.setText(enough ? "" : L("رصيدك لا يكفي لميزانية يوم واحد. اربح نقاطًا أولًا.", "Your balance isn't enough for one day's budget. Earn points first."));
+        bMsg.setText(enough ? L("يُخصم المبلغ كاملًا الآن، ويُعاد إلى رصيدك ما لم يُستهلك عند انتهاء التعزيز.", "The full amount is charged now; any unused part is returned to your balance when the boost ends.") : L("رصيدك لا يكفي لإجمالي الميزانية. قلّل الأيام أو الميزانية اليومية، أو اربح نقاطًا.", "Your balance doesn't cover the total budget. Lower the days or daily budget, or earn points."));
+        bMsg.setTextColor(enough ? MUTED : 0xFFFF6B6B);
         bBtn.setAlpha(!enough || bBusy ? 0.5f : 1f);
     }
 
     protected void submitBoost(final String pk, final Dialog d) {
-        if (bBusy || bBalance < bDaily * 1000L) return;
+        if (bBusy || bBalance < bDaily * 1000L * bDays) return;
         bBusy = true;
         updateBoost();
         pool.execute(new Runnable() {
