@@ -90,7 +90,7 @@ import org.json.JSONObject;
 abstract class Rooms extends Stats {
     protected static final int RM_OPEN_BEFORE = 60, RM_CLOSE_AFTER = 300, RM_MAX_LEN = 500, RM_GAP = 2000, RM_PAGE = 60, RM_MAX_DOM = 200, RM_MAX_VOICE = 60, RM_MIN_VOICE = 700;
     protected static final String RM_COLS = "id,name,code,owner_id,emoji,expires_at,is_public,requires_code,match_id";
-    protected static final String RM_MSG = "id,user_id,username,body,created_at,kind,audio_path,audio_ms,expires_at";
+    protected static final String RM_MSG = "id,user_id,username,body,created_at,kind,audio_path,audio_ms,expires_at,media_path";
     protected static final String[] RM_ICONS = { "ball", "trophy", "fire", "headphones", "chat", "shield" };
     protected static final String[] RM_ICON_EMO = { "⚽", "🏆", "🔥", "🎧", "💬", "🛡️" };
     protected static final String[] RM_QUICK = { "😀", "😂", "🤣", "😍", "😎", "🤔", "😮", "😢", "😡", "👏", "🙏", "👍", "🔥", "❤️", "⚽", "🥅", "🏆", "🎉", "💪", "🐐" };
@@ -105,9 +105,9 @@ abstract class Rooms extends Stats {
     protected String rmRoomId;
     protected JSONObject rmCustom, rmMatchCtx;
     protected String rmTitleTxt = "";
-    protected LinearLayout rmList, rmHubMine, rmHubPub, rmBarNormal, rmBarRec, rmQuickBar, rmAiBar;
+    protected LinearLayout rmList, rmHubMine, rmHubPub, rmBarNormal, rmBarRec, rmQuickBar;
     protected ScrollView rmScroll;
-    protected EditText rmInput, rmAiInput;
+    protected EditText rmInput;
     protected TextView rmSubTv, rmCountTv, rmRecTime, rmSendBtn;
     protected RmWave rmWave;
     protected static class RmWave extends View {
@@ -131,8 +131,7 @@ abstract class Rooms extends Stats {
     protected final Map<Long, TextView> rmExpTv = new HashMap<Long, TextView>();
     protected final Set<String> rmBlocked = new HashSet<String>();
     protected final Map<String, String> rmAv = new HashMap<String, String>();
-    protected long rmLastSend = 0, rmLastAi = 0, rmRecStart = 0;
-    protected boolean rmAiBusy = false;
+    protected long rmLastSend = 0, rmRecStart = 0;
     protected MediaPlayer rmPlayer;
     protected String rmPlayPath = "";
     protected TextView rmPlayBtn;
@@ -207,7 +206,7 @@ abstract class Rooms extends Stats {
         if (ms <= 0) return "";
         long tot = (ms + 59999) / 60000, h = tot / 60, m = tot % 60;
         String t = h > 0 ? (isAr() ? h + "س " + m + "د" : h + "h " + m + "m") : (isAr() ? m + "د" : m + "m");
-        return L("⏳ تُحذف خلال " + t, "⏳ Deleted in " + t);
+        return L("تُحذف خلال " + t, "Deleted in " + t);
     }
     protected String rmState(String iso) {
         long t = isoMs(iso);
@@ -235,8 +234,10 @@ abstract class Rooms extends Stats {
             { "not_member", L("لست عضواً في هذه الغرفة", "You are not a member of this room") },
             { "slow_down", L("مهلاً، أرسل ببطء قليلاً", "Slow down a little") },
             { "room_closed", L("هذه الغرفة مغلقة حالياً", "This room is closed right now") },
-            { "premium_required", L("الرسائل الصوتية للمشتركين فقط", "Voice messages are for subscribers only") },
-            { "bad_voice", L("تعذر إرسال الرسالة الصوتية", "Could not send the voice message") }
+            { "premium_required", L("الرسائل الصوتية والصور والفيديوهات للمشتركين فقط", "Voice, photos and videos are for subscribers only") },
+            { "bad_voice", L("تعذر إرسال الرسالة الصوتية", "Could not send the voice message") },
+            { "bad_media", L("تعذر إرسال الصورة أو الفيديو", "Could not send the photo or video") },
+            { "media_big", L("الفيديو كبير جداً (الحد 40 ميغابايت)", "The video is too large (limit 40 MB)") }
         };
         for (String[] kv : map) if (m.contains(kv[0])) return kv[1];
         return L("تعذر تنفيذ الإجراء", "Action failed");
@@ -441,6 +442,8 @@ abstract class Rooms extends Stats {
         String nm = m.optString("username", "");
         final String name = nm.length() == 0 || nm.equals("null") ? "fan" : nm;
         final boolean voice = "voice".equals(m.optString("kind")) && m.optString("audio_path").length() > 0 && !m.optString("audio_path").equals("null");
+        final String kd = m.optString("kind");
+        final boolean media = ("image".equals(kd) || "video".equals(kd)) && m.optString("media_path").length() > 0 && !m.optString("media_path").equals("null");
         LinearLayout row = new LinearLayout(this);
         row.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         row.setGravity(mine ? Gravity.END : Gravity.START);
@@ -470,7 +473,38 @@ abstract class Rooms extends Stats {
         more.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rmMsgMenu(id, muid); } });
         meta.addView(more);
         bub.addView(meta);
-        if (voice) {
+        if (media) {
+            final boolean isVid = "video".equals(kd);
+            final String mpath = m.optString("media_path");
+            FrameLayout mf = new FrameLayout(this);
+            final ImageView iv = new ImageView(this);
+            iv.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            iv.setBackgroundColor(0xFF0F1630);
+            mf.addView(iv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            mf.setOutlineProvider(new ViewOutlineProvider() { @Override public void getOutline(View v, Outline o) { o.setRoundRect(0, 0, v.getWidth(), v.getHeight(), dp(12)); } });
+            mf.setClipToOutline(true);
+            if (isVid) {
+                TextView pl = txt("▶", Color.WHITE, 24, true);
+                pl.setGravity(Gravity.CENTER);
+                pl.setBackground(oval(0x99000000, 0x66FFFFFF));
+                FrameLayout.LayoutParams pp = new FrameLayout.LayoutParams(dp(56), dp(56), Gravity.CENTER);
+                mf.addView(pl, pp);
+                TextView dur = txt("🎬 " + rmDur(m.optLong("audio_ms", 0)), Color.WHITE, 11, true);
+                dur.setPadding(dp(8), dp(2), dp(8), dp(2));
+                dur.setBackground(rbg(0x99000000, 0, 10));
+                FrameLayout.LayoutParams dl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM | Gravity.START);
+                dl.setMargins(dp(8), 0, 0, dp(8));
+                mf.addView(dur, dl);
+            }
+            mf.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { if (isVid) rmOpenVideo(mpath); else rmOpenImage(mpath); } });
+            if (!isVid) rmLoadThumb(mpath, iv);
+            LinearLayout.LayoutParams ml = new LinearLayout.LayoutParams(getResources().getDisplayMetrics().widthPixels * 62 / 100, dp(isVid ? 170 : 210));
+            ml.setMargins(0, dp(6), 0, dp(2));
+            bub.addView(mf, ml);
+            TextView ex2 = txt(rmExpLabel(m.optString("expires_at")), MUTED, 10, true);
+            bub.addView(ex2);
+            rmExpTv.put(id, ex2);
+        } else if (voice) {
             final String path = m.optString("audio_path");
             final long ms = m.optLong("audio_ms", 0);
             LinearLayout vr = new LinearLayout(this);
@@ -500,7 +534,7 @@ abstract class Rooms extends Stats {
         }
         LinearLayout.LayoutParams al = new LinearLayout.LayoutParams(dp(34), dp(34));
         al.setMargins(dp(6), 0, dp(6), 0);
-        LinearLayout.LayoutParams bl2 = new LinearLayout.LayoutParams(voice ? getResources().getDisplayMetrics().widthPixels * 70 / 100 : ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        LinearLayout.LayoutParams bl2 = new LinearLayout.LayoutParams(voice || media ? getResources().getDisplayMetrics().widthPixels * 70 / 100 : ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
         if (mine) { row.addView(bub, bl2); row.addView(av, al); } else { row.addView(av, al); row.addView(bub, bl2); }
         return row;
     }
@@ -617,7 +651,7 @@ abstract class Rooms extends Stats {
             return;
         }
         rmStopAudio();
-        btn.setText("⏳");
+        btn.setText("…");
         rmPlayBtn = btn; rmPlayBar = bar; rmPlayPath = path;
         pool.execute(new Runnable() {
             @Override public void run() {
@@ -723,7 +757,7 @@ abstract class Rooms extends Stats {
         rmLastSend = now;
         final String rid = rmRoomId;
         final String path = rmCustom.optString("id") + "/" + uid + "/" + System.currentTimeMillis() + ".m4a";
-        toast(L("⏳ جاري إرسال الرسالة الصوتية...", "⏳ Sending voice message..."));
+        toast(L("جاري إرسال الرسالة الصوتية...", "Sending voice message..."));
         rmAsync(new RmTask() { @Override public void run() throws Exception {
             byte[] bytes = new byte[(int) f.length()];
             FileInputStream in = new FileInputStream(f);
@@ -767,7 +801,12 @@ abstract class Rooms extends Stats {
             labels.add(mine ? L("حذف رسالتي", "Delete my message") : L("حذف الرسالة (المالك)", "Delete message (owner)")); dg.add(true);
             runs.add(new Runnable() { @Override public void run() {
                 rmAsync(new RmTask() { @Override public void run() throws Exception {
+                    JSONObject dm = rmData.get(Long.valueOf(id));
                     send("DELETE", "room_messages?id=eq." + id, null);
+                    try {
+                        String mp = dm == null ? "" : dm.optString("media_path");
+                        if (mine && mp.length() > 0 && !"null".equals(mp)) sendUrl("DELETE", url + "/storage/v1/object/room-media/" + mp, null);
+                    } catch (Exception ignore) {}
                     runOnUiThread(new Runnable() { @Override public void run() { rmRemove(Long.valueOf(id)); } });
                 } });
             } });
@@ -975,54 +1014,6 @@ abstract class Rooms extends Stats {
             rmQuickBar.addView(hs, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
             root.addView(rmQuickBar);
         }
-        // --- شريط المساعد الذكي ---
-        final boolean hasAi = !isCustom || custom.optString("match_id").length() > 0 && !custom.optString("match_id").equals("null");
-        if (hasAi) {
-            rmAiBar = new LinearLayout(this);
-            rmAiBar.setOrientation(LinearLayout.VERTICAL);
-            rmAiBar.setPadding(dp(12), dp(8), dp(12), dp(8));
-            rmAiBar.setBackgroundColor(0x142C4BB5);
-            rmAiBar.setVisibility(View.GONE);
-            LinearLayout ar = new LinearLayout(this);
-            ar.setGravity(Gravity.CENTER_VERTICAL);
-            rmAiInput = new EditText(this);
-            rmAiInput.setHint(L("اسأل المساعد أي شيء عن كرة القدم...", "Ask the assistant about football..."));
-            rmAiInput.setHintTextColor(0xFF7A7F9A);
-            rmAiInput.setTextColor(Color.WHITE);
-            rmAiInput.setTextSize(14);
-            rmAiInput.setSingleLine(true);
-            rmAiInput.setFilters(new InputFilter[] { new InputFilter.LengthFilter(300) });
-            rmAiInput.setBackground(rbg(0xFF0A1033, 0x732C4BB5, 12));
-            rmAiInput.setPadding(dp(12), dp(8), dp(12), dp(8));
-            ar.addView(rmAiInput, lpw(1f));
-            TextView as = txt("➤", Color.WHITE, 18, false);
-            as.setGravity(Gravity.CENTER);
-            as.setBackground(oval(0xFF2C4BB5, 0));
-            as.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) {
-                String q = rmAiInput.getText().toString().trim();
-                if (q.length() == 0) return;
-                rmAiInput.setText("");
-                rmAskAi("ask", q);
-            } });
-            LinearLayout.LayoutParams asl = new LinearLayout.LayoutParams(dp(42), dp(42));
-            asl.setMargins(dp(8), 0, 0, 0);
-            ar.addView(as, asl);
-            rmAiBar.addView(ar);
-            LinearLayout chips = new LinearLayout(this);
-            String[][] cm = { { "explain", L("اشرح لي", "Explain") }, { "recap", L("ما فاتني", "Catch me up") }, { "why", L("لماذا هذا التوقع؟", "Why this pick?") } };
-            for (final String[] c0 : cm) {
-                TextView c1 = txt(c0[1], 0xFFFFD98A, 12, true);
-                c1.setGravity(Gravity.CENTER);
-                c1.setPadding(dp(4), dp(8), dp(4), dp(8));
-                c1.setBackground(rbg(0x242C4BB5, 0x662C4BB5, 12));
-                c1.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { rmAskAi(c0[0], ""); } });
-                LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
-                cl.setMargins(dp(3), dp(8), dp(3), 0);
-                chips.addView(c1, cl);
-            }
-            rmAiBar.addView(chips);
-            root.addView(rmAiBar);
-        }
         // --- شريط الكتابة ---
         FrameLayout composeWrap = new FrameLayout(this);
         composeWrap.setBackgroundColor(0xF20A1033);
@@ -1030,7 +1021,7 @@ abstract class Rooms extends Stats {
         rmBarNormal.setGravity(Gravity.CENTER_VERTICAL);
         rmBarNormal.setPadding(dp(10), dp(10), dp(10), navH() + dp(4));
         if (isCustom) rmBarNormal.addView(rmRoundBtn("🎙", new View.OnClickListener() { @Override public void onClick(View v) { rmMicClick(); } }), rmBtnLp());
-        if (hasAi) rmBarNormal.addView(rmRoundBtn("✨", new View.OnClickListener() { @Override public void onClick(View v) { rmAiClick(); } }), rmBtnLp());
+        if (isCustom) rmBarNormal.addView(rmRoundBtn("🖼", new View.OnClickListener() { @Override public void onClick(View v) { rmMediaClick(); } }), rmBtnLp());
         if (isCustom) rmBarNormal.addView(rmRoundBtn("😀", new View.OnClickListener() { @Override public void onClick(View v) { if (rmQuickBar != null) rmQuickBar.setVisibility(rmQuickBar.getVisibility() == View.GONE ? View.VISIBLE : View.GONE); } }), rmBtnLp());
         rmInput = new EditText(this);
         rmInput.setHint(L("اكتب رسالة...", "Write a message..."));
@@ -1123,15 +1114,275 @@ abstract class Rooms extends Stats {
             rmStartRec();
         } });
     }
-    protected void rmAiClick() {
+    // ---------- الصور والفيديوهات في الغرف ----------
+    protected static final long RM_VID_MAX = 40L * 1024 * 1024;
+    protected static final LruCache<String, Bitmap> RM_IMG = new LruCache<String, Bitmap>(24 * 1024 * 1024) {
+        @Override protected int sizeOf(String k, Bitmap b) { return b.getByteCount(); }
+    };
+
+    // يُعاد تعريفها في Compose (يفتح المعرض أو الكاميرا ثم يستدعي rmSendMedia)
+    protected void rmPickMedia(boolean camera) {}
+
+    protected void rmMediaClick() {
+        if (rmCustom == null) return;
         fetchTier(new TierCb() { @Override public void on(int tier) {
-            if (tier < 2) { toast(L("مساعد المباراة في الباقة المميّزة فما فوق", "Match assistant needs the Plus plan or higher")); openSubscriptions(); return; }
-            if (rmAiBar == null) return;
-            boolean open = rmAiBar.getVisibility() == View.GONE;
-            rmAiBar.setVisibility(open ? View.VISIBLE : View.GONE);
-            if (open && rmAiInput != null) rmAiInput.requestFocus();
+            if (tier < 1) { toast(L("الصور والفيديوهات للمشتركين فقط", "Photos and videos are for subscribers only")); openSubscriptions(); return; }
+            final Dialog d = sheetDialog(false);
+            LinearLayout root = new LinearLayout(this_());
+            root.setOrientation(LinearLayout.VERTICAL);
+            root.setBackground(rbg(NAVY, 0x22FFFFFF, 22));
+            root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+            root.setPadding(dp(16), dp(16), dp(16), dp(16) + navH());
+            TextView h = txt(L("إرسال صورة أو فيديو", "Send a photo or video"), GOLD, 17, true);
+            h.setGravity(Gravity.CENTER);
+            root.addView(h, new LinearLayout.LayoutParams(-1, -2));
+            String[] lb = { L("🖼  من المعرض", "🖼  From gallery"), L("📷  الكاميرا", "📷  Camera"), L("إلغاء", "Cancel") };
+            for (int i = 0; i < 3; i++) {
+                final int k = i;
+                TextView r = txt(lb[i], i == 2 ? MUTED : Color.WHITE, 16, true);
+                r.setGravity(i == 2 ? Gravity.CENTER : Gravity.CENTER_VERTICAL);
+                r.setPadding(dp(18), dp(16), dp(18), dp(16));
+                r.setBackground(rbg(CARD, 0x33FFFFFF, 14));
+                r.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { d.dismiss(); if (k < 2) rmPickMedia(k == 1); } });
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
+                lp.topMargin = dp(10);
+                root.addView(r, lp);
+            }
+            d.setContentView(root);
+            d.show();
         } });
     }
+    private Context this_() { return this; }
+
+    // صورة مضغوطة (أقصى 1280 بكسل، JPEG) مع تصحيح الدوران
+    protected byte[] rmImageBytes(android.net.Uri u) {
+        try {
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            InputStream in = getContentResolver().openInputStream(u);
+            BitmapFactory.decodeStream(in, null, o);
+            in.close();
+            int mx = Math.max(o.outWidth, o.outHeight);
+            if (mx <= 0) return null;
+            int ss = 1;
+            while (mx / ss > 2560) ss *= 2;
+            BitmapFactory.Options o2 = new BitmapFactory.Options();
+            o2.inSampleSize = ss;
+            in = getContentResolver().openInputStream(u);
+            Bitmap b = BitmapFactory.decodeStream(in, null, o2);
+            in.close();
+            if (b == null) return null;
+            int rot = 0;
+            try {
+                InputStream i2 = getContentResolver().openInputStream(u);
+                android.media.ExifInterface ex = new android.media.ExifInterface(i2);
+                int ori = ex.getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, 1);
+                rot = ori == 6 ? 90 : ori == 3 ? 180 : ori == 8 ? 270 : 0;
+                i2.close();
+            } catch (Exception ignore) {}
+            float sc = Math.min(1f, 1280f / Math.max(b.getWidth(), b.getHeight()));
+            android.graphics.Matrix mt = new android.graphics.Matrix();
+            if (sc < 1f) mt.postScale(sc, sc);
+            if (rot != 0) mt.postRotate(rot);
+            if (!mt.isIdentity()) {
+                Bitmap nb = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), mt, true);
+                if (nb != b) b.recycle();
+                b = nb;
+            }
+            ByteArrayOutputStream bo = new ByteArrayOutputStream();
+            b.compress(Bitmap.CompressFormat.JPEG, 82, bo);
+            b.recycle();
+            return bo.toByteArray();
+        } catch (Throwable e) { return null; }
+    }
+
+    // إرسال صورة أو فيديو (من Compose بعد الاختيار/القصّ)
+    protected void rmSendMedia(final android.net.Uri u, final boolean video) {
+        if (u == null || rmCustom == null || rmRoomId == null) return;
+        long now = System.currentTimeMillis();
+        if (now - rmLastSend < RM_GAP) { toast(L("مهلاً، أرسل ببطء قليلاً", "Slow down a little")); return; }
+        rmLastSend = now;
+        final String rid = rmRoomId;
+        final String cid = rmCustom.optString("id");
+        toast(L("جاري الإرسال...", "Sending..."));
+        rmAsync(new RmTask() { @Override public void run() throws Exception {
+            byte[] data = null;
+            long len = 0, ms = 0;
+            String ext = "jpg", ctype = "image/jpeg";
+            if (!video) {
+                data = rmImageBytes(u);
+                if (data == null || data.length == 0) throw new Exception("bad_media");
+                len = data.length;
+            } else {
+                try {
+                    android.content.res.AssetFileDescriptor fd = getContentResolver().openAssetFileDescriptor(u, "r");
+                    len = fd.getLength();
+                    fd.close();
+                } catch (Exception ignore) { len = 0; }
+                if (len <= 0) throw new Exception("bad_media");
+                if (len > RM_VID_MAX) throw new Exception("media_big");
+                try {
+                    android.media.MediaMetadataRetriever mr = new android.media.MediaMetadataRetriever();
+                    mr.setDataSource(Rooms.this, u);
+                    String ds = mr.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION);
+                    mr.release();
+                    ms = ds == null ? 0 : Long.parseLong(ds);
+                } catch (Exception ignore) {}
+                String mt = null;
+                try { mt = getContentResolver().getType(u); } catch (Exception ignore) {}
+                if (mt != null && mt.equals("video/webm")) { ext = "webm"; ctype = mt; }
+                else if (mt != null && mt.equals("video/3gpp")) { ext = "3gp"; ctype = mt; }
+                else if (mt != null && mt.equals("video/quicktime")) { ext = "mov"; ctype = mt; }
+                else { ext = "mp4"; ctype = "video/mp4"; }
+            }
+            final String path = cid + "/" + uid + "/" + System.currentTimeMillis() + "." + ext;
+            HttpURLConnection c = (HttpURLConnection) new URL(url + "/storage/v1/object/room-media/" + path).openConnection();
+            c.setRequestMethod("POST");
+            c.setRequestProperty("apikey", key);
+            c.setRequestProperty("Authorization", "Bearer " + token);
+            c.setRequestProperty("Content-Type", ctype);
+            c.setRequestProperty("x-upsert", "false");
+            c.setConnectTimeout(15000);
+            c.setReadTimeout(120000);
+            c.setDoOutput(true);
+            c.setFixedLengthStreamingMode(len);
+            java.io.OutputStream os = c.getOutputStream();
+            if (data != null) os.write(data);
+            else {
+                InputStream in = getContentResolver().openInputStream(u);
+                byte[] buf = new byte[32 * 1024];
+                int n;
+                while ((n = in.read(buf)) > 0) os.write(buf, 0, n);
+                in.close();
+            }
+            os.flush();
+            int code = c.getResponseCode();
+            if (code >= 400) throw new Exception("bad_media");
+            JSONObject b = new JSONObject();
+            b.put("room_id", rid); b.put("user_id", uid); b.put("kind", video ? "video" : "image"); b.put("body", video ? "🎬" : "🖼");
+            b.put("media_path", path); if (video) b.put("audio_ms", ms);
+            String out;
+            try { out = rmInsert("room_messages", new JSONArray().put(b).toString()); }
+            catch (Exception e) {
+                try { sendUrl("DELETE", url + "/storage/v1/object/room-media/" + path, null); } catch (Exception ignore) {}
+                throw e;
+            }
+            final JSONObject row = rmRow(out);
+            if (row != null) runOnUiThread(new Runnable() { @Override public void run() { if (rid.equals(rmRoomId)) rmAddMsg(row, true); } });
+        } });
+    }
+
+    // رابط موقّع مؤقت لملف في room-media
+    protected String rmSignMedia(String path) throws Exception {
+        HttpURLConnection c = (HttpURLConnection) new URL(url + "/storage/v1/object/sign/room-media/" + path).openConnection();
+        c.setRequestMethod("POST");
+        c.setRequestProperty("apikey", key);
+        c.setRequestProperty("Authorization", "Bearer " + token);
+        c.setRequestProperty("Content-Type", "application/json");
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(20000);
+        c.setDoOutput(true);
+        c.getOutputStream().write("{\"expiresIn\":900}".getBytes("UTF-8"));
+        int code = c.getResponseCode();
+        BufferedReader r = new BufferedReader(new InputStreamReader(code >= 400 ? c.getErrorStream() : c.getInputStream(), "UTF-8"));
+        StringBuilder sb = new StringBuilder(); String ln;
+        while ((ln = r.readLine()) != null) sb.append(ln);
+        r.close();
+        if (code >= 400) throw new Exception("sign " + code);
+        String sg = new JSONObject(sb.toString()).optString("signedURL");
+        if (sg.length() == 0) throw new Exception("no url");
+        return sg.startsWith("http") ? sg : url + "/storage/v1" + sg;
+    }
+
+    protected Bitmap rmDownloadBitmap(String full, int maxW) throws Exception {
+        HttpURLConnection c = (HttpURLConnection) new URL(full).openConnection();
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(30000);
+        InputStream in = c.getInputStream();
+        ByteArrayOutputStream bo = new ByteArrayOutputStream();
+        byte[] buf = new byte[16 * 1024]; int n;
+        while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
+        in.close();
+        byte[] all = bo.toByteArray();
+        BitmapFactory.Options o = new BitmapFactory.Options();
+        o.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(all, 0, all.length, o);
+        int ss = 1;
+        while (o.outWidth / ss > maxW * 2) ss *= 2;
+        BitmapFactory.Options o2 = new BitmapFactory.Options();
+        o2.inSampleSize = ss;
+        return BitmapFactory.decodeByteArray(all, 0, all.length, o2);
+    }
+
+    protected void rmLoadThumb(final String path, final ImageView iv) {
+        iv.setTag(path);
+        Bitmap hit = RM_IMG.get(path);
+        if (hit != null) { iv.setImageBitmap(hit); return; }
+        pool.execute(new Runnable() { @Override public void run() {
+            try {
+                final Bitmap b = rmDownloadBitmap(rmSignMedia(path), 800);
+                if (b == null) return;
+                RM_IMG.put(path, b);
+                runOnUiThread(new Runnable() { @Override public void run() { if (path.equals(iv.getTag())) iv.setImageBitmap(b); } });
+            } catch (Exception ignore) {}
+        } });
+    }
+
+    protected void rmOpenImage(final String path) {
+        pool.execute(new Runnable() { @Override public void run() {
+            try {
+                final Bitmap b = rmDownloadBitmap(rmSignMedia(path), 1400);
+                if (b == null) throw new Exception("decode");
+                runOnUiThread(new Runnable() { @Override public void run() {
+                    final Dialog d = new Dialog(Rooms.this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                    ImageView v = new ImageView(Rooms.this);
+                    v.setBackgroundColor(Color.BLACK);
+                    v.setScaleType(ImageView.ScaleType.FIT_CENTER);
+                    v.setImageBitmap(b);
+                    v.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View x) { d.dismiss(); } });
+                    d.setContentView(v);
+                    d.show();
+                } });
+            } catch (Exception e) {
+                runOnUiThread(new Runnable() { @Override public void run() { toast(L("تعذر فتح الصورة", "Could not open the photo")); } });
+            }
+        } });
+    }
+
+    protected void rmOpenVideo(final String path) {
+        pool.execute(new Runnable() { @Override public void run() {
+            try {
+                final String full = rmSignMedia(path);
+                runOnUiThread(new Runnable() { @Override public void run() {
+                    final Dialog d = new Dialog(Rooms.this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+                    FrameLayout fl = new FrameLayout(Rooms.this);
+                    fl.setBackgroundColor(Color.BLACK);
+                    final VideoView vv = new VideoView(Rooms.this);
+                    MediaController mc = new MediaController(Rooms.this);
+                    mc.setAnchorView(vv);
+                    vv.setMediaController(mc);
+                    vv.setVideoURI(android.net.Uri.parse(full));
+                    vv.setOnErrorListener(new MediaPlayer.OnErrorListener() { @Override public boolean onError(MediaPlayer p, int w, int e) { toast(L("تعذر تشغيل الفيديو", "Could not play the video")); d.dismiss(); return true; } });
+                    vv.setOnPreparedListener(new MediaPlayer.OnPreparedListener() { @Override public void onPrepared(MediaPlayer p) { vv.start(); } });
+                    FrameLayout.LayoutParams vl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER);
+                    fl.addView(vv, vl);
+                    TextView x = txt("✕", Color.WHITE, 20, true);
+                    x.setGravity(Gravity.CENTER);
+                    x.setBackground(oval(0x99000000, 0x66FFFFFF));
+                    x.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { try { vv.stopPlayback(); } catch (Exception ignore) {} d.dismiss(); } });
+                    FrameLayout.LayoutParams xl = new FrameLayout.LayoutParams(dp(44), dp(44), Gravity.TOP | Gravity.START);
+                    xl.setMargins(dp(14), statusH() + dp(10), 0, 0);
+                    fl.addView(x, xl);
+                    d.setContentView(fl);
+                    d.setOnDismissListener(new DialogInterface.OnDismissListener() { @Override public void onDismiss(DialogInterface di) { try { vv.stopPlayback(); } catch (Exception ignore) {} } });
+                    d.show();
+                } });
+            } catch (Exception e) {
+                runOnUiThread(new Runnable() { @Override public void run() { toast(L("تعذر فتح الفيديو", "Could not open the video")); } });
+            }
+        } });
+    }
+
 
     protected void rmSend() {
         if (rmInput == null || rmRoomId == null) return;
@@ -1155,68 +1406,6 @@ abstract class Rooms extends Stats {
                 runOnUiThread(new Runnable() { @Override public void run() { if (rmSendBtn != null) rmSendBtn.setEnabled(true); } });
             }
         } });
-    }
-
-    // ---------- مساعد المباراة ----------
-    protected void rmAskAi(final String mode, final String question) {
-        if (rmAiBusy || rmList == null) return;
-        if (System.currentTimeMillis() - rmLastAi < 6000) { toast(L("مهلاً، أرسل ببطء قليلاً", "Slow down a little")); return; }
-        rmAiBusy = true;
-        rmLastAi = System.currentTimeMillis();
-        final JSONArray chat = new JSONArray();
-        List<Long> ids = new ArrayList<Long>(rmViews.keySet());
-        for (int i = Math.max(0, ids.size() - 40); i < ids.size(); i++) {
-            JSONObject o = rmData.get(ids.get(i));
-            if (o == null || "voice".equals(o.optString("kind"))) continue;
-            chat.put(o.optString("username") + ": " + o.optString("body").trim());
-        }
-        final TextView box = txt("…", 0xFFE9E5FF, 14, false);
-        box.setPadding(dp(12), dp(10), dp(12), dp(10));
-        box.setBackground(rbg(0x1F2C4BB5, 0x592C4BB5, 14));
-        box.setLineSpacing(0, 1.2f);
-        rmList.addView(box, lpm(0, 4, 0, 12));
-        rmScrollEnd();
-        final JSONObject ctx = rmMatchCtx != null ? rmMatchCtx : new JSONObject();
-        final String title = rmTitleTxt;
-        pool.execute(new Runnable() {
-            @Override public void run() {
-                String out = null;
-                try {
-                    JSONObject body = new JSONObject();
-                    body.put("mode", mode);
-                    body.put("match", rmMatchCtx != null ? ctx : new JSONObject().put("room_name", title));
-                    body.put("question", question);
-                    body.put("chat", chat);
-                    HttpURLConnection c = (HttpURLConnection) new URL(url + "/functions/v1/match-assistant").openConnection();
-                    c.setRequestMethod("POST");
-                    c.setRequestProperty("apikey", key);
-                    c.setRequestProperty("Authorization", "Bearer " + token);
-                    c.setRequestProperty("Content-Type", "application/json");
-                    c.setConnectTimeout(15000);
-                    c.setReadTimeout(60000);
-                    c.setDoOutput(true);
-                    c.getOutputStream().write(body.toString().getBytes("UTF-8"));
-                    int code = c.getResponseCode();
-                    BufferedReader r = new BufferedReader(new InputStreamReader(code >= 400 ? c.getErrorStream() : c.getInputStream(), "UTF-8"));
-                    StringBuilder sb = new StringBuilder(); String ln;
-                    while ((ln = r.readLine()) != null) sb.append(ln);
-                    r.close();
-                    if (code >= 400) throw new Exception("ai " + code);
-                    out = new JSONObject(sb.toString()).optString("text", "").replace("**", "");
-                } catch (Exception ignore) {}
-                final String fo = out;
-                runOnUiThread(new Runnable() { @Override public void run() {
-                    rmAiBusy = false;
-                    if (fo == null || fo.length() == 0) {
-                        if (rmList != null) rmList.removeView(box);
-                        toast(L("تعذر الحصول على إجابة المساعد", "Assistant unavailable"));
-                    } else {
-                        box.setText("✨ " + L("مساعد المباراة", "Match assistant") + "\n" + (question.length() > 0 ? question + "\n" : "") + fo);
-                    }
-                    rmScrollEnd();
-                } });
-            }
-        });
     }
 
     // ---------- قائمة الغرفة / المشاركة / الدعوة ----------

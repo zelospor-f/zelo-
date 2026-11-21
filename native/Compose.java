@@ -867,6 +867,12 @@ abstract class Compose extends Profile {
         d.show();
     }
 
+    // غرف الدردشة: اختيار صورة/فيديو (معرض أو كاميرا) ثم إرساله إلى الغرفة
+    @Override protected void rmPickMedia(boolean camera) {
+        MediaCb cb = new MediaCb() { @Override public void picked(Uri u, boolean video) { rmSendMedia(u, video); } };
+        if (camera) mediaCameraShow(cb); else mediaAttachShow(cb);
+    }
+
     // أيقونة الإرفاق: معرض الهاتف (صور وفيديو معاً)
     protected void mediaAttachShow(MediaCb cb) {
         mpCb = cb;
