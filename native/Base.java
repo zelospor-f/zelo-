@@ -575,13 +575,28 @@ abstract class Base extends Activity {
     }
 
     // ---------------- الشبكة ----------------
-    protected String get(String path) throws Exception {
+    // يجدّد الجلسة تلقائيًا عند 401 (انتهاء الرمز) ثم يُعاد الطلب مرة واحدة. تُعاد Auth تعريفها.
+    protected boolean refreshSession() { return false; }
+    private long authRefreshAt = 0;
+    protected synchronized boolean refreshOn401() {
+        long now = System.currentTimeMillis();
+        if (now - authRefreshAt < 15000) return true; // جُدّد للتو (طلب آخر) فأعد المحاولة بالرمز الجديد
+        boolean ok = false;
+        try { ok = refreshSession(); } catch (Exception ignore) {}
+        if (ok) authRefreshAt = now;
+        return ok;
+    }
+
+    protected String get(String path) throws Exception { return get(path, true); }
+
+    private String get(String path, boolean retry) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(url + "/rest/v1/" + path).openConnection();
         c.setRequestProperty("apikey", key);
         c.setRequestProperty("Authorization", "Bearer " + token);
         c.setConnectTimeout(15000);
         c.setReadTimeout(20000);
         int code = c.getResponseCode();
+        if (code == 401 && retry && refreshOn401()) return get(path, false);
         BufferedReader r = new BufferedReader(new InputStreamReader(code >= 400 ? c.getErrorStream() : c.getInputStream(), "UTF-8"));
         StringBuilder sb = new StringBuilder();
         String ln;
@@ -609,7 +624,9 @@ abstract class Base extends Activity {
         }
     }
 
-    protected String rpc(String fn, String body) throws Exception {
+    protected String rpc(String fn, String body) throws Exception { return rpc(fn, body, true); }
+
+    private String rpc(String fn, String body, boolean retry) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(url + "/rest/v1/rpc/" + fn).openConnection();
         c.setRequestMethod("POST");
         c.setRequestProperty("apikey", key);
@@ -620,6 +637,7 @@ abstract class Base extends Activity {
         c.setDoOutput(true);
         c.getOutputStream().write(body.getBytes("UTF-8"));
         int code = c.getResponseCode();
+        if (code == 401 && retry && refreshOn401()) return rpc(fn, body, false);
         BufferedReader r = new BufferedReader(new InputStreamReader(code >= 400 ? c.getErrorStream() : c.getInputStream(), "UTF-8"));
         StringBuilder sb = new StringBuilder();
         String ln;
@@ -629,7 +647,9 @@ abstract class Base extends Activity {
         return sb.toString();
     }
 
-    protected void sendUrl(String method, String full, String body, String prefer) throws Exception {
+    protected void sendUrl(String method, String full, String body, String prefer) throws Exception { sendUrl(method, full, body, prefer, true); }
+
+    private void sendUrl(String method, String full, String body, String prefer, boolean retry) throws Exception {
         HttpURLConnection c = (HttpURLConnection) new URL(full).openConnection();
         c.setRequestMethod(method);
         c.setRequestProperty("apikey", key);
@@ -643,6 +663,7 @@ abstract class Base extends Activity {
             c.getOutputStream().write(body.getBytes("UTF-8"));
         }
         int code = c.getResponseCode();
+        if (code == 401 && retry && refreshOn401()) { sendUrl(method, full, body, prefer, false); return; }
         if (code >= 300) {
             String msg = "";
             try {

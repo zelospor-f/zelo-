@@ -2592,7 +2592,7 @@ public class Home extends FollowList {
                 SharedPreferences zp = getSharedPreferences("zn_auth", MODE_PRIVATE);
                 String cached = zp.getString("urow", "");
                 long at = zp.getLong("saved_at", 0);
-                if (cached.length() > 0 && at > 0 && System.currentTimeMillis() - at < 40L * 60 * 1000) {
+                if (cached.length() > 0 && at > 0 && System.currentTimeMillis() - at < 25L * 60 * 1000) {
                     applyUserRow(new JSONObject(cached));
                     buildHome();
                     pool.execute(new Runnable() { @Override public void run() {
