@@ -1128,7 +1128,7 @@ abstract class Rooms extends Stats {
         fetchTier(new TierCb() { @Override public void on(int tier) {
             if (tier < 1) { toast(L("الصور والفيديوهات للمشتركين فقط", "Photos and videos are for subscribers only")); openSubscriptions(); return; }
             final Dialog d = sheetDialog(false);
-            LinearLayout root = new LinearLayout(this_());
+            LinearLayout root = new LinearLayout(rmThis());
             root.setOrientation(LinearLayout.VERTICAL);
             root.setBackground(rbg(NAVY, 0x22FFFFFF, 22));
             root.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -1152,7 +1152,7 @@ abstract class Rooms extends Stats {
             d.show();
         } });
     }
-    private Context this_() { return this; }
+    private Context rmThis() { return this; }
 
     // صورة مضغوطة (أقصى 1280 بكسل، JPEG) مع تصحيح الدوران
     protected byte[] rmImageBytes(android.net.Uri u) {
