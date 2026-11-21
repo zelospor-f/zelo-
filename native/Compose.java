@@ -272,7 +272,7 @@ abstract class Compose extends Profile {
 
     private boolean cmTier3() {
         if (cmTier >= 3) return true;
-        cmNote(L("🧩 أنواع المنشور والتوقّع في الباقة الكاملة (4.99$) (اضغط)", "🧩 Post types and predictions need the Pro plan (tap)"), "topic");
+        cmNote(L("🧩 أنواع المنشور في الباقة الكاملة (4.99$) (اضغط)", "🧩 Post types need the Pro plan (tap)"), "topic");
         return false;
     }
 
@@ -324,7 +324,6 @@ abstract class Compose extends Profile {
 
     // ---------- توقّع مباراة ----------
     private void cmPickPred() {
-        if (!cmTier3()) return;
         cmTopicType = null; cmTopicName = ""; cmTopicNameB = "";
         cmPred = true; cmPredMatch = null; cmPredPick = -1; cmMatchQuery = ""; cmLeague = "";
         cmRenderChips();
@@ -672,7 +671,7 @@ abstract class Compose extends Profile {
                     cmPost.setText(L("نشر", "Post"));
                     if (fe.indexOf("premium_required") >= 0) { openSubscriptions(); return; }
                     if (fe.indexOf("video_daily_limit") >= 0) toast(L("وصلت إلى حد 5 فيديوهات اليوم.", "You reached the limit of 5 videos today."));
-                    else if (fe.indexOf("tier3_required") >= 0) { toast(L("أنواع المنشور والتوقّع في الباقة الكاملة (4.99$).", "Post types and predictions need the Pro plan.")); openSubscriptions(); }
+                    else if (fe.indexOf("tier3_required") >= 0) { toast(L("أنواع المنشور في الباقة الكاملة (4.99$).", "Post types need the Pro plan.")); openSubscriptions(); }
                     else if (fe.indexOf("post_too_long") >= 0) toast(L("المنشور أطول من 1000 حرف.", "Post is over 1000 characters."));
                     else toast(L("فشل النشر: ", "Post failed: ") + fe);
                 } });
