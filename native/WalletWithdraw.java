@@ -228,7 +228,7 @@ abstract class WalletWithdraw extends Ads {
         gold.addView(gb, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.START) {{ setMargins(dp(20), dp(52), dp(20), 0); }});
         LinearLayout gf = new LinearLayout(this);
         long[] fv = { wwAvail, wwHeld };
-        String[] fl = { L("قابل للسحب", "Available"), L("قيد التعليق", "On hold") };
+        String[] fl = { L("الرصيد المتاح", "Available"), L("قيد التعليق", "On hold") };
         for (int i = 0; i < 2; i++) {
             LinearLayout cell = new LinearLayout(this);
             cell.setGravity(Gravity.CENTER_VERTICAL);
@@ -246,7 +246,7 @@ abstract class WalletWithdraw extends Ads {
         // الأزرار السريعة
         LinearLayout acts = new LinearLayout(this);
         acts.setPadding(dp(8), 0, dp(8), 0);
-        String[] al = { L("اشترِ", "Buy"), L("اربح", "Earn"), L("اسحب", "Withdraw"), L("السجل", "History") };
+        String[] al = { L("اشترِ", "Buy"), L("اجمع", "Collect"), L("اسحب", "Withdraw"), L("السجل", "History") };
         String[] ai = { "＋", "⚡", "⬇", "🕒" };
         for (int i = 0; i < 4; i++) {
             final int k = i;
