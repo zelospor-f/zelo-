@@ -23,12 +23,12 @@
  "selectClub": "Pilih klub favorit Anda",
  "myClub": "Klub Saya Saat Ini",
  "changeClub": "Ganti Klub",
- "tapToEarn": "Ketuk untuk Mendapat",
+ "tapToEarn": "Kumpulkan Kora",
  "energy": "Energi",
  "maxEnergy": "Energi Maks",
  "booster": "Booster",
  "rewardsCenter": "Pusat Hadiah",
- "rewardsSub": "Dapatkan Kora dari iklan, prediksi, dan undangan!",
+ "rewardsSub": "Kumpulkan Kora dari tugas dan undangan!",
  "dailyReward": "Hadiah Harian",
  "every24h": "Setiap 24 jam",
  "claim": "Klaim ✨",
@@ -115,7 +115,7 @@
  "refCopyBtn": "Salin tautan undangan 🔗",
  "refCopyPrompt": "Salin tautan:",
  "refFinishAccount": "Selesaikan pembuatan akun Anda dulu",
- "refEarningsTitle": "Penghasilan Referral",
+ "refEarningsTitle": "Hadiah Referral",
  "refEarningsUnit": "Kora (termasuk dalam saldo Anda)",
  "playerDefault": "Pemain",
  "topFansOf": "Penggemar Teratas {club}",
@@ -2306,5 +2306,7 @@
  "أضف عنوان السحب أولاً": "Tambahkan alamat penarikan terlebih dahulu",
  "الرصيد أقل من الحد الأدنى": "Saldo di bawah minimum",
  "تعذّر الطلب": "Permintaan gagal",
- "تم إرسال طلب السحب": "Permintaan penarikan terkirim"
+ "تم إرسال طلب السحب": "Permintaan penarikan terkirim",
+ "اجمع": "Dapatkan",
+ "الرصيد المتاح": "Saldo tersedia"
 }

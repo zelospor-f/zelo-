@@ -23,12 +23,12 @@
  "selectClub": "Favori kulübünü seç",
  "myClub": "Şu Anki Kulübüm",
  "changeClub": "Kulübü Değiştir",
- "tapToEarn": "Dokun ve Kazan",
+ "tapToEarn": "Kora Topla",
  "energy": "Enerji",
  "maxEnergy": "Maksimum Enerji",
  "booster": "Güçlendirici",
  "rewardsCenter": "Ödül Merkezi",
- "rewardsSub": "Reklamlardan, tahminlerden ve davetlerden Kora kazan!",
+ "rewardsSub": "Görevlerden ve davetlerden Kora topla!",
  "dailyReward": "Günlük Ödül",
  "every24h": "Her 24 saatte bir",
  "claim": "Al ✨",
@@ -115,7 +115,7 @@
  "refCopyBtn": "Davet bağlantısını kopyala 🔗",
  "refCopyPrompt": "Bağlantıyı kopyala:",
  "refFinishAccount": "Önce hesabını oluşturmayı tamamla",
- "refEarningsTitle": "Davet Kazançları",
+ "refEarningsTitle": "Davet Ödülleri",
  "refEarningsUnit": "Kora (bakiyene dahil)",
  "playerDefault": "Oyuncu",
  "topFansOf": "{club} En İyi Taraftarları",
@@ -2306,5 +2306,7 @@
  "أضف عنوان السحب أولاً": "Önce bir çekim adresi ekle",
  "الرصيد أقل من الحد الأدنى": "Bakiye asgari tutarın altında",
  "تعذّر الطلب": "Talep başarısız oldu",
- "تم إرسال طلب السحب": "Çekim talebi gönderildi"
+ "تم إرسال طلب السحب": "Çekim talebi gönderildi",
+ "اجمع": "Al",
+ "الرصيد المتاح": "Kullanılabilir bakiye"
 }

@@ -23,12 +23,12 @@
  "selectClub": "Choisissez votre club préféré",
  "myClub": "Mon club actuel",
  "changeClub": "Changer de club",
- "tapToEarn": "Touchez pour gagner",
+ "tapToEarn": "Collectez des Kora",
  "energy": "Énergie",
  "maxEnergy": "Énergie max",
  "booster": "Booster",
  "rewardsCenter": "Centre de récompenses",
- "rewardsSub": "Gagnez des Kora avec des pubs, des pronostics et des invitations !",
+ "rewardsSub": "Collectez des Kora avec des tâches et des invitations !",
  "dailyReward": "Récompense quotidienne",
  "every24h": "Toutes les 24 h",
  "claim": "Récupérer ✨",
@@ -115,7 +115,7 @@
  "refCopyBtn": "Copier le lien d'invitation 🔗",
  "refCopyPrompt": "Copier le lien :",
  "refFinishAccount": "Terminez d'abord la création de votre compte",
- "refEarningsTitle": "Gains de parrainage",
+ "refEarningsTitle": "Récompenses de parrainage",
  "refEarningsUnit": "Kora (inclus dans votre solde)",
  "playerDefault": "Joueur",
  "topFansOf": "Meilleurs fans de {club}",
@@ -2306,5 +2306,7 @@
  "أضف عنوان السحب أولاً": "Ajoutez d'abord une adresse de retrait",
  "الرصيد أقل من الحد الأدنى": "Solde inférieur au minimum",
  "تعذّر الطلب": "La demande a échoué",
- "تم إرسال طلب السحب": "Demande de retrait envoyée"
+ "تم إرسال طلب السحب": "Demande de retrait envoyée",
+ "اجمع": "Obtenir",
+ "الرصيد المتاح": "Solde disponible"
 }
