@@ -143,7 +143,7 @@ abstract class Ads extends Store {
         c.setPadding(0, dp(16), 0, 0);
         ImageView coin = lbCoin(84);
         c.addView(coin, new LinearLayout.LayoutParams(dp(84), dp(84)));
-        TextView h = txt(L("اربح كورة مجانية", "Earn free Kora"), 0xFFF8FAFC, 22, true);
+        TextView h = txt(L("اجمع كورة مجانية", "Get free Kora"), 0xFFF8FAFC, 22, true);
         h.setGravity(Gravity.CENTER);
         c.addView(h, lpm(0, 10, 0, 8));
         TextView p = txt(L("شاهد إعلانًا قصيرًا واحصل على كورة.", "Watch a short ad and get Kora."), 0xFF94A3B8, 15, false);
@@ -227,7 +227,7 @@ abstract class Ads extends Store {
         try {
             RewardedAd.load(this, AD_REWARDED, new AdRequest.Builder().build(), new RewardedAdLoadCallback() {
                 @Override public void onAdFailedToLoad(LoadAdError e) {
-                    adStatus(L("تعذّر عرض الإعلان الآن، حاول لاحقاً.", "Could not show the ad, try again later."), true);
+                    adStatus(L("لا توجد إعلانات متاحة حاليًا، عُد بعد قليل.", "No ads are available right now. Please check back soon."), true);
                     adEnd();
                 }
                 @Override public void onAdLoaded(RewardedAd ad) {
@@ -236,7 +236,7 @@ abstract class Ads extends Store {
                         ad.setFullScreenContentCallback(new FullScreenContentCallback() {
                             @Override public void onAdDismissedFullScreenContent() { adFinished(); }
                             @Override public void onAdFailedToShowFullScreenContent(AdError e) {
-                                adStatus(L("تعذّر عرض الإعلان الآن، حاول لاحقاً.", "Could not show the ad, try again later."), true);
+                                adStatus(L("لا توجد إعلانات متاحة حاليًا، عُد بعد قليل.", "No ads are available right now. Please check back soon."), true);
                                 adEnd();
                             }
                         });
@@ -244,13 +244,13 @@ abstract class Ads extends Store {
                             @Override public void onUserEarnedReward(RewardItem item) { adRewardEarned = true; }
                         });
                     } catch (Throwable t) {
-                        adStatus(L("تعذّر عرض الإعلان الآن، حاول لاحقاً.", "Could not show the ad, try again later."), true);
+                        adStatus(L("لا توجد إعلانات متاحة حاليًا، عُد بعد قليل.", "No ads are available right now. Please check back soon."), true);
                         adEnd();
                     }
                 }
             });
         } catch (Throwable t) {
-            adStatus(L("تعذّر عرض الإعلان الآن، حاول لاحقاً.", "Could not show the ad, try again later."), true);
+            adStatus(L("لا توجد إعلانات متاحة حاليًا، عُد بعد قليل.", "No ads are available right now. Please check back soon."), true);
             adEnd();
         }
     }
@@ -275,7 +275,7 @@ abstract class Ads extends Store {
                     runOnUiThread(new Runnable() { @Override public void run() {
                         loadBalance();
                         adRenderProgress(p);
-                        adStatus(prog == 0 ? L("🎉 ربحت +1 كورة", "🎉 You earned +1 Kora") : L("تم ✅ التقدّم: " + prog + T(" من ") + per + T(" إعلانات للكورة القادمة"), "Done ✅ Progress: " + prog + " of " + per + " ads for the next Kora"), false);
+                        adStatus(prog == 0 ? L("🎉 حصلت على +1 كورة", "🎉 You got +1 Kora") : L("تم ✅ التقدّم: " + prog + T(" من ") + per + T(" إعلانات للكورة القادمة"), "Done ✅ Progress: " + prog + " of " + per + " ads for the next Kora"), false);
                     } });
                     return;
                 }
