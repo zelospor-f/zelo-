@@ -82,6 +82,88 @@ public class Home extends FollowList {
     protected ImageView[] vIc = new ImageView[6];
     protected TextView[] vCt = new TextView[6];
     protected int vTrackW = 0;
+    protected final ExecutorService vPf = Executors.newSingleThreadExecutor();
+    protected volatile int vGen = 0;
+
+    // ملف الفيديو المخبّأ مؤقتًا (للتشغيل الفوري عند السحب)
+    protected java.io.File vCacheFile(String u) {
+        return new java.io.File(getCacheDir(), "vv_" + Integer.toHexString(u.hashCode()) + ".mp4");
+    }
+
+    // يحمّل الفيديوهات القادمة (التالي، ثم الذي بعده، ثم السابق) في الخلفية
+    protected void vPrefetch() {
+        final List<String> urls = new ArrayList<String>();
+        int[] offs = { 1, 2, -1 };
+        for (int k = 0; k < offs.length; k++) {
+            int q = vPos + offs[k];
+            if (q >= 0 && q < vList.size()) {
+                String u = vList.get(q).isNull("video_url") ? "" : vList.get(q).optString("video_url", "");
+                if (u.length() > 4) urls.add(u);
+            }
+        }
+        final int gen = ++vGen;
+        for (final String u : urls) {
+            vPf.execute(new Runnable() {
+                @Override public void run() {
+                    if (gen != vGen || vDlg == null) return;
+                    vFetch(u);
+                }
+            });
+        }
+    }
+
+    protected void vFetch(String u) {
+        java.io.File f = vCacheFile(u);
+        if (f.exists() && f.length() > 0) { f.setLastModified(System.currentTimeMillis()); return; }
+        java.io.File tmp = new java.io.File(f.getPath() + ".part");
+        HttpURLConnection c = null;
+        try {
+            c = (HttpURLConnection) new URL(u).openConnection();
+            c.setConnectTimeout(10000);
+            c.setReadTimeout(20000);
+            if (c.getResponseCode() != 200) return;
+            long len = c.getContentLength();
+            if (len > 40L * 1024 * 1024) return; // لا نحمّل الملفات الكبيرة مسبقًا
+            InputStream in = c.getInputStream();
+            java.io.FileOutputStream out = new java.io.FileOutputStream(tmp);
+            byte[] buf = new byte[32768];
+            int n;
+            long tot = 0;
+            while ((n = in.read(buf)) > 0) { out.write(buf, 0, n); tot += n; if (tot > 40L * 1024 * 1024) break; }
+            out.close();
+            in.close();
+            if (tot > 0 && tot <= 40L * 1024 * 1024 && (len <= 0 || tot == len)) tmp.renameTo(f);
+            else tmp.delete();
+            vTrim();
+        } catch (Exception e) {
+            try { tmp.delete(); } catch (Exception ignore) {}
+        } finally {
+            if (c != null) { try { c.disconnect(); } catch (Exception ignore) {} }
+        }
+    }
+
+    // أبقِ 8 ملفات فقط
+    protected void vTrim() {
+        try {
+            java.io.File[] fs = getCacheDir().listFiles();
+            if (fs == null) return;
+            List<java.io.File> l = new ArrayList<java.io.File>();
+            for (java.io.File x : fs) if (x.getName().startsWith("vv_") && x.getName().endsWith(".mp4")) l.add(x);
+            if (l.size() <= 8) return;
+            java.util.Collections.sort(l, new java.util.Comparator<java.io.File>() {
+                @Override public int compare(java.io.File x, java.io.File y) { return Long.compare(x.lastModified(), y.lastModified()); }
+            });
+            for (int i = 0; i < l.size() - 8; i++) l.get(i).delete();
+        } catch (Exception ignore) {}
+    }
+
+    protected void vClearCache() {
+        try {
+            java.io.File[] fs = getCacheDir().listFiles();
+            if (fs == null) return;
+            for (java.io.File x : fs) if (x.getName().startsWith("vv_")) x.delete();
+        } catch (Exception ignore) {}
+    }
 
     // الوسم على أزرار البطاقة: كائن المنشور نفسه (أو رقمه في القائمة الحالية)
     protected JSONObject tagPost(Object t) {
@@ -243,7 +325,10 @@ public class Home extends FollowList {
         vTime.setText("");
         vMp = null;
         vVv.stopPlayback();
-        vVv.setVideoURI(android.net.Uri.parse(o.optString("video_url", "")));
+        String vuLoad = o.optString("video_url", "");
+        java.io.File vcf = vCacheFile(vuLoad);
+        if (vcf.exists() && vcf.length() > 0) { vcf.setLastModified(System.currentTimeMillis()); vVv.setVideoURI(android.net.Uri.fromFile(vcf)); }
+        else vVv.setVideoURI(android.net.Uri.parse(vuLoad));
         vH.removeCallbacks(vTick);
         vH.postDelayed(vTick, 400);
         recordView(o, stats.get(String.valueOf(o.optLong("id"))) == null ? new int[] { 0, 0, 0, 0 } : stats.get(String.valueOf(o.optLong("id"))));
@@ -266,6 +351,7 @@ public class Home extends FollowList {
                 mp.setLooping(true);
                 mp.setVolume(vMuted ? 0f : 1f, vMuted ? 0f : 1f);
                 if (!vPaused) vVv.start();
+                vPrefetch();
             }
         });
         vVv.setOnErrorListener(new android.media.MediaPlayer.OnErrorListener() {
@@ -422,6 +508,8 @@ public class Home extends FollowList {
             @Override public void onDismiss(DialogInterface di) {
                 try { vVv.stopPlayback(); } catch (Exception ignore) {}
                 vH.removeCallbacks(vTick);
+                vGen++;
+                vPf.execute(new Runnable() { @Override public void run() { vClearCache(); } });
                 vRefresh = null;
                 vDlg = null;
                 refreshUi();
