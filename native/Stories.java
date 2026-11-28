@@ -44,6 +44,38 @@ import org.json.JSONObject;
 // الملفات تُرفع إلى R2 (كالمنشورات) والسجل في جدول stories، ويُحذف كلاهما بعد 24 ساعة (cleanup-stories).
 abstract class Stories extends FollowList {
 
+    private static class StTrash extends android.graphics.drawable.Drawable {
+        final int color, px;
+        final android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        StTrash(int color, int px) { this.color = color; this.px = px; }
+        @Override public int getIntrinsicWidth() { return px; }
+        @Override public int getIntrinsicHeight() { return px; }
+        @Override public void setAlpha(int a) {}
+        @Override public void setColorFilter(android.graphics.ColorFilter f) {}
+        @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
+        @Override public void draw(android.graphics.Canvas c) {
+            c.save();
+            c.translate(getBounds().left, getBounds().top);
+            float sc = px / 24f;
+            c.scale(sc, sc);
+            p.setStyle(android.graphics.Paint.Style.STROKE);
+            p.setStrokeWidth(1.8f);
+            p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+            p.setStrokeJoin(android.graphics.Paint.Join.ROUND);
+            p.setColor(color);
+            c.drawLine(4.5f, 7f, 19.5f, 7f, p);
+            android.graphics.Path h = new android.graphics.Path();
+            h.moveTo(9f, 7f); h.lineTo(9f, 4.5f); h.lineTo(15f, 4.5f); h.lineTo(15f, 7f);
+            c.drawPath(h, p);
+            android.graphics.Path b = new android.graphics.Path();
+            b.moveTo(6.5f, 7f); b.lineTo(7.5f, 19.5f); b.lineTo(16.5f, 19.5f); b.lineTo(17.5f, 7f);
+            c.drawPath(b, p);
+            c.drawLine(10.2f, 10.5f, 10.2f, 16.5f, p);
+            c.drawLine(13.8f, 10.5f, 13.8f, 16.5f, p);
+            c.restore();
+        }
+    }
+
     private static class StEye extends android.graphics.drawable.Drawable {
         final int color, px;
         final android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
@@ -100,9 +132,8 @@ abstract class Stories extends FollowList {
     private Dialog stDlg;
     private FrameLayout stMedia;
     private LinearLayout stBars;
-    private TextView stNameTv, stTimeTv, stCapTv, stViewsTv, stGoalsTv;
-    private LinearLayout stStatsBox;
-    private View stEyeIv, stBallIv;
+    private TextView stNameTv, stTimeTv, stCapTv, stViewsTv, stGoalsTv, stGoalsTvO;
+    private View stBallIv;
     private View stDelBtn, stMenuBtn;
     private VideoView stVv;
     private int stCurG = -1, stCurI = 0;
@@ -420,41 +451,50 @@ abstract class Stories extends FollowList {
         root.addView(stCapTv, cl);
 
         LinearLayout bottom = new LinearLayout(this);
+        bottom.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         bottom.setGravity(Gravity.CENTER_VERTICAL);
-        bottom.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-        bottom.setPadding(dp(16), 0, dp(16), 0);
+        bottom.setPadding(dp(8), 0, dp(14), 0);
+        bottom.setBackground(rbg(0x24FFFFFF, 0x33FFFFFF, 16));
+        LinearLayout lz = new LinearLayout(this);
+        lz.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        lz.setGravity(Gravity.CENTER_VERTICAL);
         stHeart = new ImageView(this);
         stHeart.setScaleType(ImageView.ScaleType.CENTER);
         stHeart.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { stLikeCurrent(false); } });
-        bottom.addView(stHeart, new LinearLayout.LayoutParams(dp(52), dp(44)));
-        stStatsBox = new LinearLayout(this);
-        stStatsBox.setGravity(Gravity.CENTER_VERTICAL);
-        stStatsBox.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-        ImageView eye = new ImageView(this);
-        eye.setImageDrawable(new StEye(0xFFE6E9FF, dp(22)));
-        stEyeIv = eye;
-        stStatsBox.addView(eye, new LinearLayout.LayoutParams(dp(24), dp(24)));
-        stViewsTv = tv(0xFFE6E9FF, 15, true);
-        stViewsTv.setPadding(dp(6), 0, dp(18), 0);
-        stStatsBox.addView(stViewsTv);
-        ImageView ball = new ImageView(this);
-        ball.setImageDrawable(new Ic(2, 0xFF14F195, false, dp(20)));
-        stBallIv = ball;
-        stStatsBox.addView(ball, new LinearLayout.LayoutParams(dp(24), dp(24)));
-        stGoalsTv = tv(0xFF14F195, 15, true);
-        stGoalsTv.setPadding(dp(6), 0, 0, 0);
-        stStatsBox.addView(stGoalsTv);
-        bottom.addView(stStatsBox, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
-        TextView del = tv(0xFFFF8A8A, 14, true);
-        del.setText(L("حذف", "Delete"));
-        del.setGravity(Gravity.CENTER);
-        del.setBackground(rbg(0x66000000, 0x66FF8A8A, 18));
-        del.setPadding(dp(16), dp(8), dp(16), dp(8));
+        lz.addView(stHeart, new LinearLayout.LayoutParams(dp(36), dp(40)));
+        stGoalsTv = tv(0xFF14F195, 14, true);
+        stGoalsTv.setPadding(dp(2), 0, dp(8), 0);
+        lz.addView(stGoalsTv);
+        ImageView del = new ImageView(this);
+        del.setScaleType(ImageView.ScaleType.CENTER);
+        del.setImageDrawable(new StTrash(Color.WHITE, dp(20)));
+        del.setBackground(rbg(0xFFE5484D, 0xFFE5484D, 10));
         del.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { stDeleteCurrent(); } });
         stDelBtn = del;
-        bottom.addView(del, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        FrameLayout.LayoutParams bol = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-        bol.setMargins(0, 0, 0, navH() + dp(10));
+        lz.addView(del, new LinearLayout.LayoutParams(dp(34), dp(34)));
+        bottom.addView(lz, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        bottom.addView(new View(this), new LinearLayout.LayoutParams(0, 1, 1f));
+        LinearLayout rz = new LinearLayout(this);
+        rz.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+        rz.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView eye = new ImageView(this);
+        eye.setScaleType(ImageView.ScaleType.CENTER);
+        eye.setImageDrawable(new StEye(0xFFE6E9FF, dp(20)));
+        rz.addView(eye, new LinearLayout.LayoutParams(dp(26), dp(40)));
+        stViewsTv = tv(0xFFE6E9FF, 13, true);
+        stViewsTv.setPadding(dp(14), 0, dp(4), 0);
+        rz.addView(stViewsTv);
+        ImageView ball = new ImageView(this);
+        ball.setScaleType(ImageView.ScaleType.CENTER);
+        ball.setImageDrawable(new Ic(2, 0xFF14F195, false, dp(20)));
+        stBallIv = ball;
+        rz.addView(ball, new LinearLayout.LayoutParams(dp(26), dp(40)));
+        stGoalsTvO = tv(0xFF14F195, 13, true);
+        stGoalsTvO.setPadding(dp(8), 0, dp(4), 0);
+        rz.addView(stGoalsTvO);
+        bottom.addView(rz, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        FrameLayout.LayoutParams bol = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(48), Gravity.BOTTOM);
+        bol.setMargins(dp(14), 0, dp(14), navH() + dp(10));
         root.addView(bottom, bol);
 
         stDlg.setContentView(root);
@@ -520,14 +560,12 @@ abstract class Stories extends FollowList {
         stCapTv.setVisibility(cap.length() > 0 ? View.VISIBLE : View.GONE);
         stMenuBtn.setVisibility(mine ? View.GONE : View.VISIBLE);
         stDelBtn.setVisibility(mine ? View.VISIBLE : View.GONE);
-        stStatsBox.setVisibility(View.VISIBLE);
-        stStatsBox.setGravity(mine ? (Gravity.CENTER_VERTICAL | Gravity.LEFT) : (Gravity.CENTER_VERTICAL | Gravity.RIGHT));
-        stEyeIv.setVisibility(View.VISIBLE);
-        stViewsTv.setVisibility(View.VISIBLE);
         stBallIv.setVisibility(mine ? View.VISIBLE : View.GONE);
-        stGoalsTv.setPadding(mine ? dp(6) : dp(10), 0, 0, 0);
+        stGoalsTvO.setVisibility(mine ? View.VISIBLE : View.GONE);
+        stGoalsTv.setVisibility(mine ? View.GONE : View.VISIBLE);
         stViewsTv.setText("0");
         stGoalsTv.setText("0");
+        stGoalsTvO.setText("0");
         stHeart.setVisibility(mine ? View.GONE : View.VISIBLE);
         stPaintHeart(s.optString("id", ""));
 
@@ -579,7 +617,7 @@ abstract class Stories extends FollowList {
                             @Override public void run() {
                                 if (stDlg != null && stCurG >= 0 && stCurG < stGroups.size() && stCurI < stGroups.get(stCurG).size()
                                     && sid.equals(stGroups.get(stCurG).get(stCurI).optString("id")))
-                                    { stViewsTv.setText(String.valueOf(n)); stGoalsTv.setText(String.valueOf(fl)); }
+                                    { stViewsTv.setText(String.valueOf(n)); stGoalsTvO.setText(String.valueOf(fl)); }
                             }
                         });
                     } catch (Exception ignore) {}
@@ -598,7 +636,7 @@ abstract class Stories extends FollowList {
                                 if (stDlg != null && stCurG >= 0 && stCurG < stGroups.size() && stCurI < stGroups.get(stCurG).size()
                                     && sid.equals(stGroups.get(stCurG).get(stCurI).optString("id"))) {
                                     stGoalsTv.setText(String.valueOf(n));
-                                    stViewsTv.setText(String.valueOf(Math.max(1, fv)));
+                                    stViewsTv.setText(Math.max(1, fv) + " " + L("مشاهدة", "views"));
                                 }
                             }
                         });
@@ -620,7 +658,7 @@ abstract class Stories extends FollowList {
     private void stPaintHeart(String sid) {
         if (stHeart == null) return;
         boolean liked = stMyLikes.contains(sid);
-        stHeart.setImageDrawable(new Ic(2, liked ? 0xFF14F195 : Color.WHITE, liked, dp(30)));
+        stHeart.setImageDrawable(new Ic(2, liked ? 0xFF14F195 : Color.WHITE, liked, dp(26)));
     }
 
     private void stLikeCurrent(boolean onlyLike) {
