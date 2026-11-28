@@ -71,7 +71,7 @@ abstract class Auth extends Badges {
     // الشاشات: login | email (تسجيل جديد) | forgot | code | newpass | setup
     protected static final String LOGO_URL = "https://raw.githubusercontent.com/zelospor-f/zelo-/main/zelo-coin.png";
     protected static final String AUTH_REDIRECT = "com.zelosport.app://login-callback";
-    protected static final int MIN_AGE = 18, MIN_PASS = 6;
+    protected static final int MIN_AGE = 13, MIN_PASS = 6;
 
     protected Dialog authDlg;
     protected FrameLayout authRoot;

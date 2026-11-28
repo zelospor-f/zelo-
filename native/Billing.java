@@ -153,6 +153,7 @@ abstract class Billing extends GoogleVerify {
 
     // شراء: sub=true للاشتراكات، upgrade=true لاستبدال الاشتراك الحالي
     protected void bpBuy(final String productId, final boolean sub, final boolean upgrade) {
+        if (!adultGate()) return;
         if (bpBusy) return;
         bpBusy = true;
         bpReady(new Runnable() { @Override public void run() {

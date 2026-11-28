@@ -144,6 +144,27 @@ abstract class Base extends Activity {
         if ("Copa Sudamericana".equals(n)) return L("كأس سودأمريكانا", "Copa Sudamericana");
         return n;
     }
+    protected Boolean myAdult = null;
+    protected void loadAdult() {
+        if (uid == null) return;
+        myAdult = null;
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                try {
+                    String r = rpc("my_is_adult", "{}").trim();
+                    if (r.startsWith("true")) myAdult = Boolean.TRUE;
+                    else if (r.startsWith("false")) myAdult = Boolean.FALSE;
+                } catch (Exception ignore) {}
+            }
+        });
+    }
+    protected boolean adultGate() {
+        if (Boolean.FALSE.equals(myAdult)) {
+            toast(L("هذه الميزة لمن عمره 18 سنة فأكثر", "This feature is for users 18 and over"));
+            return false;
+        }
+        return true;
+    }
     protected String myNickCache = null;
     protected final java.util.Set<String> sentNotify = new java.util.HashSet<String>();
     protected void queueNotify(final String kind, final String target, final String postId, final String text, final String amount) {

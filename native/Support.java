@@ -234,6 +234,7 @@ abstract class Support extends Base {
 
     protected void openSupportSheet(String pk, String owner) {
         if (uid == null) return;
+        if (!adultGate()) return;
         sPost = pk; sOwner = owner; sShirts = false; sSel = 0; sQty = 1; sBusy = false; sCombo = 0; sComboNet = 0; sBalance = 0;
         final Dialog d = new Dialog(this, android.R.style.Theme_Material_NoActionBar);
         sDlg = d;
@@ -559,6 +560,8 @@ abstract class Support extends Base {
                             String m = L("تعذّر الدعم، حاول لاحقًا", "Could not support, try again later");
                             if (fe.contains("insufficient_balance")) m = L("رصيدك لا يكفي", "Your balance isn't enough");
                             else if (fe.contains("daily_limit")) m = L("وصلت إلى حد الدعم اليومي", "You reached the daily support limit");
+                            else if (fe.contains("adults_only")) m = L("الدعم لمن عمره 18 سنة فأكثر", "Supporting is for users 18 and over");
+                            else if (fe.contains("recipient_not_adult")) m = L("لا يستقبل هذا المستخدم الدعم", "This user can't receive support");
                             else if (fe.contains("own_post")) m = L("لا يمكنك دعم منشورك", "You can't support your own post");
                             else if (fe.contains("invalid_gift")) m = L("هذه الهدية غير متاحة، حدّث التطبيق", "This gift is unavailable, update the app");
                             if (qty > 1) m = m + (L(" — أُرسل ", " — sent ") + fdone + "/" + qty);

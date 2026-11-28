@@ -2420,6 +2420,7 @@ public class Home extends Stories {
         loadBalance();
         loadPage();
         checkMyBan();
+        loadAdult();
         stLoad();
     }
 

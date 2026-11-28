@@ -107,6 +107,7 @@ abstract class WalletWithdraw extends Ads {
 
     protected void openWithdrawWallet() {
         if (uid == null) return;
+        if (!adultGate()) return;
         if (wwDlg != null) return;
         final Dialog d = sheetDialog(true);
         wwDlg = d;
