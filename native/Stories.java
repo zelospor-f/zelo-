@@ -60,6 +60,11 @@ abstract class Stories extends FollowList {
     private boolean stBusy = false;
     private boolean stPosting = false;
     private PopupWindow stPw;
+    private final Set<String> stMyLikes = new HashSet<String>();
+    private ImageView stHeart;
+    private FrameLayout stRootFl;
+    private Runnable stTapRun;
+    private long stLastTapT = 0;
 
     // ---- حالة العارض ----
     private Dialog stDlg;
@@ -105,8 +110,13 @@ abstract class Stories extends FollowList {
         pool.execute(new Runnable() {
             @Override public void run() {
                 final List<JSONObject> rows = new ArrayList<JSONObject>();
+                final Set<String> likes = new HashSet<String>();
                 boolean ok = false;
                 try {
+                    try {
+                        JSONArray lk = new JSONArray(get("story_likes?select=story_id&user_id=eq." + uid + "&limit=1000"));
+                        for (int i = 0; i < lk.length(); i++) likes.add(lk.getJSONObject(i).optString("story_id"));
+                    } catch (Exception ignore) {}
                     Set<String> blocked = new HashSet<String>(blockSet);
                     try {
                         JSONArray b = new JSONArray(get("user_blocks?select=blocked_id&user_id=eq." + uid + "&limit=1000"));
@@ -128,7 +138,7 @@ abstract class Stories extends FollowList {
                 runOnUiThread(new Runnable() {
                     @Override public void run() {
                         stBusy = false;
-                        if (fok) stApply(rows);
+                        if (fok) { stMyLikes.clear(); stMyLikes.addAll(likes); stApply(rows); }
                     }
                 });
             }
@@ -221,7 +231,7 @@ abstract class Stories extends FollowList {
         TextView live = tv(0xFF14F195, 13, true);
         live.setText("LIVE");
         live.setGravity(Gravity.CENTER);
-        live.setPadding(dp(14), 0, dp(6), 0);
+        live.setPaddingRelative(dp(14), 0, dp(6), 0);
         live.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { openTodayMatches("live"); }
         });
@@ -229,7 +239,7 @@ abstract class Stories extends FollowList {
         final TextView arrow = tv(0xFF14F195, 16, true);
         arrow.setText("▾");
         arrow.setGravity(Gravity.CENTER);
-        arrow.setPadding(dp(6), 0, dp(12), 0);
+        arrow.setPaddingRelative(dp(6), 0, dp(12), 0);
         arrow.setContentDescription(L("المزيد", "More"));
         arrow.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View v) { stMenu(v); }
@@ -294,6 +304,7 @@ abstract class Stories extends FollowList {
 
         stDlg = new Dialog(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
         FrameLayout root = new FrameLayout(this);
+        stRootFl = root;
         root.setBackgroundColor(Color.BLACK);
         root.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         stMedia = new FrameLayout(this);
@@ -310,7 +321,22 @@ abstract class Stories extends FollowList {
                     if (a == MotionEvent.ACTION_UP && dy > dp(110) && dy > Math.abs(dx)) { stTeardown(true); return true; }
                     stResume();
                     if (a == MotionEvent.ACTION_UP && dt < 350 && Math.abs(dx) < dp(14) && Math.abs(dy) < dp(14)) {
-                        if (stDownX < v.getWidth() / 3f) stPrev(); else stNext();
+                        long now = System.currentTimeMillis();
+                        JSONObject cur = stCurrent();
+                        if (stTapRun != null && now - stLastTapT < 320 && cur != null && !stMine(cur)) {
+                            stH.removeCallbacks(stTapRun);
+                            stTapRun = null;
+                            stLikeCurrent(true);
+                            stBurst();
+                        } else {
+                            final boolean left = stDownX < v.getWidth() / 3f;
+                            stLastTapT = now;
+                            if (stTapRun != null) stH.removeCallbacks(stTapRun);
+                            stTapRun = new Runnable() {
+                                @Override public void run() { stTapRun = null; if (left) stPrev(); else stNext(); }
+                            };
+                            stH.postDelayed(stTapRun, 260);
+                        }
                     }
                     return true;
                 }
@@ -363,6 +389,10 @@ abstract class Stories extends FollowList {
         bottom.setGravity(Gravity.CENTER_VERTICAL);
         bottom.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
         bottom.setPadding(dp(16), 0, dp(16), 0);
+        stHeart = new ImageView(this);
+        stHeart.setScaleType(ImageView.ScaleType.CENTER);
+        stHeart.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { stLikeCurrent(false); } });
+        bottom.addView(stHeart, new LinearLayout.LayoutParams(dp(52), dp(44)));
         stViewsTv = tv(0xFFE6E9FF, 14, true);
         stViewsTv.setShadowLayer(4f, 0f, 1f, 0xAA000000);
         bottom.addView(stViewsTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
@@ -441,8 +471,10 @@ abstract class Stories extends FollowList {
         stCapTv.setVisibility(cap.length() > 0 ? View.VISIBLE : View.GONE);
         stMenuBtn.setVisibility(mine ? View.GONE : View.VISIBLE);
         stDelBtn.setVisibility(mine ? View.VISIBLE : View.GONE);
-        stViewsTv.setVisibility(mine ? View.VISIBLE : View.GONE);
+        stViewsTv.setVisibility(View.VISIBLE);
         stViewsTv.setText("");
+        stHeart.setVisibility(mine ? View.GONE : View.VISIBLE);
+        stPaintHeart(s.optString("id", ""));
 
         final String url = s.optString("media_url", "");
         if ("video".equals(s.optString("media_type"))) {
@@ -485,11 +517,14 @@ abstract class Stories extends FollowList {
                     try {
                         JSONArray a = new JSONArray(get("story_views?select=viewer_id&story_id=eq." + sid + "&limit=1000"));
                         final int n = a.length();
+                        int lc = 0;
+                        try { lc = new JSONArray(get("story_likes?select=user_id&story_id=eq." + sid + "&limit=1000")).length(); } catch (Exception ignore) {}
+                        final int fl = lc;
                         runOnUiThread(new Runnable() {
                             @Override public void run() {
                                 if (stDlg != null && stCurG >= 0 && stCurG < stGroups.size() && stCurI < stGroups.get(stCurG).size()
                                     && sid.equals(stGroups.get(stCurG).get(stCurI).optString("id")))
-                                    stViewsTv.setText(L("المشاهدات: ", "Views: ") + n);
+                                    stViewsTv.setText(L("المشاهدات: ", "Views: ") + n + L("   الإعجابات: ", "   Likes: ") + fl);
                             }
                         });
                     } catch (Exception ignore) {}
@@ -504,6 +539,57 @@ abstract class Stories extends FollowList {
                 }
             });
         }
+    }
+
+    private void stPaintHeart(String sid) {
+        if (stHeart == null) return;
+        boolean liked = stMyLikes.contains(sid);
+        stHeart.setImageDrawable(new Ic(2, liked ? 0xFF14F195 : Color.WHITE, liked, dp(30)));
+    }
+
+    private void stLikeCurrent(boolean onlyLike) {
+        final JSONObject s = stCurrent();
+        if (s == null || stMine(s)) return;
+        final String sid = s.optString("id", "");
+        final boolean was = stMyLikes.contains(sid);
+        if (onlyLike && was) return;
+        final boolean now = !was;
+        if (now) stMyLikes.add(sid); else stMyLikes.remove(sid);
+        stPaintHeart(sid);
+        pool.execute(new Runnable() {
+            @Override public void run() {
+                boolean ok = true;
+                try {
+                    if (now) send("POST", "story_likes", "{\"story_id\":" + sid + ",\"user_id\":\"" + uid + "\"}");
+                    else send("DELETE", "story_likes?story_id=eq." + sid + "&user_id=eq." + uid, null);
+                } catch (Exception e) {
+                    String m = String.valueOf(e.getMessage());
+                    ok = now && (m.indexOf("23505") >= 0 || m.indexOf("HTTP 409") >= 0);
+                }
+                if (!ok) {
+                    runOnUiThread(new Runnable() {
+                        @Override public void run() {
+                            if (now) stMyLikes.remove(sid); else stMyLikes.add(sid);
+                            stPaintHeart(sid);
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    // قلب كبير يظهر وسط الشاشة عند الإعجاب بالضغط المزدوج
+    private void stBurst() {
+        if (stRootFl == null) return;
+        final FrameLayout rt = stRootFl;
+        final ImageView h = new ImageView(this);
+        h.setImageDrawable(new Ic(2, 0xFF14F195, true, dp(110)));
+        h.setScaleX(0.6f);
+        h.setScaleY(0.6f);
+        rt.addView(h, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+        h.animate().scaleX(1.25f).scaleY(1.25f).alpha(0f).setDuration(650).withEndAction(new Runnable() {
+            @Override public void run() { try { rt.removeView(h); } catch (Exception ignore) {} }
+        }).start();
     }
 
     private void stPause() {
@@ -537,6 +623,7 @@ abstract class Stories extends FollowList {
     // يغلق العارض. refresh=true يعيد ترتيب الصف (المشاهَد يصير رمادياً)
     private void stTeardown(boolean refresh) {
         stH.removeCallbacks(stTick);
+        if (stTapRun != null) { stH.removeCallbacks(stTapRun); stTapRun = null; }
         try { if (stVv != null) stVv.stopPlayback(); } catch (Exception ignore) {}
         stVv = null;
         Dialog d = stDlg;
