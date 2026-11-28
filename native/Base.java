@@ -161,6 +161,11 @@ abstract class Base extends Activity {
     }
     protected void onAdultKnown() {}
     protected boolean adultGate() {
+        if (myAdult == null) {
+            loadAdult();
+            toast(L("جارٍ التحقق من العمر، أعد المحاولة بعد لحظات", "Checking your age, try again in a moment"));
+            return false;
+        }
         if (Boolean.FALSE.equals(myAdult)) {
             toast(L("هذه الميزة لمن عمره 18 سنة فأكثر", "This feature is for users 18 and over"));
             return false;
