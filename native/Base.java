@@ -168,6 +168,7 @@ abstract class Base extends Activity {
                     if ("like".equals(kind)) { ta = n + " أعجب بمنشورك"; te = n + " liked your post"; }
                     else if ("repost".equals(kind)) { ta = n + " أعاد نشر منشورك"; te = n + " reposted your post"; }
                     else if ("comment".equals(kind)) { ta = n + " علّق على منشورك"; te = n + " commented on your post"; }
+                    else if ("storylike".equals(kind)) { ta = n + " أعجب بستوريك"; te = n + " liked your story"; ba = ""; be = ""; act = "user:" + uid; }
                     else if ("follow".equals(kind)) { ta = n + " بدأ بمتابعتك"; te = n + " started following you"; ba = ""; be = ""; act = "user:" + uid; }
                     else if ("support".equals(kind)) { ta = n + " دعم منشورك"; te = n + " supported your post"; ba = "🎁 " + (amount == null ? "" : amount) + " كورة"; be = "🎁 " + (amount == null ? "" : amount) + " Kora"; }
                     else return;

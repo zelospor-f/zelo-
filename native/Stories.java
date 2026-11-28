@@ -681,6 +681,7 @@ abstract class Stories extends FollowList {
                     String m = String.valueOf(e.getMessage());
                     ok = now && (m.indexOf("23505") >= 0 || m.indexOf("HTTP 409") >= 0);
                 }
+                if (ok && now) queueNotify("storylike", s.optString("user_id", ""), null, "", null);
                 if (!ok) {
                     runOnUiThread(new Runnable() {
                         @Override public void run() {
