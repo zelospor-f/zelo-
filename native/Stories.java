@@ -70,7 +70,8 @@ abstract class Stories extends FollowList {
     private Dialog stDlg;
     private FrameLayout stMedia;
     private LinearLayout stBars;
-    private TextView stNameTv, stTimeTv, stCapTv, stViewsTv;
+    private TextView stNameTv, stTimeTv, stCapTv, stViewsTv, stGoalsTv;
+    private LinearLayout stStatsBox;
     private View stDelBtn, stMenuBtn;
     private VideoView stVv;
     private int stCurG = -1, stCurI = 0;
@@ -308,7 +309,9 @@ abstract class Stories extends FollowList {
         root.setBackgroundColor(Color.BLACK);
         root.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         stMedia = new FrameLayout(this);
-        root.addView(stMedia, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        FrameLayout.LayoutParams mdl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        mdl.setMargins(0, statusH() + dp(66), 0, navH() + dp(66));
+        root.addView(stMedia, mdl);
 
         View touch = new View(this);
         touch.setOnTouchListener(new View.OnTouchListener() {
@@ -382,7 +385,7 @@ abstract class Stories extends FollowList {
         stCapTv.setShadowLayer(6f, 0f, 1f, 0xCC000000);
         stCapTv.setPadding(dp(18), dp(10), dp(18), dp(10));
         FrameLayout.LayoutParams cl = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-        cl.setMargins(0, 0, 0, navH() + dp(64));
+        cl.setMargins(0, 0, 0, navH() + dp(74));
         root.addView(stCapTv, cl);
 
         LinearLayout bottom = new LinearLayout(this);
@@ -393,9 +396,22 @@ abstract class Stories extends FollowList {
         stHeart.setScaleType(ImageView.ScaleType.CENTER);
         stHeart.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { stLikeCurrent(false); } });
         bottom.addView(stHeart, new LinearLayout.LayoutParams(dp(52), dp(44)));
-        stViewsTv = tv(0xFFE6E9FF, 14, true);
-        stViewsTv.setShadowLayer(4f, 0f, 1f, 0xAA000000);
-        bottom.addView(stViewsTv, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+        stStatsBox = new LinearLayout(this);
+        stStatsBox.setGravity(Gravity.CENTER_VERTICAL);
+        stStatsBox.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+        ImageView eye = new ImageView(this);
+        eye.setImageDrawable(new Ic(11, 0xFFE6E9FF, false, dp(20)));
+        stStatsBox.addView(eye, new LinearLayout.LayoutParams(dp(24), dp(24)));
+        stViewsTv = tv(0xFFE6E9FF, 15, true);
+        stViewsTv.setPadding(dp(6), 0, dp(18), 0);
+        stStatsBox.addView(stViewsTv);
+        ImageView ball = new ImageView(this);
+        ball.setImageDrawable(new Ic(2, 0xFF14F195, false, dp(20)));
+        stStatsBox.addView(ball, new LinearLayout.LayoutParams(dp(24), dp(24)));
+        stGoalsTv = tv(0xFF14F195, 15, true);
+        stGoalsTv.setPadding(dp(6), 0, 0, 0);
+        stStatsBox.addView(stGoalsTv);
+        bottom.addView(stStatsBox, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
         TextView del = tv(0xFFFF8A8A, 14, true);
         del.setText(L("حذف", "Delete"));
         del.setGravity(Gravity.CENTER);
@@ -405,7 +421,7 @@ abstract class Stories extends FollowList {
         stDelBtn = del;
         bottom.addView(del, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         FrameLayout.LayoutParams bol = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
-        bol.setMargins(0, 0, 0, navH() + dp(14));
+        bol.setMargins(0, 0, 0, navH() + dp(10));
         root.addView(bottom, bol);
 
         stDlg.setContentView(root);
@@ -471,8 +487,9 @@ abstract class Stories extends FollowList {
         stCapTv.setVisibility(cap.length() > 0 ? View.VISIBLE : View.GONE);
         stMenuBtn.setVisibility(mine ? View.GONE : View.VISIBLE);
         stDelBtn.setVisibility(mine ? View.VISIBLE : View.GONE);
-        stViewsTv.setVisibility(View.VISIBLE);
-        stViewsTv.setText("");
+        stStatsBox.setVisibility(mine ? View.VISIBLE : View.GONE);
+        stViewsTv.setText("0");
+        stGoalsTv.setText("0");
         stHeart.setVisibility(mine ? View.GONE : View.VISIBLE);
         stPaintHeart(s.optString("id", ""));
 
@@ -524,7 +541,7 @@ abstract class Stories extends FollowList {
                             @Override public void run() {
                                 if (stDlg != null && stCurG >= 0 && stCurG < stGroups.size() && stCurI < stGroups.get(stCurG).size()
                                     && sid.equals(stGroups.get(stCurG).get(stCurI).optString("id")))
-                                    stViewsTv.setText(L("المشاهدات: ", "Views: ") + n + L("   الأهداف: ", "   Goals: ") + fl);
+                                    { stViewsTv.setText(String.valueOf(n)); stGoalsTv.setText(String.valueOf(fl)); }
                             }
                         });
                     } catch (Exception ignore) {}
