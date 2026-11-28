@@ -524,7 +524,7 @@ abstract class Stories extends FollowList {
                             @Override public void run() {
                                 if (stDlg != null && stCurG >= 0 && stCurG < stGroups.size() && stCurI < stGroups.get(stCurG).size()
                                     && sid.equals(stGroups.get(stCurG).get(stCurI).optString("id")))
-                                    stViewsTv.setText(L("المشاهدات: ", "Views: ") + n + L("   الإعجابات: ", "   Likes: ") + fl);
+                                    stViewsTv.setText(L("المشاهدات: ", "Views: ") + n + L("   الأهداف: ", "   Goals: ") + fl);
                             }
                         });
                     } catch (Exception ignore) {}
@@ -926,7 +926,7 @@ abstract class Stories extends FollowList {
                         }
                         go.setAlpha(1f);
                         go.setText(L("نشر", "Post"));
-                        if (fe.indexOf("premium_required") >= 0) { toast(L("الفيديو في الباقة المميّزة، أما الصور فللجميع.", "Video needs the Plus plan; photos are free.")); openSubscriptions(); }
+                        if (fe.indexOf("premium_required") >= 0) { toast(L("الفيديو في الباقة المميّزة، أما الصور فللجميع.", "Video needs the Premium plan; photos are free.")); openSubscriptions(); }
                         else if (fe.indexOf("story limit reached") >= 0) toast(L("وصلت الحد الأقصى: 10 ستوريات خلال 24 ساعة.", "Limit reached: 10 stories per 24 hours."));
                         else if (fe.indexOf("account_banned") >= 0) { /* الرسالة تظهر من banCheck */ }
                         else toast(L("فشل النشر: ", "Post failed: ") + fe);
