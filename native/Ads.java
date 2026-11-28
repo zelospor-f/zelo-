@@ -13,6 +13,7 @@ import com.google.android.gms.ads.FullScreenContentCallback;
 import com.google.android.gms.ads.LoadAdError;
 import com.google.android.gms.ads.MobileAds;
 import com.google.android.gms.ads.OnUserEarnedRewardListener;
+import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 import com.google.android.gms.ads.rewarded.RewardItem;
@@ -104,8 +105,25 @@ abstract class Ads extends Store {
     protected LinearLayout adProg;
     protected View adSlot;
 
+    // إعلانات مناسبة للعمر: من هو دون 18 يحصل على إعلانات غير مخصصة وبحد أقصى تصنيف T
+    protected void adApplyAudience() {
+        try {
+            RequestConfiguration.Builder b = MobileAds.getRequestConfiguration().toBuilder();
+            if (Boolean.FALSE.equals(myAdult)) {
+                b.setTagForUnderAgeOfConsent(RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_TRUE);
+                b.setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_T);
+            } else {
+                b.setTagForUnderAgeOfConsent(RequestConfiguration.TAG_FOR_UNDER_AGE_OF_CONSENT_UNSPECIFIED);
+                b.setMaxAdContentRating(RequestConfiguration.MAX_AD_CONTENT_RATING_UNSPECIFIED);
+            }
+            MobileAds.setRequestConfiguration(b.build());
+        } catch (Throwable ignore) {}
+    }
+    @Override protected void onAdultKnown() { adApplyAudience(); }
+
     protected void adInitSdk(final Runnable then) {
         if (adInit) { then.run(); return; }
+        adApplyAudience();
         try {
             MobileAds.initialize(this, new OnInitializationCompleteListener() {
                 @Override public void onInitializationComplete(InitializationStatus s) { adInit = true; then.run(); }

@@ -154,10 +154,12 @@ abstract class Base extends Activity {
                     String r = rpc("my_is_adult", "{}").trim();
                     if (r.startsWith("true")) myAdult = Boolean.TRUE;
                     else if (r.startsWith("false")) myAdult = Boolean.FALSE;
+                    runOnUiThread(new Runnable() { @Override public void run() { onAdultKnown(); } });
                 } catch (Exception ignore) {}
             }
         });
     }
+    protected void onAdultKnown() {}
     protected boolean adultGate() {
         if (Boolean.FALSE.equals(myAdult)) {
             toast(L("هذه الميزة لمن عمره 18 سنة فأكثر", "This feature is for users 18 and over"));
