@@ -211,9 +211,16 @@ abstract class Support extends Base {
     protected EditText sQtyEt;
     protected boolean sQtyBusy = false;
 
+    // في العربية نسمّي هدية الكرة «هدف» حتى لا تشبه اسم العملة «كورة»؛ بقية اللغات تبقى على ترجمتها
+    protected String giftName(String[] g) {
+        String nm = T(g[2]);
+        if ("ball".equals(g[0]) && "كرة".equals(nm)) return "هدف";
+        return nm;
+    }
+
     protected String[] curItem() {
         // {id, price, name, glyphOrNum, color, sub}
-        if (!sShirts) { String[] g = GIFTS[Math.min(sSel, GIFTS.length - 1)]; return new String[] { g[0], g[1], T(g[2]), g[3], g[4], "" }; }
+        if (!sShirts) { String[] g = GIFTS[Math.min(sSel, GIFTS.length - 1)]; return new String[] { g[0], g[1], giftName(g), g[3], g[4], "" }; }
         if (sSel == 0) return new String[] { "custom", "100", L("قميصك", "Your jersey"), sNum, "#C0392B", uname == null ? "" : uname };
         String[] x = SHIRTS[Math.min(sSel - 1, SHIRTS.length - 1)];
         return new String[] { x[0], x[1], L("قميص ", "Jersey ") + x[2], x[2], x[4], T(x[3]) };
@@ -429,7 +436,7 @@ abstract class Support extends Base {
             }
             final int idx = i;
             String[] it;
-            if (!sShirts) { String[] g = GIFTS[i]; it = new String[] { g[0], g[1], T(g[2]), g[3], g[4], "" }; }
+            if (!sShirts) { String[] g = GIFTS[i]; it = new String[] { g[0], g[1], giftName(g), g[3], g[4], "" }; }
             else if (i == 0) it = new String[] { "custom", "100", L("قميصك", "Your jersey"), sNum, "#C0392B", uname == null ? L("باسمك", "With your name") : uname };
             else { String[] x = SHIRTS[i - 1]; it = new String[] { x[0], x[1], L("قميص ", "Jersey ") + x[2], x[2], x[4], T(x[3]) }; }
             LinearLayout cell = new LinearLayout(this);
