@@ -107,7 +107,7 @@ abstract class WeeklyMatchRankings extends WalletWithdraw {
         ln.setBackgroundColor(0x26F5C35A);
         page.addView(ln, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
         body.setPadding(dp(16), dp(14), dp(16), dp(20));
-        body.addView(txt(L("⏳ جاري جلب البيانات...", "⏳ Fetching data..."), 0xFF8FA0B8, 16, false), lpm(0, 40, 0, 0));
+        { ProgressBar pb = new ProgressBar(this); LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(dp(28), dp(28)); pl.gravity = Gravity.CENTER_HORIZONTAL; pl.topMargin = dp(40); body.addView(pb, pl); }
         page.addView(sv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
         pgOpen(page, -1);
         pool.execute(new Runnable() { @Override public void run() {
@@ -330,7 +330,7 @@ abstract class WeeklyMatchRankings extends WalletWithdraw {
         final LinearLayout box = new LinearLayout(this);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(0, 0, 0, navH() + dp(16));
-        box.addView(txt(L("⏳ جاري جلب البيانات...", "⏳ Fetching data..."), 0xFF8FA0B8, 15, false), lpm(0, 40, 0, 0));
+        { ProgressBar pb = new ProgressBar(this); LinearLayout.LayoutParams pl = new LinearLayout.LayoutParams(dp(28), dp(28)); pl.gravity = Gravity.CENTER_HORIZONTAL; pl.topMargin = dp(40); box.addView(pb, pl); }
         ScrollView sv = new ScrollView(this);
         sv.addView(box);
         root.addView(sv, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f));
