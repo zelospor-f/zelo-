@@ -43,6 +43,36 @@ import org.json.JSONObject;
 // ستوريات ZELO: صف الدوائر + عارض الستوري + النشر + كبسولة "مباشر" وقائمتها.
 // الملفات تُرفع إلى R2 (كالمنشورات) والسجل في جدول stories، ويُحذف كلاهما بعد 24 ساعة (cleanup-stories).
 abstract class Stories extends FollowList {
+
+    private static class StEye extends android.graphics.drawable.Drawable {
+        final int color, px;
+        final android.graphics.Paint p = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        StEye(int color, int px) { this.color = color; this.px = px; }
+        @Override public int getIntrinsicWidth() { return px; }
+        @Override public int getIntrinsicHeight() { return px; }
+        @Override public void setAlpha(int a) {}
+        @Override public void setColorFilter(android.graphics.ColorFilter f) {}
+        @Override public int getOpacity() { return android.graphics.PixelFormat.TRANSLUCENT; }
+        @Override public void draw(android.graphics.Canvas c) {
+            c.save();
+            c.translate(getBounds().left, getBounds().top);
+            float sc = px / 24f;
+            c.scale(sc, sc);
+            p.setStyle(android.graphics.Paint.Style.STROKE);
+            p.setStrokeWidth(1.8f);
+            p.setStrokeCap(android.graphics.Paint.Cap.ROUND);
+            p.setStrokeJoin(android.graphics.Paint.Join.ROUND);
+            p.setColor(color);
+            android.graphics.Path a = new android.graphics.Path();
+            a.moveTo(2f, 12f);
+            a.quadTo(12f, 2f, 22f, 12f);
+            a.quadTo(12f, 22f, 2f, 12f);
+            a.close();
+            c.drawPath(a, p);
+            c.drawCircle(12f, 12f, 3.2f, p);
+            c.restore();
+        }
+    }
     protected abstract void openReport(String type, String id, JSONObject target);
     protected abstract void blockUser(String target, String tag);
 
@@ -72,6 +102,7 @@ abstract class Stories extends FollowList {
     private LinearLayout stBars;
     private TextView stNameTv, stTimeTv, stCapTv, stViewsTv, stGoalsTv;
     private LinearLayout stStatsBox;
+    private View stEyeIv, stBallIv;
     private View stDelBtn, stMenuBtn;
     private VideoView stVv;
     private int stCurG = -1, stCurI = 0;
@@ -400,13 +431,15 @@ abstract class Stories extends FollowList {
         stStatsBox.setGravity(Gravity.CENTER_VERTICAL);
         stStatsBox.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
         ImageView eye = new ImageView(this);
-        eye.setImageDrawable(new Ic(11, 0xFFE6E9FF, false, dp(20)));
+        eye.setImageDrawable(new StEye(0xFFE6E9FF, dp(22)));
+        stEyeIv = eye;
         stStatsBox.addView(eye, new LinearLayout.LayoutParams(dp(24), dp(24)));
         stViewsTv = tv(0xFFE6E9FF, 15, true);
         stViewsTv.setPadding(dp(6), 0, dp(18), 0);
         stStatsBox.addView(stViewsTv);
         ImageView ball = new ImageView(this);
         ball.setImageDrawable(new Ic(2, 0xFF14F195, false, dp(20)));
+        stBallIv = ball;
         stStatsBox.addView(ball, new LinearLayout.LayoutParams(dp(24), dp(24)));
         stGoalsTv = tv(0xFF14F195, 15, true);
         stGoalsTv.setPadding(dp(6), 0, 0, 0);
@@ -487,7 +520,12 @@ abstract class Stories extends FollowList {
         stCapTv.setVisibility(cap.length() > 0 ? View.VISIBLE : View.GONE);
         stMenuBtn.setVisibility(mine ? View.GONE : View.VISIBLE);
         stDelBtn.setVisibility(mine ? View.VISIBLE : View.GONE);
-        stStatsBox.setVisibility(mine ? View.VISIBLE : View.GONE);
+        stStatsBox.setVisibility(View.VISIBLE);
+        stStatsBox.setGravity(mine ? (Gravity.CENTER_VERTICAL | Gravity.LEFT) : (Gravity.CENTER_VERTICAL | Gravity.RIGHT));
+        stEyeIv.setVisibility(View.VISIBLE);
+        stViewsTv.setVisibility(View.VISIBLE);
+        stBallIv.setVisibility(mine ? View.VISIBLE : View.GONE);
+        stGoalsTv.setPadding(mine ? dp(6) : dp(10), 0, 0, 0);
         stViewsTv.setText("0");
         stGoalsTv.setText("0");
         stHeart.setVisibility(mine ? View.GONE : View.VISIBLE);
@@ -547,7 +585,28 @@ abstract class Stories extends FollowList {
                     } catch (Exception ignore) {}
                 }
             });
-        } else if (!stSeen.contains(sid)) {
+        } else {
+            pool.execute(new Runnable() {
+                @Override public void run() {
+                    try {
+                        final int n = Integer.parseInt(rpc("story_like_count", "{\"p_story_id\":" + sid + "}").trim());
+                        int vc = 0;
+                        try { vc = Integer.parseInt(rpc("story_view_count", "{\"p_story_id\":" + sid + "}").trim()); } catch (Exception ignore) {}
+                        final int fv = vc;
+                        runOnUiThread(new Runnable() {
+                            @Override public void run() {
+                                if (stDlg != null && stCurG >= 0 && stCurG < stGroups.size() && stCurI < stGroups.get(stCurG).size()
+                                    && sid.equals(stGroups.get(stCurG).get(stCurI).optString("id"))) {
+                                    stGoalsTv.setText(String.valueOf(n));
+                                    stViewsTv.setText(String.valueOf(Math.max(1, fv)));
+                                }
+                            }
+                        });
+                    } catch (Exception ignore) {}
+                }
+            });
+        }
+        if (!mine && !stSeen.contains(sid)) {
             stSeen.add(sid);
             stSaveSeen();
             pool.execute(new Runnable() {
@@ -573,6 +632,7 @@ abstract class Stories extends FollowList {
         final boolean now = !was;
         if (now) stMyLikes.add(sid); else stMyLikes.remove(sid);
         stPaintHeart(sid);
+        stBumpGoals(now ? 1 : -1);
         pool.execute(new Runnable() {
             @Override public void run() {
                 boolean ok = true;
@@ -588,11 +648,19 @@ abstract class Stories extends FollowList {
                         @Override public void run() {
                             if (now) stMyLikes.remove(sid); else stMyLikes.add(sid);
                             stPaintHeart(sid);
+                            stBumpGoals(now ? -1 : 1);
                         }
                     });
                 }
             }
         });
+    }
+
+    private void stBumpGoals(int d) {
+        try {
+            int n = Integer.parseInt(stGoalsTv.getText().toString().trim());
+            stGoalsTv.setText(String.valueOf(Math.max(0, n + d)));
+        } catch (Exception ignore) {}
     }
 
     // قلب كبير يظهر وسط الشاشة عند الإعجاب بالضغط المزدوج
