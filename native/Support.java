@@ -1,4 +1,4 @@
-package PKG;
+package com.zelosport.app;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -176,7 +176,7 @@ abstract class Support extends Base {
         if (cnt > 0) {
             left.addView(goldDot(), new LinearLayout.LayoutParams(dp(20), dp(20)));
             TextView t = tv(GOLD, 14, true);
-            t.setText("  " + nfmt(net) + " ZELO");
+            t.setText("  " + nfmt(net) + L(" كورة", " Kora"));
             left.addView(t);
             TextView c2 = tv(MUTED, 12, true);
             c2.setText("  ·  " + kfmt(cnt) + (cnt == 1 ? L(" داعم", " supporter") : L(" داعمين", " supporters")) + "  ›");
@@ -497,10 +497,10 @@ abstract class Support extends Base {
         if (!sShirts && !String.valueOf(sQty).equals(sQtyEt.getText().toString())) {
             sQtyBusy = true; sQtyEt.setText(String.valueOf(sQty)); sQtyEt.setSelection(sQtyEt.getText().length()); sQtyBusy = false;
         }
-        sBal.setText(L("رصيدك الحالي: ", "Your current balance: ") + nfmt(sBalance) + " ZELO");
+        sBal.setText(L("رصيدك الحالي: ", "Your current balance: ") + nfmt(sBalance) + L(" كورة", " Kora"));
         sMsg.setText(enough ? (sCombo > 1 ? "" : (sShirts ? L("اضغط أكثر من مرة لتكرار الهدية", "Tap multiple times to repeat the gift") : L("الحد الأقصى 99 هدية في المرة", "Max 99 gifts at a time"))) : L("رصيدك لا يكفي لهذه الهدية", "Your balance isn't enough for this gift"));
         sMsg.setTextColor(enough ? MUTED : 0xFFFF6B6B);
-        sSend.setText(L("أرسل ", "Send ") + (qty > 1 ? qty + " " : "") + it[2] + ("custom".equals(it[0]) ? " " + it[3] : "") + " · " + price + " ZELO");
+        sSend.setText(L("أرسل ", "Send ") + (qty > 1 ? qty + " " : "") + it[2] + ("custom".equals(it[0]) ? " " + it[3] : "") + " · " + price + L(" كورة", " Kora"));
         sSend.setAlpha(!enough || sBusy ? 0.45f : 1f);
     }
 
@@ -656,7 +656,7 @@ abstract class Support extends Base {
                             return;
                         }
                         count.setText(L("عدد الدعم ", "Support count ") + kfmt(cn));
-                        total.setText(L("إجمالي الدعم: ", "Total support: ") + nfmt(tn) + " ZELO");
+                        total.setText(L("إجمالي الدعم: ", "Total support: ") + nfmt(tn) + L(" كورة", " Kora"));
                         int[] rk = new int[] { 0xFFFFD978, 0xFFD9DEE7, 0xFFD9975B };
                         for (int i = 0; i < rows.size(); i++) {
                             String[] r = rows.get(i);
@@ -676,7 +676,7 @@ abstract class Support extends Base {
                             nm.setSingleLine(true);
                             mid.addView(nm);
                             TextView sb = tv(MUTED, 12, false);
-                            sb.setText(nfmt(Long.parseLong(r[1])) + " ZELO · " + r[2] + L(" مرة", " times"));
+                            sb.setText(nfmt(Long.parseLong(r[1])) + L(" كورة", " Kora") + " · " + r[2] + L(" مرة", " times"));
                             mid.addView(sb);
                             line.addView(mid, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
                             list.addView(line);

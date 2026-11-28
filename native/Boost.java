@@ -1,4 +1,4 @@
-package PKG;
+package com.zelosport.app;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -185,12 +185,12 @@ abstract class Boost extends Subscriptions {
         if (bDailyV == null) return;
         long daily = bDaily * 1000L;
         boolean enough = bBalance >= daily * bDays;
-        bDailyV.setText(nfmt(daily) + " ZELO");
+        bDailyV.setText(nfmt(daily) + L(" كورة", " Kora"));
         bDaysV.setText(bDays + L(" يومًا", " days"));
-        bTotal.setText(nfmt(daily * bDays) + " ZELO");
+        bTotal.setText(nfmt(daily * bDays) + L(" كورة", " Kora"));
         if (bAudience < 0) bReach.setText("—");
         else bReach.setText(L("حتى ", "Up to ") + nfmt(Math.min(daily * 10, bAudience * 3)) + L(" ظهور يوميًا (تقديري)", " impressions per day (estimate)"));
-        bBal.setText(L("رصيدك: ", "Your balance: ") + nfmt(bBalance) + " ZELO");
+        bBal.setText(L("رصيدك: ", "Your balance: ") + nfmt(bBalance) + L(" كورة", " Kora"));
         bMsg.setText(enough ? L("يُخصم المبلغ كاملًا الآن، ويُعاد إلى رصيدك ما لم يُستهلك عند انتهاء التعزيز.", "The full amount is charged now; any unused part is returned to your balance when the boost ends.") : L("رصيدك لا يكفي لإجمالي الميزانية. قلّل الأيام أو الميزانية اليومية، أو اربح نقاطًا.", "Your balance doesn't cover the total budget. Lower the days or daily budget, or earn points."));
         bMsg.setTextColor(enough ? MUTED : 0xFFFF6B6B);
         bBtn.setAlpha(!enough || bBusy ? 0.5f : 1f);
@@ -380,7 +380,7 @@ abstract class Boost extends Subscriptions {
     protected View bxSupport(JSONObject b) {
         TextView t = tv(MUTED, 12, true);
         long c = b.optLong("tips_count", 0);
-        if (c > 0) t.setText("🎁 " + L("الدعم المستلم · ", "Support received · ") + c + (c == 1 ? L(" داعم", " supporter") : L(" داعمين", " supporters")) + " · " + nfmt(b.optLong("tips_net", 0)) + " ZELO");
+        if (c > 0) t.setText("🎁 " + L("الدعم المستلم · ", "Support received · ") + c + (c == 1 ? L(" داعم", " supporter") : L(" داعمين", " supporters")) + " · " + nfmt(b.optLong("tips_net", 0)) + L(" كورة", " Kora"));
         else t.setText("🎁 " + L("الدعم المستلم · لا يوجد بعد", "Support received · none yet"));
         t.setTextColor(c > 0 ? GOLD : MUTED);
         return t;

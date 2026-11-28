@@ -1,4 +1,4 @@
-package PKG;
+package com.zelosport.app;
 
 import android.view.Window;
 import android.app.Activity;
@@ -819,7 +819,7 @@ abstract class Settings extends ShareCard {
     protected void stDeleteScreen() {
         final String word = L("حذف", "DELETE");
         LinearLayout b = stBody();
-        b.addView(txt(L("سيُحذف حسابك نهائياً مع توقعاتك ورصيد ZELO، ولا يمكن التراجع عن ذلك.", "Your account, predictions and ZELO balance will be permanently deleted. This cannot be undone."), 0xFFFF9B9B, 13, true));
+        b.addView(txt(L("سيُحذف حسابك نهائياً مع توقعاتك ورصيد الكورة، ولا يمكن التراجع عن ذلك.", "Your account, predictions and Kora balance will be permanently deleted. This cannot be undone."), 0xFFFF9B9B, 13, true));
         b.addView(txt("⚠️ " + L("حذف الحساب لا يلغي اشتراكك في Google Play. ألغِه بنفسك من Play Store ← الاشتراكات حتى لا يستمر الخصم. وتأكد من إنهاء أي سحب USDT معلّق قبل الحذف، فالرصيد والألماس لا يمكن استرجاعهما.", "Deleting your account does not cancel your Google Play subscription. Cancel it yourself in Play Store → Subscriptions to avoid further charges. Also finish any pending USDT withdrawal first: balances and diamonds cannot be recovered."), 0xFFFFD98A, 13, true), lpm(0, 10, 0, 0));
         final EditText in = stEdit("", "", 12, false);
         b.addView(stBox(L("اكتب الكلمة للتأكيد: ", "Type the word to confirm: ") + word, in, false, null));

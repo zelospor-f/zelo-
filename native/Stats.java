@@ -1,4 +1,4 @@
-package PKG;
+package com.zelosport.app;
 
 import android.view.Window;
 import android.app.Activity;
@@ -504,6 +504,8 @@ abstract class Stats extends Settings {
     protected Dialog crDlg;
     protected LinearLayout crBody;
     protected void crOpenWallet() {}
+    protected double crSupVal = -1;
+    protected double crRateVal = 200;
 
     protected void openCreator() {
         if (uid == null) return;
@@ -545,6 +547,9 @@ abstract class Stats extends Settings {
         pool.execute(new Runnable() { @Override public void run() {
             JSONObject o = null;
             try { o = new JSONObject(rpc("creator_status", "{}")); } catch (Exception ignore) {}
+            crSupVal = -1;
+            try { crSupVal = new JSONObject(rpc("my_stats", "{\"p_days\":30}")).optDouble("sup_total", 0); } catch (Exception ignore) {}
+            try { JSONArray rc = new JSONArray(get("usdt_withdraw_config?select=diamonds_per_usdt&limit=1")); if (rc.length() > 0) crRateVal = Math.max(1, rc.getJSONObject(0).optDouble("diamonds_per_usdt", 200)); } catch (Exception ignore) {}
             final JSONObject fo = o;
             runOnUiThread(new Runnable() { @Override public void run() {
                 if (crDlg == null) return;
@@ -597,6 +602,17 @@ abstract class Stats extends Settings {
             hero.addView(txt(L("أكمل الشروط التالية للانضمام", "Complete the requirements below to join"), MUTED, 13, false));
         }
         crBody.addView(hero);
+        // دعم المشجعين (يعمل لكل المستخدمين دون تأهل)
+        if (crSupVal >= 0) {
+            LinearLayout sup = sxCard();
+            sup.addView(sxHead("🎁", L("دعم المشجعين (آخر 30 يوماً)", "Fan support (last 30 days)"), crN(crSupVal) + L(" كورة", " Kora"), GOLD));
+            sup.addView(txt(L("يعادل تقريباً ", "About ") + crUsd(crSupVal / crRateVal) + " USDT", MUTED, 13, false));
+            TextView sl = txt(L("تفاصيل الداعمين في إحصائياتي ›", "Supporter details in My stats ›"), GOLD, 13, true);
+            sl.setPadding(0, dp(8), 0, 0);
+            sl.setOnClickListener(new View.OnClickListener() { @Override public void onClick(View v) { openStats(); } });
+            sup.addView(sl);
+            crBody.addView(sup);
+        }
         // الشروط
         LinearLayout rq = sxCard();
         rq.addView(txt(L("الشروط", "Requirements"), Color.WHITE, 16, true));
@@ -743,7 +759,7 @@ abstract class Stats extends Settings {
         bxChip(nfmt(imp), L("ظهور كلي", "Total reach"), tot);
         bxChip(nfmt(cm), L("تعليقات", "Comments"), tot);
         bxChip(nfmt(fl), L("متابعون جدد", "New followers"), tot);
-        bxChip(nfmt(tp), L("ZELO دعم", "ZELO support"), tot);
+        bxChip(nfmt(tp), L("دعم كورة", "Kora support"), tot);
         body.addView(tot);
         TextView h2 = tv(MUTED, 13, true);
         h2.setText(L("منشوراتك المعزَّزة", "Your boosted posts"));
@@ -785,7 +801,7 @@ abstract class Stats extends Settings {
             sp.setPadding(0, dp(8), 0, 0);
             card.addView(sp);
             TextView sp2 = tv(MUTED, 11, false);
-            sp2.setText(L("أُنفق ", "Spent ") + (b.optLong("spent_tenths", 0) / 10) + L(" من ", " of ") + nfmt(b.optLong("total_points", 0)) + " ZELO");
+            sp2.setText(L("أُنفق ", "Spent ") + (b.optLong("spent_tenths", 0) / 10) + L(" من ", " of ") + nfmt(b.optLong("total_points", 0)) + L(" كورة", " Kora"));
             sp2.setPadding(0, dp(4), 0, 0);
             card.addView(sp2);
             LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-1, ViewGroup.LayoutParams.WRAP_CONTENT);

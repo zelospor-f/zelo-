@@ -1,4 +1,4 @@
-package PKG;
+package com.zelosport.app;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -169,7 +169,7 @@ abstract class Base extends Activity {
                     else if ("repost".equals(kind)) { ta = n + " أعاد نشر منشورك"; te = n + " reposted your post"; }
                     else if ("comment".equals(kind)) { ta = n + " علّق على منشورك"; te = n + " commented on your post"; }
                     else if ("follow".equals(kind)) { ta = n + " بدأ بمتابعتك"; te = n + " started following you"; ba = ""; be = ""; act = "user:" + uid; }
-                    else if ("support".equals(kind)) { ta = n + " دعم منشورك"; te = n + " supported your post"; ba = "🎁 " + (amount == null ? "" : amount) + " ZELO"; be = ba; }
+                    else if ("support".equals(kind)) { ta = n + " دعم منشورك"; te = n + " supported your post"; ba = "🎁 " + (amount == null ? "" : amount) + " كورة"; be = "🎁 " + (amount == null ? "" : amount) + " Kora"; }
                     else return;
                     org.json.JSONObject o = new org.json.JSONObject();
                     o.put("user_id", target); o.put("type", "social"); o.put("actor_id", uid);
